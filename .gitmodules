@@ -1,0 +1,3 @@
+[submodule "skills/create-pr-cd"]
+	path = skills/create-pr-cd
+	url = https://github.com/Gumb-D/create-pr-cd.git
