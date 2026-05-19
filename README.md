@@ -35,3 +35,17 @@ npm run dev
 
 Backend health is available at `http://localhost:8000/health`.
 Frontend runs at `http://localhost:3000`.
+
+## Docker Deployment
+
+Windows 11 Pro deployment with Docker Desktop is documented in:
+
+```text
+docs/deployment-windows.md
+```
+
+The MVP stack is started with:
+
+```bash
+docker compose up -d --build
+```

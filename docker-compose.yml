@@ -1,0 +1,76 @@
+services:
+  mongodb:
+    image: mongo:7
+    container_name: ai-worker-platform-mongodb
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - ai-worker-platform
+
+  backend:
+    build:
+      context: ./backend
+    container_name: ai-worker-platform-backend
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+    environment:
+      NODE_ENV: production
+      PORT: ${PORT:-8000}
+      MONGO_URI: mongodb://mongodb:27017/ai-worker-platform
+      STORAGE_ROOT: /app/storage
+      CREATE_PR_CD_ROOT: /app/skills/create-pr-cd
+      WS_HEARTBEAT_INTERVAL_MS: ${WS_HEARTBEAT_INTERVAL_MS:-5000}
+      WS_MAX_PAYLOAD_BYTES: ${WS_MAX_PAYLOAD_BYTES:-16384}
+      LLM_ENABLED: ${LLM_ENABLED:-false}
+      LLM_PROVIDER: ${LLM_PROVIDER:-qwen}
+      LLM_BASE_URL: ${LLM_BASE_URL:-}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-Qwen3-235B-A22B}
+      LLM_TIMEOUT_MS: ${LLM_TIMEOUT_MS:-30000}
+      LLM_MAX_RETRIES: ${LLM_MAX_RETRIES:-1}
+      LLM_PROGRESS_WORDING_ENABLED: ${LLM_PROGRESS_WORDING_ENABLED:-true}
+      LLM_FINAL_SUMMARY_ENABLED: ${LLM_FINAL_SUMMARY_ENABLED:-true}
+      LLM_REASK_ENABLED: ${LLM_REASK_ENABLED:-true}
+      MAX_UPLOAD_SIZE_MB: ${MAX_UPLOAD_SIZE_MB:-100}
+      MAX_ROW_COUNT: ${MAX_ROW_COUNT:-50000}
+      MAX_SITE_CODES: ${MAX_SITE_CODES:-5000}
+      MAX_CONCURRENT_JOBS: ${MAX_CONCURRENT_JOBS:-2}
+      JOB_TIMEOUT_MINUTES: ${JOB_TIMEOUT_MINUTES:-60}
+      MAX_OUTPUT_FILES: ${MAX_OUTPUT_FILES:-200}
+      FILE_RETENTION_DAYS: ${FILE_RETENTION_DAYS:-180}
+      ADMIN_DEFAULT_USERNAME: ${ADMIN_DEFAULT_USERNAME:-admin}
+      ADMIN_DEFAULT_PASSWORD: ${ADMIN_DEFAULT_PASSWORD:-change-me}
+      JWT_SECRET: ${JWT_SECRET:-change-me-local-jwt-secret}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
+    volumes:
+      - storage:/app/storage
+      - ./skills:/app/skills:ro
+    ports:
+      - "${BACKEND_HOST_PORT:-8000}:8000"
+    networks:
+      - ai-worker-platform
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: ""
+        VITE_WS_URL: ""
+    container_name: ai-worker-platform-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_HOST_PORT:-3000}:3000"
+    networks:
+      - ai-worker-platform
+
+volumes:
+  mongo-data:
+  storage:
+
+networks:
+  ai-worker-platform:
+    driver: bridge
