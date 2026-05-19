@@ -3,8 +3,17 @@ const path = require('path');
 const archiver = require('archiver');
 const { JobFile } = require('../models');
 const storageService = require('./storageService');
+const {
+  generateReviewRequiredReport,
+  generateSummaryJson,
+  generateWarningReport,
+  REVIEW_REPORT_FILE,
+  SUMMARY_FILE,
+  WARNING_REPORT_FILE
+} = require('./reportGenerator');
 
 const OUTPUT_EXTENSIONS = new Set(['.xls', '.xlsx', '.csv', '.json', '.txt']);
+const GENERATED_FILE_TYPES = ['ecc_output', 'review_required_report', 'warning_report', 'summary', 'zip_package'];
 
 const classifyFileType = (fileName) => {
   const lower = fileName.toLowerCase();
@@ -56,8 +65,8 @@ const createZipPackage = async ({ jobId, outputFiles }) => {
     archive.on('error', reject);
     archive.pipe(output);
 
-    for (const filePath of outputFiles) {
-      archive.file(filePath, { name: path.basename(filePath) });
+    for (const file of outputFiles) {
+      archive.file(file.absolutePath, { name: file.archiveName });
     }
 
     archive.finalize();
@@ -79,7 +88,7 @@ const collectOutputs = async (jobId) => {
   const existingFiles = await listFilesRecursive(outputFolder);
   const collectableFiles = existingFiles.filter((filePath) => OUTPUT_EXTENSIONS.has(path.extname(filePath).toLowerCase()));
 
-  await JobFile.deleteMany({ jobId, fileType: { $in: ['ecc_output', 'review_required_report', 'warning_report', 'summary', 'zip_package'] } });
+  await JobFile.deleteMany({ jobId, fileType: { $in: GENERATED_FILE_TYPES } });
 
   const createdFiles = [];
 
@@ -100,15 +109,68 @@ const collectOutputs = async (jobId) => {
     createdFiles.push(jobFile);
   }
 
-  const zipFile = await createZipPackage({ jobId, outputFiles: collectableFiles });
-
   return {
     outputFiles: createdFiles,
-    zipFile,
+    zipFile: null,
     outputFileCount: createdFiles.filter((file) => file.fileType === 'ecc_output').length
   };
 };
 
+const resolveJobFileAbsolutePath = (jobFile) => path.join(storageService.getStorageRoot(), jobFile.filePath);
+
+const buildArchiveEntries = (jobFiles) => jobFiles.map((file) => {
+  let archiveName = path.basename(file.fileName);
+
+  if (file.fileType === 'ecc_output') {
+    archiveName = `ECC_Output/${archiveName}`;
+  }
+
+  if (file.fileType === 'review_required_report') {
+    archiveName = REVIEW_REPORT_FILE;
+  }
+
+  if (file.fileType === 'warning_report') {
+    archiveName = WARNING_REPORT_FILE;
+  }
+
+  if (file.fileType === 'summary') {
+    archiveName = SUMMARY_FILE;
+  }
+
+  return {
+    absolutePath: resolveJobFileAbsolutePath(file),
+    archiveName
+  };
+});
+
+const generateReportsAndPackage = async (jobId) => {
+  await JobFile.deleteMany({ jobId, fileType: { $in: ['review_required_report', 'warning_report', 'summary', 'zip_package'] } });
+
+  const [warningReport, reviewReport, summaryFile] = await Promise.all([
+    generateWarningReport(jobId),
+    generateReviewRequiredReport(jobId),
+    generateSummaryJson(jobId)
+  ]);
+
+  const packageFiles = await JobFile.find({
+    jobId,
+    fileType: { $in: ['ecc_output', 'review_required_report', 'warning_report', 'summary'] }
+  }).sort({ fileType: 1, createdAt: 1 });
+
+  const zipFile = await createZipPackage({
+    jobId,
+    outputFiles: buildArchiveEntries(packageFiles)
+  });
+
+  return {
+    warningReport,
+    reviewReport,
+    summaryFile,
+    zipFile
+  };
+};
+
 module.exports = {
-  collectOutputs
+  collectOutputs,
+  generateReportsAndPackage
 };

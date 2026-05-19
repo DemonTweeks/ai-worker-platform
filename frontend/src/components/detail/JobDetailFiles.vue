@@ -25,7 +25,7 @@
         </thead>
         <tbody>
           <tr v-for="file in outputs" :key="file.id">
-            <td>{{ file.fileType }}</td>
+            <td>{{ fileTypeLabel(file.fileType) }}</td>
             <td>{{ file.fileName }}</td>
             <td>{{ formatBytes(file.fileSize) }}</td>
             <td>{{ formatDateTime(file.retentionUntil) }}</td>
@@ -51,6 +51,14 @@
 import { getFileDownloadUrl, getZipDownloadUrl } from '../../api/jobApi';
 import { formatBytes, formatDateTime } from '../../utils/formatUtils';
 
+const FILE_TYPE_LABELS = {
+  ecc_output: 'ECC Output',
+  review_required_report: 'Review Required Report',
+  warning_report: 'Error / Warning Report',
+  summary: 'Summary JSON',
+  zip_package: 'ZIP Package'
+};
+
 export default {
   name: 'JobDetailFiles',
   props: {
@@ -75,6 +83,9 @@ export default {
     },
     downloadUrl(file) {
       return getFileDownloadUrl(this.jobId, file.id);
+    },
+    fileTypeLabel(fileType) {
+      return FILE_TYPE_LABELS[fileType] || fileType || 'Output';
     }
   }
 };

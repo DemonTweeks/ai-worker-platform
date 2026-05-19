@@ -7,7 +7,7 @@ const { parseIepmsWorkbook } = require('./iepmsParser');
 const { filterSites } = require('./siteFilteringService');
 const { loadActiveAssets } = require('./activeAssetService');
 const { runCreatePrCd } = require('./childProcessRunner');
-const { collectOutputs } = require('./outputCollector');
+const { collectOutputs, generateReportsAndPackage } = require('./outputCollector');
 const { buildAndSaveSummary } = require('./summaryBuilder');
 const { saveFinalSummary } = require('./finalSummaryService');
 const { JOB_EVENTS, publishJobEvent } = require('../websocket/eventPublisher');
@@ -183,14 +183,16 @@ const runPrWorkerJob = async (jobId) => {
     if (runnerResult.cancelled) {
       const partialCollection = await collectOutputs(jobId);
       const partialSummary = await buildAndSaveSummary({ jobId, filteringResult, outputCollection: partialCollection });
-      await setJobStatus(jobId, partialCollection.outputFileCount > 0 ? 'cancelled_with_partial_result' : 'cancelled', {
+      const partialStatus = partialCollection.outputFileCount > 0 ? 'cancelled_with_partial_result' : 'cancelled';
+      await setJobStatus(jobId, partialStatus, {
         cancelledAt: new Date()
       });
       workerStateService.setCancelled(jobId);
       await saveFinalSummary({ jobId, summary: partialSummary });
+      await generateReportsAndPackage(jobId);
       await publishJobEvent(jobId, JOB_EVENTS.JOB_CANCELLED, {
         phase: 'CANCELLED',
-        status: partialCollection.outputFileCount > 0 ? 'cancelled_with_partial_result' : 'cancelled',
+        status: partialStatus,
         message: 'Job cancelled.',
         summary: partialSummary
       });
@@ -220,16 +222,18 @@ const runPrWorkerJob = async (jobId) => {
 
     const summary = await buildAndSaveSummary({ jobId, filteringResult, outputCollection });
     const finalWorkerSummary = await saveFinalSummary({ jobId, summary });
+    const finalStatus = summary.warningCount > 0 ? 'completed_with_warning' : 'completed';
 
-    await setJobStatus(jobId, summary.warningCount > 0 ? 'completed_with_warning' : 'completed', {
+    await setJobStatus(jobId, finalStatus, {
       completedAt: new Date(),
       finalWorkerSummary,
       error: undefined
     });
+    await generateReportsAndPackage(jobId);
     workerStateService.setComplete(jobId);
     await publishJobEvent(jobId, JOB_EVENTS.JOB_COMPLETED, {
       phase: 'COMPLETED',
-      status: summary.warningCount > 0 ? 'completed_with_warning' : 'completed',
+      status: finalStatus,
       message: 'Job completed.',
       summary
     });
