@@ -147,6 +147,12 @@ main {
   color: #17643a;
 }
 
+.health-pill.warning {
+  background: #fff7dc;
+  border-color: #e3c66b;
+  color: #805b00;
+}
+
 .health-pill.error {
   background: #fff0f0;
   border-color: #e48d8d;

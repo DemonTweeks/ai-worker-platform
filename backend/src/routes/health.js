@@ -1,23 +1,11 @@
 const express = require('express');
-const { getMongoStatus } = require('../db/mongo');
-const { getStorageStatus } = require('../services/storageService');
-const { getWebSocketStatus } = require('../websocket/server');
-const { getLlmStatus } = require('../llm/llmUtils');
-const { getQueueState } = require('../queue/jobQueue');
+const { buildHealthResponse } = require('../services/healthService');
 
 const router = express.Router();
 
-router.get('/', (req, res) => {
-  res.json({
-    status: 'ok',
-    service: 'ai-worker-platform-backend',
-    timestamp: new Date().toISOString(),
-    mongo: getMongoStatus(),
-    storage: getStorageStatus(),
-    queue: getQueueState(),
-    websocket: getWebSocketStatus(),
-    llm: getLlmStatus()
-  });
+router.get('/', async (req, res) => {
+  const health = await buildHealthResponse();
+  res.status(health.status === 'down' ? 503 : 200).json(health);
 });
 
 module.exports = router;

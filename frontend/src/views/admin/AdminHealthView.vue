@@ -15,12 +15,17 @@
       <HealthStatusCard label="Backend" :value="backendStatus" :detail="timestamp" :tone="tone(backendStatus)" />
       <HealthStatusCard label="MongoDB" :value="mongoStatus" :detail="mongoDetail" :tone="tone(mongoStatus)" />
       <HealthStatusCard label="Storage" :value="storageStatus" :detail="storageDetail" :tone="tone(storageStatus)" />
-      <HealthStatusCard label="LLM" :value="llmStatus" :detail="llmDetail" :tone="llmTone" />
+      <HealthStatusCard label="LLM" :value="llmStatus" :detail="llmDetail" :tone="tone(llmStatus)" />
       <HealthStatusCard label="Queue" :value="queueStatus" :detail="queueDetail" :tone="tone(queueStatus)" />
       <HealthStatusCard label="Active Jobs" :value="activeJobs" detail="Current worker slots in use" tone="neutral" />
       <HealthStatusCard label="Queued Jobs" :value="queuedJobs" detail="Waiting for worker slot" tone="neutral" />
       <HealthStatusCard label="WebSocket" :value="websocketStatus" :detail="websocketDetail" :tone="tone(websocketStatus)" />
-      <HealthStatusCard label="Disk Usage" value="Not available" detail="Disk usage is not exposed by current backend health." tone="neutral" />
+      <HealthStatusCard label="Disk Usage" :value="diskUsage" :detail="diskDetail" :tone="diskTone" />
+    </section>
+
+    <section v-if="health" class="panel">
+      <h2>Last Checked</h2>
+      <p class="muted">{{ timestamp || 'Not available' }}</p>
     </section>
   </div>
 </template>
@@ -44,56 +49,74 @@ export default {
     };
   },
   computed: {
+    services() {
+      return this.health && this.health.services ? this.health.services : {};
+    },
     backendStatus() {
-      return this.health && this.health.status ? this.health.status : 'Not available';
+      return this.services.backend && this.services.backend.status ? this.services.backend.status : this.health && this.health.status ? this.health.status : 'Not available';
     },
     timestamp() {
       return this.health && this.health.timestamp ? `Updated ${this.health.timestamp}` : '';
     },
     mongoStatus() {
-      return this.health && this.health.mongo && this.health.mongo.status ? this.health.mongo.status : 'Not available';
+      return this.services.mongodb && this.services.mongodb.status ? this.services.mongodb.status : 'Not available';
     },
     mongoDetail() {
-      return this.health && this.health.mongo && this.health.mongo.readyStateName ? this.health.mongo.readyStateName : '';
+      if (!this.services.mongodb) return '';
+      return `${this.services.mongodb.connected ? 'Connected' : 'Disconnected'} · ${this.services.mongodb.readyStateLabel || 'unknown'}`;
     },
     storageStatus() {
-      return this.health && this.health.storage && this.health.storage.status ? this.health.storage.status : 'Not available';
+      return this.services.storage && this.services.storage.status ? this.services.storage.status : 'Not available';
     },
     storageDetail() {
-      if (!this.health || !this.health.storage) return '';
-      return this.health.storage.writable ? 'Writable' : 'Not writable';
+      if (!this.services.storage) return '';
+      const root = this.services.storage.rootLabel ? `Root: ${this.services.storage.rootLabel}` : 'Root unavailable';
+      return `${root} · ${this.services.storage.writable ? 'Writable' : 'Not writable'}`;
     },
     llmStatus() {
-      if (!this.health || !this.health.llm) return 'Not available';
-      return this.health.llm.enabled ? 'enabled' : 'disabled';
+      if (!this.services.llm) return 'Not available';
+      return this.services.llm.status || (this.services.llm.enabled ? 'enabled' : 'disabled');
     },
     llmDetail() {
-      if (!this.health || !this.health.llm) return '';
-      return `${this.health.llm.provider || 'provider unknown'} · configured: ${this.health.llm.configured ? 'yes' : 'no'}`;
-    },
-    llmTone() {
-      if (!this.health || !this.health.llm) return 'neutral';
-      return this.health.llm.enabled && this.health.llm.configured ? 'ok' : 'neutral';
+      if (!this.services.llm) return '';
+      return `${this.services.llm.provider || 'provider unknown'} · ${this.services.llm.model || 'model unknown'} · configured: ${this.services.llm.configured ? 'yes' : 'no'}`;
     },
     queueStatus() {
-      return this.health && this.health.queue ? 'ok' : 'Not available';
+      return this.services.queue && this.services.queue.status ? this.services.queue.status : 'Not available';
     },
     queueDetail() {
-      if (!this.health || !this.health.queue) return '';
-      return `Max ${this.health.queue.maxConcurrentJobs || 0} concurrent`;
+      if (!this.services.queue) return '';
+      return `Max ${this.services.queue.maxConcurrentJobs || 0} concurrent · capacity ${this.services.queue.capacityAvailable || 0}`;
     },
     activeJobs() {
-      return this.health && this.health.queue ? String(this.health.queue.activeCount || 0) : 'Not available';
+      return this.services.queue ? String(this.services.queue.activeCount || 0) : 'Not available';
     },
     queuedJobs() {
-      return this.health && this.health.queue ? String(this.health.queue.queuedCount || 0) : 'Not available';
+      return this.services.queue ? String(this.services.queue.queuedCount || 0) : 'Not available';
     },
     websocketStatus() {
-      return this.health && this.health.websocket && this.health.websocket.status ? this.health.websocket.status : 'Not available';
+      return this.services.websocket && this.services.websocket.status ? this.services.websocket.status : 'Not available';
     },
     websocketDetail() {
-      if (!this.health || !this.health.websocket) return '';
-      return `${this.health.websocket.connectedClients || 0} connected clients`;
+      if (!this.services.websocket) return '';
+      return `${this.services.websocket.connectedClients || 0} clients · ${this.services.websocket.subscribedJobs || 0} subscribed jobs · heartbeat ${this.services.websocket.heartbeatIntervalMs || 0}ms`;
+    },
+    diskUsage() {
+      const disk = this.services.storage && this.services.storage.disk;
+      if (!disk || !disk.available || disk.usedPercent === null || disk.usedPercent === undefined) return 'Not available';
+      return `${disk.usedPercent}% used`;
+    },
+    diskDetail() {
+      const disk = this.services.storage && this.services.storage.disk;
+      if (!disk || !disk.available) return disk && disk.reason ? disk.reason : 'Disk usage is unavailable.';
+      return `${this.formatBytes(disk.freeBytes)} free of ${this.formatBytes(disk.totalBytes)}`;
+    },
+    diskTone() {
+      const disk = this.services.storage && this.services.storage.disk;
+      if (!disk || !disk.available || disk.usedPercent === null || disk.usedPercent === undefined) return 'neutral';
+      if (disk.usedPercent >= 95) return 'danger';
+      if (disk.usedPercent >= 85) return 'warning';
+      return 'ok';
     }
   },
   mounted() {
@@ -113,10 +136,17 @@ export default {
     },
     tone(status) {
       const value = String(status || '').toLowerCase();
-      if (['ok', 'connected', 'enabled'].includes(value)) return 'ok';
-      if (value === 'not available') return 'neutral';
-      if (['degraded', 'not_started'].includes(value)) return 'warning';
+      if (['ok', 'connected'].includes(value)) return 'ok';
+      if (['disabled', 'not available'].includes(value)) return 'neutral';
+      if (['degraded', 'not_started', 'not_configured', 'unknown'].includes(value)) return 'warning';
       return 'danger';
+    },
+    formatBytes(value) {
+      const bytes = Number(value) || 0;
+      if (bytes < 1024) return `${bytes} B`;
+      if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+      if (bytes < 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+      return `${(bytes / 1024 / 1024 / 1024).toFixed(1)} GB`;
     }
   }
 };

@@ -7,7 +7,7 @@
         <p class="eyebrow">Normal user portal</p>
         <h1>AI Worker Platform — PR Worker</h1>
       </div>
-      <div class="health-pill" :class="{ ok: health && health.status === 'ok', error: healthError }">
+      <div class="health-pill" :class="{ ok: health && health.status === 'ok', warning: health && health.status === 'degraded', error: healthError || health && health.status === 'down' }">
         Backend: {{ healthLabel }}
       </div>
     </section>
@@ -132,6 +132,8 @@ export default {
   computed: {
     healthLabel() {
       if (this.health && this.health.status === 'ok') return 'healthy';
+      if (this.health && this.health.status === 'degraded') return 'degraded';
+      if (this.health && this.health.status === 'down') return 'down';
       if (this.healthError) return 'unavailable';
       return 'checking';
     },
