@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const healthRouter = require('./routes/health');
 const jobRouter = require('./routes/jobRoutes');
+const adminRouter = require('./routes/adminRoutes');
 const errorHandler = require('./middleware/errorHandler');
 const { createApiError } = require('./utils/apiError');
 
@@ -16,6 +17,7 @@ app.use((req, res, next) => {
 
 app.use('/health', healthRouter);
 app.use('/api/jobs', jobRouter);
+app.use('/api/admin', adminRouter);
 
 app.use((req, res) => {
   throw createApiError(404, 'NOT_FOUND', 'Route not found.', { path: req.originalUrl });

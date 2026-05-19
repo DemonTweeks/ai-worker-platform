@@ -32,7 +32,9 @@ const config = {
   },
   admin: {
     defaultUsername: process.env.ADMIN_DEFAULT_USERNAME || 'admin',
-    defaultPassword: process.env.ADMIN_DEFAULT_PASSWORD || ''
+    defaultPassword: process.env.ADMIN_DEFAULT_PASSWORD || '',
+    jwtSecret: process.env.JWT_SECRET || '',
+    jwtExpiresIn: process.env.JWT_EXPIRES_IN || '8h'
   }
 };
 
