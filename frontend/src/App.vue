@@ -6,7 +6,7 @@
         <h1>PR Worker</h1>
       </div>
       <nav>
-        <router-link to="/">Home</router-link>
+        <router-link to="/">Run Job</router-link>
       </nav>
     </header>
     <main>

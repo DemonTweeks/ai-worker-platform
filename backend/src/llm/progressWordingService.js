@@ -21,8 +21,8 @@ const buildProgressWording = async (eventPayload) => {
     task: LLM_TASKS.PROGRESS_WORDING,
     ...prompts,
     temperature: 0.2,
-    maxTokens: 120,
-    timeoutMs: Math.min(config.llm.timeoutMs, 3000)
+    maxTokens: 500,
+    timeoutMs: Math.min(config.llm.timeoutMs, 10000)
   });
 
   if (!result.ok) {
