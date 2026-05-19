@@ -3,6 +3,7 @@ const { getMongoStatus } = require('../db/mongo');
 const { getStorageStatus } = require('../services/storageService');
 const { getWebSocketStatus } = require('../websocket/server');
 const { getLlmStatus } = require('../llm/llmUtils');
+const { getQueueState } = require('../queue/jobQueue');
 
 const router = express.Router();
 
@@ -13,6 +14,7 @@ router.get('/', (req, res) => {
     timestamp: new Date().toISOString(),
     mongo: getMongoStatus(),
     storage: getStorageStatus(),
+    queue: getQueueState(),
     websocket: getWebSocketStatus(),
     llm: getLlmStatus()
   });
