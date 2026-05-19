@@ -21,6 +21,7 @@
       <HealthStatusCard label="Queued Jobs" :value="queuedJobs" detail="Waiting for worker slot" tone="neutral" />
       <HealthStatusCard label="WebSocket" :value="websocketStatus" :detail="websocketDetail" :tone="tone(websocketStatus)" />
       <HealthStatusCard label="Disk Usage" :value="diskUsage" :detail="diskDetail" :tone="diskTone" />
+      <HealthStatusCard label="Cleanup" :value="cleanupStatus" :detail="cleanupDetail" :tone="tone(cleanupStatus)" />
     </section>
 
     <section v-if="health" class="panel">
@@ -117,6 +118,17 @@ export default {
       if (disk.usedPercent >= 95) return 'danger';
       if (disk.usedPercent >= 85) return 'warning';
       return 'ok';
+    },
+    cleanupStatus() {
+      return this.services.cleanup && this.services.cleanup.status ? this.services.cleanup.status : 'Not available';
+    },
+    cleanupDetail() {
+      if (!this.services.cleanup) return '';
+      const retention = this.services.cleanup.retentionDays !== undefined
+        ? `${this.services.cleanup.retentionDays} day retention`
+        : 'Retention unavailable';
+      const schedule = this.services.cleanup.automaticScheduleEnabled ? 'scheduled' : 'manual';
+      return `${retention} · dry-run ${this.services.cleanup.dryRunSupported ? 'supported' : 'unavailable'} · ${schedule}`;
     }
   },
   mounted() {

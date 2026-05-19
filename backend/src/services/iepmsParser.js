@@ -44,8 +44,7 @@ const findSiteCodeColumn = (headers) => {
   return null;
 };
 
-const parseIepmsWorkbook = (filePath) => {
-  const workbook = xlsx.readFile(filePath, { cellDates: true });
+const parseIepmsWorkbookObject = (workbook) => {
   const sheetName = workbook.SheetNames.includes('data') ? 'data' : workbook.SheetNames[0];
 
   if (!sheetName) {
@@ -116,8 +115,26 @@ const parseIepmsWorkbook = (filePath) => {
   };
 };
 
+const parseIepmsWorkbook = (filePath) => {
+  const workbook = xlsx.readFile(filePath, { cellDates: true });
+  return parseIepmsWorkbookObject(workbook);
+};
+
+const inspectIepmsWorkbookBuffer = (buffer) => {
+  const workbook = xlsx.read(buffer, { type: 'buffer', cellDates: true });
+  const parsed = parseIepmsWorkbookObject(workbook);
+
+  return {
+    sheetName: parsed.sheetName,
+    sheetNames: parsed.metadata.sheetNames,
+    rowCount: parsed.rowCount,
+    siteCodeColumn: parsed.metadata.siteCodeColumn
+  };
+};
+
 module.exports = {
   findHeaderRowIndex,
+  inspectIepmsWorkbookBuffer,
   normalizeColumnName,
   parseIepmsWorkbook
 };

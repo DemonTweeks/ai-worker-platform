@@ -47,6 +47,8 @@ const JobSchema = new mongoose.Schema(
     startedAt: Date,
     completedAt: Date,
     cancelledAt: Date,
+    timedOutAt: Date,
+    timeoutReason: String,
     generationScope: {
       type: String,
       enum: GENERATION_SCOPES

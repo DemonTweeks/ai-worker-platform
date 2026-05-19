@@ -41,6 +41,22 @@ const JobFileSchema = new mongoose.Schema(
       min: 0
     },
     retentionUntil: Date,
+    isExpired: {
+      type: Boolean,
+      default: false,
+      index: true
+    },
+    expiredAt: Date,
+    deletedAt: Date,
+    fileAvailable: {
+      type: Boolean,
+      default: true,
+      index: true
+    },
+    cleanupReason: {
+      type: String,
+      trim: true
+    },
     createdAt: {
       type: Date,
       default: Date.now,

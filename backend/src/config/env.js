@@ -49,6 +49,7 @@ const config = {
     maxSiteCodes: numberFromEnv('MAX_SITE_CODES', 5000),
     maxConcurrentJobs: numberFromEnv('MAX_CONCURRENT_JOBS', 2),
     jobTimeoutMinutes: numberFromEnv('JOB_TIMEOUT_MINUTES', 60),
+    maxOutputFiles: numberFromEnv('MAX_OUTPUT_FILES', 200),
     fileRetentionDays: numberFromEnv('FILE_RETENTION_DAYS', 180)
   },
   websocket: {

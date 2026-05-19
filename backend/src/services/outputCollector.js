@@ -1,8 +1,10 @@
 const fs = require('fs');
 const path = require('path');
 const archiver = require('archiver');
+const config = require('../config/env');
 const { JobFile } = require('../models');
 const storageService = require('./storageService');
+const { createApiError } = require('../utils/apiError');
 const {
   generateReviewRequiredReport,
   generateSummaryJson,
@@ -86,17 +88,24 @@ const createZipPackage = async ({ jobId, outputFiles }) => {
 const collectOutputs = async (jobId) => {
   const outputFolder = storageService.resolveJobFolderPath(jobId, 'output');
   const existingFiles = await listFilesRecursive(outputFolder);
-  const collectableFiles = existingFiles.filter((filePath) => OUTPUT_EXTENSIONS.has(path.extname(filePath).toLowerCase()));
+  const collectableFiles = existingFiles.filter((filePath) => (
+    OUTPUT_EXTENSIONS.has(path.extname(filePath).toLowerCase())
+    && !path.basename(filePath).toLowerCase().endsWith('.zip')
+  ));
+
+  if (collectableFiles.length > config.limits.maxOutputFiles) {
+    throw createApiError(
+      400,
+      'OUTPUT_FILE_LIMIT_EXCEEDED',
+      `Generated output file count ${collectableFiles.length} exceeds the configured limit of ${config.limits.maxOutputFiles}.`
+    );
+  }
 
   await JobFile.deleteMany({ jobId, fileType: { $in: GENERATED_FILE_TYPES } });
 
   const createdFiles = [];
 
   for (const filePath of collectableFiles) {
-    if (path.basename(filePath).toLowerCase().endsWith('.zip')) {
-      continue;
-    }
-
     const metadata = await storageService.buildFileMetadata(filePath);
     const jobFile = await JobFile.create({
       jobId,

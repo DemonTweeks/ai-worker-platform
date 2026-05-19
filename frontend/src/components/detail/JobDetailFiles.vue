@@ -38,7 +38,7 @@
               >
                 Download
               </a>
-              <span v-else class="muted">Unavailable</span>
+              <span v-else class="muted">{{ unavailableText(file) }}</span>
             </td>
           </tr>
         </tbody>
@@ -78,8 +78,15 @@ export default {
     formatDateTime,
     availabilityText(file) {
       if (file.expired) return 'File Expired';
+      if (file.deletedAt) return 'Removed by cleanup';
       if (!file.exists) return 'Missing';
       return file.available ? 'Available' : 'Unavailable';
+    },
+    unavailableText(file) {
+      if (file.expired) return 'Expired';
+      if (file.deletedAt || file.cleanupReason) return 'Retention cleanup';
+      if (!file.exists) return 'Missing';
+      return 'Unavailable';
     },
     downloadUrl(file) {
       return getFileDownloadUrl(this.jobId, file.id);

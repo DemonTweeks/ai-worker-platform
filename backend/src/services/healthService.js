@@ -6,6 +6,7 @@ const config = require('../config/env');
 const { getMongoStatus } = require('../db/mongo');
 const { getQueueState } = require('../queue/jobQueue');
 const storageService = require('./storageService');
+const { getCleanupStatus } = require('./cleanupService');
 const { getWebSocketStatus } = require('../websocket/server');
 const { generateText } = require('../llm/llmClient');
 const { getLlmStatus, isLlmConfigured, redactSensitive } = require('../llm/llmUtils');
@@ -246,6 +247,12 @@ const checkWebSocket = async () => {
   };
 };
 
+const checkCleanup = async () => ({
+  status: 'ok',
+  ...getCleanupStatus(),
+  lastCheckedAt: nowIso()
+});
+
 const buildHealthResponse = async () => {
   const timestamp = nowIso();
   const services = {
@@ -254,7 +261,8 @@ const buildHealthResponse = async () => {
     storage: await serviceResult(checkStorage),
     llm: await serviceResult(checkLlm),
     queue: await serviceResult(checkQueue),
-    websocket: await serviceResult(checkWebSocket)
+    websocket: await serviceResult(checkWebSocket),
+    cleanup: await serviceResult(checkCleanup)
   };
   const status = overallStatus(services);
 
@@ -272,7 +280,8 @@ const buildHealthResponse = async () => {
     storage: services.storage,
     llm: services.llm,
     queue: services.queue,
-    websocket: services.websocket
+    websocket: services.websocket,
+    cleanup: services.cleanup
   };
 };
 

@@ -11,7 +11,7 @@
       >
         Download ZIP
       </a>
-      <p v-else class="muted">ZIP is not available yet.</p>
+      <p v-else class="muted">{{ unavailableMessage }}</p>
     </div>
   </section>
 </template>
@@ -31,6 +31,14 @@ export default {
     },
     canDownload() {
       return this.detail && this.detail.outputs && this.detail.outputs.some((file) => file.fileType === 'zip_package' && file.available);
+    },
+    unavailableMessage() {
+      const zip = this.detail && this.detail.outputs
+        ? this.detail.outputs.find((file) => file.fileType === 'zip_package')
+        : null;
+      if (zip && zip.expired) return 'ZIP has expired based on retention policy.';
+      if (zip && (zip.deletedAt || zip.cleanupReason)) return 'ZIP is unavailable after retention cleanup.';
+      return 'ZIP is not available yet.';
     },
     downloadUrl() {
       return this.jobId ? getZipDownloadUrl(this.jobId) : '#';

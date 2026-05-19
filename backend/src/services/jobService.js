@@ -219,8 +219,10 @@ const listJobs = async (query = {}) => {
   };
 };
 
-const isExpired = (retentionUntil) => (
-  retentionUntil && new Date(retentionUntil).getTime() < Date.now()
+const isExpired = (file) => (
+  Boolean(file.isExpired) || (
+    file.retentionUntil && new Date(file.retentionUntil).getTime() < Date.now()
+  )
 );
 
 const getFileAvailability = async (file) => {
@@ -228,8 +230,9 @@ const getFileAvailability = async (file) => {
     storageService.getStorageRoot(),
     path.join(storageService.getStorageRoot(), file.filePath)
   );
-  const expired = isExpired(file.retentionUntil);
+  const expired = isExpired(file);
   const exists = fs.existsSync(absolutePath);
+  const unavailableByCleanup = Boolean(file.deletedAt || file.fileAvailable === false);
 
   return {
     id: file._id.toString(),
@@ -237,9 +240,19 @@ const getFileAvailability = async (file) => {
     fileName: file.fileName,
     fileSize: file.fileSize,
     retentionUntil: file.retentionUntil,
-    available: exists && !expired,
+    isExpired: Boolean(file.isExpired),
+    expiredAt: file.expiredAt,
+    deletedAt: file.deletedAt,
+    fileAvailable: file.fileAvailable !== false,
+    cleanupReason: file.cleanupReason,
+    available: exists && !expired && !unavailableByCleanup,
     expired,
-    exists
+    exists,
+    unavailableReason: expired
+      ? 'retention_expired'
+      : unavailableByCleanup
+        ? (file.cleanupReason || 'cleanup_removed')
+        : exists ? null : 'file_missing'
   };
 };
 
@@ -326,7 +339,10 @@ const buildStructuredJobData = async (jobId) => {
       fileName: file.fileName,
       fileSize: file.fileSize,
       available: file.available,
-      expired: file.expired
+      expired: file.expired,
+      deletedAt: file.deletedAt,
+      cleanupReason: file.cleanupReason,
+      unavailableReason: file.unavailableReason
     }))
   };
 };
@@ -355,7 +371,7 @@ const getFileByJob = async (jobId, fileId) => {
 };
 
 const resolveTrackedFilePath = async (file) => {
-  if (isExpired(file.retentionUntil)) {
+  if (isExpired(file) || file.deletedAt || file.fileAvailable === false) {
     throw createApiError(410, 'FILE_EXPIRED', 'File Expired.');
   }
 

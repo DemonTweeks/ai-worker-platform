@@ -3,6 +3,7 @@ const path = require('path');
 const crypto = require('crypto');
 const config = require('../config/env');
 const storageService = require('./storageService');
+const { inspectIepmsWorkbookBuffer } = require('./iepmsParser');
 const {
   assertPathInsideRoot,
   sanitizeFileName,
@@ -129,6 +130,34 @@ const validateUpload = async (file) => {
     };
   }
 
+  let workbookMetadata = null;
+
+  try {
+    workbookMetadata = inspectIepmsWorkbookBuffer(file.buffer);
+    checklist.push(buildChecklistItem(
+      'row_count',
+      'Row count is within limit',
+      true,
+      `Workbook has ${workbookMetadata.rowCount} data rows, within the configured limit of ${config.limits.maxRowCount}.`
+    ));
+  } catch (error) {
+    checklist.push(buildChecklistItem(
+      'row_count',
+      'Row count is within limit',
+      false,
+      error.message || 'Workbook row count could not be validated.'
+    ));
+    failedMessages.push(error.message || 'Workbook row count could not be validated.');
+
+    return {
+      passed: false,
+      originalFileName: originalName,
+      fileSize: file ? file.size : 0,
+      checklist,
+      workerExplanation: buildWorkerExplanation(false, failedMessages)
+    };
+  }
+
   const prevalidatedFileId = `preval-${Date.now()}-${crypto.randomUUID()}`;
   const storedFileName = `${prevalidatedFileId}-${safeOriginalFileName}`;
   const tempPath = storageService.resolveTempPath(storedFileName);
@@ -154,6 +183,7 @@ const validateUpload = async (file) => {
     prevalidatedFileId,
     originalFileName: safeOriginalFileName,
     fileSize: metadata.fileSize,
+    workbook: workbookMetadata,
     checklist,
     passed: true,
     workerExplanation: buildWorkerExplanation(true)

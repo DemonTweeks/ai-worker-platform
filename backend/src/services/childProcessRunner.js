@@ -57,6 +57,7 @@ const runCommand = ({ command, args, cwd, timeoutMs, isCancellationRequested }) 
   let stderr = '';
   let timedOut = false;
   let cancelled = false;
+  let killTimer = null;
 
   const child = spawn(command, args, {
     cwd,
@@ -64,15 +65,29 @@ const runCommand = ({ command, args, cwd, timeoutMs, isCancellationRequested }) 
     windowsHide: true
   });
 
-  const timeout = setTimeout(() => {
-    timedOut = true;
+  const stopChild = () => {
+    if (killTimer) {
+      return;
+    }
     child.kill('SIGTERM');
-  }, timeoutMs);
+    killTimer = setTimeout(() => {
+      if (child.exitCode === null) {
+        child.kill('SIGKILL');
+      }
+    }, 5000);
+  };
+
+  const timeout = Number.isFinite(timeoutMs) && timeoutMs > 0
+    ? setTimeout(() => {
+      timedOut = true;
+      stopChild();
+    }, timeoutMs)
+    : null;
 
   const cancellationPoll = setInterval(() => {
     if (isCancellationRequested && isCancellationRequested()) {
       cancelled = true;
-      child.kill('SIGTERM');
+      stopChild();
     }
   }, 500);
 
@@ -89,7 +104,12 @@ const runCommand = ({ command, args, cwd, timeoutMs, isCancellationRequested }) 
   });
 
   child.on('close', (exitCode) => {
-    clearTimeout(timeout);
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+    if (killTimer) {
+      clearTimeout(killTimer);
+    }
     clearInterval(cancellationPoll);
     resolve({
       exitCode,
@@ -187,5 +207,6 @@ module.exports = {
   SUPPORTED_SCOPES,
   buildCommand,
   getCreatePrCdRoot,
+  runCommand,
   runCreatePrCd
 };

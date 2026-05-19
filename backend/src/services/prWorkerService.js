@@ -33,6 +33,10 @@ const failJob = async (jobId, error) => {
 
   await setJobStatus(jobId, 'failed', {
     completedAt: new Date(),
+    ...(safeError.code === 'WORKER_TIMEOUT' ? {
+      timedOutAt: new Date(),
+      timeoutReason: safeError.message
+    } : {}),
     error: safeError
   });
   workerStateService.setError(jobId, safeError);
