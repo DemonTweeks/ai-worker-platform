@@ -24,9 +24,10 @@ export const prevalidateUpload = async (file) => {
   return response.data;
 };
 
-export const createJob = async ({ prevalidatedFileId, generationScope, siteCodes }) => {
+export const createJob = async ({ prevalidatedFileId, generationScope, siteCodes, prScope }) => {
   const response = await api.post('/api/jobs', {
     prevalidatedFileId,
+    prScope,
     generationScope,
     siteCodes
   });

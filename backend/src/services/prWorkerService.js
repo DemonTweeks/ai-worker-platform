@@ -176,6 +176,7 @@ const runPrWorkerJob = async (jobId) => {
       assets,
       generationScope: request.generationScope,
       siteCodes: request.siteCodes,
+      prScope: request.prScope || job.prScope || 'TSS',
       isCancellationRequested: () => workerStateService.isCancellationRequested(jobId)
     });
 

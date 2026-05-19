@@ -34,8 +34,11 @@ const TERMINAL_STATUSES = [
   'cancelled',
   'cancelled_with_partial_result'
 ];
+const PR_SCOPES = ['TSS', 'TI'];
 
 const normalizeSiteCodes = (siteCodes = []) => parseSiteCodes(siteCodes).siteCodes;
+
+const normalizePrScope = (prScope) => String(prScope || 'TSS').trim().toUpperCase();
 
 const addRetentionDays = () => (
   new Date(Date.now() + config.limits.fileRetentionDays * 24 * 60 * 60 * 1000)
@@ -48,6 +51,7 @@ const serializeJobSummary = (job) => ({
   createdAt: job.createdAt,
   completedAt: job.completedAt,
   generationScope: job.generationScope,
+  prScope: job.prScope || 'TSS',
   requestedSiteCount: job.requestedSiteCount,
   matchedSiteCount: job.matchedSiteCount,
   unmatchedSiteCount: job.unmatchedSiteCount,
@@ -67,13 +71,19 @@ const assertJobExists = async (jobId) => {
   return job;
 };
 
-const createJob = async ({ prevalidatedFileId, generationScope, siteCodes }) => {
+const createJob = async ({ prevalidatedFileId, generationScope, siteCodes, prScope }) => {
   if (!prevalidatedFileId) {
     throw createApiError(400, 'VALIDATION_ERROR', 'prevalidatedFileId is required.');
   }
 
   if (!['site_code', 'all_sites'].includes(generationScope)) {
     throw createApiError(400, 'VALIDATION_ERROR', 'generationScope must be site_code or all_sites.');
+  }
+
+  const normalizedPrScope = normalizePrScope(prScope);
+
+  if (!PR_SCOPES.includes(normalizedPrScope)) {
+    throw createApiError(400, 'VALIDATION_ERROR', 'prScope must be TSS or TI.');
   }
 
   const normalizedSiteCodes = normalizeSiteCodes(siteCodes);
@@ -100,6 +110,7 @@ const createJob = async ({ prevalidatedFileId, generationScope, siteCodes }) => 
     requestPath,
     Buffer.from(JSON.stringify({
       jobId,
+      prScope: normalizedPrScope,
       generationScope,
       siteCodes: normalizedSiteCodes,
       createdAt: new Date().toISOString()
@@ -110,6 +121,7 @@ const createJob = async ({ prevalidatedFileId, generationScope, siteCodes }) => 
     jobId,
     workerType: 'pr-worker',
     status: 'queued',
+    prScope: normalizedPrScope,
     generationScope,
     requestedSiteCount: generationScope === 'site_code' ? normalizedSiteCodes.length : 0,
     fileRetentionUntil: retentionUntil,
@@ -238,6 +250,7 @@ const getJobDetail = async (jobId) => {
       ...serializeJobSummary(job),
       startedAt: job.startedAt,
       cancelledAt: job.cancelledAt,
+      prScope: job.prScope || 'TSS',
       assetVersions: job.assetVersions || {},
       engineVersion: job.engineVersion,
       fileRetentionUntil: job.fileRetentionUntil,

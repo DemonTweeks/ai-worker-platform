@@ -5,6 +5,7 @@
     <div v-else>
       <div class="summary-grid">
         <span>Status: <strong>{{ detail.job.status }}</strong></span>
+        <span>Scope: <strong>{{ detail.job.prScope || 'TSS' }}</strong></span>
         <span>Requested: <strong>{{ detail.job.requestedSiteCount || 0 }}</strong></span>
         <span>Matched: <strong>{{ detail.job.matchedSiteCount || 0 }}</strong></span>
         <span>Unmatched: <strong>{{ detail.job.unmatchedSiteCount || 0 }}</strong></span>

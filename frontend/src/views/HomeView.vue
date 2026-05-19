@@ -44,10 +44,12 @@
             @click="createWorkerJob"
           />
           <p v-if="currentJobId" class="muted">Current job: {{ currentJobId }}</p>
+          <p class="muted">Selected scope: {{ prScope }}</p>
         </section>
 
         <JobProgress
           :job-id="currentJobId"
+          :pr-scope="currentPrScope"
           :status="currentStatus"
           :connection-status="connectionStatus"
           :latest-message="latestMessage"
@@ -113,6 +115,7 @@ export default {
       generationScope: 'site_code',
       siteCodesText: '',
       currentJobId: '',
+      currentPrScope: 'TSS',
       currentStatus: '',
       currentProgress: null,
       updatedAt: '',
@@ -209,10 +212,12 @@ export default {
       try {
         const result = await createJob({
           prevalidatedFileId: this.prevalidation.prevalidatedFileId,
+          prScope: this.prScope,
           generationScope: this.generationScope,
           siteCodes: this.generationScope === 'site_code' ? this.parseSiteCodes() : []
         });
         this.currentJobId = result.job.jobId;
+        this.currentPrScope = result.job.prScope || this.prScope;
         this.currentStatus = result.job.status;
         this.wsClient.connect(this.currentJobId);
       } catch (error) {
@@ -227,6 +232,7 @@ export default {
         this.jobDetail = await getJobDetail(this.currentJobId);
         if (this.jobDetail && this.jobDetail.job) {
           this.currentStatus = this.jobDetail.job.status;
+          this.currentPrScope = this.jobDetail.job.prScope || this.currentPrScope;
         }
       } catch (error) {
         this.errorMessage = getErrorMessage(error);

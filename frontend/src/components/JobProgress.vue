@@ -15,6 +15,10 @@
         <strong>{{ status || 'Queued' }}</strong>
       </div>
       <div>
+        <span class="meta-label">Scope</span>
+        <strong>{{ prScope || 'TSS' }}</strong>
+      </div>
+      <div>
         <span class="meta-label">Realtime</span>
         <strong>{{ connectionStatus }}</strong>
       </div>
@@ -38,6 +42,7 @@ export default {
   name: 'JobProgress',
   props: {
     jobId: { type: String, default: '' },
+    prScope: { type: String, default: 'TSS' },
     status: { type: String, default: '' },
     connectionStatus: { type: String, default: 'disconnected' },
     latestMessage: { type: String, default: 'No active job.' },

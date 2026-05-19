@@ -107,13 +107,22 @@ const runCreatePrCd = async ({
   assets,
   generationScope,
   siteCodes,
+  prScope,
   isCancellationRequested
 }) => {
   const outputPath = storageService.resolveJobFolderPath(jobId, 'output');
   const timeoutMs = config.limits.jobTimeoutMinutes * 60 * 1000;
   const runs = [];
+  const selectedScope = String(prScope || 'TSS').trim().toUpperCase();
 
-  for (const scope of SUPPORTED_SCOPES) {
+  if (!SUPPORTED_SCOPES.includes(selectedScope)) {
+    const error = new Error('PR Worker scope must be TSS or TI.');
+    error.code = 'INVALID_PR_SCOPE';
+    error.details = { prScope: selectedScope };
+    throw error;
+  }
+
+  for (const scope of [selectedScope]) {
     if (isCancellationRequested && isCancellationRequested()) {
       return {
         cancelled: true,

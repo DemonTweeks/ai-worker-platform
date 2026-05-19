@@ -16,6 +16,7 @@ const JOB_STATUSES = [
 ];
 
 const GENERATION_SCOPES = ['site_code', 'all_sites'];
+const PR_SCOPES = ['TSS', 'TI'];
 
 const JobSchema = new mongoose.Schema(
   {
@@ -49,6 +50,11 @@ const JobSchema = new mongoose.Schema(
     generationScope: {
       type: String,
       enum: GENERATION_SCOPES
+    },
+    prScope: {
+      type: String,
+      enum: PR_SCOPES,
+      default: 'TSS'
     },
     requestedSiteCount: {
       type: Number,
@@ -109,3 +115,4 @@ JobSchema.index({ workerType: 1, status: 1, createdAt: -1 });
 module.exports = mongoose.model('Job', JobSchema);
 module.exports.JOB_STATUSES = JOB_STATUSES;
 module.exports.GENERATION_SCOPES = GENERATION_SCOPES;
+module.exports.PR_SCOPES = PR_SCOPES;
