@@ -1,26 +1,26 @@
 const express = require('express');
 const cors = require('cors');
 const healthRouter = require('./routes/health');
+const jobRouter = require('./routes/jobRoutes');
+const errorHandler = require('./middleware/errorHandler');
+const { createApiError } = require('./utils/apiError');
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} ${req.method} ${req.originalUrl}`);
+  next();
+});
 
 app.use('/health', healthRouter);
+app.use('/api/jobs', jobRouter);
 
 app.use((req, res) => {
-  res.status(404).json({
-    error: 'Not Found',
-    path: req.originalUrl
-  });
+  throw createApiError(404, 'NOT_FOUND', 'Route not found.', { path: req.originalUrl });
 });
 
-app.use((err, req, res, next) => {
-  const statusCode = err.statusCode || 500;
-  res.status(statusCode).json({
-    error: err.message || 'Internal Server Error'
-  });
-});
+app.use(errorHandler);
 
 module.exports = app;
