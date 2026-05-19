@@ -164,6 +164,14 @@ const buildListFilter = async (query) => {
     filter.status = query.status;
   }
 
+  if (query.prScope) {
+    const normalizedPrScope = normalizePrScope(query.prScope);
+
+    if (PR_SCOPES.includes(normalizedPrScope)) {
+      filter.prScope = normalizedPrScope;
+    }
+  }
+
   if (query.dateFrom || query.dateTo) {
     filter.createdAt = {};
 

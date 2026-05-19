@@ -7,6 +7,7 @@
       </div>
       <nav>
         <router-link to="/">Run Job</router-link>
+        <router-link to="/history">Job History</router-link>
       </nav>
     </header>
     <main>

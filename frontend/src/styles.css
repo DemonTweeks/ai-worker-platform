@@ -27,12 +27,32 @@ button,
   text-decoration: none;
 }
 
+.secondary-button,
+.secondary-link {
+  background: #edf1f7;
+  border: 0;
+  border-radius: 6px;
+  color: #172033;
+  cursor: pointer;
+  display: inline-flex;
+  font-weight: 700;
+  justify-content: center;
+  padding: 10px 14px;
+  text-decoration: none;
+}
+
+.table-link {
+  color: #136f63;
+  font-weight: 700;
+}
+
 button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
 }
 
 input,
+select,
 textarea {
   border: 1px solid #cad3e1;
   border-radius: 6px;
@@ -67,6 +87,24 @@ textarea {
 
 .app-header h1 {
   font-size: 22px;
+}
+
+.app-header nav {
+  display: flex;
+  gap: 10px;
+}
+
+.app-header nav a {
+  border-radius: 6px;
+  color: #46556c;
+  font-weight: 700;
+  padding: 8px 10px;
+  text-decoration: none;
+}
+
+.app-header nav a.router-link-exact-active {
+  background: #edf1f7;
+  color: #172033;
 }
 
 .eyebrow {
@@ -304,17 +342,209 @@ small {
   gap: 12px;
 }
 
+.history-page,
+.detail-page {
+  max-width: 1280px;
+}
+
+.history-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.filter-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(6, minmax(130px, 1fr));
+}
+
+.filter-actions,
+.pagination-row,
+.card-actions,
+.badge-row,
+.section-title-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.section-title-row,
+.pagination-row {
+  justify-content: space-between;
+}
+
+.history-stats {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(4, minmax(140px, 1fr));
+}
+
+.stat-card {
+  background: #ffffff;
+  border: 1px solid #dfe5ef;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+}
+
+.stat-card strong {
+  font-size: 24px;
+}
+
+.stat-card span {
+  color: #5d6b82;
+  font-size: 13px;
+}
+
+.history-list,
+.detail-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.job-card {
+  background: #ffffff;
+  border: 1px solid #dfe5ef;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.job-card-header,
+.job-card-footer,
+.detail-header {
+  align-items: flex-start;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.job-card-header h2,
+.detail-header h1 {
+  margin: 0;
+}
+
+.job-card-grid,
+.detail-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 16px 0;
+}
+
+.job-card-grid span,
+.detail-grid span,
+.asset-version-list span {
+  background: #f5f7fb;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px;
+}
+
+.job-card-grid small,
+.detail-grid small,
+.asset-version-list small {
+  color: #5d6b82;
+}
+
+.summary-preview {
+  color: #46556c;
+  line-height: 1.5;
+}
+
+.badge,
+.scope-badge {
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 10px;
+}
+
+.scope-badge {
+  background: #eef7f5;
+  color: #136f63;
+}
+
+.badge-success {
+  background: #e6f5ec;
+  color: #17643a;
+}
+
+.badge-warning {
+  background: #fff7dc;
+  color: #805b00;
+}
+
+.badge-danger {
+  background: #fff0f0;
+  color: #9f2424;
+}
+
+.badge-active {
+  background: #e9f0ff;
+  color: #244f9f;
+}
+
+.badge-muted {
+  background: #edf1f7;
+  color: #46556c;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  border-collapse: collapse;
+  min-width: 760px;
+  width: 100%;
+}
+
+th,
+td {
+  border-bottom: 1px solid #eef1f6;
+  padding: 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  color: #5d6b82;
+  font-size: 13px;
+}
+
+.asset-version-list {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 @media (max-width: 980px) {
   .workflow-grid,
   .config-grid,
   .job-meta,
   .progress-grid,
-  .summary-grid {
+  .summary-grid,
+  .filter-grid,
+  .history-stats,
+  .job-card-grid,
+  .detail-grid,
+  .asset-version-list {
     grid-template-columns: 1fr;
   }
 
   .hero-band,
-  .app-header {
+  .app-header,
+  .job-card-header,
+  .job-card-footer,
+  .detail-header {
     align-items: flex-start;
     flex-direction: column;
   }

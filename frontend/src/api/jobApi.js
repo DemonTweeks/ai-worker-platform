@@ -34,10 +34,19 @@ export const createJob = async ({ prevalidatedFileId, generationScope, siteCodes
   return response.data;
 };
 
+export const listJobs = async (params = {}) => {
+  const response = await api.get('/api/jobs', { params });
+  return response.data;
+};
+
 export const getJobDetail = async (jobId) => {
   const response = await api.get(`/api/jobs/${encodeURIComponent(jobId)}`);
   return response.data;
 };
+
+export const getFileDownloadUrl = (jobId, fileId) => (
+  `${api.defaults.baseURL}/api/jobs/${encodeURIComponent(jobId)}/download/${encodeURIComponent(fileId)}`
+);
 
 export const getZipDownloadUrl = (jobId) => (
   `${api.defaults.baseURL}/api/jobs/${encodeURIComponent(jobId)}/download-zip`
