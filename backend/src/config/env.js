@@ -1,18 +1,25 @@
 const path = require('path');
 const dotenv = require('dotenv');
 
-dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '../../../.env'), quiet: true });
+dotenv.config({ quiet: true });
+
+const repoRoot = path.resolve(__dirname, '../../..');
 
 const numberFromEnv = (name, fallback) => {
   const value = Number(process.env[name]);
   return Number.isFinite(value) ? value : fallback;
 };
 
+const resolveFromRepoRoot = (value, fallback) => {
+  const selected = value || fallback;
+  return path.isAbsolute(selected) ? selected : path.resolve(repoRoot, selected);
+};
+
 const config = {
   port: numberFromEnv('PORT', 8000),
   mongoUri: process.env.MONGO_URI || 'mongodb://localhost:27017/ai-worker-platform',
-  storageRoot: process.env.STORAGE_ROOT || path.resolve(__dirname, '../../../storage'),
+  storageRoot: resolveFromRepoRoot(process.env.STORAGE_ROOT, './storage'),
   llmBaseUrl: process.env.LLM_BASE_URL || '',
   llmApiKey: process.env.LLM_API_KEY || '',
   limits: {
