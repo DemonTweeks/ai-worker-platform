@@ -1,6 +1,7 @@
 const express = require('express');
 const { getMongoStatus } = require('../db/mongo');
 const { getStorageStatus } = require('../services/storageService');
+const { getWebSocketStatus } = require('../websocket/server');
 
 const router = express.Router();
 
@@ -10,7 +11,8 @@ router.get('/', (req, res) => {
     service: 'ai-worker-platform-backend',
     timestamp: new Date().toISOString(),
     mongo: getMongoStatus(),
-    storage: getStorageStatus()
+    storage: getStorageStatus(),
+    websocket: getWebSocketStatus()
   });
 });
 

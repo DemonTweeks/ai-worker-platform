@@ -10,6 +10,7 @@ const { runCreatePrCd } = require('./childProcessRunner');
 const { collectOutputs } = require('./outputCollector');
 const { buildAndSaveSummary } = require('./summaryBuilder');
 const { saveFinalSummary } = require('./finalSummaryService');
+const { JOB_EVENTS, publishJobEvent } = require('../websocket/eventPublisher');
 
 const statusByPhase = {
   VALIDATION_STARTED: 'validating',
@@ -35,6 +36,16 @@ const failJob = async (jobId, error) => {
     error: safeError
   });
   workerStateService.setError(jobId, safeError);
+  await publishJobEvent(jobId, JOB_EVENTS.JOB_FAILED, {
+    phase: 'FAILED',
+    status: 'failed',
+    message: safeError.message,
+    summary: {
+      outputFileCount: 0,
+      warningCount: 0,
+      reviewRequiredCount: 0
+    }
+  });
   await saveFinalSummary({ jobId, summary: {
     requestedSiteCount: 0,
     matchedSiteCount: 0,
@@ -73,6 +84,11 @@ const setPhaseAndStatus = async (jobId, phase, message) => {
   if (status) {
     await setJobStatus(jobId, status);
   }
+  await publishJobEvent(jobId, phase, {
+    phase,
+    status,
+    message
+  });
 };
 
 const runPrWorkerJob = async (jobId) => {
@@ -99,6 +115,11 @@ const runPrWorkerJob = async (jobId) => {
       message: `Validated ${parsedWorkbook.rowCount} input rows.`
     });
     workerStateService.setPhase(jobId, 'VALIDATION_COMPLETED', 'Input validation completed.');
+    await publishJobEvent(jobId, JOB_EVENTS.VALIDATION_COMPLETED, {
+      phase: 'VALIDATION_COMPLETED',
+      status: 'validating',
+      message: 'Input validation completed.'
+    });
 
     await setPhaseAndStatus(jobId, 'FILTERING_STARTED', 'Filtering requested site rows.');
     const filteringResult = await filterSites({
@@ -121,10 +142,20 @@ const runPrWorkerJob = async (jobId) => {
       message: `Filtered ${filteringResult.filteredRows.length} matched rows.`
     });
     workerStateService.setPhase(jobId, 'FILTERING_COMPLETED', 'Site filtering completed.');
+    await publishJobEvent(jobId, JOB_EVENTS.FILTERING_COMPLETED, {
+      phase: 'FILTERING_COMPLETED',
+      status: 'filtering_sites',
+      message: 'Site filtering completed.'
+    });
 
     if (workerStateService.isCancellationRequested(jobId)) {
       await setJobStatus(jobId, 'cancelled', { cancelledAt: new Date() });
       workerStateService.setCancelled(jobId);
+      await publishJobEvent(jobId, JOB_EVENTS.JOB_CANCELLED, {
+        phase: 'CANCELLED',
+        status: 'cancelled',
+        message: 'Job cancelled.'
+      });
       return;
     }
 
@@ -132,6 +163,11 @@ const runPrWorkerJob = async (jobId) => {
     const assets = await loadActiveAssets();
     await Job.updateOne({ jobId }, { $set: { assetVersions: assets.assetVersions } });
     workerStateService.setPhase(jobId, 'ASSET_LOADING_COMPLETED', 'Active assets loaded.');
+    await publishJobEvent(jobId, JOB_EVENTS.ASSET_LOADING_COMPLETED, {
+      phase: 'ASSET_LOADING_COMPLETED',
+      status: 'loading_assets',
+      message: 'Active assets loaded.'
+    });
 
     await setPhaseAndStatus(jobId, 'GENERATION_STARTED', 'Running create-pr-cd child process.');
     const runnerResult = await runCreatePrCd({
@@ -151,14 +187,35 @@ const runPrWorkerJob = async (jobId) => {
       });
       workerStateService.setCancelled(jobId);
       await saveFinalSummary({ jobId, summary: partialSummary });
+      await publishJobEvent(jobId, JOB_EVENTS.JOB_CANCELLED, {
+        phase: 'CANCELLED',
+        status: partialCollection.outputFileCount > 0 ? 'cancelled_with_partial_result' : 'cancelled',
+        message: 'Job cancelled.',
+        summary: partialSummary
+      });
       return;
     }
 
     workerStateService.setPhase(jobId, 'GENERATION_COMPLETED', 'create-pr-cd generation completed.');
+    await publishJobEvent(jobId, JOB_EVENTS.GENERATION_COMPLETED, {
+      phase: 'GENERATION_COMPLETED',
+      status: 'generating',
+      message: 'create-pr-cd generation completed.'
+    });
 
     await setPhaseAndStatus(jobId, 'OUTPUT_COLLECTION_STARTED', 'Collecting generated output files.');
+    await publishJobEvent(jobId, JOB_EVENTS.EXPORT_STARTED, {
+      phase: 'OUTPUT_COLLECTION_STARTED',
+      status: 'exporting',
+      message: 'Export collection started.'
+    });
     const outputCollection = await collectOutputs(jobId);
     workerStateService.setPhase(jobId, 'OUTPUT_COLLECTION_COMPLETED', 'Output collection completed.');
+    await publishJobEvent(jobId, JOB_EVENTS.OUTPUT_COLLECTION_COMPLETED, {
+      phase: 'OUTPUT_COLLECTION_COMPLETED',
+      status: 'exporting',
+      message: 'Output collection completed.'
+    });
 
     const summary = await buildAndSaveSummary({ jobId, filteringResult, outputCollection });
     const finalWorkerSummary = await saveFinalSummary({ jobId, summary });
@@ -169,6 +226,12 @@ const runPrWorkerJob = async (jobId) => {
       error: undefined
     });
     workerStateService.setComplete(jobId);
+    await publishJobEvent(jobId, JOB_EVENTS.JOB_COMPLETED, {
+      phase: 'COMPLETED',
+      status: summary.warningCount > 0 ? 'completed_with_warning' : 'completed',
+      message: 'Job completed.',
+      summary
+    });
   } catch (error) {
     await failJob(jobId, error);
   }

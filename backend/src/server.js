@@ -3,8 +3,10 @@ const app = require('./app');
 const config = require('./config/env');
 const { connectMongo, disconnectMongo } = require('./db/mongo');
 const { ensureBaseStorage } = require('./services/storageService');
+const { closeWebSocketServer, initWebSocketServer } = require('./websocket/server');
 
 const server = http.createServer(app);
+initWebSocketServer(server);
 
 ensureBaseStorage()
   .then((status) => {
@@ -22,6 +24,7 @@ server.listen(config.port, () => {
 
 process.on('SIGTERM', () => {
   server.close(async () => {
+    await closeWebSocketServer();
     await disconnectMongo();
     process.exit(0);
   });

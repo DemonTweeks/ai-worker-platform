@@ -31,6 +31,10 @@ const config = {
     jobTimeoutMinutes: numberFromEnv('JOB_TIMEOUT_MINUTES', 60),
     fileRetentionDays: numberFromEnv('FILE_RETENTION_DAYS', 180)
   },
+  websocket: {
+    heartbeatIntervalMs: numberFromEnv('WS_HEARTBEAT_INTERVAL_MS', 5000),
+    maxPayloadBytes: numberFromEnv('WS_MAX_PAYLOAD_BYTES', 16 * 1024)
+  },
   admin: {
     defaultUsername: process.env.ADMIN_DEFAULT_USERNAME || 'admin',
     defaultPassword: process.env.ADMIN_DEFAULT_PASSWORD || '',
