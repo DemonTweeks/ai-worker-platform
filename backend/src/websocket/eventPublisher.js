@@ -1,5 +1,6 @@
 const { Job, JobFile, ReviewRequiredItem, WarningItem } = require('../models');
 const workerStateService = require('../services/workerStateService');
+const { buildProgressWording } = require('../llm/progressWordingService');
 const subscriptionManager = require('./subscriptionManager');
 const { JOB_EVENTS, MESSAGE_TYPES } = require('./messageTypes');
 
@@ -90,6 +91,24 @@ const publishJobEvent = async (jobId, event, payload = {}) => {
     message: payload.message,
     summary: payload.summary
   };
+
+  const wording = await buildProgressWording({
+    event,
+    jobId: normalizedJobId,
+    status: message.status,
+    phase: message.phase,
+    progress: message.progress,
+    message: message.message
+  }).catch(() => null);
+
+  if (wording) {
+    message.aiMessage = wording.aiMessage;
+    message.messageSource = wording.messageSource;
+    message.llmStatus = wording.llmStatus;
+    if (wording.llmErrorCode) {
+      message.llmErrorCode = wording.llmErrorCode;
+    }
+  }
 
   subscriptionManager.publishToJob(normalizedJobId, message);
   return message;

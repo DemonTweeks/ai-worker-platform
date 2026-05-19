@@ -1,4 +1,5 @@
 const { Job } = require('../models');
+const { buildFinalSummaryWording } = require('../llm/finalSummaryWordingService');
 
 const buildFinalSummary = ({ job, summary }) => {
   if (job.status === 'failed') {
@@ -25,7 +26,9 @@ const buildFinalSummary = ({ job, summary }) => {
 
 const saveFinalSummary = async ({ jobId, summary }) => {
   const job = await Job.findOne({ jobId });
-  const finalWorkerSummary = buildFinalSummary({ job, summary });
+  const deterministicSummary = buildFinalSummary({ job, summary });
+  const wording = await buildFinalSummaryWording({ job, summary, deterministicSummary });
+  const finalWorkerSummary = wording.aiSummary;
   job.finalWorkerSummary = finalWorkerSummary;
   await job.save();
   return finalWorkerSummary;

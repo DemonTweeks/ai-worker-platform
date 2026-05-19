@@ -46,7 +46,7 @@ router.get('/:jobId/download/:fileId', asyncHandler(async (req, res) => {
 
 router.post('/:jobId/ask', asyncHandler(async (req, res) => {
   const result = await jobService.askJob(req.params.jobId, req.body.question);
-  res.status(501).json(result);
+  res.json(result);
 }));
 
 module.exports = router;

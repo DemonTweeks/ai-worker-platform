@@ -13,6 +13,7 @@ const { consumePrevalidatedUpload } = require('./prevalidationService');
 const { parseSiteCodes } = require('./siteCodeParser');
 const workerStateService = require('./workerStateService');
 const jobQueue = require('../queue/jobQueue');
+const { answerReAsk } = require('../llm/reAskService');
 const { generateUniqueJobId } = require('../utils/jobIdGenerator');
 const { assertPathInsideRoot, toStorageRelativePath } = require('../utils/pathUtils');
 const { createApiError } = require('../utils/apiError');
@@ -310,31 +311,7 @@ const buildStructuredJobData = async (jobId) => {
 };
 
 const askJob = async (jobId, question) => {
-  const normalizedQuestion = String(question || '').trim();
-
-  if (!normalizedQuestion) {
-    throw createApiError(400, 'VALIDATION_ERROR', 'question is required.');
-  }
-
-  if (normalizedQuestion.length > 2000) {
-    throw createApiError(400, 'VALIDATION_ERROR', 'question is too long.');
-  }
-
-  const structuredJobData = await buildStructuredJobData(jobId);
-
-  return {
-    status: 'dependency_not_ready',
-    message: 'Re-Ask PR Worker requires the EPIC 7 LLM layer. Structured job data retrieval is available, but no answer is generated in EPIC 3.',
-    question: normalizedQuestion,
-    structuredJobDataSummary: {
-      jobId: structuredJobData.job.jobId,
-      status: structuredJobData.job.status,
-      warningCount: structuredJobData.warnings.length,
-      reviewRequiredCount: structuredJobData.reviewRequiredItems.length,
-      fileCount: structuredJobData.files.length,
-      assetVersions: structuredJobData.assetVersions
-    }
-  };
+  return answerReAsk(jobId, question);
 };
 
 const ensureObjectId = (fileId) => {

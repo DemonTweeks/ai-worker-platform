@@ -11,6 +11,14 @@ const numberFromEnv = (name, fallback) => {
   return Number.isFinite(value) ? value : fallback;
 };
 
+const booleanFromEnv = (name, fallback) => {
+  const value = process.env[name];
+  if (value === undefined) {
+    return fallback;
+  }
+  return ['1', 'true', 'yes', 'on'].includes(String(value).toLowerCase());
+};
+
 const resolveFromRepoRoot = (value, fallback) => {
   const selected = value || fallback;
   return path.isAbsolute(selected) ? selected : path.resolve(repoRoot, selected);
@@ -23,6 +31,18 @@ const config = {
   createPrCdRoot: resolveFromRepoRoot(process.env.CREATE_PR_CD_ROOT, './skills/create-pr-cd'),
   llmBaseUrl: process.env.LLM_BASE_URL || '',
   llmApiKey: process.env.LLM_API_KEY || '',
+  llm: {
+    enabled: booleanFromEnv('LLM_ENABLED', false),
+    provider: process.env.LLM_PROVIDER || 'qwen',
+    baseUrl: process.env.LLM_BASE_URL || '',
+    apiKey: process.env.LLM_API_KEY || '',
+    model: process.env.LLM_MODEL || 'Qwen3-235B-A22B',
+    timeoutMs: numberFromEnv('LLM_TIMEOUT_MS', 30000),
+    maxRetries: numberFromEnv('LLM_MAX_RETRIES', 1),
+    progressWordingEnabled: booleanFromEnv('LLM_PROGRESS_WORDING_ENABLED', true),
+    finalSummaryEnabled: booleanFromEnv('LLM_FINAL_SUMMARY_ENABLED', true),
+    reAskEnabled: booleanFromEnv('LLM_REASK_ENABLED', true)
+  },
   limits: {
     maxUploadSizeMb: numberFromEnv('MAX_UPLOAD_SIZE_MB', 100),
     maxRowCount: numberFromEnv('MAX_ROW_COUNT', 50000),
