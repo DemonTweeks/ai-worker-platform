@@ -1,0 +1,3 @@
+# Repository .gitignore
+# Ignore the VS Code workspace file
+ai-worker-platform.code-workspace
