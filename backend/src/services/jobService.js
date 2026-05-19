@@ -10,6 +10,9 @@ const {
 } = require('../models');
 const storageService = require('./storageService');
 const { consumePrevalidatedUpload } = require('./prevalidationService');
+const { parseSiteCodes } = require('./siteCodeParser');
+const workerStateService = require('./workerStateService');
+const jobQueue = require('../queue/jobQueue');
 const { generateUniqueJobId } = require('../utils/jobIdGenerator');
 const { assertPathInsideRoot, toStorageRelativePath } = require('../utils/pathUtils');
 const { createApiError } = require('../utils/apiError');
@@ -31,25 +34,7 @@ const TERMINAL_STATUSES = [
   'cancelled_with_partial_result'
 ];
 
-const normalizeSiteCodes = (siteCodes = []) => {
-  const rawValues = Array.isArray(siteCodes) ? siteCodes : String(siteCodes).split(/[\s,]+/);
-  const seen = new Set();
-  const normalized = [];
-
-  for (const rawValue of rawValues) {
-    const siteCode = String(rawValue || '')
-      .replace(/[\u200B-\u200D\uFEFF]/g, '')
-      .trim()
-      .toUpperCase();
-
-    if (siteCode && !seen.has(siteCode)) {
-      seen.add(siteCode);
-      normalized.push(siteCode);
-    }
-  }
-
-  return normalized;
-};
+const normalizeSiteCodes = (siteCodes = []) => parseSiteCodes(siteCodes).siteCodes;
 
 const addRetentionDays = () => (
   new Date(Date.now() + config.limits.fileRetentionDays * 24 * 60 * 60 * 1000)
@@ -109,6 +94,16 @@ const createJob = async ({ prevalidatedFileId, generationScope, siteCodes }) => 
   await storageService.deleteFileSafe(upload.absolutePath);
   const inputMetadata = await storageService.buildFileMetadata(inputPath);
   const retentionUntil = addRetentionDays();
+  const requestPath = storageService.resolveJobTempPath(jobId, 'job-request.json');
+  await storageService.saveBufferToFile(
+    requestPath,
+    Buffer.from(JSON.stringify({
+      jobId,
+      generationScope,
+      siteCodes: normalizedSiteCodes,
+      createdAt: new Date().toISOString()
+    }, null, 2))
+  );
 
   const job = await Job.create({
     jobId,
@@ -128,6 +123,7 @@ const createJob = async ({ prevalidatedFileId, generationScope, siteCodes }) => 
     fileSize: inputMetadata.fileSize,
     retentionUntil
   });
+  const queueState = await jobQueue.enqueueJob(jobId);
 
   return {
     job: serializeJobSummary(job),
@@ -139,7 +135,8 @@ const createJob = async ({ prevalidatedFileId, generationScope, siteCodes }) => 
       retentionUntil: jobFile.retentionUntil
     },
     normalizedSiteCodes,
-    message: 'Job record and input file were prepared. Worker execution is deferred to EPIC 5.'
+    queue: queueState,
+    message: 'Job record and input file were prepared and queued for PR Worker execution.'
   };
 };
 
@@ -245,6 +242,7 @@ const getJobDetail = async (jobId) => {
       fileRetentionUntil: job.fileRetentionUntil,
       error: job.error
     },
+    workerState: workerStateService.getState(jobId),
     finalWorkerSummary: job.finalWorkerSummary,
     outputs: filesWithAvailability.filter((file) => file.fileType !== 'uploaded_export'),
     files: filesWithAvailability,
@@ -261,12 +259,21 @@ const cancelJob = async (jobId) => {
     throw createApiError(409, 'JOB_NOT_CANCELLABLE', `Job is already in terminal status ${job.status}.`);
   }
 
-  if (RUNNING_STATUSES.includes(job.status)) {
-    throw createApiError(
-      501,
-      'WORKER_STATE_MANAGER_NOT_READY',
-      'Running job cancellation requires the EPIC 5 worker state manager.'
-    );
+  const queueCancelResult = await jobQueue.cancelQueuedJob(jobId);
+
+  if (queueCancelResult.cancelled) {
+    const cancelledJob = await Job.findOne({ jobId });
+    return {
+      job: serializeJobSummary(cancelledJob),
+      message: 'Queued job cancelled. Existing files are preserved.'
+    };
+  }
+
+  if (queueCancelResult.running || RUNNING_STATUSES.includes(job.status)) {
+    return {
+      job: serializeJobSummary(job),
+      message: 'Cancellation requested. The running worker will stop at the next safe checkpoint.'
+    };
   }
 
   if (!CANCELLABLE_BEFORE_WORKER_STATUSES.includes(job.status)) {

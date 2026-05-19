@@ -20,6 +20,7 @@ const config = {
   port: numberFromEnv('PORT', 8000),
   mongoUri: process.env.MONGO_URI || 'mongodb://localhost:27017/ai-worker-platform',
   storageRoot: resolveFromRepoRoot(process.env.STORAGE_ROOT, './storage'),
+  createPrCdRoot: resolveFromRepoRoot(process.env.CREATE_PR_CD_ROOT, './skills/create-pr-cd'),
   llmBaseUrl: process.env.LLM_BASE_URL || '',
   llmApiKey: process.env.LLM_API_KEY || '',
   limits: {
