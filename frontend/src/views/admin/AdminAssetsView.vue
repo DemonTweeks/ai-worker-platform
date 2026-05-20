@@ -45,7 +45,7 @@ export default {
   },
   data() {
     return {
-      assetTypes: ['pr_model', 'contract_info', 'ecc_template'],
+      assetTypes: ['pr_model', 'ecc_template'],
       assets: [],
       activeByType: {},
       loading: false,

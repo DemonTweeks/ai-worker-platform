@@ -5,17 +5,15 @@ const storageService = require('./storageService');
 const { assertPathInsideRoot } = require('../utils/pathUtils');
 const { createApiError } = require('../utils/apiError');
 
-const REQUIRED_ASSETS = ['pr_model', 'contract_info', 'ecc_template'];
+const REQUIRED_ASSETS = ['pr_model', 'ecc_template'];
 
 const assetVersionKeys = {
   pr_model: 'prModel',
-  contract_info: 'contractInfo',
   ecc_template: 'eccTemplate'
 };
 
 const assetPathKeys = {
   pr_model: 'prModelPath',
-  contract_info: 'contractInfoPath',
   ecc_template: 'eccTemplatePath'
 };
 

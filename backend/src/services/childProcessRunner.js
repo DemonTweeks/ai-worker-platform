@@ -16,7 +16,6 @@ const buildCommand = ({
   siteDataPath,
   prModelPath,
   templatePath,
-  mappingPath,
   outputPath,
   generationScope,
   siteCodes,
@@ -34,7 +33,6 @@ const buildCommand = ({
     '--site-data', siteDataPath,
     '--pr-model', prModelPath,
     '--template', templatePath,
-    '--mapping', mappingPath,
     '--output', outputPath,
     '--scope', scope
   ];
@@ -154,7 +152,6 @@ const runCreatePrCd = async ({
       siteDataPath: filteredInputPath,
       prModelPath: assets.paths.prModelPath,
       templatePath: assets.paths.eccTemplatePath,
-      mappingPath: assets.paths.contractInfoPath,
       outputPath,
       generationScope,
       siteCodes,

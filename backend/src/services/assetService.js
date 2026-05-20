@@ -7,12 +7,11 @@ const { writeAuditLog } = require('./auditService');
 const { assertPathInsideRoot, sanitizeFileName } = require('../utils/pathUtils');
 const { createApiError } = require('../utils/apiError');
 
-const ASSET_TYPES = ['pr_model', 'contract_info', 'ecc_template'];
+const ASSET_TYPES = ['pr_model', 'ecc_template'];
 const ALLOWED_EXTENSIONS = ['.xlsx', '.xls'];
 
 const assetTypePrefixes = {
   pr_model: 'PR_MODEL',
-  contract_info: 'CONTRACT_INFO',
   ecc_template: 'ECC_TEMPLATE'
 };
 
@@ -29,7 +28,7 @@ const formatDateForVersion = (date = new Date()) => {
 
 const validateAssetType = (assetType) => {
   if (!ASSET_TYPES.includes(assetType)) {
-    throw createApiError(400, 'VALIDATION_ERROR', 'assetType must be pr_model, contract_info, or ecc_template.');
+    throw createApiError(400, 'VALIDATION_ERROR', 'assetType must be pr_model or ecc_template.');
   }
 };
 

@@ -11,7 +11,7 @@ const {
 
 const BASE_FOLDERS = ['jobs', 'assets', 'outputs', 'temp'];
 const JOB_FOLDERS = ['input', 'filtered', 'output', 'reports', 'temp'];
-const ASSET_TYPES = ['pr_model', 'contract_info', 'ecc_template'];
+const ASSET_TYPES = ['pr_model', 'ecc_template'];
 
 const storageRoot = path.resolve(config.storageRoot);
 

@@ -59,7 +59,6 @@ import { formatBytes, formatDateTime } from '../../utils/formatUtils';
 
 const LABELS = {
   pr_model: 'PR Model versions',
-  contract_info: 'Contract Info versions',
   ecc_template: 'ECC Template versions'
 };
 

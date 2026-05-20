@@ -31,7 +31,6 @@ const skillRoot = path.join(repoRoot, 'skills', 'create-pr-cd');
 const sampleInputPath = path.join(skillRoot, 'Info', 'input', 'site_pr_po_view.xlsx');
 const skillAssetPaths = {
   pr_model: path.join(skillRoot, 'Info', 'input', 'pr_model.xlsx'),
-  contract_info: path.join(skillRoot, 'Info', 'input', 'contract_info_reference.md'),
   ecc_template: path.join(skillRoot, 'Info', 'input', 'ecc_template.xls')
 };
 

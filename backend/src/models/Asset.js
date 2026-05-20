@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const ASSET_TYPES = ['pr_model', 'contract_info', 'ecc_template'];
+const ASSET_TYPES = ['pr_model', 'ecc_template'];
 
 const AssetSchema = new mongoose.Schema(
   {
