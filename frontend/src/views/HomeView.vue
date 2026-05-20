@@ -199,6 +199,7 @@
           <div class="console-message-bubble">
             <h3>{{ item.title }}</h3>
             <p>{{ item.body }}</p>
+            <small v-if="item.meta" class="console-message-meta">{{ item.meta }}</small>
           </div>
         </article>
       </div>
@@ -241,6 +242,7 @@ export default {
       events: [],
       jobDetail: null,
       reAskAnswer: null,
+      chatMessages: [],
       health: null,
       healthError: false,
       errorMessage: '',
@@ -250,7 +252,8 @@ export default {
       commandNotice: '',
       consoleAutoStick: true,
       workerOptions: ['TSS', 'TI'],
-      transientErrorTimer: null
+      transientErrorTimer: null,
+      chatMessageSequence: 0
     };
   },
   computed: {
@@ -471,16 +474,18 @@ export default {
         }
       }
 
-      if (this.reAskAnswer) {
+      this.chatMessages.forEach((message) => {
         items.push({
-          id: 'reask-answer',
-          label: 'AI Response',
-          title: 'Worker answer',
-          body: this.reAskAnswer.answer || this.reAskAnswer.message || JSON.stringify(this.reAskAnswer),
-          tone: 'success',
-          time: this.reAskAnswer.createdAt || ''
+          id: message.id,
+          label: message.role === 'user' ? 'User' : message.label || 'AI Response',
+          title: message.role === 'user' ? 'Question' : 'Worker answer',
+          body: message.body,
+          tone: message.tone || (message.role === 'user' ? 'user' : 'success'),
+          time: message.timestamp || '',
+          role: message.role,
+          meta: message.meta || ''
         });
-      }
+      });
 
       return items;
     }
@@ -531,6 +536,8 @@ export default {
       this.currentPrScope = 'TSS';
       this.errorMessage = '';
       this.commandNotice = '';
+      this.reAskAnswer = null;
+      this.chatMessages = [];
     },
     async prevalidate(file) {
       if (!file) {
@@ -570,6 +577,7 @@ export default {
       this.events = [];
       this.jobDetail = null;
       this.reAskAnswer = null;
+      this.chatMessages = [];
       try {
         const result = await createJob({
           prevalidatedFileId: this.prevalidation.prevalidatedFileId,
@@ -651,15 +659,31 @@ export default {
       this.errorMessage = '';
       this.clearTransientErrorTimer();
       try {
-        this.reAskAnswer = await askJob(this.currentJobId, question);
+        const answer = await askJob(this.currentJobId, question);
+        this.reAskAnswer = answer;
+        this.appendChatMessage({
+          role: 'assistant',
+          body: answer.answer || answer.message || JSON.stringify(answer),
+          tone: 'success',
+          label: 'AI Response',
+          meta: [answer.answerSource, answer.llmStatus].filter(Boolean).join(' / ')
+        });
       } catch (error) {
         const isTimeout = error && (
           error.code === 'ECONNABORTED' ||
           String(error.message || '').toLowerCase().includes('timeout')
         );
-        this.setTransientError(isTimeout
+        const message = isTimeout
           ? 'AI Chatbox took longer than expected. Please try again; the Job result remains available.'
-          : getErrorMessage(error));
+          : getErrorMessage(error);
+        this.appendChatMessage({
+          role: 'assistant',
+          body: message,
+          tone: 'danger',
+          label: 'AI Error',
+          meta: 'request failed'
+        });
+        this.setTransientError(message);
       } finally {
         this.asking = false;
       }
@@ -672,6 +696,12 @@ export default {
         return;
       }
       this.commandNotice = '';
+      this.appendChatMessage({
+        role: 'user',
+        body: question,
+        tone: 'user',
+        label: 'User'
+      });
       await this.askQuestion(question);
       if (!this.errorMessage) {
         this.commandText = '';
@@ -686,6 +716,22 @@ export default {
       const el = this.$refs.consoleBody;
       if (!el || (!force && !this.consoleAutoStick)) return;
       el.scrollTop = el.scrollHeight;
+    },
+    appendChatMessage({ role, body, tone, label, meta }) {
+      this.chatMessageSequence += 1;
+      this.chatMessages.push({
+        id: `chat-${Date.now()}-${this.chatMessageSequence}`,
+        role,
+        body,
+        tone,
+        label,
+        meta,
+        timestamp: new Date().toLocaleTimeString()
+      });
+      this.consoleAutoStick = true;
+      this.$nextTick(() => {
+        this.scrollConsoleToBottom(true);
+      });
     },
     clearTransientErrorTimer() {
       if (this.transientErrorTimer) {

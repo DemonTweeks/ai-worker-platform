@@ -1361,6 +1361,26 @@ body:has(.home-cockpit) {
   transition: opacity 0.22s ease, transform 0.22s ease;
 }
 
+.console-entry.entry-user {
+  align-self: flex-end;
+  grid-template-columns: minmax(0, 1fr) minmax(76px, 0.12fr);
+  max-width: 820px;
+}
+
+.console-entry.entry-user .console-entry-meta {
+  align-items: flex-end;
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.console-entry.entry-user .console-message-bubble {
+  background: #e8f5ff;
+  border-left-color: transparent;
+  border-right: 3px solid var(--zte-blue);
+  grid-column: 1;
+  grid-row: 1;
+}
+
 .console-entry.is-faded {
   opacity: 0.58;
 }
@@ -1412,6 +1432,11 @@ body:has(.home-cockpit) {
   border-left-color: #dc2626;
 }
 
+.entry-user .console-entry-meta span {
+  background: #d7ecfb;
+  color: #124c78;
+}
+
 .console-message-bubble h3 {
   font-size: 14px;
   letter-spacing: 0;
@@ -1425,6 +1450,14 @@ body:has(.home-cockpit) {
   margin: 0;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
+}
+
+.console-message-meta {
+  color: #607d96;
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  margin-top: 5px;
 }
 
 @keyframes progress-drift {
