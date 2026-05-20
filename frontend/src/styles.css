@@ -976,7 +976,7 @@ body:has(.home-cockpit) {
 
 .cockpit-card-row {
   display: grid;
-  flex: 0 0 252px;
+  flex: 0 0 258px;
   gap: 10px;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   min-height: 0;
@@ -989,10 +989,10 @@ body:has(.home-cockpit) {
   box-shadow: 0 18px 48px -38px rgba(0, 78, 140, 0.58);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
   min-height: 0;
   overflow: hidden;
-  padding: 12px;
+  padding: 10px;
   transition: border-color 0.22s ease, box-shadow 0.22s ease, transform 0.22s ease;
 }
 
@@ -1046,13 +1046,35 @@ body:has(.home-cockpit) {
 .cockpit-card input,
 .cockpit-card textarea {
   font-size: 13px;
-  padding: 8px 9px;
+  padding: 7px 9px;
 }
 
 .cockpit-card button,
 .cockpit-card .download-button {
+  min-height: 32px;
+  padding: 7px 10px;
+}
+
+.upload-card {
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.upload-card .panel-heading {
+  flex: 0 0 auto;
+}
+
+.upload-card .field-label {
+  margin-bottom: 2px;
+}
+
+.upload-card .field-hint {
+  line-height: 1.25;
+}
+
+.upload-card .upload-input {
+  flex: 0 0 auto;
   min-height: 34px;
-  padding: 8px 10px;
 }
 
 .upload-card .muted,
@@ -1064,15 +1086,15 @@ body:has(.home-cockpit) {
   font-size: 12px;
   line-height: 1.35;
   margin: 0;
-  padding: 9px;
+  padding: 7px 8px;
 }
 
 .upload-card .file-state {
   display: grid;
-  gap: 4px;
+  gap: 2px 6px;
   grid-template-columns: minmax(0, 1fr) auto;
   margin: 0;
-  padding: 8px;
+  padding: 6px 7px;
 }
 
 .upload-card .file-state .meta-label {
@@ -1090,14 +1112,18 @@ body:has(.home-cockpit) {
   border-radius: 8px;
   font-size: 12px;
   margin-top: 0;
-  max-height: 72px;
-  overflow: hidden;
-  padding: 8px;
+  max-height: 54px;
+  overflow: auto;
+  padding: 6px 7px;
 }
 
 .upload-card .checklist ul {
-  margin: 4px 0 0;
+  margin: 2px 0 0;
   padding-left: 18px;
+}
+
+.upload-card .skeleton-row {
+  padding: 8px;
 }
 
 .cockpit-field-group {
@@ -1148,8 +1174,60 @@ body:has(.home-cockpit) {
 .download-compact {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
   min-height: 0;
+}
+
+.download-progress {
+  display: grid;
+  gap: 5px;
+}
+
+.download-progress-topline {
+  align-items: center;
+  color: #607d96;
+  display: flex;
+  font-size: 12px;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.download-progress-topline strong {
+  color: #12304a;
+}
+
+.download-progress-track {
+  background: #d9ebfa;
+  border-radius: 999px;
+  height: 8px;
+  overflow: hidden;
+}
+
+.download-progress-track span {
+  background: linear-gradient(90deg, var(--zte-blue), #63b3ed);
+  border-radius: inherit;
+  display: block;
+  height: 100%;
+  min-width: 4px;
+  transition: width 0.3s ease;
+}
+
+.download-progress-track.indeterminate span {
+  animation: progress-drift 1.5s ease-in-out infinite;
+  background: linear-gradient(90deg, #9dcced 0%, var(--zte-blue) 45%, #9dcced 90%);
+  width: 48% !important;
+}
+
+.completion-message {
+  background: #effaf5;
+  border-left: 3px solid #16a34a;
+  border-radius: 7px;
+  color: #166534;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+  margin: 0;
+  padding: 7px 8px;
 }
 
 .cockpit-command {
@@ -1221,65 +1299,98 @@ body:has(.home-cockpit) {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
   min-height: 0;
   overflow-y: auto;
-  padding: 12px;
+  padding: 12px 14px;
   scroll-behavior: smooth;
 }
 
 .console-entry {
-  background: #ffffff;
-  border: 1px solid #d9ebfa;
-  border-left: 4px solid var(--zte-blue);
-  border-radius: 8px;
-  box-shadow: 0 10px 28px -24px rgba(0, 78, 140, 0.6);
+  align-items: flex-start;
   color: #17334a;
+  display: grid;
   flex: 0 0 auto;
-  padding: 10px 12px;
+  gap: 4px;
+  grid-template-columns: minmax(98px, 0.16fr) minmax(0, 1fr);
+  max-width: 980px;
+  padding: 2px 0;
   transition: opacity 0.22s ease, transform 0.22s ease;
 }
 
 .console-entry.is-faded {
-  opacity: 0.68;
-}
-
-.console-entry.entry-success {
-  border-left-color: #16a34a;
-}
-
-.console-entry.entry-warning {
-  border-left-color: #d97706;
-}
-
-.console-entry.entry-danger {
-  border-left-color: #dc2626;
+  opacity: 0.58;
 }
 
 .console-entry-meta {
-  align-items: center;
+  align-items: flex-start;
   color: #607d96;
   display: flex;
+  flex-direction: column;
   font-size: 12px;
   font-weight: 800;
-  gap: 12px;
-  justify-content: space-between;
-  margin-bottom: 5px;
+  gap: 2px;
+  justify-content: flex-start;
+  padding-top: 7px;
 }
 
-.console-entry h3 {
+.console-entry-meta span {
+  background: #e8f5ff;
+  border: 1px solid #cce4f7;
+  border-radius: 999px;
+  color: #245d89;
+  display: inline-flex;
+  line-height: 1;
+  padding: 4px 7px;
+}
+
+.console-entry-meta time {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.console-message-bubble {
+  background: rgba(255, 255, 255, 0.88);
+  border-left: 3px solid var(--zte-blue);
+  border-radius: 10px;
+  box-shadow: 0 10px 26px -24px rgba(0, 78, 140, 0.55);
+  padding: 8px 10px;
+}
+
+.entry-success .console-message-bubble {
+  border-left-color: #16a34a;
+}
+
+.entry-warning .console-message-bubble {
+  border-left-color: #d97706;
+}
+
+.entry-danger .console-message-bubble {
+  border-left-color: #dc2626;
+}
+
+.console-message-bubble h3 {
   font-size: 14px;
   letter-spacing: 0;
-  margin: 0 0 4px;
+  margin: 0 0 3px;
 }
 
-.console-entry p {
+.console-message-bubble p {
   color: #34536d;
   font-size: 13px;
   line-height: 1.45;
   margin: 0;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
+}
+
+@keyframes progress-drift {
+  0% {
+    transform: translateX(-88%);
+  }
+  100% {
+    transform: translateX(210%);
+  }
 }
 
 @keyframes shimmer {

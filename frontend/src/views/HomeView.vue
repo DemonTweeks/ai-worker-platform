@@ -122,6 +122,19 @@
         </div>
         <div v-else class="download-compact">
           <p class="cockpit-note">Job: <strong>{{ currentJobId }}</strong></p>
+          <div class="download-progress">
+            <div class="download-progress-topline">
+              <span>{{ downloadProgressLabel }}</span>
+              <strong>{{ downloadProgressPercent !== null ? `${downloadProgressPercent}%` : progressStateLabel }}</strong>
+            </div>
+            <div
+              class="download-progress-track"
+              :class="{ indeterminate: downloadProgressPercent === null && currentJobId && !jobReady }"
+            >
+              <span :style="{ width: `${downloadProgressPercent !== null ? downloadProgressPercent : 100}%` }"></span>
+            </div>
+          </div>
+          <p v-if="jobReady" class="completion-message">{{ resultCompletionMessage }}</p>
           <a
             v-if="canDownload"
             class="download-button"
@@ -178,8 +191,10 @@
             <span>{{ item.label }}</span>
             <time>{{ item.time || 'Current session' }}</time>
           </div>
-          <h3>{{ item.title }}</h3>
-          <p>{{ item.body }}</p>
+          <div class="console-message-bubble">
+            <h3>{{ item.title }}</h3>
+            <p>{{ item.body }}</p>
+          </div>
         </article>
       </div>
     </section>
@@ -288,6 +303,53 @@ export default {
     downloadUrl() {
       return this.currentJobId ? getZipDownloadUrl(this.currentJobId) : '#';
     },
+    downloadProgressPercent() {
+      if (this.jobReady) return 100;
+      if (!this.currentJobId) return 0;
+      if (!this.currentProgress) return null;
+
+      const exact = this.currentProgress.percent ?? this.currentProgress.percentage ?? this.currentProgress.progressPercent;
+      if (typeof exact === 'number' && Number.isFinite(exact)) {
+        return Math.max(0, Math.min(100, Math.round(exact)));
+      }
+
+      const processed = Number(this.currentProgress.processedRows);
+      const total = Number(this.currentProgress.totalRows);
+      if (Number.isFinite(processed) && Number.isFinite(total) && total > 0) {
+        return Math.max(0, Math.min(100, Math.round((processed / total) * 100)));
+      }
+
+      return null;
+    },
+    progressStateLabel() {
+      if (!this.currentJobId) return 'Idle';
+      if (this.jobReady) return 'Complete';
+      return this.currentPhase || this.currentStatus || 'Running';
+    },
+    downloadProgressLabel() {
+      if (!this.currentJobId) return 'No active Job';
+      if (this.jobReady) return 'Result complete';
+      return this.currentPhase || this.currentStatus || 'Processing';
+    },
+    resultCompletionMessage() {
+      if (!this.jobDetail || !this.jobDetail.job) {
+        return 'Outputs ready; warnings not available; review required not available.';
+      }
+
+      const job = this.jobDetail.job;
+      const outputs = this.hasValue(job.outputFileCount)
+        ? job.outputFileCount
+        : this.outputCount > 0
+          ? this.outputCount
+          : null;
+      const warnings = this.hasValue(job.warningCount) ? job.warningCount : null;
+      const reviewRequired = this.hasValue(job.reviewRequiredCount) ? job.reviewRequiredCount : null;
+
+      const outputText = this.hasValue(outputs) ? `Outputs ${outputs}` : 'Outputs ready';
+      const warningText = this.hasValue(warnings) ? `warnings ${warnings}` : 'warnings not available';
+      const reviewText = this.hasValue(reviewRequired) ? `review required ${reviewRequired}` : 'review required not available';
+      return `${outputText}; ${warningText}; ${reviewText}.`;
+    },
     consoleItems() {
       const items = [];
 
@@ -366,7 +428,7 @@ export default {
           id: 'result-state',
           label: 'Result',
           title: `Result ${job.status || 'available'}`,
-          body: `Outputs ${job.outputFileCount || this.outputCount}; warnings ${job.warningCount || 0}; review required ${job.reviewRequiredCount || 0}.`,
+          body: this.resultCompletionMessage,
           tone: job.status && job.status.includes('failed') ? 'danger' : 'success',
           time: job.updatedAt || this.updatedAt
         });
@@ -474,6 +536,9 @@ export default {
         .map((item) => item.trim().toUpperCase())
         .filter(Boolean)
         .filter((item, index, items) => items.indexOf(item) === index);
+    },
+    hasValue(value) {
+      return value !== undefined && value !== null && value !== '';
     },
     async createWorkerJob() {
       if (!this.canCreateJob) return;
