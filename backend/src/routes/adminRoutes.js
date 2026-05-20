@@ -1,9 +1,8 @@
 const express = require('express');
-const { upload } = require('../middleware/uploadMiddleware');
 const adminAuth = require('../middleware/adminAuth');
 const adminAuthService = require('../services/adminAuthService');
-const assetService = require('../services/assetService');
 const auditService = require('../services/auditService');
+const { createApiError } = require('../utils/apiError');
 
 const router = express.Router();
 
@@ -27,29 +26,16 @@ router.post('/logout', asyncHandler(async (req, res) => {
   res.json(result);
 }));
 
-router.post('/assets/upload', upload.single('file'), asyncHandler(async (req, res) => {
-  const result = await assetService.uploadAsset({
-    assetType: req.body.assetType,
-    file: req.file,
-    adminUser: req.adminUser,
-    ip: getRequestIp(req)
-  });
-  res.status(201).json(result);
+router.post('/assets/upload', asyncHandler(async (req, res) => {
+  throw createApiError(409, 'ASSET_MANAGEMENT_DISABLED', 'Business assets are owned by create-pr-cd and are not user-manageable.');
 }));
 
 router.post('/assets/:version/activate', asyncHandler(async (req, res) => {
-  const result = await assetService.activateAsset({
-    assetType: req.body.assetType || req.query.assetType,
-    version: req.params.version,
-    adminUser: req.adminUser,
-    ip: getRequestIp(req)
-  });
-  res.json(result);
+  throw createApiError(409, 'ASSET_MANAGEMENT_DISABLED', 'Business assets are owned by create-pr-cd and are not user-manageable.');
 }));
 
 router.get('/assets', asyncHandler(async (req, res) => {
-  const result = await assetService.listAssets(req.query);
-  res.json(result);
+  res.json({ activeByType: {}, items: [] });
 }));
 
 router.get('/audit-logs', asyncHandler(async (req, res) => {

@@ -46,7 +46,7 @@ export default {
   },
   mounted() {
     if (isAdminAuthenticated()) {
-      this.$router.replace('/admin/assets');
+      this.$router.replace('/admin/health');
     }
   },
   methods: {
@@ -59,7 +59,7 @@ export default {
           username: this.username,
           password: this.password
         });
-        this.$router.replace(this.$route.query.redirect || '/admin/assets');
+        this.$router.replace(this.$route.query.redirect || '/admin/health');
       } catch (error) {
         this.errorMessage = getAdminErrorMessage(error);
       } finally {

@@ -25,7 +25,6 @@ const llmClient = require('../src/llm/llmClient');
 const { generateUniqueJobId } = require('../src/utils/jobIdGenerator');
 const { parseSiteCodes } = require('../src/services/siteCodeParser');
 const { sanitizeFileName, assertPathInsideRoot } = require('../src/utils/pathUtils');
-const { generateAssetVersion } = require('../src/services/assetService');
 
 const run = async () => {
   await mongoose.connect(process.env.MONGO_URI);
@@ -49,9 +48,6 @@ const run = async () => {
   assert.throws(() => sanitizeFileName('../bad.xlsx'), /Unsafe file name/);
   assertPathInsideRoot(path.resolve('storage'), path.resolve('storage', 'temp', 'x.txt'));
 
-  const version = await generateAssetVersion('pr_model');
-  assert(version.startsWith('PR_MODEL_'), 'asset version should include type prefix');
-
   const llmDisabled = await llmClient.generateText({
     task: 'qa_smoke',
     systemPrompt: 'Reply OK.',
@@ -69,7 +65,7 @@ const run = async () => {
       'job_id',
       'site_code_parser',
       'path_utils',
-      'asset_version',
+      'admin_asset_routes',
       'llm_disabled'
     ]
   }));

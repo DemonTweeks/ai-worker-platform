@@ -31,8 +31,6 @@
           <span class="field-label">Asset Type</span>
           <select v-model="filters.assetType">
             <option value="">All assets</option>
-            <option value="pr_model">PR Model</option>
-            <option value="ecc_template">ECC Template</option>
           </select>
         </label>
         <label>
@@ -62,7 +60,6 @@ import { getAdminErrorMessage, listAuditLogs } from '../../api/adminApi';
 
 const defaultFilters = () => ({
   action: '',
-  assetType: '',
   status: ''
 });
 

@@ -21,7 +21,6 @@ export default {
     entries() {
       const labels = {
         prModel: 'PR Model',
-        contractInfo: 'Contract Info',
         eccTemplate: 'ECC Template'
       };
 

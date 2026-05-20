@@ -5,7 +5,6 @@ const { assertPathInsideRoot } = require('../utils/pathUtils');
 const workerStateService = require('./workerStateService');
 const { parseIepmsWorkbook } = require('./iepmsParser');
 const { filterSites } = require('./siteFilteringService');
-const { loadActiveAssets } = require('./activeAssetService');
 const { runCreatePrCd } = require('./childProcessRunner');
 const { collectOutputs, generateReportsAndPackage } = require('./outputCollector');
 const { buildAndSaveSummary } = require('./summaryBuilder');
@@ -15,7 +14,6 @@ const { JOB_EVENTS, publishJobEvent } = require('../websocket/eventPublisher');
 const statusByPhase = {
   VALIDATION_STARTED: 'validating',
   FILTERING_STARTED: 'filtering_sites',
-  ASSET_LOADING_STARTED: 'loading_assets',
   GENERATION_STARTED: 'generating',
   OUTPUT_COLLECTION_STARTED: 'exporting'
 };
@@ -163,21 +161,10 @@ const runPrWorkerJob = async (jobId) => {
       return;
     }
 
-    await setPhaseAndStatus(jobId, 'ASSET_LOADING_STARTED', 'Loading active PR Worker assets.');
-    const assets = await loadActiveAssets();
-    await Job.updateOne({ jobId }, { $set: { assetVersions: assets.assetVersions } });
-    workerStateService.setPhase(jobId, 'ASSET_LOADING_COMPLETED', 'Active assets loaded.');
-    await publishJobEvent(jobId, JOB_EVENTS.ASSET_LOADING_COMPLETED, {
-      phase: 'ASSET_LOADING_COMPLETED',
-      status: 'loading_assets',
-      message: 'Active assets loaded.'
-    });
-
     await setPhaseAndStatus(jobId, 'GENERATION_STARTED', 'Running create-pr-cd child process.');
     const runnerResult = await runCreatePrCd({
       jobId,
       filteredInputPath: filteringResult.filteredMetadata.absolutePath,
-      assets,
       generationScope: request.generationScope,
       siteCodes: request.siteCodes,
       prScope: request.prScope || job.prScope || 'TSS',

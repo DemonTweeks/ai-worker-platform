@@ -38,7 +38,7 @@ const routes = [
     path: '/admin',
     component: AdminLayout,
     meta: { requiresAdmin: true },
-    redirect: '/admin/assets',
+    redirect: '/admin/health',
     children: [
       {
         path: 'assets',
@@ -71,7 +71,7 @@ router.beforeEach((to, from, next) => {
   }
 
   if (to.name === 'admin-login' && isAdminAuthenticated()) {
-    next('/admin/assets');
+    next('/admin/health');
     return;
   }
 

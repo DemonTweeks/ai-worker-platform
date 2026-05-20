@@ -40,37 +40,6 @@ export const logoutAdmin = async () => {
   }
 };
 
-export const listAssets = async (params = {}) => {
-  const response = await api.get('/api/admin/assets', {
-    ...adminHeaders(),
-    params
-  });
-  return response.data;
-};
-
-export const uploadAsset = async ({ assetType, file }) => {
-  const formData = new FormData();
-  formData.append('assetType', assetType);
-  formData.append('file', file);
-
-  const response = await api.post('/api/admin/assets/upload', formData, {
-    headers: {
-      ...buildAdminAuthHeader(),
-      'Content-Type': 'multipart/form-data'
-    }
-  });
-  return response.data;
-};
-
-export const activateAsset = async ({ assetType, version }) => {
-  const response = await api.post(
-    `/api/admin/assets/${encodeURIComponent(version)}/activate`,
-    { assetType },
-    adminHeaders()
-  );
-  return response.data;
-};
-
 export const listAuditLogs = async (params = {}) => {
   const response = await api.get('/api/admin/audit-logs', {
     ...adminHeaders(),

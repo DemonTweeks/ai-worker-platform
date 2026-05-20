@@ -14,8 +14,6 @@ const getCreatePrCdRoot = () => path.resolve(config.createPrCdRoot);
 
 const buildCommand = ({
   siteDataPath,
-  prModelPath,
-  templatePath,
   outputPath,
   generationScope,
   siteCodes,
@@ -31,8 +29,6 @@ const buildCommand = ({
   const args = [
     scriptPath,
     '--site-data', siteDataPath,
-    '--pr-model', prModelPath,
-    '--template', templatePath,
     '--output', outputPath,
     '--scope', scope
   ];
@@ -122,7 +118,6 @@ const runCommand = ({ command, args, cwd, timeoutMs, isCancellationRequested }) 
 const runCreatePrCd = async ({
   jobId,
   filteredInputPath,
-  assets,
   generationScope,
   siteCodes,
   prScope,
@@ -150,8 +145,6 @@ const runCreatePrCd = async ({
 
     const commandSpec = buildCommand({
       siteDataPath: filteredInputPath,
-      prModelPath: assets.paths.prModelPath,
-      templatePath: assets.paths.eccTemplatePath,
       outputPath,
       generationScope,
       siteCodes,

@@ -13,7 +13,7 @@ process.env.ADMIN_DEFAULT_USERNAME = process.env.ADMIN_DEFAULT_USERNAME || 'qa-a
 process.env.ADMIN_DEFAULT_PASSWORD = process.env.ADMIN_DEFAULT_PASSWORD || 'qa-admin-password';
 
 const app = require('../src/app');
-const { Job, JobFile, Asset, AdminUser, AdminAuditLog, WarningItem, ReviewRequiredItem } = require('../src/models');
+const { Job, JobFile, AdminUser, AdminAuditLog, WarningItem, ReviewRequiredItem } = require('../src/models');
 const storageService = require('../src/services/storageService');
 const { parseIepmsWorkbook } = require('../src/services/iepmsParser');
 const { getCleanupPlan, runCleanup } = require('../src/services/cleanupService');
@@ -29,10 +29,6 @@ const cleanupJobIds = new Set();
 const repoRoot = path.resolve(__dirname, '../..');
 const skillRoot = path.join(repoRoot, 'skills', 'create-pr-cd');
 const sampleInputPath = path.join(skillRoot, 'Info', 'input', 'site_pr_po_view.xlsx');
-const skillAssetPaths = {
-  pr_model: path.join(skillRoot, 'Info', 'input', 'pr_model.xlsx'),
-  ecc_template: path.join(skillRoot, 'Info', 'input', 'ecc_template.xls')
-};
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -94,21 +90,12 @@ const cleanDatabase = async () => {
     { jobId: new RegExp(`^${QA_PREFIX}`) },
     { jobId: new RegExp(`^PR-${QA_PREFIX}`) }
   ] };
-  const qaAssetFilter = { version: new RegExp(`^${QA_PREFIX}`) };
-  const qaAssets = await Asset.find(qaAssetFilter).lean();
-
-  for (const asset of qaAssets) {
-    if (asset.filePath) {
-      await storageService.deleteFileSafe(path.join(storageService.getStorageRoot(), asset.filePath)).catch(() => {});
-    }
-  }
 
   await Promise.all([
     Job.deleteMany(qaJobFilter),
     JobFile.deleteMany(qaJobFilter),
     WarningItem.deleteMany(qaJobFilter),
     ReviewRequiredItem.deleteMany(qaJobFilter),
-    Asset.deleteMany(qaAssetFilter),
     AdminUser.deleteMany({ username: /^qa-/ }),
     AdminAuditLog.deleteMany({ admin: /^qa-/ })
   ]);
@@ -118,31 +105,6 @@ const cleanStorage = async () => {
   for (const jobId of cleanupJobIds) {
     await storageService.deleteFolderSafe(storageService.getJobRootPath(jobId)).catch(() => {});
   }
-};
-
-const setupWorkerAssets = async () => {
-  await storageService.ensureBaseStorage();
-  const versions = {};
-
-  for (const [assetType, sourcePath] of Object.entries(skillAssetPaths)) {
-    const version = `${QA_PREFIX}_${assetType.toUpperCase()}`;
-    const destination = storageService.resolveAssetPath(assetType, version, path.basename(sourcePath));
-    await fs.promises.copyFile(sourcePath, destination);
-    const metadata = await storageService.buildFileMetadata(destination, null);
-    await Asset.create({
-      assetType,
-      version,
-      fileName: path.basename(sourcePath),
-      filePath: metadata.filePath,
-      fileSize: metadata.fileSize,
-      isActive: true,
-      uploadedBy: 'qa-integration',
-      activatedAt: new Date()
-    });
-    versions[assetType] = version;
-  }
-
-  return versions;
 };
 
 const getSampleSiteCode = () => {
@@ -268,30 +230,20 @@ const testAdminApi = async (baseUrl) => {
   assert(login.body.token, 'admin login should return token');
   const auth = { Authorization: `Bearer ${login.body.token}` };
 
-  const upload = await uploadFile(baseUrl, '/api/admin/assets/upload', skillAssetPaths.pr_model, 'file', { assetType: 'pr_model' });
-  assert.strictEqual(upload.response.status, 401, 'asset upload without auth should be rejected');
-
   const formData = new FormData();
-  const buffer = await fs.promises.readFile(skillAssetPaths.pr_model);
-  formData.append('assetType', 'pr_model');
+  const buffer = await fs.promises.readFile(sampleInputPath);
   formData.append('file', new Blob([buffer]), 'qa-pr-model.xlsx');
   const uploadAuthed = await request(baseUrl, '/api/admin/assets/upload', {
     method: 'POST',
     headers: auth,
     body: formData
   });
-  assert.strictEqual(uploadAuthed.response.status, 201, 'admin asset upload should succeed');
-  await Asset.updateOne({ version: uploadAuthed.body.version }, { $set: { version: `${QA_PREFIX}_${uploadAuthed.body.version}` } });
-  const uploadedAsset = await Asset.findOne({ version: `${QA_PREFIX}_${uploadAuthed.body.version}` }).lean();
-  const activate = await postJson(baseUrl, `/api/admin/assets/${encodeURIComponent(uploadedAsset.version)}/activate`, {
-    assetType: 'pr_model'
-  }, auth);
-  assert(activate.response.ok, 'asset activation should succeed');
+  assert.strictEqual(uploadAuthed.response.status, 409, 'asset upload should be disabled for business files');
 
   const audit = await request(baseUrl, '/api/admin/audit-logs', { headers: auth });
   assert(audit.response.ok, 'audit log list should load');
 
-  return { uploadedVersion: uploadedAsset.version };
+  return { assetManagementDisabled: true };
 };
 
 const wsExchange = (ws, payload) => new Promise((resolve, reject) => {
@@ -417,7 +369,6 @@ const main = async () => {
     await mongoose.connect(process.env.MONGO_URI);
     await storageService.ensureBaseStorage();
     await cleanDatabase();
-    await setupWorkerAssets();
     serverInfo = await createServer();
 
     results.apiWorker = await testApiAndWorker(serverInfo.baseUrl);
