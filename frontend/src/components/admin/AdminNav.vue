@@ -5,7 +5,6 @@
       <h2>{{ adminName }}</h2>
     </div>
     <nav>
-      <router-link to="/admin/assets">Configuration Center</router-link>
       <router-link to="/admin/audit-logs">Audit Logs</router-link>
       <router-link to="/admin/health">Health Dashboard</router-link>
       <router-link to="/">User Portal</router-link>

@@ -1,5 +1,5 @@
 <template>
-  <button type="button" :disabled="disabled || loading" @click="$emit('click')">
+  <button type="button" class="action-button" :disabled="disabled || loading" :aria-busy="loading" @click="$emit('click')">
     {{ loading ? loadingText : label }}
   </button>
 </template>

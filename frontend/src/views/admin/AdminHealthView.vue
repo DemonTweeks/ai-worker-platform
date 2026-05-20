@@ -3,7 +3,7 @@
     <section class="hero-band">
       <div>
         <p class="eyebrow">System Operations</p>
-        <h1>Health Dashboard</h1>
+        <h1>Health Console</h1>
       </div>
       <button type="button" class="secondary-button" :disabled="loading" @click="loadHealth">Refresh</button>
     </section>
@@ -27,6 +27,7 @@
     <section v-if="health" class="panel">
       <h2>Last Checked</h2>
       <p class="muted">{{ timestamp || 'Not available' }}</p>
+      <p class="muted">Use this view for run-time troubleshooting and incident checks.</p>
     </section>
   </div>
 </template>

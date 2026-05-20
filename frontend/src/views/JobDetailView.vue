@@ -3,20 +3,34 @@
     <ErrorBanner :message="errorMessage" />
 
     <section class="hero-band">
-      <router-link class="secondary-link" to="/history">Back to History</router-link>
+      <div class="hero-action-row">
+        <router-link class="secondary-link" to="/history">Back to History</router-link>
+        <span v-if="detail && detail.job" class="muted">Job ID: {{ detail.job.jobId }}</span>
+        <span v-else class="muted">Loading job identifier…</span>
+      </div>
       <router-link class="download-button" to="/">Run New Job</router-link>
     </section>
 
-    <div v-if="loading" class="panel empty-state">Loading job detail...</div>
+    <div v-if="loading" class="panel empty-state">
+      <div class="skeleton-row">Loading job detail…</div>
+    </div>
     <div v-else-if="detail && detail.job" class="detail-layout">
       <JobDetailHeader :job="detail.job" />
-      <JobDetailSummary :job="detail.job" />
       <FinalSummary :detail="detail" />
-      <JobDetailFiles :job-id="detail.job.jobId" :outputs="detail.outputs || []" />
+      <JobDetailSummary :job="detail.job" />
+      <div class="detail-grid-two">
+        <section class="panel">
+          <h2>Execution Timeline</h2>
+          <JobDetailTimeline :job="detail.job" :live-events="events" />
+        </section>
+        <section class="panel">
+          <h2>Files and Outputs</h2>
+          <JobDetailFiles :job-id="detail.job.jobId" :outputs="detail.outputs || []" />
+        </section>
+      </div>
       <JobDetailWarnings :warnings="detail.warnings || []" />
       <JobDetailReviewRequired :items="detail.reviewRequiredItems || []" />
       <JobDetailAssetVersions :asset-versions="detail.assetVersions || {}" />
-      <JobDetailTimeline :job="detail.job" :live-events="events" />
       <ReAskPanel
         :job-id="detail.job.jobId"
         :loading="asking"

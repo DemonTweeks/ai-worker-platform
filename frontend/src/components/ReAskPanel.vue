@@ -5,7 +5,7 @@
       v-model="question"
       rows="4"
       :disabled="!jobId || loading"
-      placeholder="Why were some sites unmatched?"
+      placeholder="Ask for additional context, for example: Why were some sites unmatched?"
     />
     <LoadingButton
       label="Ask"
@@ -40,6 +40,7 @@ export default {
   methods: {
     submit() {
       this.$emit('ask', this.question);
+      this.question = '';
     }
   }
 };

@@ -25,7 +25,8 @@
 
     <div class="job-card-footer">
       <small>Created: {{ formatDateTime(job.createdAt) }}</small>
-      <small>Completed: {{ formatDateTime(job.completedAt) }}</small>
+      <small v-if="job.completedAt">Completed: {{ formatDateTime(job.completedAt) }}</small>
+      <small v-else>Completion: In progress</small>
     </div>
 
     <div class="card-actions">
@@ -39,6 +40,7 @@
       >
         Download ZIP
       </a>
+      <span v-else class="muted">ZIP not ready</span>
     </div>
   </article>
 </template>

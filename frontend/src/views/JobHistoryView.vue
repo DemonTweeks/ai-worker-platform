@@ -23,9 +23,24 @@
       <div class="stat-card"><strong>{{ failedCount }}</strong><span>Failed</span></div>
     </section>
 
+    <section class="panel history-toolbar">
+      <div class="history-toolbar-left">
+        <div>
+          <p class="eyebrow">History filters are preserved</p>
+          <h2>Recent Job Results</h2>
+        </div>
+        <router-link class="secondary-button" to="/">Create New Job</router-link>
+      </div>
+    </section>
+
     <section class="history-list">
-      <div v-if="loading" class="panel empty-state">Loading job history...</div>
-      <div v-else-if="visibleJobs.length === 0" class="panel empty-state">No jobs match the current filters.</div>
+      <div v-if="loading" class="panel empty-state">
+        <div class="skeleton-row">Loading job history…</div>
+      </div>
+      <div v-else-if="visibleJobs.length === 0" class="panel empty-state">
+        No jobs match the current filters.
+        <p class="muted">Try clearing filters or adjusting date range.</p>
+      </div>
       <template v-else>
         <JobHistoryCard
           v-for="job in visibleJobs"

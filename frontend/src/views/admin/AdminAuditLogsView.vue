@@ -48,7 +48,9 @@
       </div>
     </section>
 
-    <div v-if="loading" class="panel empty-state">Loading audit logs...</div>
+    <div v-if="loading" class="panel empty-state">
+      <div class="skeleton-row">Loading audit logs...</div>
+    </div>
     <AuditLogTable v-else :logs="visibleLogs" />
   </div>
 </template>

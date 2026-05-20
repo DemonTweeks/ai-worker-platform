@@ -42,7 +42,7 @@
       </label>
     </div>
     <div class="filter-actions">
-      <button type="button" @click="$emit('apply')">Apply</button>
+      <button type="button" @click="$emit('apply')">Apply filters</button>
       <button type="button" class="secondary-button" @click="$emit('reset')">Reset</button>
     </div>
   </section>
