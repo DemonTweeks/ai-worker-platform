@@ -161,7 +161,7 @@ const runLlmReachabilityCheck = async () => {
     systemPrompt: 'You are a health check endpoint. Reply with exactly OK.',
     userPrompt: 'Reply with exactly OK.',
     temperature: 0,
-    maxTokens: 8,
+    maxTokens: 128,
     timeoutMs: LLM_HEALTH_TIMEOUT_MS
   });
 
