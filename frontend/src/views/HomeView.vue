@@ -7,7 +7,7 @@
         <span class="brand-mark">ZTE</span>
         <div>
           <p class="eyebrow">AI Worker Platform</p>
-          <h1>Worker Cockpit</h1>
+          <h1>PR Creator</h1>
         </div>
       </div>
 
@@ -68,7 +68,7 @@
         </div>
 
         <div class="cockpit-field-group">
-          <span class="field-label">Current worker</span>
+          <span class="field-label">Task Type</span>
           <div class="segmented compact-segmented">
             <button
               v-for="option in workerOptions"
@@ -109,7 +109,6 @@
         <div v-else class="cockpit-empty-card">
           All sites mode is selected.
         </div>
-        <p class="cockpit-note">Input scrolls inside this card when the list is long.</p>
       </section>
 
       <section class="panel cockpit-card cockpit-download-card">
@@ -134,6 +133,12 @@
               <span :style="{ width: `${downloadProgressPercent !== null ? downloadProgressPercent : 100}%` }"></span>
             </div>
           </div>
+          <dl class="download-summary-grid">
+            <div v-for="item in downloadSummaryItems" :key="item.label">
+              <dt>{{ item.label }}</dt>
+              <dd>{{ item.value }}</dd>
+            </div>
+          </dl>
           <p v-if="jobReady" class="completion-message">{{ resultCompletionMessage }}</p>
           <a
             v-if="canDownload"
@@ -149,7 +154,7 @@
     </section>
 
     <form class="cockpit-command" @submit.prevent="submitCommand">
-      <label class="field-label" for="cockpit-command-input">AI command</label>
+      <label class="field-label" for="cockpit-command-input">AI Chatbox</label>
       <div class="command-input-row">
         <input
           id="cockpit-command-input"
@@ -244,7 +249,8 @@ export default {
       commandText: '',
       commandNotice: '',
       consoleAutoStick: true,
-      workerOptions: ['TSS', 'TI']
+      workerOptions: ['TSS', 'TI'],
+      transientErrorTimer: null
     };
   },
   computed: {
@@ -349,6 +355,17 @@ export default {
       const warningText = this.hasValue(warnings) ? `warnings ${warnings}` : 'warnings not available';
       const reviewText = this.hasValue(reviewRequired) ? `review required ${reviewRequired}` : 'review required not available';
       return `${outputText}; ${warningText}; ${reviewText}.`;
+    },
+    downloadSummaryItems() {
+      const job = this.jobDetail && this.jobDetail.job ? this.jobDetail.job : {};
+      return [
+        { label: 'Requested sites', value: this.summaryValue(job.requestedSiteCount) },
+        { label: 'Matched sites', value: this.summaryValue(job.matchedSiteCount) },
+        { label: 'Unmatched sites', value: this.summaryValue(job.unmatchedSiteCount) },
+        { label: 'Generated output files', value: this.summaryValue(job.outputFileCount, this.outputCount) },
+        { label: 'Review Required items', value: this.summaryValue(job.reviewRequiredCount) },
+        { label: 'Warnings', value: this.summaryValue(job.warningCount) }
+      ];
     },
     consoleItems() {
       const items = [];
@@ -488,6 +505,7 @@ export default {
     });
   },
   beforeDestroy() {
+    this.clearTransientErrorTimer();
     if (this.wsClient) {
       this.wsClient.close();
     }
@@ -539,6 +557,11 @@ export default {
     },
     hasValue(value) {
       return value !== undefined && value !== null && value !== '';
+    },
+    summaryValue(value, fallback = null) {
+      if (this.hasValue(value)) return value;
+      if (this.hasValue(fallback)) return fallback;
+      return 0;
     },
     async createWorkerJob() {
       if (!this.canCreateJob) return;
@@ -626,10 +649,17 @@ export default {
       if (!this.currentJobId || !question.trim()) return;
       this.asking = true;
       this.errorMessage = '';
+      this.clearTransientErrorTimer();
       try {
         this.reAskAnswer = await askJob(this.currentJobId, question);
       } catch (error) {
-        this.errorMessage = getErrorMessage(error);
+        const isTimeout = error && (
+          error.code === 'ECONNABORTED' ||
+          String(error.message || '').toLowerCase().includes('timeout')
+        );
+        this.setTransientError(isTimeout
+          ? 'AI Chatbox took longer than expected. Please try again; the Job result remains available.'
+          : getErrorMessage(error));
       } finally {
         this.asking = false;
       }
@@ -656,6 +686,22 @@ export default {
       const el = this.$refs.consoleBody;
       if (!el || (!force && !this.consoleAutoStick)) return;
       el.scrollTop = el.scrollHeight;
+    },
+    clearTransientErrorTimer() {
+      if (this.transientErrorTimer) {
+        clearTimeout(this.transientErrorTimer);
+        this.transientErrorTimer = null;
+      }
+    },
+    setTransientError(message) {
+      this.errorMessage = message;
+      this.clearTransientErrorTimer();
+      this.transientErrorTimer = setTimeout(() => {
+        if (this.errorMessage === message) {
+          this.errorMessage = '';
+        }
+        this.transientErrorTimer = null;
+      }, 30000);
     }
   }
 };

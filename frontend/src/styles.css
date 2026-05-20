@@ -976,7 +976,7 @@ body:has(.home-cockpit) {
 
 .cockpit-card-row {
   display: grid;
-  flex: 0 0 258px;
+  flex: 0 0 264px;
   gap: 10px;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   min-height: 0;
@@ -989,10 +989,10 @@ body:has(.home-cockpit) {
   box-shadow: 0 18px 48px -38px rgba(0, 78, 140, 0.58);
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 6px;
   min-height: 0;
   overflow: hidden;
-  padding: 10px;
+  padding: 9px;
   transition: border-color 0.22s ease, box-shadow 0.22s ease, transform 0.22s ease;
 }
 
@@ -1046,18 +1046,18 @@ body:has(.home-cockpit) {
 .cockpit-card input,
 .cockpit-card textarea {
   font-size: 13px;
-  padding: 7px 9px;
+  padding: 6px 8px;
 }
 
 .cockpit-card button,
 .cockpit-card .download-button {
+  align-items: center;
   min-height: 32px;
-  padding: 7px 10px;
+  padding: 6px 10px;
 }
 
 .upload-card {
-  overflow-y: auto;
-  scrollbar-width: thin;
+  overflow: hidden;
 }
 
 .upload-card .panel-heading {
@@ -1069,12 +1069,12 @@ body:has(.home-cockpit) {
 }
 
 .upload-card .field-hint {
-  line-height: 1.25;
+  display: none;
 }
 
 .upload-card .upload-input {
   flex: 0 0 auto;
-  min-height: 34px;
+  min-height: 32px;
 }
 
 .upload-card .muted,
@@ -1084,9 +1084,9 @@ body:has(.home-cockpit) {
   border-radius: 8px;
   color: #52708b;
   font-size: 12px;
-  line-height: 1.35;
+  line-height: 1.25;
   margin: 0;
-  padding: 7px 8px;
+  padding: 6px 7px;
 }
 
 .upload-card .file-state {
@@ -1094,7 +1094,7 @@ body:has(.home-cockpit) {
   gap: 2px 6px;
   grid-template-columns: minmax(0, 1fr) auto;
   margin: 0;
-  padding: 6px 7px;
+  padding: 5px 6px;
 }
 
 .upload-card .file-state .meta-label {
@@ -1110,11 +1110,12 @@ body:has(.home-cockpit) {
 
 .upload-card .checklist {
   border-radius: 8px;
-  font-size: 12px;
+  font-size: 11px;
+  line-height: 1.2;
   margin-top: 0;
-  max-height: 54px;
-  overflow: auto;
-  padding: 6px 7px;
+  max-height: 46px;
+  overflow: hidden;
+  padding: 5px 6px;
 }
 
 .upload-card .checklist ul {
@@ -1123,7 +1124,7 @@ body:has(.home-cockpit) {
 }
 
 .upload-card .skeleton-row {
-  padding: 8px;
+  padding: 7px;
 }
 
 .cockpit-field-group {
@@ -1174,7 +1175,7 @@ body:has(.home-cockpit) {
 .download-compact {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 6px;
   min-height: 0;
 }
 
@@ -1223,11 +1224,47 @@ body:has(.home-cockpit) {
   border-left: 3px solid #16a34a;
   border-radius: 7px;
   color: #166534;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
   line-height: 1.35;
   margin: 0;
-  padding: 7px 8px;
+  padding: 5px 6px;
+}
+
+.download-summary-grid {
+  display: grid;
+  gap: 3px 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+
+.download-summary-grid div {
+  align-items: center;
+  border-bottom: 1px solid #e4f0fb;
+  display: flex;
+  gap: 6px;
+  justify-content: space-between;
+  min-width: 0;
+  padding: 2px 0;
+}
+
+.download-summary-grid dt,
+.download-summary-grid dd {
+  font-size: 11px;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.download-summary-grid dt {
+  color: #607d96;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.download-summary-grid dd {
+  color: #12304a;
+  font-weight: 800;
 }
 
 .cockpit-command {
@@ -1254,8 +1291,14 @@ body:has(.home-cockpit) {
 }
 
 .command-input-row button {
+  align-items: center;
   background: var(--zte-blue);
+  display: inline-flex;
+  justify-content: center;
+  line-height: 1;
+  min-height: 38px;
   min-width: 92px;
+  text-align: center;
 }
 
 .cockpit-console-shell {
