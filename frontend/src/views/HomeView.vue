@@ -1,152 +1,204 @@
 <template>
-  <div class="portal-shell home-page">
+  <div class="home-cockpit">
     <ErrorBanner :message="errorMessage" />
 
-    <section class="hero-band">
-      <div class="hero-copy">
-        <p class="eyebrow">AI Worker Control Console</p>
-        <h1>Job Workspace</h1>
-        <p class="hero-subtitle">Upload source data, validate it, create a Job, then review outputs in one structured flow.</p>
+    <header class="cockpit-topbar">
+      <div class="cockpit-brand">
+        <span class="brand-mark">ZTE</span>
+        <div>
+          <p class="eyebrow">AI Worker Platform</p>
+          <h1>Worker Cockpit</h1>
+        </div>
       </div>
-      <div class="status-strip" :class="{ ok: health && health.status === 'ok', warning: health && health.status === 'degraded', error: healthError || health && health.status === 'down' }">
-        <span class="status-strip-label">Backend status</span>
-        <strong>{{ healthLabel }}</strong>
-      </div>
+
+      <nav class="cockpit-nav" aria-label="Home cockpit navigation">
+        <span
+          class="cockpit-health"
+          :class="{ ok: health && health.status === 'ok', warning: health && health.status === 'degraded', error: healthError || health && health.status === 'down' }"
+        >
+          {{ healthLabel }}
+        </span>
+        <router-link
+          v-if="currentJobId"
+          class="cockpit-nav-link"
+          :to="`/jobs/${currentJobId}`"
+        >
+          Status
+        </router-link>
+        <span v-else class="cockpit-nav-link disabled">Status</span>
+        <router-link class="cockpit-nav-link" to="/history">History</router-link>
+        <router-link class="cockpit-nav-link" to="/admin/login">Admin</router-link>
+      </nav>
+    </header>
+
+    <section class="cockpit-card-row" aria-label="AI worker actions">
+      <UploadPanel
+        class="cockpit-card upload-card"
+        :result="prevalidation"
+        :loading="prevalidating"
+        :disable-action="creating"
+        @file-selected="onFileSelected"
+        @prevalidate="prevalidate"
+      />
+
+      <section class="panel cockpit-card cockpit-scope-card">
+        <div class="cockpit-card-heading">
+          <span>Job Scope</span>
+          <small>{{ generationScopeLabel }}</small>
+        </div>
+
+        <div class="cockpit-field-group">
+          <span class="field-label">Site mode</span>
+          <div class="segmented compact-segmented">
+            <button
+              type="button"
+              :class="{ active: generationScope === 'site_code' }"
+              @click="generationScope = 'site_code'"
+            >
+              Single site
+            </button>
+            <button
+              type="button"
+              :class="{ active: generationScope === 'all_sites' }"
+              @click="generationScope = 'all_sites'"
+            >
+              All sites
+            </button>
+          </div>
+        </div>
+
+        <div class="cockpit-field-group">
+          <span class="field-label">Current worker</span>
+          <div class="segmented compact-segmented">
+            <button
+              v-for="option in workerOptions"
+              :key="option"
+              type="button"
+              :class="{ active: prScope === option }"
+              @click="prScope = option"
+            >
+              {{ option }}
+            </button>
+          </div>
+        </div>
+
+        <LoadingButton
+          label="Create Job"
+          loading-text="Creating..."
+          :loading="creating"
+          :disabled="!canCreateJob"
+          @click="createWorkerJob"
+        />
+        <p v-if="createDisabledReason" class="cockpit-note">{{ createDisabledReason }}</p>
+        <p v-else class="cockpit-ready">Ready to create Job</p>
+      </section>
+
+      <section class="panel cockpit-card cockpit-sites-card">
+        <div class="cockpit-card-heading">
+          <span>Sites</span>
+          <small>{{ siteCodeCount }} code(s)</small>
+        </div>
+        <textarea
+          v-if="generationScope === 'site_code'"
+          class="cockpit-sites-input"
+          :value="siteCodesText"
+          rows="5"
+          placeholder="Paste site codes, comma or line separated"
+          @input="siteCodesText = $event.target.value"
+        />
+        <div v-else class="cockpit-empty-card">
+          All sites mode is selected.
+        </div>
+        <p class="cockpit-note">Input scrolls inside this card when the list is long.</p>
+      </section>
+
+      <section class="panel cockpit-card cockpit-download-card">
+        <div class="cockpit-card-heading">
+          <span>Download</span>
+          <small>{{ outputCount }} output(s)</small>
+        </div>
+        <div v-if="!currentJobId" class="cockpit-empty-card">
+          Create a Job to enable result delivery.
+        </div>
+        <div v-else class="download-compact">
+          <p class="cockpit-note">Job: <strong>{{ currentJobId }}</strong></p>
+          <a
+            v-if="canDownload"
+            class="download-button"
+            :href="downloadUrl"
+          >
+            Download ZIP
+          </a>
+          <p v-else class="cockpit-note">{{ downloadUnavailableMessage }}</p>
+          <p v-if="jobReady && !canDownload" class="cockpit-note">Output delivery is complete for this Job.</p>
+        </div>
+      </section>
     </section>
 
-    <section v-if="!hasActivity" class="panel intro-panel">
-      <h2>Start with this flow</h2>
-      <ol class="ordered-steps">
-        <li>Upload a source export file.</li>
-        <li>Run validation and check for file issues.</li>
-        <li>Create the Job when validation is green.</li>
-        <li>Track progress, review results, and download outputs.</li>
-      </ol>
-      <p class="muted">This interface is optimized for internal management review and operations workflows.</p>
-    </section>
-
-    <div class="workflow-grid">
-      <div class="primary-flow">
-        <UploadPanel
-          :result="prevalidation"
-          :loading="prevalidating"
-          :disable-action="creating"
-          @file-selected="onFileSelected"
-          @prevalidate="prevalidate"
+    <form class="cockpit-command" @submit.prevent="submitCommand">
+      <label class="field-label" for="cockpit-command-input">AI command</label>
+      <div class="command-input-row">
+        <input
+          id="cockpit-command-input"
+          v-model="commandText"
+          type="text"
+          placeholder="Ask about this Job, paste a site code, or request an explanation"
         />
+        <button type="submit" :disabled="asking || !commandText.trim()">
+          {{ asking ? 'Asking...' : 'Send' }}
+        </button>
+      </div>
+      <p v-if="commandNotice" class="cockpit-note">{{ commandNotice }}</p>
+    </form>
 
-        <section class="panel step-settings">
-          <div class="panel-heading">
-            <span class="step-marker">2</span>
-            <h2>Job Configuration</h2>
-          </div>
-          <div class="config-grid">
-            <ScopeSelector v-model="prScope" />
-            <SiteSelector
-              :mode="generationScope"
-              :site-codes-text="siteCodesText"
-              @mode-change="generationScope = $event"
-              @site-codes-change="siteCodesText = $event"
-            />
-          </div>
-          <p class="helper-text">Step 2 is required before creating the Job. All-scope jobs can be run across all sites when no specific site code list is provided.</p>
-        </section>
-
-        <section class="panel action-panel">
-          <div class="panel-heading">
-            <span class="step-marker">3</span>
-            <h2>Create Job</h2>
-          </div>
-          <LoadingButton
-            label="Create PR Worker Job"
-            loading-text="Creating..."
-            :loading="creating"
-            :disabled="!canCreateJob"
-            @click="createWorkerJob"
-          />
-          <p v-if="createDisabledReason" class="field-hint">{{ createDisabledReason }}</p>
-          <p v-else class="success-text">All requirements are met. Ready to create this Job.</p>
-
-          <div class="job-meta-grid">
-            <div>
-              <span class="meta-label">Current Job</span>
-              <strong>{{ currentJobId || 'Not created' }}</strong>
-            </div>
-            <div>
-              <span class="meta-label">Scope</span>
-              <strong>{{ prScope }}</strong>
-            </div>
-            <div>
-              <span class="meta-label">Mode</span>
-              <strong>{{ generationScopeLabel }}</strong>
-            </div>
-          </div>
-        </section>
-
-        <section class="panel">
-          <JobProgress
-            :job-id="currentJobId"
-            :pr-scope="currentPrScope"
-            :status="currentStatus"
-            :connection-status="connectionStatus"
-            :latest-message="latestMessage"
-            :progress="currentProgress"
-            :updated-at="updatedAt"
-            :events="events"
-            :site-counts="siteCountPayload"
-          />
-        </section>
-
-        <JobEventTimeline :events="events" />
+    <section class="cockpit-console-shell">
+      <div class="console-title-row">
+        <div>
+          <p class="eyebrow">Live Output</p>
+          <h2>Worker Console</h2>
+        </div>
+        <div class="console-meta">
+          <span>{{ connectionStatus }}</span>
+          <span>{{ updatedAt || 'No live update yet' }}</span>
+        </div>
       </div>
 
-      <aside class="side-flow">
-        <section class="panel compact-status">
-          <h2>Result Readiness</h2>
-          <p v-if="currentStatus">Current status: <strong>{{ currentStatus }}</strong></p>
-          <p v-else class="muted">Create a Job to activate result tracking and output actions.</p>
-          <p class="muted">Use this panel to review summaries and quickly access the ZIP package.</p>
-        </section>
-        <FinalSummary :detail="jobDetail" />
-        <DownloadPanel :job-id="currentJobId" :detail="jobDetail" />
-        <ReAskPanel
-          :job-id="currentJobId"
-          :loading="asking"
-          :answer="reAskAnswer"
-          @ask="askQuestion"
-        />
-      </aside>
-    </div>
+      <div
+        ref="consoleBody"
+        class="cockpit-console"
+        @scroll="onConsoleScroll"
+      >
+        <article
+          v-for="(item, index) in consoleItems"
+          :key="item.id"
+          class="console-entry"
+          :class="[{ 'is-faded': index < consoleItems.length - 4 }, `entry-${item.tone}`]"
+        >
+          <div class="console-entry-meta">
+            <span>{{ item.label }}</span>
+            <time>{{ item.time || 'Current session' }}</time>
+          </div>
+          <h3>{{ item.title }}</h3>
+          <p>{{ item.body }}</p>
+        </article>
+      </div>
+    </section>
   </div>
 </template>
 
 <script>
 import UploadPanel from '../components/UploadPanel.vue';
-import ScopeSelector from '../components/ScopeSelector.vue';
-import SiteSelector from '../components/SiteSelector.vue';
-import JobProgress from '../components/JobProgress.vue';
-import JobEventTimeline from '../components/JobEventTimeline.vue';
-import FinalSummary from '../components/FinalSummary.vue';
-import DownloadPanel from '../components/DownloadPanel.vue';
-import ReAskPanel from '../components/ReAskPanel.vue';
 import ErrorBanner from '../components/ErrorBanner.vue';
 import LoadingButton from '../components/LoadingButton.vue';
 import JobWebSocketClient from '../services/websocketClient';
-import { createJob, getErrorMessage, getHealth, getJobDetail, prevalidateUpload } from '../api/jobApi';
+import { createJob, getErrorMessage, getHealth, getJobDetail, getZipDownloadUrl, prevalidateUpload } from '../api/jobApi';
 import { askJob } from '../api/reAskApi';
 import { displayMessage, isTerminalStatus } from '../utils/statusUtils';
 
 export default {
   name: 'HomeView',
   components: {
-    DownloadPanel,
     ErrorBanner,
-    FinalSummary,
-    JobEventTimeline,
-    JobProgress,
-    ReAskPanel,
-    ScopeSelector,
-    SiteSelector,
     UploadPanel,
     LoadingButton
   },
@@ -173,7 +225,11 @@ export default {
       healthError: false,
       errorMessage: '',
       wsClient: null,
-      currentPhase: ''
+      currentPhase: '',
+      commandText: '',
+      commandNotice: '',
+      consoleAutoStick: true,
+      workerOptions: ['TSS', 'TI']
     };
   },
   computed: {
@@ -193,14 +249,17 @@ export default {
     createDisabledReason() {
       if (!this.selectedFile) return 'Upload a source file to start.';
       if (this.prevalidating) return 'Prevalidation is in progress.';
-      if (!this.prevalidation) return 'Run prevalidation before creating a Job.';
-      if (!this.prevalidation.passed) return 'Prevalidation failed; resolve listed issues and upload again or correct the source.';
-      if (this.generationScope === 'site_code' && this.parseSiteCodes().length === 0) return 'Add at least one site code for specific-site mode.';
+      if (!this.prevalidation) return 'Run validation before creating a Job.';
+      if (!this.prevalidation.passed) return 'Validation failed; resolve the listed issues before creating a Job.';
+      if (this.generationScope === 'site_code' && this.parseSiteCodes().length === 0) return 'Add at least one site code for single-site mode.';
       if (this.creating) return 'Submitting job request.';
       return '';
     },
     generationScopeLabel() {
-      return this.generationScope === 'all_sites' ? 'All Sites' : 'Specific Sites';
+      return this.generationScope === 'all_sites' ? 'All Sites' : 'Single Site';
+    },
+    siteCodeCount() {
+      return this.parseSiteCodes().length;
     },
     siteCountPayload() {
       return {
@@ -209,17 +268,149 @@ export default {
         failed: this.currentProgress && this.currentProgress.failedRows ? this.currentProgress.failedRows : 0
       };
     },
-    hasActivity() {
-      return Boolean(this.currentJobId || this.jobDetail || this.currentStatus || this.selectedFile);
+    outputCount() {
+      return this.jobDetail && this.jobDetail.outputs ? this.jobDetail.outputs.length : 0;
     },
-    latestMessage() {
-      if (this.events.length > 0) {
-        return this.events[0].displayText;
+    canDownload() {
+      return this.jobDetail && this.jobDetail.outputs && this.jobDetail.outputs.some((file) => file.fileType === 'zip_package' && file.available);
+    },
+    jobReady() {
+      return this.jobDetail && this.jobDetail.job && ['completed', 'completed_with_warning', 'failed', 'cancelled', 'cancelled_with_partial_result'].includes(this.jobDetail.job.status);
+    },
+    downloadUnavailableMessage() {
+      const zip = this.jobDetail && this.jobDetail.outputs
+        ? this.jobDetail.outputs.find((file) => file.fileType === 'zip_package')
+        : null;
+      if (zip && zip.expired) return 'ZIP has expired based on retention policy.';
+      if (zip && (zip.deletedAt || zip.cleanupReason)) return 'ZIP is unavailable after retention cleanup.';
+      return 'ZIP is not available yet.';
+    },
+    downloadUrl() {
+      return this.currentJobId ? getZipDownloadUrl(this.currentJobId) : '#';
+    },
+    consoleItems() {
+      const items = [];
+
+      items.push({
+        id: 'session-ready',
+        label: 'Cockpit',
+        title: 'Ready for source upload',
+        body: 'Upload a source file, validate it, create a Job, then track progress and outputs here.',
+        tone: 'info',
+        time: ''
+      });
+
+      if (this.selectedFile) {
+        items.push({
+          id: 'file-selected',
+          label: 'Upload',
+          title: 'Source file selected',
+          body: this.selectedFile.name,
+          tone: 'info',
+          time: ''
+        });
       }
+
+      if (this.prevalidation) {
+        items.push({
+          id: 'validation-state',
+          label: 'Validate',
+          title: this.prevalidation.passed ? 'Validation passed' : 'Validation failed',
+          body: this.prevalidation.workerExplanation || (this.prevalidation.passed ? 'The file is ready for Job creation.' : 'Review the validation checklist and correct the source file.'),
+          tone: this.prevalidation.passed ? 'success' : 'danger',
+          time: ''
+        });
+      }
+
       if (this.currentJobId) {
-        return 'Job created. Waiting for live updates.';
+        items.push({
+          id: 'job-created',
+          label: 'Job',
+          title: `Job ${this.currentJobId}`,
+          body: `Status ${this.currentStatus || 'created'} with ${this.generationScopeLabel.toLowerCase()} mode and ${this.currentPrScope || this.prScope} worker scope.`,
+          tone: 'info',
+          time: this.updatedAt
+        });
       }
-      return 'Upload and validate a file to begin.';
+
+      if (this.currentProgress) {
+        const progressParts = [
+          `Total ${this.siteCountPayload.total}`,
+          `Processed ${this.siteCountPayload.processed}`,
+          `Failed ${this.siteCountPayload.failed}`
+        ];
+        items.push({
+          id: 'progress-state',
+          label: 'Progress',
+          title: this.currentPhase || this.currentStatus || 'Progress update',
+          body: progressParts.join(' / '),
+          tone: this.siteCountPayload.failed > 0 ? 'warning' : 'info',
+          time: this.updatedAt
+        });
+      }
+
+      this.events.slice().reverse().forEach((event, index) => {
+        items.push({
+          id: `event-${event.timestamp || index}-${event.type || 'message'}`,
+          label: event.type || 'Event',
+          title: event.status || event.currentPhase || 'Worker event',
+          body: event.displayText || displayMessage(event),
+          tone: event.status && event.status.toLowerCase().includes('fail') ? 'danger' : 'info',
+          time: event.updatedAt || event.timestamp || ''
+        });
+      });
+
+      if (this.jobDetail && this.jobDetail.job) {
+        const job = this.jobDetail.job;
+        items.push({
+          id: 'result-state',
+          label: 'Result',
+          title: `Result ${job.status || 'available'}`,
+          body: `Outputs ${job.outputFileCount || this.outputCount}; warnings ${job.warningCount || 0}; review required ${job.reviewRequiredCount || 0}.`,
+          tone: job.status && job.status.includes('failed') ? 'danger' : 'success',
+          time: job.updatedAt || this.updatedAt
+        });
+
+        items.push({
+          id: 'final-summary',
+          label: 'AI Explanation',
+          title: 'Final worker summary',
+          body: this.jobDetail.finalWorkerSummary || job.finalWorkerSummary || 'Summary unavailable.',
+          tone: 'info',
+          time: job.updatedAt || this.updatedAt
+        });
+
+        if (job.error && job.error.message) {
+          items.push({
+            id: 'job-error',
+            label: 'Error',
+            title: 'Job error',
+            body: job.error.message,
+            tone: 'danger',
+            time: job.updatedAt || this.updatedAt
+          });
+        }
+      }
+
+      if (this.reAskAnswer) {
+        items.push({
+          id: 'reask-answer',
+          label: 'AI Response',
+          title: 'Worker answer',
+          body: this.reAskAnswer.answer || this.reAskAnswer.message || JSON.stringify(this.reAskAnswer),
+          tone: 'success',
+          time: this.reAskAnswer.createdAt || ''
+        });
+      }
+
+      return items;
+    }
+  },
+  watch: {
+    consoleItems() {
+      this.$nextTick(() => {
+        this.scrollConsoleToBottom(false);
+      });
     }
   },
   mounted() {
@@ -229,6 +420,9 @@ export default {
       onStatus: (status) => {
         this.connectionStatus = status;
       }
+    });
+    this.$nextTick(() => {
+      this.scrollConsoleToBottom(true);
     });
   },
   beforeDestroy() {
@@ -256,6 +450,7 @@ export default {
       this.events = [];
       this.currentPrScope = 'TSS';
       this.errorMessage = '';
+      this.commandNotice = '';
     },
     async prevalidate(file) {
       if (!file) {
@@ -298,6 +493,7 @@ export default {
         this.currentPrScope = result.job.prScope || this.prScope;
         this.currentStatus = result.job.status;
         this.currentPhase = result.job.phase || '';
+        this.consoleAutoStick = true;
         this.wsClient.connect(this.currentJobId);
       } catch (error) {
         this.errorMessage = getErrorMessage(error);
@@ -372,6 +568,29 @@ export default {
       } finally {
         this.asking = false;
       }
+    },
+    async submitCommand() {
+      const question = this.commandText.trim();
+      if (!question) return;
+      if (!this.currentJobId) {
+        this.commandNotice = 'Create a Job before sending AI follow-up questions. You can use this field to prepare the prompt now.';
+        return;
+      }
+      this.commandNotice = '';
+      await this.askQuestion(question);
+      if (!this.errorMessage) {
+        this.commandText = '';
+      }
+    },
+    onConsoleScroll() {
+      const el = this.$refs.consoleBody;
+      if (!el) return;
+      this.consoleAutoStick = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
+    },
+    scrollConsoleToBottom(force) {
+      const el = this.$refs.consoleBody;
+      if (!el || (!force && !this.consoleAutoStick)) return;
+      el.scrollTop = el.scrollHeight;
     }
   }
 };
