@@ -1,21 +1,22 @@
 <template>
   <section class="panel">
     <div class="panel-heading">
-      <span class="step-marker">1</span>
-      <h2>Upload & Validate</h2>
+      <h2 class="upload-validate">Upload & Validate</h2>
     </div>
 
-    <label class="field-label" for="iepms-file">Source file (iEPMS export)</label>
-    <p class="field-hint">Accepted file types: .xlsx, .xls, .csv. Maximum recommended size: 25 MB.</p>
-    <input
-      id="iepms-file"
-      class="upload-input"
-      type="file"
-      accept=".xlsx,.xls,.csv"
-      :disabled="loading || disableAction"
-      @change="onFileChange"
-    />
-
+    <div v-if="!fileName">
+      <label class="field-label" for="iepms-file">Source file (iEPMS export)</label>
+      <p class="field-hint">Accepted file types: .xlsx, .xls, .csv. Maximum recommended size: 25 MB.</p>
+      <input
+        id="iepms-file"
+        class="upload-input"
+        type="file"
+        accept=".xlsx,.xls,.csv"
+        :disabled="loading || disableAction"
+        @change="onFileChange"
+      />
+    </div>
+    
     <div v-if="fileName" class="file-state">
       <span class="meta-label">Selected file</span>
       <strong>{{ fileName }}</strong>

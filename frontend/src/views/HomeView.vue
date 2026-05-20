@@ -96,7 +96,7 @@
       <section class="panel cockpit-card cockpit-sites-card">
         <div class="cockpit-card-heading">
           <span>Sites</span>
-          <small>{{ siteCodeCount }} code(s)</small>
+          <small>{{ siteCodeCount }} site(s)</small>
         </div>
         <textarea
           v-if="generationScope === 'site_code'"
@@ -161,6 +161,7 @@
           v-model="commandText"
           type="text"
           placeholder="Ask about this Job, paste a site code, or request an explanation"
+          autocomplete="off"
         />
         <button type="submit" :disabled="asking || !commandText.trim()">
           {{ asking ? 'Asking...' : 'Send' }}
@@ -258,11 +259,11 @@ export default {
   },
   computed: {
     healthLabel() {
-      if (this.health && this.health.status === 'ok') return 'Healthy';
-      if (this.health && this.health.status === 'degraded') return 'Degraded';
-      if (this.health && this.health.status === 'down') return 'Down';
-      if (this.healthError) return 'Unavailable';
-      return 'Checking';
+      if (this.health && this.health.status === 'ok') return '🟢Healthy';
+      if (this.health && this.health.status === 'degraded') return '🟡Degraded';
+      if (this.health && this.health.status === 'down') return '🔴Down';
+      if (this.healthError) return '⚪Unavailable';
+      return '🔵Checking';
     },
     canCreateJob() {
       if (!this.prevalidation || !this.prevalidation.passed || this.creating) return false;

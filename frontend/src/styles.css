@@ -851,7 +851,6 @@ body:has(.home-cockpit) {
   overflow: hidden;
   padding: 0;
 }
-
 .home-cockpit {
   --zte-blue: #0072ce;
   --zte-blue-strong: #005aa3;
@@ -864,6 +863,8 @@ body:has(.home-cockpit) {
   height: 100dvh;
   overflow: hidden;
   padding: 12px 14px 14px;
+  max-width: 1080px;
+  margin: 0 auto;
 }
 
 .home-cockpit > .error-banner {
@@ -1019,6 +1020,12 @@ body:has(.home-cockpit) {
   margin: 0;
 }
 
+.upload-validate {
+  display: block;
+  text-align: left;
+  width: 100%;
+}
+
 .cockpit-card-heading small {
   color: #607d96;
   font-size: 12px;
@@ -1113,9 +1120,10 @@ body:has(.home-cockpit) {
   font-size: 11px;
   line-height: 1.2;
   margin-top: 0;
-  max-height: 46px;
+  max-height: 120px;
   overflow: hidden;
   padding: 5px 6px;
+  overflow-y: scroll;
 }
 
 .upload-card .checklist ul {
