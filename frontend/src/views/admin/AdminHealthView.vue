@@ -1,12 +1,24 @@
 <template>
   <div class="portal-shell">
-    <section class="hero-band">
-      <div class="hero-content">
+    <header class="portal-topbar">
+      <div class="portal-topbar-brand">
         <span class="brand-mark-small">ZTE</span>
         <div>
-          <p class="eyebrow">System Operations</p>
-          <h1>Health Console</h1>
+          <p class="eyebrow">AI WORKER PLATFORM</p>
+          <h1>PR Creator</h1>
         </div>
+      </div>
+      <nav class="portal-topbar-nav" aria-label="Portal navigation">
+        <router-link class="nav-link" to="/">Dashboard</router-link>
+        <router-link class="nav-link" to="/history">Job History</router-link>
+        <router-link class="nav-link" to="/admin/health">Admin</router-link>
+      </nav>
+    </header>
+
+    <section class="hero-band page-hero-band">
+      <div>
+        <p class="eyebrow">System Operations</p>
+        <h1>Health Console</h1>
       </div>
       <button type="button" class="secondary-button" :disabled="loading" @click="loadHealth">Refresh</button>
     </section>

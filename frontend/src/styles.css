@@ -194,6 +194,83 @@ textarea {
   padding: 10px 14px;
 }
 
+/* ===== Shared Portal Topbar (matches Home cockpit) ===== */
+.portal-topbar {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid var(--zte-line);
+  border-radius: 8px;
+  box-shadow: 0 16px 40px -30px rgba(0, 78, 140, 0.45);
+  display: flex;
+  flex: 0 0 auto;
+  justify-content: space-between;
+  min-height: 54px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+}
+
+.portal-topbar-brand {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  min-width: 0;
+}
+
+.portal-topbar-brand .eyebrow {
+  color: #52708b;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  margin: 0 0 2px;
+  text-transform: uppercase;
+}
+
+.portal-topbar-brand h1 {
+  color: #12304a;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.portal-topbar-nav {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.portal-topbar-nav a,
+.portal-topbar-nav .nav-link {
+  align-items: center;
+  border: 1px solid #cfe3f5;
+  border-radius: 999px;
+  color: #21435f;
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 800;
+  min-height: 32px;
+  padding: 7px 11px;
+  text-decoration: none;
+  transition: background-color 0.22s ease, border-color 0.22s ease, transform 0.22s ease;
+}
+
+.portal-topbar-nav a:hover,
+.portal-topbar-nav .nav-link:hover {
+  background: #eef7ff;
+  border-color: #9fcbee;
+  transform: translateY(-1px) scale(1.01);
+}
+
+.portal-topbar-nav a.router-link-active,
+.portal-topbar-nav .nav-link.active {
+  background: #eef7ff;
+  border-color: var(--zte-blue);
+  color: var(--zte-blue);
+}
+
 .portal-shell .hero-content {
   display: flex;
   align-items: center;
@@ -458,6 +535,41 @@ textarea {
   justify-content: center;
   margin-top: 8px;
   text-decoration: none;
+}
+
+.admin-login-page .login-topbar {
+  margin-bottom: 14px;
+}
+
+.admin-login-page .login-card-header {
+  margin-bottom: 18px;
+  text-align: center;
+}
+
+.admin-login-page .login-card-header h2 {
+  color: #12304a;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0;
+  margin: 0;
+}
+
+.admin-login-page .login-card-header .eyebrow {
+  color: #52708b;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  margin: 0 0 6px;
+  text-transform: uppercase;
+}
+
+/* Page hero band (below topbar) */
+.page-hero-band {
+  background: rgba(255, 255, 255, 0.6);
+  border: none;
+  box-shadow: none;
+  padding-left: 4px;
+  padding-right: 4px;
 }
 
 /* ===== ZTE Admin Navigation ===== */

@@ -1,15 +1,26 @@
 <template>
   <div class="admin-login-page">
     <div class="login-container">
-      <div class="login-brand-row">
-        <span class="brand-mark-small">ZTE</span>
-        <div>
-          <p class="eyebrow">Admin Portal</p>
-          <h1>Admin Login</h1>
+      <header class="portal-topbar login-topbar">
+        <div class="portal-topbar-brand">
+          <span class="brand-mark-small">ZTE</span>
+          <div>
+            <p class="eyebrow">AI WORKER PLATFORM</p>
+            <h1>PR Creator</h1>
+          </div>
         </div>
-      </div>
+        <nav class="portal-topbar-nav" aria-label="Portal navigation">
+          <router-link class="nav-link" to="/">Dashboard</router-link>
+          <router-link class="nav-link" to="/history">Job History</router-link>
+        </nav>
+      </header>
 
       <section class="panel admin-login-card">
+        <div class="login-card-header">
+          <p class="eyebrow">Admin Portal</p>
+          <h2>Admin Login</h2>
+        </div>
+
         <ErrorBanner :message="errorMessage" />
 
         <div class="login-form">
