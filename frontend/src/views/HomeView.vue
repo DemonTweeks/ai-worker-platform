@@ -294,6 +294,9 @@ export default {
       };
     },
     outputCount() {
+      if (this.jobDetail && this.jobDetail.job && this.hasValue(this.jobDetail.job.outputFileCount)) {
+        return this.jobDetail.job.outputFileCount;
+      }
       return this.jobDetail && this.jobDetail.outputs ? this.jobDetail.outputs.length : 0;
     },
     canDownload() {
