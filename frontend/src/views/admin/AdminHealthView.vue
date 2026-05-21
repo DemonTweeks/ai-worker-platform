@@ -1,9 +1,12 @@
 <template>
   <div class="portal-shell">
     <section class="hero-band">
-      <div>
-        <p class="eyebrow">System Operations</p>
-        <h1>Health Console</h1>
+      <div class="hero-content">
+        <span class="brand-mark-small">ZTE</span>
+        <div>
+          <p class="eyebrow">System Operations</p>
+          <h1>Health Console</h1>
+        </div>
       </div>
       <button type="button" class="secondary-button" :disabled="loading" @click="loadHealth">Refresh</button>
     </section>
@@ -24,10 +27,10 @@
       <HealthStatusCard label="Cleanup" :value="cleanupStatus" :detail="cleanupDetail" :tone="tone(cleanupStatus)" />
     </section>
 
-    <section v-if="health" class="panel">
+    <section v-if="health" class="panel info-panel">
       <h2>Last Checked</h2>
       <p class="muted">{{ timestamp || 'Not available' }}</p>
-      <p class="muted">Use this view for run-time troubleshooting and incident checks.</p>
+      <p class="helper-text">Use this view for run-time troubleshooting and incident checks.</p>
     </section>
   </div>
 </template>

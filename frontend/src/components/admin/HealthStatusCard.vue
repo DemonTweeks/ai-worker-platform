@@ -1,8 +1,11 @@
 <template>
   <article class="stat-card health-card" :class="toneClass">
-    <span>{{ label }}</span>
-    <strong>{{ value }}</strong>
-    <small v-if="detail">{{ detail }}</small>
+    <div class="health-card-header">
+      <span class="health-label">{{ label }}</span>
+      <span class="health-status-indicator" :class="tone"></span>
+    </div>
+    <strong class="health-value">{{ value }}</strong>
+    <small v-if="detail" class="health-detail">{{ detail }}</small>
   </article>
 </template>
 

@@ -1,26 +1,39 @@
 <template>
   <div class="admin-login-page">
-    <section class="panel admin-login-card">
-      <p class="eyebrow">Admin Portal</p>
-      <h1>Admin Login</h1>
-      <ErrorBanner :message="errorMessage" />
-      <label>
-        <span class="field-label">Username</span>
-        <input v-model="username" autocomplete="username" :disabled="loading" @keyup.enter="login" />
-      </label>
-      <label>
-        <span class="field-label">Password</span>
-        <input v-model="password" type="password" autocomplete="current-password" :disabled="loading" @keyup.enter="login" />
-      </label>
-      <LoadingButton
-        label="Login"
-        loading-text="Logging in..."
-        :loading="loading"
-        :disabled="!username.trim() || !password"
-        @click="login"
-      />
-      <router-link class="secondary-link" to="/">Back to User Portal</router-link>
-    </section>
+    <div class="login-container">
+      <div class="login-brand-row">
+        <span class="brand-mark-small">ZTE</span>
+        <div>
+          <p class="eyebrow">Admin Portal</p>
+          <h1>Admin Login</h1>
+        </div>
+      </div>
+
+      <section class="panel admin-login-card">
+        <ErrorBanner :message="errorMessage" />
+
+        <div class="login-form">
+          <label>
+            <span class="field-label">Username</span>
+            <input v-model="username" autocomplete="username" :disabled="loading" @keyup.enter="login" />
+          </label>
+          <label>
+            <span class="field-label">Password</span>
+            <input v-model="password" type="password" autocomplete="current-password" :disabled="loading" @keyup.enter="login" />
+          </label>
+
+          <LoadingButton
+            label="Login"
+            loading-text="Logging in..."
+            :loading="loading"
+            :disabled="!username.trim() || !password"
+            @click="login"
+          />
+        </div>
+
+        <router-link class="secondary-link back-link" to="/">Back to User Portal</router-link>
+      </section>
+    </div>
   </div>
 </template>
 

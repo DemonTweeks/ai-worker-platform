@@ -1,20 +1,35 @@
 <template>
   <div class="portal-shell">
     <section class="hero-band">
-      <div>
-        <p class="eyebrow">Configuration</p>
-        <h1>Asset Configuration</h1>
+      <div class="hero-content">
+        <div class="brand-row">
+          <span class="brand-mark-small">ZTE</span>
+          <div>
+            <p class="eyebrow">Configuration</p>
+            <h1>Asset Configuration</h1>
+          </div>
+        </div>
       </div>
     </section>
 
-    <section class="panel">
-      <h2>Asset Management Not Active in Console</h2>
-      <p class="muted">This page is intentionally informational for the current release.</p>
-      <p>
-        PR model, ECC template, and contract mapping are managed by the <strong>create-pr-cd</strong> skill at its checked-in defaults in <code>Info/input/</code>.
-      </p>
-      <p>To change these inputs, update the skill assets repository and restart the worker services.</p>
-      <p class="muted">Audit logs and Health are the active admin operations for this environment.</p>
+    <section class="panel info-panel">
+      <div class="info-panel-header">
+        <span class="info-icon">ℹ️</span>
+        <h2>Asset Management Not Active in Console</h2>
+      </div>
+      <div class="info-panel-content">
+        <p class="muted">This page is intentionally informational for the current release.</p>
+        <div class="info-box">
+          <p>
+            <strong>PR model</strong>, <strong>ECC template</strong>, and <strong>contract mapping</strong> are managed by the <code>create-pr-cd</code> skill at its checked-in defaults in <code>Info/input/</code>.
+          </p>
+        </div>
+        <p class="helper-text">To change these inputs, update the skill assets repository and restart the worker services.</p>
+        <div class="status-note">
+          <span class="status-dot ok"></span>
+          <span>Audit logs and Health are the active admin operations for this environment.</span>
+        </div>
+      </div>
     </section>
   </div>
 </template>

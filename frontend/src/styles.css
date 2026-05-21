@@ -170,10 +170,448 @@ textarea {
   padding: 24px 32px 36px;
 }
 
+/* ===== ZTE Portal Shell Extensions ===== */
 .portal-shell {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
+  padding: 14px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.portal-shell .hero-band {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid var(--zte-line);
+  border-radius: 8px;
+  box-shadow: 0 12px 32px -24px rgba(0, 78, 140, 0.4);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 52px;
+  padding: 10px 14px;
+}
+
+.portal-shell .hero-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.portal-shell .brand-row {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+}
+
+.brand-mark-small {
+  align-items: center;
+  background: var(--zte-blue);
+  border-radius: 6px;
+  color: #ffffff;
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 800;
+  height: 28px;
+  justify-content: center;
+  letter-spacing: 0;
+  width: 42px;
+}
+
+.portal-shell .hero-band .eyebrow {
+  color: #52708b;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  margin: 0 0 2px;
+  text-transform: uppercase;
+}
+
+.portal-shell .hero-band h1 {
+  color: #12304a;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.portal-shell .secondary-button,
+.portal-shell .download-button {
+  background: #eef7ff;
+  border: 1px solid #cfe3f5;
+  border-radius: 999px;
+  color: #21435f;
+  font-size: 13px;
+  font-weight: 700;
+  min-height: 34px;
+  padding: 8px 14px;
+  transition: all 0.22s ease;
+}
+
+.portal-shell .secondary-button:hover,
+.portal-shell .download-button:hover {
+  background: #d8ebfb;
+  border-color: #9fcbee;
+  transform: translateY(-1px) scale(1.01);
+}
+
+.portal-shell .secondary-button:active,
+.portal-shell .download-button:active {
+  transform: scale(0.98);
+}
+
+.portal-shell .panel {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid var(--zte-line);
+  border-radius: 8px;
+  box-shadow: 0 14px 36px -28px rgba(0, 78, 140, 0.45);
+  padding: 14px;
+  transition: border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.portal-shell .panel:hover {
+  border-color: #9fcbee;
+  box-shadow: 0 18px 42px -26px rgba(0, 78, 140, 0.55);
+}
+
+.portal-shell .panel h2 {
+  color: #12304a;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0;
+  margin: 0 0 10px;
+}
+
+.portal-shell .muted {
+  color: #607d96;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.portal-shell .empty-state {
+  align-items: center;
+  background: #f4f9ff;
+  border: 1px dashed #bddaf2;
+  color: #52708b;
+  display: flex;
+  font-size: 13px;
+  justify-content: center;
+  min-height: 120px;
+}
+
+/* ===== ZTE Admin Assets Info Panel ===== */
+.portal-shell .info-panel {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(244, 249, 255, 0.6) 100%);
+  border-left: 4px solid var(--zte-blue);
+}
+
+.portal-shell .info-panel-header {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.portal-shell .info-panel-header h2 {
+  margin: 0;
+}
+
+.portal-shell .info-icon {
+  font-size: 20px;
+}
+
+.portal-shell .info-panel-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.portal-shell .info-panel-content p {
+  margin: 0;
+}
+
+.portal-shell .info-box {
+  background: #eef7ff;
+  border: 1px solid #cce4f7;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.portal-shell .info-box p {
+  margin: 0;
+  color: #21435f;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.portal-shell .info-box code {
+  background: rgba(0, 114, 206, 0.08);
+  border-radius: 4px;
+  color: #005aa3;
+  font-family: "Geist Mono", "JetBrains Mono", monospace;
+  font-size: 12px;
+  padding: 2px 6px;
+}
+
+.portal-shell .helper-text {
+  color: #607d96;
+  font-size: 12px;
+  margin: 0;
+}
+
+.portal-shell .status-note {
+  align-items: center;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 8px;
+  color: #166534;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 700;
+  gap: 8px;
+  padding: 8px 12px;
+  width: fit-content;
+}
+
+.portal-shell .status-dot {
+  border-radius: 50%;
+  display: inline-block;
+  height: 8px;
+  width: 8px;
+}
+
+.portal-shell .status-dot.ok {
+  background: #16a34a;
+  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.2);
+}
+
+/* ===== ZTE Admin Login Page ===== */
+.admin-login-page {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: 24px;
+}
+
+.admin-login-page .login-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 420px;
+  width: 100%;
+}
+
+.admin-login-page .login-brand-row {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.admin-login-page .admin-login-card {
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid var(--zte-line);
+  border-radius: 12px;
+  box-shadow: 0 20px 48px -32px rgba(0, 78, 140, 0.5);
+  padding: 24px;
+}
+
+.admin-login-page .admin-login-card h1 {
+  color: #12304a;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0;
+  margin: 0 0 18px;
+}
+
+.admin-login-page .login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.admin-login-page .login-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-login-page .login-form input {
+  background: #ffffff;
+  border-color: #cfe3f5;
+  min-height: 42px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-login-page .login-form input:focus {
+  border-color: var(--zte-blue);
+  box-shadow: 0 0 0 3px rgba(0, 114, 206, 0.1);
+}
+
+.admin-login-page .back-link {
+  display: inline-flex;
+  font-size: 13px;
+  justify-content: center;
+  margin-top: 8px;
+  text-decoration: none;
+}
+
+/* ===== ZTE Admin Navigation ===== */
+.admin-nav {
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid var(--zte-line);
+  border-radius: 10px;
+  box-shadow: 0 12px 32px -24px rgba(0, 78, 140, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+}
+
+.admin-nav-header {
+  align-items: center;
+  border-bottom: 1px solid #eef7ff;
+  display: flex;
+  gap: 10px;
+  padding-bottom: 14px;
+}
+
+.admin-nav-header h2 {
+  color: #12304a;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0;
+  margin: 0;
+}
+
+.admin-nav nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-nav nav a {
+  align-items: center;
+  border-radius: 8px;
+  color: #334155;
+  display: flex;
+  font-size: 13px;
+  font-weight: 700;
+  gap: 10px;
+  padding: 10px 12px;
+  text-decoration: none;
+  transition: all 0.22s ease;
+}
+
+.admin-nav nav a:hover {
+  background: #eef7ff;
+  color: #0072ce;
+}
+
+.admin-nav nav a.router-link-active {
+  background: #eef7ff;
+  border: 1px solid #cfe3f5;
+  color: var(--zte-blue);
+}
+
+.admin-nav .logout-button {
+  margin-top: auto;
+  width: 100%;
+}
+
+/* ===== ZTE Health Status Card ===== */
+.health-card {
+  align-items: flex-start;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid var(--zte-line);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  transition: all 0.22s ease;
+}
+
+.health-card:hover {
+  border-color: #9fcbee;
+  box-shadow: 0 12px 32px -20px rgba(0, 78, 140, 0.4);
+  transform: translateY(-2px);
+}
+
+.health-card-header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.health-label {
+  color: #52708b;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.health-status-indicator {
+  border-radius: 50%;
+  display: inline-block;
+  height: 10px;
+  width: 10px;
+  flex-shrink: 0;
+}
+
+.health-status-indicator.ok {
+  background: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
+}
+
+.health-status-indicator.warning {
+  background: #d97706;
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.15);
+}
+
+.health-status-indicator.danger {
+  background: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+}
+
+.health-status-indicator.neutral {
+  background: #64748b;
+  box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.15);
+}
+
+.health-value {
+  color: #12304a;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.health-detail {
+  color: #607d96;
+  font-size: 11px;
+  line-height: 1.4;
+  overflow-wrap: break-word;
+}
+
+.health-card.health-ok {
+  border-left: 3px solid #16a34a;
+}
+
+.health-card.health-warning {
+  border-left: 3px solid #d97706;
+}
+
+.health-card.health-danger {
+  border-left: 3px solid #dc2626;
+}
+
+.health-card.health-neutral {
+  border-left: 3px solid #64748b;
 }
 
 .hero-band {
