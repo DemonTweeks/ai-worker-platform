@@ -9,7 +9,8 @@ echo.
 REM git session
 git checkout main & ^
 git branch -D repack/ai-worker-platform & ^
-git pull & ^
+git pull --recurse-submodules & ^
+git submodule update --init --recursive & ^
 git checkout -b repack/ai-worker-platform origin/repack/ai-worker-platform
 
 REM Backend installation
@@ -19,7 +20,8 @@ if not exist "backend" (
     exit /b 1
 )
 cd backend
-echo [1/4] Installing backend dependencies...
+
+echo [1/5] Installing backend dependencies...
 call npm i
 if errorlevel 1 (
     echo [ERROR] Backend npm install failed.
@@ -28,6 +30,17 @@ if errorlevel 1 (
 )
 cd ..
 
+REM Install additional Python dependencies for skills
+cd skills\create-pr-cd
+echo [2/5] Installing Python skills dependencies...
+call pip install -r requirements.txt --break-system-packages
+if errorlevel 1 (
+    echo [ERROR] Python requirements installation failed.
+    pause
+    exit /b 1
+)
+cd ..\..
+
 REM Frontend installation
 if not exist "frontend" (
     echo [ERROR] frontend folder missing.
@@ -35,7 +48,8 @@ if not exist "frontend" (
     exit /b 1
 )
 cd frontend
-echo [2/4] Installing frontend dependencies...
+
+echo [3/5] Installing frontend dependencies...
 call npm i
 if errorlevel 1 (
     echo [ERROR] Frontend npm install failed.
@@ -45,11 +59,11 @@ if errorlevel 1 (
 cd ..
 
 REM Start backend server
-echo [3/4] Starting backend server...
+echo [4/5] Starting backend server...
 start "Backend Server" cmd /k "cd backend && node src\server.js"
 
 REM Start frontend build and preview
-echo [4/4] Starting frontend (build + preview)...
+echo [5/5] Starting frontend (build + preview)...
 start "Frontend Build & Preview" cmd /k "cd frontend && npm run build && npm run preview"
 
 REM Open browser after short delay
