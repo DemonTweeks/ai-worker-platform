@@ -3,7 +3,9 @@
     <AdminNav @logout="logout" />
     <main class="admin-main">
       <ErrorBanner :message="errorMessage" />
-      <router-view />
+      <div class="admin-content-frame">
+        <router-view />
+      </div>
     </main>
   </div>
 </template>
