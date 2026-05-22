@@ -35,14 +35,14 @@ const setNestedValue = (obj, path, value) => {
 };
 
 const getBaseUrl = () => {
-  const url = process.env.FIREBASE_DB_URL || 'https://zte-app-state-mgmt-01-default-rtdb.asia-southeast1.firebasedatabase.app/ai-worker-platform';
+  const url = config.firebaseDbUrl;
   return url.replace(/\/$/, ''); // Remove trailing slash
 };
 
 const makeRequest = async (path, options = {}) => {
   const cleanPath = path.replace(/^\//, '').replace(/\s+/g, '-');
 
-  if (process.env.FIREBASE_DB_MOCK === 'true') {
+  if (config.firebaseDbMock) {
     if (options.method === 'GET') {
       return getNestedValue(mockDb, cleanPath);
     }

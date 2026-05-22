@@ -26,8 +26,8 @@ const resolveFromRepoRoot = (value, fallback) => {
 
 const config = {
   port: numberFromEnv('PORT', 8000),
-  mongoUri: process.env.MONGO_URI || 'mongodb://localhost:27017/ai-worker-platform',
   firebaseDbUrl: process.env.FIREBASE_DB_URL || 'https://zte-app-state-mgmt-01-default-rtdb.asia-southeast1.firebasedatabase.app/ai-worker-platform',
+  firebaseDbMock: booleanFromEnv('FIREBASE_DB_MOCK', false),
   storageRoot: resolveFromRepoRoot(process.env.STORAGE_ROOT, './storage'),
   createPrCdRoot: resolveFromRepoRoot(process.env.CREATE_PR_CD_ROOT, './skills/create-pr-cd'),
   llmBaseUrl: process.env.LLM_BASE_URL || '',

@@ -2,6 +2,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const packageJson = require('../../package.json');
+const config = require('../config/env');
 const { getFirebaseStatus, checkFirebaseConnection } = require('../db/firebase');
 const { getQueueState } = require('../queue/jobQueue');
 const storageService = require('./storageService');
@@ -70,7 +71,7 @@ const checkBackend = async () => ({
 const checkFirebase = async () => {
   const dbStatus = await checkFirebaseConnection();
   const firebase = getFirebaseStatus();
-  
+
   return {
     status: dbStatus.connected ? 'ok' : 'down',
     connected: dbStatus.connected,
@@ -119,7 +120,7 @@ const runStorageWriteProbe = async (rootPath) => {
     await fs.promises.rm(probePath, { force: true });
     return true;
   } catch (error) {
-    await fs.promises.rm(probePath, { force: true }).catch(() => {});
+    await fs.promises.rm(probePath, { force: true }).catch(() => { });
     return false;
   }
 };
