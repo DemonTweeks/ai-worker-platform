@@ -1,20 +1,5 @@
 <template>
   <div class="portal-shell">
-    <header class="portal-topbar">
-      <div class="portal-topbar-brand">
-        <span class="brand-mark">ZTE</span>
-        <div>
-          <p class="eyebrow">AI WORKER PLATFORM</p>
-          <h1>PR Creator</h1>
-        </div>
-      </div>
-      <nav class="portal-topbar-nav" aria-label="Portal navigation">
-        <router-link class="nav-link" to="/">Dashboard</router-link>
-        <router-link class="nav-link" to="/history">Job History</router-link>
-        <router-link class="nav-link" to="/admin/health">Admin</router-link>
-      </nav>
-    </header>
-
     <section class="page-title-bar">
       <div>
         <p class="page-eyebrow">System Operations</p>

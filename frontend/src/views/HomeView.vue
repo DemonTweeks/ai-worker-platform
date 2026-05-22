@@ -2,35 +2,6 @@
   <div class="home-cockpit">
     <ErrorBanner :message="errorMessage" />
 
-    <header class="cockpit-topbar">
-      <div class="cockpit-brand">
-        <span class="brand-mark">ZTE</span>
-        <div>
-          <p class="eyebrow">AI Worker Platform</p>
-          <h1>PR Creator</h1>
-        </div>
-      </div>
-
-      <nav class="cockpit-nav" aria-label="Home cockpit navigation">
-        <span
-          class="cockpit-health"
-          :class="{ ok: health && health.status === 'ok', warning: health && health.status === 'degraded', error: healthError || health && health.status === 'down' }"
-        >
-          {{ healthLabel }}
-        </span>
-        <router-link
-          v-if="currentJobId"
-          class="cockpit-nav-link"
-          :to="`/jobs/${currentJobId}`"
-        >
-          Status
-        </router-link>
-        <span v-else class="cockpit-nav-link disabled">Status</span>
-        <router-link class="cockpit-nav-link" to="/history">History</router-link>
-        <router-link class="cockpit-nav-link" to="/admin/login">Admin</router-link>
-      </nav>
-    </header>
-
     <section class="cockpit-card-row" aria-label="AI worker actions">
       <UploadPanel
         class="cockpit-card upload-card"
