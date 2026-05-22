@@ -563,13 +563,32 @@ textarea {
   text-transform: uppercase;
 }
 
-/* Page hero band (below topbar) */
-.page-hero-band {
-  background: rgba(255, 255, 255, 0.6);
-  border: none;
-  box-shadow: none;
-  padding-left: 4px;
-  padding-right: 4px;
+/* Page title bar (below topbar, replaces hero-band) */
+.page-title-bar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  justify-content: space-between;
+  padding: 8px 4px;
+}
+
+.page-title-bar .page-eyebrow {
+  color: #52708b;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  margin: 0 0 4px;
+  text-transform: uppercase;
+}
+
+.page-title-bar h2 {
+  color: #12304a;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.2;
+  margin: 0;
 }
 
 /* ===== ZTE Admin Navigation ===== */

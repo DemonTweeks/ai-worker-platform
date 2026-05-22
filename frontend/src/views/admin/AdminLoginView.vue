@@ -3,7 +3,7 @@
     <div class="login-container">
       <header class="portal-topbar login-topbar">
         <div class="portal-topbar-brand">
-          <span class="brand-mark-small">ZTE</span>
+          <span class="brand-mark">ZTE</span>
           <div>
             <p class="eyebrow">AI WORKER PLATFORM</p>
             <h1>PR Creator</h1>

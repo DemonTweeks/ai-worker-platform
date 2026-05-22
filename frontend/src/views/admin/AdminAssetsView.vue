@@ -2,7 +2,7 @@
   <div class="portal-shell">
     <header class="portal-topbar">
       <div class="portal-topbar-brand">
-        <span class="brand-mark-small">ZTE</span>
+        <span class="brand-mark">ZTE</span>
         <div>
           <p class="eyebrow">AI WORKER PLATFORM</p>
           <h1>PR Creator</h1>
@@ -15,10 +15,10 @@
       </nav>
     </header>
 
-    <section class="hero-band page-hero-band">
+    <section class="page-title-bar">
       <div>
-        <p class="eyebrow">Configuration</p>
-        <h1>Asset Configuration</h1>
+        <p class="page-eyebrow">Configuration</p>
+        <h2>Asset Configuration</h2>
       </div>
     </section>
 
