@@ -15,7 +15,7 @@
     <div v-if="loading" class="panel empty-state">Loading health status...</div>
     <section v-else class="history-stats health-grid">
       <HealthStatusCard label="Backend" :value="formatStatus(backendStatus)" :detail="timestamp" :tone="tone(backendStatus)" />
-      <HealthStatusCard label="MongoDB" :value="formatStatus(mongoStatus)" :detail="mongoDetail" :tone="tone(mongoStatus)" />
+      <HealthStatusCard label="Firebase DB" :value="formatStatus(firebaseStatus)" :detail="firebaseDetail" :tone="tone(firebaseStatus)" />
       <HealthStatusCard label="Storage" :value="formatStatus(storageStatus)" :detail="storageDetail" :tone="tone(storageStatus)" />
       <HealthStatusCard label="LLM" :value="formatStatus(llmStatus)" :detail="llmDetail" :tone="tone(llmStatus)" />
       <HealthStatusCard label="Queue" :value="formatStatus(queueStatus)" :detail="queueDetail" :tone="tone(queueStatus)" />
@@ -62,12 +62,14 @@ export default {
     timestamp() {
       return this.health && this.health.timestamp ? `Updated ${this.health.timestamp}` : '';
     },
-    mongoStatus() {
-      return this.services.mongodb && this.services.mongodb.status ? this.services.mongodb.status : 'Not available';
+    firebaseStatus() {
+      return this.services.firebase && this.services.firebase.status ? this.services.firebase.status : 'Not available';
     },
-    mongoDetail() {
-      if (!this.services.mongodb) return '';
-      return `${this.services.mongodb.connected ? 'Connected' : 'Disconnected'} · ${this.services.mongodb.readyStateLabel || 'unknown'}`;
+    firebaseDetail() {
+      if (!this.services.firebase) return '';
+      const conn = this.services.firebase.connected ? 'Connected' : 'Disconnected';
+      const latency = this.services.firebase.latencyMs ? ` · ${this.services.firebase.latencyMs}ms` : '';
+      return `${conn}${latency}`;
     },
     storageStatus() {
       return this.services.storage && this.services.storage.status ? this.services.storage.status : 'Not available';
