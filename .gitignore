@@ -7,7 +7,6 @@ ai-worker-platform.code-workspace
 prompts/
 
 # Environment and secrets
-.env
 .env.*
 !.env.example
 
