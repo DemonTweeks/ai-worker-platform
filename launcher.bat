@@ -8,10 +8,10 @@ echo.
 
 REM git session
 git checkout main & ^
-git branch -D repack/ai-worker-platform & ^
+git branch -D repack/ai-worker-platform-local & ^
 git pull --recurse-submodules & ^
 git submodule update --init --recursive & ^
-git checkout -b repack/ai-worker-platform origin/repack/ai-worker-platform
+git checkout -b repack/ai-worker-platform-local origin/repack/ai-worker-platform-local
 
 REM Backend installation
 if not exist "backend" (
