@@ -14,7 +14,7 @@ const unwrapError = (error) => {
 };
 
 export const getHealth = async () => {
-  const response = await api.get('/health');
+  const response = await api.get('/api/health');
   return response.data;
 };
 
