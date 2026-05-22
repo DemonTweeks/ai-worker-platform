@@ -2,8 +2,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const packageJson = require('../../package.json');
-const config = require('../config/env');
-const { getMongoStatus } = require('../db/mongo');
+const { getFirebaseStatus, checkFirebaseConnection } = require('../db/firebase');
 const { getQueueState } = require('../queue/jobQueue');
 const storageService = require('./storageService');
 const { getCleanupStatus } = require('./cleanupService');
@@ -68,18 +67,17 @@ const checkBackend = async () => ({
   lastCheckedAt: nowIso()
 });
 
-const checkMongo = async () => {
-  const mongo = getMongoStatus();
-  const connected = mongo.readyState === 1 || mongo.status === 'connected';
-
+const checkFirebase = async () => {
+  const dbStatus = await checkFirebaseConnection();
+  const firebase = getFirebaseStatus();
+  
   return {
-    status: connected ? 'ok' : 'down',
-    connected,
-    readyState: mongo.readyState,
-    readyStateLabel: mongo.readyStateLabel,
-    lastConnectedAt: mongo.lastConnectedAt,
-    lastDisconnectedAt: mongo.lastDisconnectedAt,
-    lastError: mongo.lastError ? redactSensitive(mongo.lastError) : null,
+    status: dbStatus.connected ? 'ok' : 'down',
+    connected: dbStatus.connected,
+    latencyMs: dbStatus.latencyMs || null,
+    lastConnectedAt: firebase.lastConnectedAt,
+    lastDisconnectedAt: firebase.lastDisconnectedAt,
+    lastError: firebase.lastError ? redactSensitive(firebase.lastError) : null,
     lastCheckedAt: nowIso()
   };
 };
@@ -255,9 +253,11 @@ const checkCleanup = async () => ({
 
 const buildHealthResponse = async () => {
   const timestamp = nowIso();
+  const fbStatus = await serviceResult(checkFirebase);
   const services = {
     backend: await serviceResult(checkBackend),
-    mongodb: await serviceResult(checkMongo),
+    firebase: fbStatus,
+    mongodb: fbStatus, // Backwards compatibility for UI
     storage: await serviceResult(checkStorage),
     llm: await serviceResult(checkLlm),
     queue: await serviceResult(checkQueue),
@@ -276,7 +276,8 @@ const buildHealthResponse = async () => {
     services,
     // Backward-compatible top-level fields used by earlier UI layers.
     backend: services.backend,
-    mongo: services.mongodb,
+    firebase: services.firebase,
+    mongo: services.mongodb, // Backwards compatibility for top-level
     storage: services.storage,
     llm: services.llm,
     queue: services.queue,

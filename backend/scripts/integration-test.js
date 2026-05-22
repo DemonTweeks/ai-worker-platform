@@ -2,17 +2,17 @@ const assert = require('assert');
 const fs = require('fs');
 const http = require('http');
 const path = require('path');
-const mongoose = require('mongoose');
 const xlsx = require('xlsx');
 const WebSocket = require('ws');
 
-process.env.MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/ai_worker_platform_test';
+process.env.FIREBASE_DB_URL = process.env.FIREBASE_DB_URL || 'https://zte-app-state-mgmt-01-default-rtdb.asia-southeast1.firebasedatabase.app/ai-worker-platform-test';
 process.env.LLM_ENABLED = 'false';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'qa-integration-jwt-secret';
 process.env.ADMIN_DEFAULT_USERNAME = process.env.ADMIN_DEFAULT_USERNAME || 'qa-admin';
 process.env.ADMIN_DEFAULT_PASSWORD = process.env.ADMIN_DEFAULT_PASSWORD || 'qa-admin-password';
 
 const app = require('../src/app');
+const { checkFirebaseConnection } = require('../src/db/firebase');
 const { Job, JobFile, AdminUser, AdminAuditLog, WarningItem, ReviewRequiredItem } = require('../src/models');
 const storageService = require('../src/services/storageService');
 const { parseIepmsWorkbook } = require('../src/services/iepmsParser');
@@ -173,7 +173,7 @@ const runJobFlow = async ({ baseUrl, prScope, siteCodes }) => {
 const testApiAndWorker = async (baseUrl) => {
   const health = await request(baseUrl, '/health');
   assert(health.response.ok || health.response.status === 503, 'health endpoint should respond');
-  assert(health.body.services && health.body.services.mongodb, 'health should include structured services');
+  assert(health.body.services && (health.body.services.firebase || health.body.services.mongodb), 'health should include structured services');
 
   const list = await request(baseUrl, '/api/jobs');
   assert(list.response.ok, 'job list should load');
@@ -366,7 +366,8 @@ const main = async () => {
   const results = {};
 
   try {
-    await mongoose.connect(process.env.MONGO_URI);
+    const conn = await checkFirebaseConnection();
+    assert(conn.connected, 'Firebase RTDB should be reachable for testing');
     await storageService.ensureBaseStorage();
     await cleanDatabase();
     serverInfo = await createServer();
@@ -383,7 +384,6 @@ const main = async () => {
     }
     await cleanDatabase().catch(() => {});
     await cleanStorage().catch(() => {});
-    await mongoose.disconnect().catch(() => {});
   }
 };
 

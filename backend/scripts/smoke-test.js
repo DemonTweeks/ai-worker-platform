@@ -1,15 +1,14 @@
 const assert = require('assert');
 const path = require('path');
-const mongoose = require('mongoose');
 
-process.env.MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/ai_worker_platform_test';
+process.env.FIREBASE_DB_URL = process.env.FIREBASE_DB_URL || 'https://zte-app-state-mgmt-01-default-rtdb.asia-southeast1.firebasedatabase.app/ai-worker-platform';
 process.env.LLM_ENABLED = process.env.LLM_ENABLED || 'false';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'qa-smoke-jwt-secret';
 process.env.ADMIN_DEFAULT_PASSWORD = process.env.ADMIN_DEFAULT_PASSWORD || 'qa-smoke-admin-password';
 
 const config = require('../src/config/env');
 const app = require('../src/app');
-const mongo = require('../src/db/mongo');
+const firebase = require('../src/db/firebase');
 const jobRoutes = require('../src/routes/jobRoutes');
 const adminRoutes = require('../src/routes/adminRoutes');
 const healthRoutes = require('../src/routes/health');
@@ -27,10 +26,12 @@ const { parseSiteCodes } = require('../src/services/siteCodeParser');
 const { sanitizeFileName, assertPathInsideRoot } = require('../src/utils/pathUtils');
 
 const run = async () => {
-  await mongoose.connect(process.env.MONGO_URI);
+  const conn = await firebase.checkFirebaseConnection();
+  assert(conn.connected, 'Firebase RTDB should be reachable');
+  
   assert(config.port, 'config should load');
   assert(app, 'app import should load');
-  assert(mongo, 'mongo module should load');
+  assert(firebase, 'firebase module should load');
   assert(jobRoutes && adminRoutes && healthRoutes, 'route imports should load');
   assert(jobService && jobQueue && prWorkerService, 'job/queue/worker imports should load');
   assert(outputCollector && reportGenerator, 'output/report imports should load');
@@ -66,16 +67,15 @@ const run = async () => {
       'site_code_parser',
       'path_utils',
       'admin_asset_routes',
-      'llm_disabled'
+      'llm_disabled',
+      'firebase_db_connected'
     ]
   }));
 };
 
-run().then(async () => {
-  await mongoose.disconnect();
+run().then(() => {
   process.exit(0);
-}).catch(async (error) => {
+}).catch((error) => {
   console.error(error.message);
-  await mongoose.disconnect().catch(() => {});
   process.exit(1);
 });

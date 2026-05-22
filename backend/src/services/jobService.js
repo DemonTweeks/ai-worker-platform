@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const mongoose = require('mongoose');
 const config = require('../config/env');
 const {
   Job,
@@ -352,7 +351,7 @@ const askJob = async (jobId, question) => {
 };
 
 const ensureObjectId = (fileId) => {
-  if (!mongoose.Types.ObjectId.isValid(fileId)) {
+  if (!fileId || typeof fileId !== 'string' || fileId.trim() === '') {
     throw createApiError(400, 'VALIDATION_ERROR', 'fileId is invalid.');
   }
 };

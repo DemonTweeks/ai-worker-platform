@@ -1,4 +1,5 @@
-const mongoose = require('mongoose');
+const { readFirebase, writeFirebase } = require('../db/firebaseClient');
+const { QueryChain, matchFilter } = require('./compatibility');
 
 const JOB_STATUSES = [
   'queued',
@@ -18,103 +19,103 @@ const JOB_STATUSES = [
 const GENERATION_SCOPES = ['site_code', 'all_sites'];
 const PR_SCOPES = ['TSS', 'TI'];
 
-const JobSchema = new mongoose.Schema(
-  {
-    jobId: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true
-    },
-    workerType: {
-      type: String,
-      required: true,
-      default: 'pr-worker',
-      trim: true
-    },
-    status: {
-      type: String,
-      required: true,
-      enum: JOB_STATUSES,
-      default: 'queued',
-      index: true
-    },
-    createdAt: {
-      type: Date,
-      default: Date.now,
-      index: true
-    },
-    startedAt: Date,
-    completedAt: Date,
-    cancelledAt: Date,
-    timedOutAt: Date,
-    timeoutReason: String,
-    generationScope: {
-      type: String,
-      enum: GENERATION_SCOPES
-    },
-    prScope: {
-      type: String,
-      enum: PR_SCOPES,
-      default: 'TSS'
-    },
-    requestedSiteCount: {
-      type: Number,
-      default: 0,
-      min: 0
-    },
-    matchedSiteCount: {
-      type: Number,
-      default: 0,
-      min: 0
-    },
-    unmatchedSiteCount: {
-      type: Number,
-      default: 0,
-      min: 0
-    },
-    outputFileCount: {
-      type: Number,
-      default: 0,
-      min: 0
-    },
-    reviewRequiredCount: {
-      type: Number,
-      default: 0,
-      min: 0
-    },
-    warningCount: {
-      type: Number,
-      default: 0,
-      min: 0
-    },
-    finalWorkerSummary: {
-      type: String,
-      default: ''
-    },
-    assetVersions: {
-      prModel: String,
-      contractInfo: String,
-      eccTemplate: String
-    },
-    engineVersion: String,
-    fileRetentionUntil: Date,
-    error: {
-      code: String,
-      message: String,
-      stack: String,
-      details: mongoose.Schema.Types.Mixed
-    }
-  },
-  {
-    collection: 'jobs',
-    versionKey: false
+class Job {
+  constructor(data) {
+    Object.assign(this, data);
   }
-);
 
-JobSchema.index({ workerType: 1, status: 1, createdAt: -1 });
+  toJSON() {
+    const obj = { ...this };
+    return obj;
+  }
 
-module.exports = mongoose.model('Job', JobSchema);
+  static findOne(filter = {}) {
+    let promise;
+    if (filter.jobId && typeof filter.jobId === 'string') {
+      promise = readFirebase(`jobs/${filter.jobId}`).then(data => {
+        return data ? [new Job(data)] : [];
+      });
+    } else {
+      promise = readFirebase('jobs').then(data => {
+        const allJobs = data || {};
+        const items = Object.values(allJobs).map(j => new Job(j));
+        return items.filter(j => matchFilter(j, filter));
+      });
+    }
+    return new QueryChain(promise, true);
+  }
+
+  static async create(payload) {
+    const job = new Job({
+      ...payload,
+      createdAt: payload.createdAt || new Date().toISOString(),
+      status: payload.status || 'queued',
+      workerType: payload.workerType || 'pr-worker',
+      requestedSiteCount: payload.requestedSiteCount || 0,
+      matchedSiteCount: payload.matchedSiteCount || 0,
+      unmatchedSiteCount: payload.unmatchedSiteCount || 0,
+      outputFileCount: payload.outputFileCount || 0,
+      reviewRequiredCount: payload.reviewRequiredCount || 0,
+      warningCount: payload.warningCount || 0,
+      finalWorkerSummary: payload.finalWorkerSummary || ''
+    });
+    await writeFirebase(`jobs/${payload.jobId}`, job);
+    return job;
+  }
+
+  static find(filter = {}) {
+    const promise = readFirebase('jobs').then(data => {
+      const allJobs = data || {};
+      const items = Object.values(allJobs).map(j => new Job(j));
+      return items.filter(j => matchFilter(j, filter));
+    });
+    return new QueryChain(promise);
+  }
+
+  static async countDocuments(filter = {}) {
+    const list = await Job.find(filter);
+    return list.length;
+  }
+
+  static async exists(filter = {}) {
+    const item = await Job.findOne(filter);
+    return item !== null;
+  }
+
+  static async updateOne(filter = {}, update = {}) {
+    const job = await Job.findOne(filter);
+    if (job) {
+      const updatedData = { ...job, ...update.$set };
+      await writeFirebase(`jobs/${job.jobId}`, updatedData);
+      return { nModified: 1, ok: 1 };
+    }
+    return { nModified: 0, ok: 0 };
+  }
+
+  static async insertMany(arr = []) {
+    const results = [];
+    for (const item of arr) {
+      const created = await Job.create(item);
+      results.push(created);
+    }
+    return results;
+  }
+
+  static async deleteMany(filter = {}) {
+    const list = await Job.find(filter);
+    for (const job of list) {
+      await writeFirebase(`jobs/${job.jobId}`, { logicalDeleted: true, deletedAt: new Date().toISOString() });
+    }
+    return { deletedCount: list.length };
+  }
+
+  async save() {
+    await writeFirebase(`jobs/${this.jobId}`, this);
+    return this;
+  }
+}
+
+module.exports = Job;
 module.exports.JOB_STATUSES = JOB_STATUSES;
 module.exports.GENERATION_SCOPES = GENERATION_SCOPES;
 module.exports.PR_SCOPES = PR_SCOPES;
