@@ -1,9 +1,9 @@
 <template>
   <div class="portal-shell">
-    <section class="page-title-bar">
+    <section class="hero-band">
       <div>
-        <p class="page-eyebrow">Audit History</p>
-        <h2>Audit Logs</h2>
+        <p class="eyebrow">Audit History</p>
+        <h1>Audit Logs</h1>
       </div>
       <button type="button" class="secondary-button" :disabled="loading" @click="loadLogs">Refresh</button>
     </section>
