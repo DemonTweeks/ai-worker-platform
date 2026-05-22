@@ -1,12 +1,10 @@
 <template>
   <div class="admin-shell">
-    <AdminNav @logout="logout" />
-    <main class="admin-main">
+    <div class="admin-content-frame">
+      <AdminNav @logout="logout" />
       <ErrorBanner :message="errorMessage" />
-      <div class="admin-content-frame">
-        <router-view />
-      </div>
-    </main>
+      <router-view />
+    </div>
   </div>
 </template>
 
