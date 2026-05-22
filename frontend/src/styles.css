@@ -1466,7 +1466,6 @@ th {
   grid-template-columns: repeat(4, minmax(150px, 1fr));
 }
 
-/* Home cockpit layout with global topbar visible */
 body:has(.home-cockpit) {
   overflow: hidden;
 }
@@ -1476,17 +1475,19 @@ body:has(.home-cockpit) {
     linear-gradient(180deg, #eef7ff 0%, #f8fbff 42%, #ffffff 100%);
   height: 100dvh;
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
+}
+
+.app-shell:has(.home-cockpit) .app-header {
+  display: none;
 }
 
 .app-shell:has(.home-cockpit) .page-main {
-  flex: 1;
-  min-height: 0;
+  height: 100dvh;
+  margin: 0;
+  max-width: none;
   overflow: hidden;
-  padding: 10px 0 0;
+  padding: 0;
 }
-
 .home-cockpit {
   --zte-blue: #0072ce;
   --zte-blue-strong: #005aa3;
@@ -1496,10 +1497,9 @@ body:has(.home-cockpit) {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  height: 100%;
-  min-height: 0;
+  height: 100dvh;
   overflow: hidden;
-  padding: 0 14px 14px;
+  padding: 12px 14px 14px;
   max-width: 1080px;
   margin: 0 auto;
 }
