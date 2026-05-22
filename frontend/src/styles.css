@@ -118,14 +118,59 @@ textarea {
   min-height: 100dvh;
 }
 
+/* Global unified topbar (ZTE PR Creator style) */
 .app-header {
   align-items: center;
-  background: #ffffff;
-  border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #c8e1f7;
+  border-radius: 8px;
+  box-shadow: 0 16px 40px -30px rgba(0, 78, 140, 0.45);
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  padding: 16px 24px;
+  margin: 14px auto 0;
+  max-width: 1080px;
+  min-height: 54px;
+  padding: 8px 14px;
+}
+
+.brand-block {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  min-width: 0;
+}
+
+.brand-mark {
+  align-items: center;
+  background: #0072ce;
+  border-radius: 6px;
+  color: #ffffff;
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 800;
+  height: 28px;
+  justify-content: center;
+  letter-spacing: 0;
+  width: 42px;
+}
+
+.brand-block .eyebrow {
+  color: #52708b;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  margin: 0 0 2px;
+  text-transform: uppercase;
+}
+
+.brand-block h1 {
+  color: #12304a;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.2;
+  margin: 0;
 }
 
 .top-nav {
@@ -133,20 +178,57 @@ textarea {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  justify-content: flex-end;
 }
 
-.top-nav a {
-  border-radius: 8px;
-  color: #334155;
-  font-weight: 700;
-  padding: 8px 12px;
+.top-nav .nav-link,
+.top-nav .nav-health {
+  align-items: center;
+  border: 1px solid #cfe3f5;
+  border-radius: 999px;
+  color: #21435f;
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 800;
+  min-height: 32px;
+  padding: 7px 11px;
   text-decoration: none;
+  transition: background-color 0.22s ease, border-color 0.22s ease, transform 0.22s ease;
 }
 
-.top-nav a.router-link-exact-active {
-  background: #eef2ff;
-  border: 1px solid #dbeafe;
-  color: #1d4ed8;
+.top-nav .nav-link:hover {
+  background: #eef7ff;
+  border-color: #9fcbee;
+  transform: translateY(-1px) scale(1.01);
+}
+
+.top-nav .nav-link.disabled {
+  color: #7b91a6;
+  cursor: not-allowed;
+}
+
+.top-nav .nav-link.router-link-active {
+  background: #eef7ff;
+  border-color: #0072ce;
+  color: #0072ce;
+}
+
+.top-nav .nav-health.ok {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #065f46;
+}
+
+.top-nav .nav-health.warning {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #92400e;
+}
+
+.top-nav .nav-health.error {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #991b1b;
 }
 
 .brand-block h1,
@@ -1417,19 +1499,17 @@ body:has(.home-cockpit) {
     linear-gradient(180deg, #eef7ff 0%, #f8fbff 42%, #ffffff 100%);
   height: 100dvh;
   overflow: hidden;
-}
-
-.app-shell:has(.home-cockpit) .app-header {
-  display: none;
+  display: flex;
+  flex-direction: column;
 }
 
 .app-shell:has(.home-cockpit) .page-main {
-  height: 100dvh;
-  margin: 0;
-  max-width: none;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
-  padding: 0;
+  padding: 10px 0 0;
 }
+
 .home-cockpit {
   --zte-blue: #0072ce;
   --zte-blue-strong: #005aa3;
@@ -1439,9 +1519,10 @@ body:has(.home-cockpit) {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  height: 100dvh;
+  height: 100%;
+  min-height: 0;
   overflow: hidden;
-  padding: 12px 14px 14px;
+  padding: 0 14px 14px;
   max-width: 1080px;
   margin: 0 auto;
 }
