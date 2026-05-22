@@ -27,16 +27,16 @@
 
     <div v-if="loading" class="panel empty-state">Loading health status...</div>
     <section v-else class="history-stats health-grid">
-      <HealthStatusCard label="Backend" :value="backendStatus" :detail="timestamp" :tone="tone(backendStatus)" />
-      <HealthStatusCard label="MongoDB" :value="mongoStatus" :detail="mongoDetail" :tone="tone(mongoStatus)" />
-      <HealthStatusCard label="Storage" :value="storageStatus" :detail="storageDetail" :tone="tone(storageStatus)" />
-      <HealthStatusCard label="LLM" :value="llmStatus" :detail="llmDetail" :tone="tone(llmStatus)" />
-      <HealthStatusCard label="Queue" :value="queueStatus" :detail="queueDetail" :tone="tone(queueStatus)" />
+      <HealthStatusCard label="Backend" :value="formatStatus(backendStatus)" :detail="timestamp" :tone="tone(backendStatus)" />
+      <HealthStatusCard label="MongoDB" :value="formatStatus(mongoStatus)" :detail="mongoDetail" :tone="tone(mongoStatus)" />
+      <HealthStatusCard label="Storage" :value="formatStatus(storageStatus)" :detail="storageDetail" :tone="tone(storageStatus)" />
+      <HealthStatusCard label="LLM" :value="formatStatus(llmStatus)" :detail="llmDetail" :tone="tone(llmStatus)" />
+      <HealthStatusCard label="Queue" :value="formatStatus(queueStatus)" :detail="queueDetail" :tone="tone(queueStatus)" />
       <HealthStatusCard label="Active Jobs" :value="activeJobs" detail="Current worker slots in use" tone="neutral" />
       <HealthStatusCard label="Queued Jobs" :value="queuedJobs" detail="Waiting for worker slot" tone="neutral" />
-      <HealthStatusCard label="WebSocket" :value="websocketStatus" :detail="websocketDetail" :tone="tone(websocketStatus)" />
+      <HealthStatusCard label="WebSocket" :value="formatStatus(websocketStatus)" :detail="websocketDetail" :tone="tone(websocketStatus)" />
       <HealthStatusCard label="Disk Usage" :value="diskUsage" :detail="diskDetail" :tone="diskTone" />
-      <HealthStatusCard label="Cleanup" :value="cleanupStatus" :detail="cleanupDetail" :tone="tone(cleanupStatus)" />
+      <HealthStatusCard label="Cleanup" :value="formatStatus(cleanupStatus)" :detail="cleanupDetail" :tone="tone(cleanupStatus)" />
     </section>
 
     <section v-if="health" class="panel info-panel">
@@ -168,6 +168,14 @@ export default {
       if (['disabled', 'not available'].includes(value)) return 'neutral';
       if (['degraded', 'not_started', 'not_configured', 'unknown'].includes(value)) return 'warning';
       return 'danger';
+    },
+    formatStatus(status) {
+      const val = String(status || '').toLowerCase();
+      if (['ok', 'connected'].includes(val)) return '🟢Healthy';
+      if (['degraded', 'not_started', 'not_configured', 'unknown'].includes(val)) return '🟡Degraded';
+      if (['down', 'failed'].includes(val)) return '🔴Down';
+      if (['disabled', 'not available'].includes(val)) return '⚪Unavailable';
+      return '🔵Checking';
     },
     formatBytes(value) {
       const bytes = Number(value) || 0;

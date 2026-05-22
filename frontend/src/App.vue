@@ -59,11 +59,11 @@ export default {
   },
   computed: {
     healthLabel() {
-      if (this.healthError) return 'System Status: Down';
-      if (!this.health) return 'System Status: Checking...';
-      if (this.health.status === 'ok') return 'System Status: Good';
-      if (this.health.status === 'degraded') return 'System Status: Degraded';
-      return 'System Status: Down';
+      if (this.health && this.health.status === 'ok') return '🟢Healthy';
+      if (this.health && this.health.status === 'degraded') return '🟡Degraded';
+      if (this.health && this.health.status === 'down') return '🔴Down';
+      if (this.healthError) return '⚪Unavailable';
+      return '🔵Checking';
     },
     currentJobId() {
       if (this.$route.params.jobId) {
