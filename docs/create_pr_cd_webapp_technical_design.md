@@ -1,1513 +1,178 @@
-# Technical Design Document: AI Worker Platform — PR Worker MVP
+# Technical Design Document: AI Worker Platform - PR Worker MVP
 
 ## 1. Document Purpose
 
-This document defines the full technical design for the **AI Worker Platform**, with **PR Worker / create-pr-cd** as the first MVP worker.
-
-The platform is designed to convert the current developer-operated repo/skill workflow into a centralized internal WebApp that normal business users can use through a browser, without VS Code, Codex, Git, terminal, or local runtime setup.
-
-The design follows the confirmed direction:
-
-```text
-Phase 1: Internal PR Worker WebApp
-Future: Multi-skill AI Worker Platform
-```
+This document describes the current technical design for the **AI Worker Platform** with **PR Worker / create-pr-cd** as the first MVP worker. It separates implemented behavior from disabled, deferred, and future platform direction so the document can be used for development, operations, and production-hardening planning.
 
 Core principle:
 
 ```text
-Rule Engine / create-pr-cd = business correctness
-LLM = persona, explanation, and user interaction
-WebApp = business user interface
-OpenClaw = future optional trigger channel
+create-pr-cd = deterministic business correctness
+Express backend = orchestration, storage, queue, API, WebSocket
+Vue WebApp = business user interface
+LLM = optional wording, explanation, and re-ask support
+OpenClaw = future trigger channel
 ```
 
----
+## 2. Current Implementation Snapshot
 
-## 2. Product Positioning
+| Area | Current implementation |
+| --- | --- |
+| Repository | Single repo with `frontend/`, `backend/`, `skills/create-pr-cd/`, `storage/`, `docker/`, `docs/`, root `docker-compose.yml`, and `.env.example` |
+| Backend runtime | Node.js >= 20, Express.js |
+| Backend entry | `backend/src/server.js` |
+| Express app | `backend/src/app.js` |
+| Mounted backend routes | `/health`, `/api/jobs`, `/api/admin` |
+| WebSocket | Initialized from `backend/src/server.js` |
+| Startup checks | Storage initialization and Firebase Realtime Database connection check |
+| Docker database service | `mongodb` service is defined in root `docker-compose.yml` |
+| Current model layer note | Source contains Firebase-backed model compatibility classes; align persistence before production |
+| Queue | In-memory FIFO queue in `backend/src/queue/jobQueue.js` |
+| Queue durability | Not durable across backend restart |
+| Concurrency | Controlled by `MAX_CONCURRENT_JOBS` |
+| Worker execution | `backend/src/services/prWorkerService.js` runs `create-pr-cd` through a child process |
+| Frontend | Vue 2.7, Vue Router 3, Vite |
+| Frontend entry | `frontend/src/main.js` |
+| Frontend router | `frontend/src/router.js` |
+| Admin assets | Listing shell implemented; upload/activation disabled |
 
-### 2.1 Current Product Strategy
+## 3. Product Positioning
 
-The first version is an **internal tool** for company users.
+### Implemented
 
-Primary users:
+The current product is an internal browser application for PR/ECC generation from iEPMS workbook uploads. It supports upload prevalidation, scoped job creation, asynchronous execution, job progress, result review, and downloads.
 
-```text
-Planner
-PM
-Operation user
-TX team user
-```
+### Future
 
-The tool allows users to upload an iEPMS export file, select target site scope, generate PR/ECC outputs, review summary, and download result files.
+The broader platform direction remains a multi-skill AI Worker Platform. PR Worker is the first worker; future workers may include BOQ Worker, EHS Reviewer, L1 Checker, PAC Worker, MW Planning Checker, and Site Navigator Worker.
 
-### 2.2 Future Platform Direction
-
-Although Phase 1 only delivers PR Worker, the architecture must support future multi-skill expansion.
-
-Future workers may include:
-
-```text
-PR Worker
-BOQ Worker
-EHS Reviewer
-L1 Checker
-PAC Worker
-MW Planning Checker
-Site Navigator Worker
-```
-
-The architecture therefore follows:
-
-```text
-Single Skill Today
-Multi-Skill Ready Tomorrow
-```
-
----
-
-## 3. Problem Statement
-
-### 3.1 Current Workflow
-
-Current technical workflow:
-
-```text
-JJ / Developer
-  ↓
-VS Code
-  ↓
-Codex / OpenClaw / CLI
-  ↓
-create-pr-cd repo
-  ↓
-Excel Output
-```
-
-This works for development, testing, debugging, and rule iteration.
-
-### 3.2 Business Limitation
-
-Normal business users do not have or should not need:
-
-```text
-VS Code
-Git / GitHub access
-Codex
-OpenClaw runtime
-Node / Python environment setup
-Command-line knowledge
-Repo structure knowledge
-Manual dependency installation
-```
-
-### 3.3 Target Solution
-
-Target user experience:
-
-```text
-User opens WebApp
-  ↓
-Uploads iEPMS export
-  ↓
-Inputs site codes or selects Generate All Sites
-  ↓
-Clicks Generate
-  ↓
-PR Worker works asynchronously
-  ↓
-Conversation panel shows human-like progress
-  ↓
-User downloads ECC / reports
-```
-
----
-
-## 4. Business Objectives
-
-```text
-1. Remove developer environment dependency for normal users.
-2. Provide browser-based PR/ECC generation.
-3. Keep create-pr-cd business logic controlled and deterministic.
-4. Provide AI Worker style communication instead of cold machine output.
-5. Support batch generation by site / subcon / region / scope.
-6. Provide Summary Dashboard, REVIEW_REQUIRED list, and Error / Warning Report.
-7. Support admin-managed PR Model, Contract Info, and ECC Template.
-8. Keep job history and audit metadata.
-9. Prepare architecture for future OpenClaw trigger.
-10. Prepare architecture for future multi-skill AI Worker Platform.
-```
-
----
-
-## 5. Confirmed Key Decisions
-
-### 5.1 Product and Platform Decisions
-
-```text
-Product Strategy: Internal Tool first, future multi-skill platform ready
-Execution Model: Async Job Model
-Persona: OpenClaw-aligned Worker Persona
-Worker Model: Skill-based Worker Model
-MVP Worker: PR Worker / create-pr-cd only
-Output Philosophy: AI output is final output
-Communication Style: Professional Corporate + Human Collaboration Feel
-Language: English only
-```
-
-### 5.2 Runtime and Deployment Decisions
-
-```text
-Deployment: Windows 11 Pro internal machine
-Access: Internal network first, e.g. http://10.x.x.x:3000
-HTTPS: Phase 1 HTTP acceptable, future HTTPS
-Database: Local MongoDB
-Storage: Local Windows folder
-Runtime: Single Express.js process
-Queue: Multi-job FIFO queue
-Max Concurrent Jobs: 2
-```
-
-### 5.3 Input and Output Decisions
-
-```text
-User Upload: iEPMS Export / Site PR/PO View only
-System Assets: PR Model, Contract Info, ECC Template
-Admin Asset Management: Admin Portal
-Site Selection: Site Code textbox + Generate All Sites option
-Batch Mode: One upload can generate multiple subcon / region / scope outputs
-Output: ECC Excel, Summary Dashboard, REVIEW_REQUIRED, Error/Warning Excel
-Download: Individual files + ZIP package
-```
-
----
-
-## 6. High-Level Architecture
+## 4. High-Level Architecture
 
 ```text
 Business User
-  ↓ Browser
-Vue2 WebApp
-  ↓ HTTP / WebSocket
-Express.js Backend
-  ↓
-Job Manager / Queue / Worker
-  ↓ child process
-create-pr-cd Skill Execution
-  ↓
-ECC Output / Summary / REVIEW_REQUIRED / Warning Report
-  ↓
-WebApp Result UI + Conversation Panel
+  -> Browser
+  -> Vue 2 WebApp
+  -> HTTP / WebSocket
+  -> Express.js Backend
+  -> In-memory FIFO Queue
+  -> PR Worker Service
+  -> create-pr-cd child process
+  -> Output collection, reports, ZIP, final summary
+  -> WebApp result UI
 ```
 
-Future OpenClaw path:
+### Implemented Backend Responsibilities
 
-```text
-OpenClaw
-  ↓ API
-Express.js Backend
-  ↓
-Same PR Worker Execution
-  ↓
-Conversational response + result link
-```
+- REST API routing.
+- Public health endpoint.
+- WebSocket server and job event publishing.
+- Upload prevalidation.
+- Job record creation and listing.
+- Job detail and download endpoints.
+- In-memory FIFO queue management.
+- Cancellation request handling.
+- iEPMS workbook parsing.
+- Site filtering.
+- Child process execution of `skills/create-pr-cd`.
+- Output collection.
+- Summary and final summary saving.
+- Report and ZIP generation.
+- Admin login/logout and audit log retrieval.
 
----
+### Deferred/Future Responsibilities
 
-## 7. Logical Architecture Diagram
+- Durable queue and restart recovery.
+- Full normal-user authentication and per-job access control.
+- Re-enabled or intentionally removed Admin asset management.
+- Production-grade persistence decision and migration.
+- OpenClaw trigger integration.
+- Multi-skill registry and onboarding.
 
-```text
-┌────────────────────────────────────────────┐
-│ Business User                              │
-│ Planner / PM / Operation / TX Team         │
-└──────────────────────┬─────────────────────┘
-                       │
-                       ▼
-┌────────────────────────────────────────────┐
-│ Vue2 WebApp                                │
-│                                            │
-│ - PR Worker page                           │
-│ - Upload iEPMS Export                      │
-│ - Site Code input                          │
-│ - Generate All Sites option                │
-│ - Generate button                          │
-│ - Conversation panel                       │
-│ - Job History                              │
-│ - Job Detail                               │
-│ - Admin Login                              │
-└──────────────────────┬─────────────────────┘
-                       │ HTTP / WebSocket
-                       ▼
-┌────────────────────────────────────────────┐
-│ Express.js Backend — Single Process        │
-│                                            │
-│ - REST API                                 │
-│ - WebSocket Server                         │
-│ - Admin Auth                               │
-│ - Job Manager                              │
-│ - FIFO Queue                               │
-│ - Worker Runner                            │
-│ - Asset Manager                            │
-│ - LLM Client                               │
-│ - Health Dashboard API                     │
-└───────────────┬───────────────┬────────────┘
-                │               │
-                ▼               ▼
-┌────────────────────────┐   ┌─────────────────────────┐
-│ MongoDB Local           │   │ Local File Storage      │
-│                         │   │                         │
-│ - Jobs                  │   │ - Uploaded exports      │
-│ - Assets metadata       │   │ - ECC outputs           │
-│ - Audit logs            │   │ - Warning reports       │
-│ - Job summaries         │   │ - Asset files           │
-│ - Review metadata       │   │ - Temporary files       │
-└────────────────────────┘   └─────────────────────────┘
-                │
-                ▼
-┌────────────────────────────────────────────┐
-│ Worker Runner                              │
-│                                            │
-│ - Pre-validation                           │
-│ - Site filtering                           │
-│ - Prepare working folder                   │
-│ - Spawn create-pr-cd child process         │
-│ - Capture stdout/stderr                    │
-│ - Collect outputs                          │
-│ - Emit progress through WebSocket          │
-└──────────────────────┬─────────────────────┘
-                       │ child process
-                       ▼
-┌────────────────────────────────────────────┐
-│ skills/create-pr-cd                        │
-│                                            │
-│ Existing repo / skill logic                │
-│ Executed as child process                  │
-└────────────────────────────────────────────┘
+## 5. Technology Stack
 
-┌────────────────────────────────────────────┐
-│ Internal LLM MaaS Gateway                  │
-│ Qwen3-235B-A22B                            │
-│                                            │
-│ Used for persona, explanation and Q&A      │
-└────────────────────────────────────────────┘
-```
+| Layer | Current implementation |
+| --- | --- |
+| Frontend | Vue 2.7, Vue Router 3, Vite |
+| Backend | Express.js, Node.js >= 20 |
+| Realtime | `ws` WebSocket server |
+| Upload handling | `multer` |
+| Excel parsing/output | `xlsx`, `exceljs` |
+| ZIP packaging | `archiver` |
+| Admin auth | JWT and bcrypt |
+| Worker integration | Child process execution |
+| Deployment | Docker Compose with `frontend`, `backend`, `mongodb` |
+| Storage | Local storage mounted at `/app/storage` in backend container |
+| LLM | Optional provider configuration, default model name `Qwen3-235B-A22B` |
 
----
+## 6. Repository Structure
 
-## 8. Technology Stack
-
-### 8.1 Final Stack
-
-```text
-Frontend:
-Vue2
-
-Backend:
-Express.js / Node.js
-
-Database:
-MongoDB local VM
-
-Async Execution:
-Single Express process with internal FIFO job queue
-
-Realtime Update:
-WebSocket
-
-Excel Processing:
-xlsx / SheetJS for parsing
-ExcelJS for output generation and formatting
-
-Skill Execution:
-Child process execution of create-pr-cd
-
-LLM:
-Internal MaaS Gateway — Qwen3-235B-A22B
-
-Storage:
-Local Windows folder storage
-
-Deployment:
-Windows 11 Pro + Docker Desktop + Docker Compose
-
-Reverse Proxy:
-Nginx optional, not mandatory for Phase 1 HTTP
-```
-
-### 8.2 Why This Stack
-
-This stack matches the user-confirmed environment and delivery style:
-
-```text
-Vue2: compatible with existing frontend preference
-Express.js: lightweight Node backend for internal tool
-MongoDB: flexible metadata storage and local deployment friendly
-WebSocket: good for worker progress and conversational timeline
-Child process: loose coupling with create-pr-cd repo logic
-Local storage: simple and suitable for internal VM
-Internal LLM: data stays inside internal network
-```
-
----
-
-## 9. Repository Structure
-
-Confirmed strategy: **same repository**.
+Current structure:
 
 ```text
 ai-worker-platform/
-
-├── frontend/
-│   └── vue2-app/
-│       ├── src/
-│       ├── public/
-│       └── package.json
-│
-├── backend/
-│   ├── src/
-│   │   ├── api/
-│   │   ├── auth/
-│   │   ├── websocket/
-│   │   ├── jobs/
-│   │   ├── queue/
-│   │   ├── worker/
-│   │   ├── assets/
-│   │   ├── llm/
-│   │   ├── health/
-│   │   └── utils/
-│   └── package.json
-│
-├── skills/
-│   └── create-pr-cd/
-│       ├── index.js
-│       ├── package.json
-│       ├── engine/
-│       ├── rules/
-│       └── templates/
-│
-├── storage/
-│   ├── jobs/
-│   ├── assets/
-│   ├── outputs/
-│   └── temp/
-│
-├── docker/
-│   ├── docker-compose.yml
-│   └── Dockerfile
-│
-└── docs/
-    ├── technical-design.md
-    ├── architecture-decision-record.md
-    └── mvp-task-list.md
-```
-
----
-
-## 10. User Experience Design
-
-### 10.1 Main UI Style
-
-Confirmed UI style: **Hybrid Worker UI**.
-
-The page combines:
-
-```text
-AI Worker Persona
-+
-Structured Enterprise Form
-+
-Embedded Bottom Conversation Panel
-```
-
-### 10.2 PR Worker Main Page
-
-```text
-┌──────────────────────────────────────────────────────┐
-│ PR Worker                                            │
-├──────────────────────────────────────────────────────┤
-│ PR Worker:                                           │
-│                                                      │
-│ I can help you generate PR ECC from iEPMS export.    │
-│                                                      │
-│ Please upload your file and select generation scope. │
-│                                                      │
-│                                      [ Admin Login ] │
-├──────────────────────────────────────────────────────┤
-│ Upload iEPMS Export                                  │
-│ [ Choose File ]                                      │
-│                                                      │
-│ Generation Scope                                     │
-│ (•) Generate by Site Code                            │
-│ ( ) Generate All Sites                               │
-│                                                      │
-│ Site Codes                                           │
-│ ┌───────────────────────────────────────────────┐    │
-│ │ B00577                                       │    │
-│ │ K00340                                      │    │
-│ └───────────────────────────────────────────────┘    │
-│                                                      │
-│                  [ GENERATE ]                        │
-├──────────────────────────────────────────────────────┤
-│ Conversation Timeline                                │
-│                                                      │
-│ PR Worker: Task received.                            │
-│ PR Worker: Validating uploaded export...             │
-│ PR Worker: PR model loaded successfully.             │
-│ PR Worker: Starting ECC generation...                │
-└──────────────────────────────────────────────────────┘
-```
-
-### 10.3 Conversation Panel
-
-Conversation panel behavior:
-
-```text
-Displayed during current task
-Not saved as full conversation
-Uses worker-style English messages
-Updated through WebSocket heartbeat and events
-```
-
-Full conversation is not persisted.
-
-Only final worker summary is saved in Job History.
-
----
-
-## 11. Input Model
-
-### 11.1 User Input
-
-User provides only:
-
-```text
-1. iEPMS Export Excel / Site PR/PO View
-2. Site Code list OR Generate All Sites option
-```
-
-### 11.2 System Managed Assets
-
-System provides:
-
-```text
-1. PR Model
-2. Contract Info
-3. ECC Template
-```
-
-These assets are managed through Admin Portal.
-
-### 11.3 Site Selection Rule
-
-User has two options:
-
-```text
-Option 1: Generate by Site Code
-Option 2: Generate All Sites
-```
-
-Validation rule:
-
-```text
-No site code + no Generate All = block generation and ask user to select scope
-```
-
-Site code input supports:
-
-```text
-Newline separated
-Comma separated
-Space separated
-```
-
-Normalization:
-
-```text
-Trim spaces
-Convert to uppercase
-Remove hidden characters
-Deduplicate
-Case-insensitive matching
-```
-
-Duplicate site code behavior:
-
-```text
-Auto deduplicate
-Continue execution
-Record warning in Error / Warning Report
-```
-
-Unmatched site code behavior:
-
-```text
-Continue generation for matched sites
-Record unmatched site codes in Error / Warning Report
-```
-
----
-
-## 12. Pre-Validation Design
-
-Pre-validation is required before Generate button becomes enabled.
-
-### 12.1 Pre-validation Checks
-
-```text
-File extension valid
-Excel readable
-File size within limit
-Row count within limit
-Required sheet exists
-Required columns exist
-```
-
-Required sheet / column definitions are code-defined.
-
-If iEPMS export format changes, developer updates parser/validation code and redeploys.
-
-### 12.2 Pre-validation UI
-
-Result display:
-
-```text
-Checklist + AI Worker explanation
-```
-
-Example pass:
-
-```text
-✓ File type valid
-✓ Excel readable
-✓ Required sheet found
-✓ Required columns found
-✓ Row count within limit
-✓ File size within limit
-```
-
-Worker message:
-
-```text
-The uploaded iEPMS export passed the initial validation.
-I found the required sheet and mandatory columns.
-You can now proceed with PR/ECC generation.
-```
-
-Example fail:
-
-```text
-✓ File type valid
-✓ Excel readable
-✗ Required column missing: Site Code
-✓ Row count within limit
-```
-
-Worker message:
-
-```text
-I cannot start the task yet.
-The uploaded file is missing the required Site Code column.
-Please upload a valid iEPMS export before generating PR/ECC.
-```
-
-Generate button behavior:
-
-```text
-Pre-validation passed = enabled
-Pre-validation failed = disabled
-```
-
----
-
-## 13. Job Execution Design
-
-### 13.1 Async Job Model
-
-Each Generate action creates a new job.
-
-```text
-Upload + scope selection
-  ↓
-Create Job
-  ↓
-Queue Job
-  ↓
-Worker executes asynchronously
-  ↓
-WebSocket progress update
-  ↓
-Output generated
-```
-
-Every run is a new job.
-
-The system does not automatically continue previous jobs.
-
-### 13.2 Job Queue
-
-Queue strategy:
-
-```text
-FIFO
-Max concurrent running jobs = 2
-Extra jobs = queued
-```
-
-Example:
-
-```text
-Running:
-Job 001
-Job 002
-
-Queued:
-Job 003
-Job 004
-```
-
-### 13.3 Job Status Model
-
-Detailed status model:
-
-```text
-Queued
-Validating
-Filtering Sites
-Loading Assets
-Generating
-Exporting
-Waiting for User Input
-Completed
-Completed with Warning
-Failed
-Cancelled
-Cancelled with Partial Result
-```
-
-### 13.4 Worker Execution Flow
-
-```text
-1. Create job record
-2. Store uploaded iEPMS export
-3. Run pre-validation
-4. Enable Generate if valid
-5. Queue job
-6. Filter sites based on user scope
-7. Load active PR Model / Contract Info / ECC Template
-8. Prepare job working folder
-9. Spawn create-pr-cd child process
-10. Capture stdout / stderr
-11. Parse outputs
-12. Generate Summary Dashboard data
-13. Generate REVIEW_REQUIRED list
-14. Generate Error / Warning Report
-15. Generate ZIP package
-16. Save final worker summary
-17. Mark job completed / warning / failed
-```
-
----
-
-## 14. Child Process Execution Design
-
-Confirmed integration model: **child process execution**.
-
-### 14.1 Purpose
-
-The Express backend should not directly embed create-pr-cd logic.
-
-Instead:
-
-```text
-Express Worker
-  ↓
-spawn child process
-  ↓
-skills/create-pr-cd/index.js
-```
-
-Benefits:
-
-```text
-Loose coupling
-Better crash isolation
-Skill can evolve independently
-Easier Codex iteration
-Backend remains orchestration layer
-```
-
-### 14.2 Example Execution
-
-```javascript
-spawn('node', [
-  'skills/create-pr-cd/index.js',
-  '--input', filteredInputPath,
-  '--pr-model', activePrModelPath,
-  '--contract-info', activeContractInfoPath,
-  '--ecc-template', activeEccTemplatePath,
-  '--output-dir', jobOutputDir,
-  '--date', outputDate
-])
-```
-
-### 14.3 Process Monitoring
-
-Backend must capture:
-
-```text
-stdout
-stderr
-exit code
-start time
-end time
-timeout
-output files
-```
-
-Critical failure if:
-
-```text
-Child process exits non-zero
-Timeout exceeded
-No output generated when expected
-Core engine exception detected
-```
-
----
-
-## 15. WebSocket Design
-
-### 15.1 Update Model
-
-Confirmed update model:
-
-```text
-Timed heartbeat every 5 seconds
-Major events pushed immediately
-```
-
-Example heartbeat:
-
-```text
-PR Worker:
-Still processing...
-Current phase: PR generation
-Processed rows: 145 / 420
-Elapsed time: 02m 14s
-```
-
-### 15.2 Reconnect Behavior
-
-Confirmed behavior:
-
-```text
-Auto reconnect + resume live status
-```
-
-If browser refreshes or network disconnects:
-
-```text
-Reconnect WebSocket
-Reload active job state
-Resume live progress
-```
-
-### 15.3 Multi-tab Behavior
-
-Confirmed:
-
-```text
-Independent per tab
-```
-
-Each tab subscribes to a job channel:
-
-```json
-{
-  "action": "subscribe",
-  "jobId": "PR-20260520-001"
-}
-```
-
-Backend only sends events for subscribed job.
-
----
-
-## 16. LLM Design
-
-### 16.1 LLM Provider
-
-Confirmed provider:
-
-```text
-Internal MaaS Gateway
-Qwen3-235B-A22B
-```
-
-### 16.2 LLM Responsibilities
-
-LLM is responsible for:
-
-```text
-Worker persona
-Human-like progress messages
-Result explanation
-Interactive Q&A
-Final worker summary
-REVIEW_REQUIRED explanation
-Error / warning explanation
-```
-
-LLM is not responsible for:
-
-```text
-Directly generating ECC
-Directly deciding PR line item
-Guessing contract number
-Replacing create-pr-cd business logic
-Changing generated result without deterministic validation
-```
-
-### 16.3 Data Access Scope
-
-LLM may access full job data through a controlled **Job Data Access Layer**.
-
-Accessible data:
-
-```text
-Summary
-REVIEW_REQUIRED list
-Error / Warning Report data
-Parsed iEPMS data
-Generated ECC metadata
-Job events
-Asset versions used
-```
-
-Design rule:
-
-```text
-LLM does not directly read raw Excel files.
-Backend retrieves relevant data, structures context, and sends only relevant context to LLM.
-```
-
-### 16.4 Language and Style
-
-Language:
-
-```text
-English only
-```
-
-Style:
-
-```text
-Professional Corporate + Human Collaboration Feel
-Moderately Proactive
-```
-
-Completion message standard:
-
-```text
-Task completed.
-
-Processed: 245 rows
-Generated: 218 rows
-Review Required: 27 rows
-
-You can download the ECC files now. I recommend reviewing the REVIEW_REQUIRED report before submission.
-```
-
----
-
-## 17. Output Design
-
-### 17.1 Output Types
-
-MVP output includes:
-
-```text
-ECC Excel files
-Summary Dashboard
-REVIEW_REQUIRED list
-Error / Warning Report Excel
-ZIP package containing all outputs
-```
-
-### 17.2 Batch Output
-
-Batch Mode supports:
-
-```text
-Single ECC file download
-ZIP download for all files
-```
-
-ZIP structure:
-
-```text
-PR_Worker_Job_XXXX.zip
- ├── ECC_Output/
- ├── Review_Required_Report.xlsx
- ├── Error_Warning_Report.xlsx
- └── Summary_Report.html or json
-```
-
-### 17.3 Naming Convention
-
-ECC file naming standard:
-
-```text
-{Region}-{Subcon} TX Mini Project {Scope} PR {YYYYMMDD}.xlsx
-```
-
-Examples:
-
-```text
-Northern-Allstar TX Mini Project TSS PR 20260519.xlsx
-Southern-GCI TX Mini Project TI PR 20260519.xlsx
-Central-GTSB TX Mini Project Planning PR 20260519.xlsx
-```
-
----
-
-## 18. REVIEW_REQUIRED and Warning Rules
-
-The platform must follow the repo-defined create-pr-cd business rules.
-
-### 18.1 REVIEW_REQUIRED
-
-Confirmed platform behavior:
-
-```text
-REVIEW_REQUIRED rows do not generate ECC line output
-They are listed in REVIEW_REQUIRED report
-They are included in Error / Warning Report
-```
-
-### 18.2 Duplicate Handling
-
-Confirmed behavior:
-
-```text
-Duplicate does not block generation
-Generate anyway
-Record duplicate warning in Error / Warning Report
-```
-
-### 18.3 Unmatched Site Code
-
-Confirmed behavior:
-
-```text
-Continue generation for matched sites
-Unmatched site code goes to Error / Warning Report
-```
-
----
-
-## 19. Job History Design
-
-### 19.1 Access Model
-
-Normal users do not login.
-
-All users can see Job History.
-
-Admin login is only required for Admin Portal.
-
-### 19.2 Retention
-
-```text
-Job History: keep forever
-Job Metadata: keep forever
-Summary: keep forever
-Final Worker Summary: keep forever
-REVIEW_REQUIRED metadata: keep forever
-Asset version record: keep forever
-```
-
-File retention:
-
-```text
-Uploaded iEPMS Export: 180 days
-ECC Output Files: 180 days
-Error / Warning Reports: 180 days
-Temporary files: 180 days or cleanup policy
-```
-
-### 19.3 Conversation Persistence
-
-Full conversation is not saved.
-
-Only final worker summary is saved.
-
-### 19.4 Job History UI
-
-Confirmed UI: **Hybrid**.
-
-Top:
-
-```text
-Filter
-Search
-Summary statistics
-```
-
-Bottom:
-
-```text
-Job cards
-```
-
-Example job card:
-
-```text
-PR Worker
-Status: Completed with Review Required
-Job ID: PR-20260519-001
-Created: 2026-05-19 15:42
-Sites: 18 matched / 2 unmatched
-ECC Files: 4
-Review Required: 6
-Final Worker Summary: ...
-[ OPEN ] [ DOWNLOAD ] [ REPORT ]
-```
-
-### 19.5 Job Detail Page
-
-Job Detail includes:
-
-```text
-Job Summary
-Final Worker Summary
-ECC Output List
-REVIEW_REQUIRED Table
-Error / Warning Report
-Asset Versions Used
-Re-Ask PR Worker Panel
-```
-
-Re-Ask behavior:
-
-```text
-User can ask questions based on job data
-Q&A is temporary and not saved
-```
-
-### 19.6 Expired Files
-
-Phase 1:
-
-```text
-If output file expired, show File Expired.
-```
-
-Phase 2:
-
-```text
-Support Regenerate if original input and asset versions are available.
-```
-
----
-
-## 20. Admin Portal Design
-
-### 20.1 Admin Access
-
-Admin can access via:
-
-```text
-Homepage Admin Login button
-Direct /admin URL
-```
-
-Authentication:
-
-```text
-Simple username + password
-Local DB
-Password hashed
-```
-
-Admin accounts:
-
-```text
-Phase 1: one preset admin account
-Phase 2: admin account management
-```
-
-### 20.2 Admin Asset Management
-
-Admin manages:
-
-```text
-PR Model
-Contract Info
-ECC Template
-```
-
-Admin can:
-
-```text
-Upload new asset version
-Activate uploaded version
-View version history
-```
-
-Admin uploaded asset becomes active immediately after activation.
-
-No approval flow is required.
-
-### 20.3 Asset Validation
-
-Phase 1 validation:
-
-```text
-Basic technical validation only
-- file exists
-- file type valid
-- file readable
-- file not corrupted
-```
-
-Admin is responsible for business correctness of uploaded assets.
-
-### 20.4 Asset Versioning
-
-Version naming:
-
-```text
-System auto-generated
-```
-
-Examples:
-
-```text
-PR_MODEL_20260519_153045
-CONTRACT_INFO_20260519_153102
-ECC_TEMPLATE_20260519_153515
-```
-
-Old asset versions:
-
-```text
-Keep forever
-```
-
-Each job records:
-
-```text
-PR Model version
-Contract Info version
-ECC Template version
-Engine version
-Execution time
-```
-
-Rollback:
-
-```text
-No one-click rollback in Phase 1
-Admin re-uploads old file if needed
-```
-
-### 20.5 Admin Audit Log
-
-Audit log required for:
-
-```text
-Admin login
-Admin logout
-Asset upload
-Asset activate
-Password change
-Configuration change
-```
-
-Audit record example:
-
-```text
-Timestamp
-Admin username
-Action
-Asset type
-Version
-Status
-IP address
-```
-
----
-
-## 21. Health Dashboard
-
-Admin Portal includes a simple Health Dashboard.
-
-Status items:
-
-```text
-Backend API: Healthy
-MongoDB: Connected
-Storage: OK
-LLM Gateway: Connected
-Queue: Running
-Active Jobs: 2
-Queued Jobs: 5
-Disk Usage: 62%
-```
-
-Purpose:
-
-```text
-Quickly verify system availability
-Troubleshoot LLM / DB / storage / worker issues
-Support internal operation
-```
-
----
-
-## 22. Failure Handling Design
-
-Confirmed failure model: **Hybrid Failure Strategy**.
-
-### 22.1 Recoverable Error
-
-Continue where possible.
-
-Examples:
-
-```text
-LLM timeout
-Conversation response failure
-Optional report generation issue
-Minor parsing warning
-```
-
-Behavior:
-
-```text
-Continue core generation
-Record warning
-Show in Error / Warning Report
-```
-
-### 22.2 Critical Error
-
-Stop job.
-
-Examples:
-
-```text
-Unreadable input file
-Core engine exception
-Storage unavailable
-MongoDB unavailable
-Child process fatal error
-```
-
-Behavior:
-
-```text
-Mark job Failed
-Show worker explanation
-Store error metadata
-```
-
-### 22.3 Partial Business Result
-
-If partial result is possible:
-
-```text
-Generate successful outputs
-Record failed items
-Do not fail entire job unnecessarily
-```
-
----
-
-## 23. Cancel Job Design
-
-User can cancel running job.
-
-Cancelable statuses:
-
-```text
-Queued
-Validating
-Filtering Sites
-Loading Assets
-Generating
-Exporting
-Waiting for User Input
-```
-
-Non-cancelable statuses:
-
-```text
-Completed
-Completed with Warning
-Failed
-Cancelled
-Cancelled with Partial Result
-```
-
-Cancel behavior:
-
-```text
-Graceful cancel
-Finish current safe checkpoint
-Stop execution
-Cleanup temporary resources
-Mark job cancelled
-```
-
-Partial output policy:
-
-```text
-Keep partial output
-```
-
-If partial result exists:
-
-```text
-Status = Cancelled with Partial Result
-User can download completed outputs
-```
-
----
-
-## 24. Resource Protection
-
-Hard limits are required.
-
-Recommended initial limits:
-
-```text
-Max Upload File Size: 100 MB
-Max Excel Row Count: 50,000 rows
-Max Requested Site Codes: 5,000
-Max Job Execution Timeout: 60 minutes
-Max Generated Output Files: 200
-```
-
-If exceeded:
-
-```text
-Reject job
-Show clear PR Worker explanation
-Mark as Resource Limit Exceeded
-```
-
-Example message:
-
-```text
-The uploaded dataset exceeds the supported processing limit.
-Detected: 78,421 rows
-Current limit: 50,000 rows
-Please reduce the dataset size or split the job into smaller batches.
-```
-
----
-
-## 25. Database Design — MongoDB Collections
-
-### 25.1 jobs
-
-```json
-{
-  "jobId": "PR-20260519-001",
-  "workerType": "pr-worker",
-  "status": "completed_with_warning",
-  "createdAt": "2026-05-19T15:42:00+08:00",
-  "startedAt": "2026-05-19T15:43:00+08:00",
-  "completedAt": "2026-05-19T15:48:00+08:00",
-  "generationScope": "site_code",
-  "requestedSiteCount": 20,
-  "matchedSiteCount": 18,
-  "unmatchedSiteCount": 2,
-  "finalWorkerSummary": "Task completed...",
-  "assetVersions": {
-    "prModel": "PR_MODEL_20260519_153045",
-    "contractInfo": "CONTRACT_INFO_20260519_153102",
-    "eccTemplate": "ECC_TEMPLATE_20260519_153515"
-  },
-  "engineVersion": "create-pr-cd-v1",
-  "fileRetentionUntil": "2026-11-15T00:00:00+08:00"
-}
-```
-
-### 25.2 job_files
-
-```json
-{
-  "jobId": "PR-20260519-001",
-  "fileType": "uploaded_export",
-  "fileName": "iEPMS_export.xlsx",
-  "filePath": "storage/jobs/PR-20260519-001/input/iEPMS_export.xlsx",
-  "retentionUntil": "2026-11-15T00:00:00+08:00",
-  "createdAt": "2026-05-19T15:42:00+08:00"
-}
-```
-
-### 25.3 assets
-
-```json
-{
-  "assetType": "pr_model",
-  "version": "PR_MODEL_20260519_153045",
-  "fileName": "pr_model.xlsx",
-  "filePath": "storage/assets/pr_model/PR_MODEL_20260519_153045.xlsx",
-  "isActive": true,
-  "uploadedBy": "admin",
-  "uploadedAt": "2026-05-19T15:30:45+08:00"
-}
-```
-
-### 25.4 review_required_items
-
-```json
-{
-  "jobId": "PR-20260519-001",
-  "siteCode": "B00577",
-  "sourceRow": 12,
-  "scope": "TSS",
-  "subcon": "Allstar",
-  "issueType": "MISSING_MANDATORY_MAPPING",
-  "description": "Required mapping could not be determined safely.",
-  "severity": "high"
-}
-```
-
-### 25.5 warnings
-
-```json
-{
-  "jobId": "PR-20260519-001",
-  "warningType": "DUPLICATE_SITE_CODE_INPUT",
-  "siteCode": "B00577",
-  "description": "Duplicate site code was provided and processed once only."
-}
-```
-
-### 25.6 admin_audit_logs
-
-```json
-{
-  "timestamp": "2026-05-19T15:35:22+08:00",
-  "admin": "admin",
-  "action": "UPLOAD_ASSET",
-  "assetType": "pr_model",
-  "version": "PR_MODEL_20260519_153045",
-  "status": "success",
-  "ip": "10.x.x.x"
-}
-```
-
----
-
-## 26. API Design
-
-### 26.1 Public User APIs
+|-- frontend/
+|   |-- src/
+|   |-- index.html
+|   |-- package.json
+|   `-- vite.config.js
+|-- backend/
+|   |-- src/
+|   |   |-- app.js
+|   |   |-- server.js
+|   |   |-- routes/
+|   |   |-- queue/
+|   |   |-- services/
+|   |   |-- websocket/
+|   |   |-- models/
+|   |   |-- middleware/
+|   |   |-- llm/
+|   |   `-- config/
+|   `-- package.json
+|-- skills/
+|   `-- create-pr-cd/
+|-- storage/
+|   |-- jobs/
+|   |-- assets/
+|   |-- outputs/
+|   `-- temp/
+|-- docker/
+|-- docs/
+|-- docker-compose.yml
+`-- .env.example
+```
+
+There is no `frontend/vue2-app` directory in the current implementation; the Vue app uses `frontend/src` directly.
+
+## 7. Frontend Design
+
+### Implemented Routes
+
+| Route | Purpose |
+| --- | --- |
+| `/` | PR Worker upload and generation page |
+| `/history` | Job history |
+| `/jobs/:jobId` | Job detail |
+| `/admin/login` | Admin login |
+| `/admin/health` | Admin health console |
+| `/admin/assets` | Admin asset listing shell |
+| `/admin/audit-logs` | Admin audit log view |
+
+Admin routes are protected by a frontend route guard using `isAdminAuthenticated()`.
+
+### Implemented User Experience
+
+- Upload panel for iEPMS workbook prevalidation.
+- Site scope selection using site codes or all sites.
+- PR scope support in the job creation payload.
+- Job progress display from backend state/events.
+- Job history and detail pages.
+- Download panel for generated files and ZIP package.
+- Re-ask panel connected to `POST /api/jobs/:jobId/ask`.
+- Admin health, assets, and audit log screens.
+
+## 8. Backend API Design
+
+### Implemented User APIs
 
 ```http
 POST /api/jobs/prevalidate
@@ -1515,314 +180,401 @@ POST /api/jobs
 GET  /api/jobs
 GET  /api/jobs/:jobId
 POST /api/jobs/:jobId/cancel
-GET  /api/jobs/:jobId/download/:fileId
 GET  /api/jobs/:jobId/download-zip
+GET  /api/jobs/:jobId/download/:fileId
 POST /api/jobs/:jobId/ask
 ```
 
-### 26.2 Admin APIs
+### Implemented Admin APIs
 
 ```http
 POST /api/admin/login
 POST /api/admin/logout
 GET  /api/admin/assets
+GET  /api/admin/audit-logs
+```
+
+`GET /api/admin/assets` currently returns:
+
+```json
+{
+  "activeByType": {},
+  "items": []
+}
+```
+
+### Disabled Admin Asset APIs
+
+```http
 POST /api/admin/assets/upload
 POST /api/admin/assets/:version/activate
-GET  /api/admin/audit-logs
-GET  /api/admin/health
 ```
 
-### 26.3 WebSocket Events
+These routes exist but return `ASSET_MANAGEMENT_DISABLED`. Business assets are owned by `skills/create-pr-cd` and are not user-manageable through the Admin Portal at the moment.
 
-Client subscribe:
+### Health API
 
-```json
-{
-  "action": "subscribe",
-  "jobId": "PR-20260520-001"
-}
+```http
+GET /health
 ```
 
-Server event example:
+The frontend route `/admin/health` calls the public `/health` endpoint. There is no implemented `GET /api/admin/health` route.
 
-```json
-{
-  "jobId": "PR-20260520-001",
-  "eventType": "HEARTBEAT",
-  "status": "Generating",
-  "message": "Still processing... Current phase: PR generation.",
-  "progress": {
-    "processedRows": 145,
-    "totalRows": 420,
-    "elapsedSeconds": 134
-  }
-}
+## 9. Job Execution Design
+
+### Implemented Job Flow
+
+```text
+1. User uploads iEPMS workbook for prevalidation.
+2. Backend validates upload constraints and workbook structure.
+3. User creates a job with generation scope and PR scope.
+4. Backend stores the uploaded input and creates job metadata.
+5. Job is queued in the in-memory FIFO queue.
+6. Worker parses the iEPMS workbook.
+7. Worker filters site rows.
+8. Worker runs create-pr-cd as a child process.
+9. Worker collects generated outputs.
+10. Worker builds and saves summary data.
+11. Worker saves final summary wording.
+12. Worker generates reports and ZIP package.
+13. Backend publishes WebSocket job events.
+14. Job is marked completed, completed with warning, failed, cancelled, or cancelled with partial result.
 ```
 
----
+### Implemented Statuses
 
-## 27. OpenClaw Future Integration
+```text
+queued
+validating
+filtering_sites
+loading_assets
+generating
+exporting
+waiting_for_user_input
+completed
+completed_with_warning
+failed
+cancelled
+cancelled_with_partial_result
+```
 
-OpenClaw will call the same backend APIs.
+### Cancellation
 
-OpenClaw should not duplicate business logic.
+Queued jobs can be cancelled before execution. Running jobs receive a cancellation request and stop at worker checkpoints. If partial outputs exist, the job can be marked `cancelled_with_partial_result`.
+
+## 10. Queue Design
+
+### Implemented
+
+The queue is an in-memory FIFO queue:
+
+```text
+queuedJobIds[]
+activeJobIds Set
+knownJobIds Set
+```
+
+`MAX_CONCURRENT_JOBS` controls how many jobs run at once.
+
+### Limitation
+
+The queue is not durable. A backend restart loses in-memory queue state and active execution state.
+
+### Future Production Hardening
+
+Replace or back the current queue with a durable queue mechanism so queued/running jobs can recover after process or host restart.
+
+## 11. Child Process Execution
+
+### Implemented
+
+`backend/src/services/prWorkerService.js` delegates generation to the child process runner. The worker receives the filtered input path, generation scope, site codes, PR scope, and cancellation callback.
+
+The backend remains the orchestration layer:
+
+```text
+Express backend
+  -> parse/filter input
+  -> spawn create-pr-cd
+  -> capture result
+  -> collect outputs
+  -> generate platform reports/summaries
+```
+
+### Design Rationale
+
+Child process execution keeps the platform loosely coupled from the deterministic `create-pr-cd` skill and reduces blast radius if the skill process fails.
+
+## 12. Storage and Output Design
+
+### Implemented
+
+Runtime storage is rooted at `STORAGE_ROOT`. Docker mounts the named `storage` volume to `/app/storage`.
+
+Tracked file types include uploaded input, filtered input, generated outputs, reports, and ZIP package. Downloads are served through backend routes rather than direct filesystem paths.
+
+The job flow includes:
+
+- Output collection.
+- Summary generation.
+- Final worker summary saving.
+- Report generation.
+- ZIP generation.
+
+### Deployment Mounts
+
+Root `docker-compose.yml` mounts:
+
+```yaml
+volumes:
+  - storage:/app/storage
+  - ./skills:/app/skills:ro
+```
+
+`CREATE_PR_CD_ROOT` points to `/app/skills/create-pr-cd` in Docker.
+
+## 13. Admin Portal Design
+
+### Implemented
+
+- Admin login with configured default credentials.
+- JWT-protected admin routes after login.
+- Admin logout.
+- Audit log listing.
+- Asset listing route and frontend view.
+- Health console frontend route.
+
+### Disabled
+
+Admin asset upload and activation are disabled and return `ASSET_MANAGEMENT_DISABLED`.
+
+### Deferred Decision
+
+Asset management should be either:
+
+1. Re-enabled with validation, versioning, activation, rollback, and audit semantics; or
+2. Removed from the Admin Portal and documented as repository-managed inside `skills/create-pr-cd`.
+
+Until then, business assets are owned by `skills/create-pr-cd`.
+
+## 14. Health Dashboard
+
+### Implemented
+
+Frontend route:
+
+```text
+/admin/health
+```
+
+Backend route used by the health console:
+
+```http
+GET /health
+```
+
+The health response includes service-level information from the backend health service, including backend status, Firebase connection status, storage status, LLM configuration status, queue state, WebSocket state, disk information, and cleanup settings where available.
+
+### Not Implemented
+
+```http
+GET /api/admin/health
+```
+
+Do not document `/api/admin/health` as implemented unless a route is added.
+
+## 15. WebSocket Design
+
+### Implemented
+
+The WebSocket server is initialized from `backend/src/server.js`. Job events are published by backend services during queueing, validation, filtering, generation, output collection, completion, cancellation, and failure.
+
+Configuration:
+
+| Variable | Purpose |
+| --- | --- |
+| `WS_HEARTBEAT_INTERVAL_MS` | Heartbeat interval |
+| `WS_MAX_PAYLOAD_BYTES` | Maximum WebSocket payload size |
+
+### Design Intent
+
+Clients subscribe to job updates and use HTTP APIs to reload canonical job state when needed.
+
+## 16. LLM Design
+
+### Implemented / Configuration-Dependent
+
+LLM behavior is controlled by:
+
+```text
+LLM_ENABLED
+LLM_PROVIDER
+LLM_BASE_URL
+LLM_API_KEY
+LLM_MODEL
+LLM_TIMEOUT_MS
+LLM_MAX_RETRIES
+LLM_PROGRESS_WORDING_ENABLED
+LLM_FINAL_SUMMARY_ENABLED
+LLM_REASK_ENABLED
+```
+
+When enabled and configured, LLM support can provide progress wording, final summary wording, and re-ask responses. When disabled or unavailable, fallback behavior must preserve deterministic job execution.
+
+### Design Boundary
+
+The LLM must not generate ECC business output or replace `create-pr-cd` business logic. It is for wording, explanation, and user interaction around structured job data.
+
+## 17. Security Design
+
+### Implemented
+
+- Admin login endpoint.
+- JWT-protected admin routes after login.
+- Password hashing support.
+- Upload middleware and configured upload size limits.
+- Backend-controlled file download routes.
+- Path safety helpers for storage paths.
+
+### Current Limitation
+
+Normal users do not authenticate. They can access job creation, job history, job detail, and downloads on the internal deployment.
+
+### Future
+
+Add normal-user authentication, job ownership, authorization, session management, and audit requirements before broader network exposure.
+
+## 18. Environment and Limits
+
+Important variables:
+
+| Variable | Purpose |
+| --- | --- |
+| `NODE_ENV` | Backend runtime mode in Docker |
+| `PORT` | Backend port |
+| `FIREBASE_DB_URL`, `FIREBASE_DB_MOCK` | Firebase check/model settings |
+| `MONGO_URI` | Provided in Docker Compose for MongoDB |
+| `STORAGE_ROOT` | Runtime file storage root |
+| `CREATE_PR_CD_ROOT` | Path to the skill root |
+| `WS_HEARTBEAT_INTERVAL_MS`, `WS_MAX_PAYLOAD_BYTES` | WebSocket heartbeat and payload limits |
+| `LLM_ENABLED`, `LLM_PROVIDER`, `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` | LLM provider configuration |
+| `LLM_TIMEOUT_MS`, `LLM_MAX_RETRIES` | LLM request limits |
+| `LLM_PROGRESS_WORDING_ENABLED`, `LLM_FINAL_SUMMARY_ENABLED`, `LLM_REASK_ENABLED` | Optional LLM behavior |
+| `MAX_UPLOAD_SIZE_MB` | Upload size limit |
+| `MAX_ROW_COUNT` | Workbook row limit |
+| `MAX_SITE_CODES` | Site code count limit |
+| `MAX_CONCURRENT_JOBS` | Concurrent worker limit |
+| `JOB_TIMEOUT_MINUTES` | Worker timeout |
+| `MAX_OUTPUT_FILES` | Output file limit |
+| `FILE_RETENTION_DAYS` | File retention horizon |
+| `ADMIN_DEFAULT_USERNAME`, `ADMIN_DEFAULT_PASSWORD` | Initial admin credentials |
+| `JWT_SECRET`, `JWT_EXPIRES_IN` | Admin token configuration |
+
+## 19. Deployment Design
+
+### Implemented Docker Compose
+
+The root `docker-compose.yml` defines:
+
+```text
+mongodb
+backend
+frontend
+```
+
+Backend environment includes the documented runtime, LLM, WebSocket, limit, admin, and JWT settings. Backend ports map `${BACKEND_HOST_PORT:-8000}:8000`; frontend ports map `${FRONTEND_HOST_PORT:-3000}:3000`.
+
+### Current Internal Access
+
+Typical internal URLs:
+
+```text
+Frontend: http://localhost:3000
+Backend health: http://localhost:8000/health
+```
+
+For Windows/internal machine deployment details, see `docs/deployment-windows.md`.
+
+## 20. OpenClaw Future Integration
+
+### Future Only
+
+OpenClaw remains a future integration channel. It should call the same backend job APIs and should not duplicate `create-pr-cd` business logic.
 
 Future flow:
 
 ```text
-User tells OpenClaw to generate PR ECC
-  ↓
-OpenClaw uploads iEPMS export to backend API
-  ↓
-OpenClaw creates PR Worker job
-  ↓
-Backend runs same job pipeline
-  ↓
-OpenClaw receives conversational status / result
-  ↓
-OpenClaw reports back to user
+OpenClaw trigger
+  -> Backend job API
+  -> Same queue and PR Worker execution
+  -> Result link and conversational response
 ```
 
-Important:
+## 21. Multi-Skill Platform Direction
 
-```text
-WebApp and OpenClaw must use the same Conversational Response Layer.
-```
+### Future Only
 
-So OpenClaw should not return cold JSON only.
-
-It should receive:
-
-```json
-{
-  "machineResult": {...},
-  "assistantMessage": "Task completed. I processed 18 matched sites..."
-}
-```
-
----
-
-## 28. Security Design
-
-### 28.1 Normal Users
-
-```text
-No login required
-Can upload file
-Can generate job
-Can view Job History
-Can download available output
-```
-
-This is acceptable for Phase 1 internal network deployment.
-
-### 28.2 Admin
-
-```text
-Admin login required
-Simple username/password
-Password hashed
-Session timeout recommended
-Admin audit log required
-```
-
-### 28.3 File Security
-
-Controls:
-
-```text
-Restrict allowed file types
-Limit upload size
-Use generated storage filenames
-Prevent path traversal
-Do not expose direct local file path
-Clean expired files
-```
-
-### 28.4 Network Security
-
-Phase 1:
-
-```text
-Internal network only
-HTTP accepted
-```
-
-Future:
-
-```text
-HTTPS
-Domain name
-Access control
-VPN / Zero Trust if public access is required
-```
-
----
-
-## 29. Deployment Design
-
-### 29.1 Phase 1 Deployment
-
-```text
-Windows 11 Pro
-Docker Desktop
-Docker Compose
-Internal IP access
-Local MongoDB
-Local file storage
-```
-
-### 29.2 Docker Services
-
-Although runtime is logically single Express process, deployment may include separate containers:
-
-```text
-frontend
-backend
-mongodb
-```
-
-Example:
-
-```yaml
-services:
-  frontend:
-    build: ./frontend
-    ports:
-      - "3000:3000"
-
-  backend:
-    build: ./backend
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./storage:/app/storage
-      - ./skills:/app/skills
-
-  mongodb:
-    image: mongo:7
-    volumes:
-      - ./mongo-data:/data/db
-```
-
-### 29.3 Access URL
-
-Phase 1:
-
-```text
-http://10.x.x.x:3000
-```
-
-Future:
-
-```text
-https://pr-worker.company.local
-```
-
----
-
-## 30. Development Roadmap
-
-### Phase 1 — PR Worker MVP
-
-Scope:
-
-```text
-Vue2 WebApp
-Express backend
-MongoDB
-Local file storage
-Admin Portal
-PR Worker execution
-WebSocket progress
-Summary / Reports / Download
-```
-
-### Phase 2 — Operational Enhancement
-
-Scope:
-
-```text
-Same-job rerun
-Online REVIEW_REQUIRED correction
-Regenerate expired output
-Admin account management
-HTTPS
-Better health monitoring
-```
-
-### Phase 3 — OpenClaw Integration
-
-Scope:
-
-```text
-OpenClaw API client
-Conversational response adapter
-Agent-triggered PR Worker job
-Agent result reporting
-```
-
-### Phase 4 — Multi-Skill Platform
-
-Scope:
-
-```text
-Skill registry
-New worker onboarding
-BOQ Worker
-EHS Reviewer
-L1 Checker
-PAC Worker
-```
-
----
-
-## 31. Final System Principle
-
-The system should not be designed as a simple PR tool only.
-
-It should be designed as:
+The platform should remain designed as:
 
 ```text
 AI Worker Platform
-  └── PR Worker as MVP
+  -> PR Worker as MVP
+  -> additional workers later
 ```
 
-The key architecture principle:
+Future multi-skill capabilities should include:
+
+- Skill registry.
+- Worker metadata and routing.
+- Common job lifecycle.
+- Common storage and audit patterns.
+- Worker-specific UI panels only where needed.
+- Shared observability and health model.
+
+## 22. Known Gaps vs Original Design
+
+| Original design item | Current state |
+| --- | --- |
+| Admin-managed PR Model, Contract Info, ECC Template | Disabled; assets owned by `skills/create-pr-cd` |
+| Asset upload and activation | Routes return `ASSET_MANAGEMENT_DISABLED` |
+| `/api/admin/health` | Not implemented |
+| Durable queue | Not implemented; queue is in memory |
+| Full MongoDB-backed persistence | Docker includes MongoDB, but current source includes Firebase-backed model compatibility |
+| Normal-user login and access control | Not implemented |
+| HTTPS/reverse proxy | Not part of current compose stack |
+| OpenClaw integration | Future only |
+| Multi-skill platform | Future direction only |
+| Admin account management | Deferred |
+
+## 23. Production Hardening Recommendations
+
+1. Durable queue: replace the process-memory queue with a durable queue and recovery model.
+2. Normal-user authentication/access control: add user identity, job ownership, and download authorization.
+3. HTTPS / reverse proxy: deploy behind HTTPS with appropriate hostnames, headers, and timeout settings.
+4. Health endpoint coverage: decide whether to add authenticated admin health APIs or keep `/health` public with safe content.
+5. Storage cleanup verification: test retention cleanup, expired-file behavior, and ZIP/report availability.
+6. MongoDB and storage backup strategy: decide persistence ownership, then define backup/restore for metadata and files.
+7. Centralized logging: add structured logs and operational log retention.
+8. Admin account management: support account rotation, password changes, and least-privilege access if multiple admins are needed.
+9. Asset management decision: either implement validated versioned asset management or remove disabled UI/API paths.
+
+## 24. MVP Completion Definition
+
+The current MVP foundation is considered aligned when it can:
 
 ```text
-Worker executes deterministic skill logic.
-LLM communicates like a professional digital colleague.
-WebApp provides structured enterprise control.
-OpenClaw can trigger the same worker later.
+1. Serve the Vue WebApp.
+2. Accept iEPMS upload prevalidation.
+3. Create PR Worker jobs.
+4. Queue jobs with MAX_CONCURRENT_JOBS.
+5. Parse and filter iEPMS workbook rows.
+6. Execute create-pr-cd as a child process.
+7. Collect outputs.
+8. Generate summaries, reports, and ZIP packages.
+9. Publish WebSocket job events.
+10. Support job detail, history, cancellation, and downloads.
+11. Provide admin login/logout and audit logs.
+12. Show health information through /admin/health using /health.
+13. Clearly communicate disabled Admin asset management.
+14. Document that queue durability and broader platform capabilities are future hardening.
 ```
-
----
-
-## 32. MVP Definition
-
-MVP is considered complete when the system can:
-
-```text
-1. Let user open WebApp without login.
-2. Upload iEPMS Export Excel.
-3. Pre-validate file with checklist and worker explanation.
-4. Let user input site codes or select Generate All Sites.
-5. Create async PR Worker job.
-6. Show WebSocket progress in conversation panel.
-7. Execute create-pr-cd through child process.
-8. Generate ECC Excel files.
-9. Generate Summary Dashboard.
-10. Generate REVIEW_REQUIRED list.
-11. Generate Error / Warning Report Excel.
-12. Allow individual file download and ZIP download.
-13. Save Job History permanently.
-14. Save final worker summary.
-15. Allow Admin login.
-16. Allow Admin to upload and activate PR Model / Contract Info / ECC Template.
-17. Record asset versions used by each job.
-18. Show Health Dashboard.
-19. Support cancelling running job.
-20. Support max 2 concurrent jobs with FIFO queue.
-```
-
