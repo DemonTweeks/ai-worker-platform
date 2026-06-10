@@ -16,6 +16,10 @@ const { checkFirebaseConnection } = require('../src/db/firebase');
 const { Job, JobFile, AdminUser, AdminAuditLog, WarningItem, ReviewRequiredItem } = require('../src/models');
 const storageService = require('../src/services/storageService');
 const { parseIepmsWorkbook } = require('../src/services/iepmsParser');
+const { collectOutputs, generateReportsAndPackage } = require('../src/services/outputCollector');
+const { ingestTiResultFiles } = require('../src/services/tiResultIngestionService');
+const { buildAndSaveSummary } = require('../src/services/summaryBuilder');
+const { determineFinalStatus } = require('../src/services/zeroOutputPolicyService');
 const { getCleanupPlan, runCleanup } = require('../src/services/cleanupService');
 const workerStateService = require('../src/services/workerStateService');
 const { initWebSocketServer, closeWebSocketServer } = require('../src/websocket/server');
@@ -130,7 +134,7 @@ const waitForJobTerminal = async (baseUrl, jobId, timeoutMs = 180000) => {
   throw new Error(`Timed out waiting for ${jobId} to reach terminal state.`);
 };
 
-const runJobFlow = async ({ baseUrl, prScope, siteCodes }) => {
+const runJobFlow = async ({ baseUrl, prScope, siteCodes, allowExplainedZeroOutput = false }) => {
   const prevalidation = await uploadFile(baseUrl, '/api/jobs/prevalidate', sampleInputPath);
   assert(prevalidation.response.ok, `${prScope} prevalidation should pass`);
   assert(prevalidation.body.prevalidatedFileId, 'prevalidation should return file id');
@@ -174,7 +178,14 @@ const runJobFlow = async ({ baseUrl, prScope, siteCodes }) => {
   const zipBuffer = Buffer.from(await zipResponse.arrayBuffer());
   const zipText = zipBuffer.toString('latin1');
   assert(zipBuffer.subarray(0, 2).equals(Buffer.from('PK')), 'ZIP should have a ZIP file signature');
-  assert(zipText.includes('ECC_Output/'), 'ZIP should contain ECC_Output/');
+  if (detail.job.outputFileCount > 0 || !allowExplainedZeroOutput) {
+    assert(zipText.includes('ECC_Output/'), 'ZIP should contain ECC_Output/');
+  } else {
+    assert(
+      (detail.job.warningCount || 0) > 0 || (detail.job.reviewRequiredCount || 0) > 0,
+      'zero-output ZIP should be explained by warning or review-required records'
+    );
+  }
   assert(zipText.includes('Summary.json'), 'ZIP should contain Summary.json');
   if (detail.outputs.some((file) => file.fileType === 'warning_report')) {
     assert(zipText.includes('Error_Warning_Report.xlsx'), 'ZIP should contain warning report when generated');
@@ -212,7 +223,7 @@ const testApiAndWorker = async (baseUrl) => {
 
   let tiResult = 'not_run';
   try {
-    const tiDetail = await runJobFlow({ baseUrl, prScope: 'TI', siteCodes: [siteCode] });
+    const tiDetail = await runJobFlow({ baseUrl, prScope: 'TI', siteCodes: [siteCode], allowExplainedZeroOutput: true });
     tiResult = tiDetail.job.status;
   } catch (error) {
     tiResult = `blocked:${error.message}`;
@@ -228,6 +239,129 @@ const testApiAndWorker = async (baseUrl) => {
     tssJobId: tssDetail.job.jobId,
     tssStatus: tssDetail.job.status,
     tiResult
+  };
+};
+
+const writeOutputFile = async (jobId, fileName, content) => {
+  const filePath = storageService.resolveJobOutputPath(jobId, fileName);
+  await fs.promises.writeFile(filePath, content, 'utf8');
+  return filePath;
+};
+
+const createTiResultScenario = async ({ suffix, files, matchedSiteCount = 1 }) => {
+  const jobId = `${QA_PREFIX}-TI-${suffix}-${Date.now()}`;
+  cleanupJobIds.add(jobId);
+  await storageService.createJobFolders(jobId);
+  await Job.create({
+    jobId,
+    workerType: 'pr-worker',
+    status: 'exporting',
+    generationScope: 'site_code',
+    prScope: 'TI'
+  });
+
+  for (const file of files) {
+    await writeOutputFile(jobId, file.name, file.content);
+  }
+
+  const outputCollection = await collectOutputs(jobId);
+  const ingestion = await ingestTiResultFiles(jobId);
+  const summary = await buildAndSaveSummary({
+    jobId,
+    filteringResult: {
+      requestedSiteCount: matchedSiteCount,
+      matchedSiteCount,
+      unmatchedSiteCount: 0
+    },
+    outputCollection
+  });
+
+  const finalStatus = determineFinalStatus(summary);
+  await Job.updateOne({ jobId }, { $set: { status: finalStatus, completedAt: new Date() } });
+  const reports = await generateReportsAndPackage(jobId);
+  const filesAfter = await JobFile.find({ jobId }).sort({ createdAt: 1 }).lean();
+  const zip = filesAfter.find((file) => file.fileType === 'zip_package');
+  assert(zip, `${suffix} ZIP should be generated`);
+  const zipPath = path.join(storageService.getStorageRoot(), zip.filePath);
+  const zipBuffer = await fs.promises.readFile(zipPath);
+  const zipText = zipBuffer.toString('latin1');
+
+  return { jobId, outputCollection, ingestion, summary, finalStatus, reports, filesAfter, zipText };
+};
+
+const testTiResultHandling = async () => {
+  const ecc = await createTiResultScenario({
+    suffix: 'ECC',
+    files: [
+      { name: 'TI_ECC_Output.xlsx', content: 'placeholder ecc workbook' }
+    ]
+  });
+  assert.strictEqual(ecc.summary.outputFileCount, 1, 'TI ECC scenario should count ECC output');
+  assert.strictEqual(ecc.finalStatus, 'completed', 'TI ECC scenario should complete');
+  assert(ecc.zipText.includes('ECC_Output/TI_ECC_Output.xlsx'), 'TI ECC ZIP should contain ECC output');
+
+  const reviewOnly = await createTiResultScenario({
+    suffix: 'REVIEW',
+    files: [
+      {
+        name: 'REVIEW_REQUIRED_TI_20260610.csv',
+        content: 'Site_ID,Region,SubCon_TI,Tx_SOW,Review_Reason,Source_Scope\nTI001,North,Vendor A,MW Re-engineering,MW Re-engineering follow-up required,TI\n'
+      }
+    ]
+  });
+  assert.strictEqual(reviewOnly.summary.outputFileCount, 0, 'review-only TI should have zero ECC output');
+  assert.strictEqual(reviewOnly.summary.reviewRequiredCount, 1, 'review-only TI should persist review item');
+  assert.strictEqual(reviewOnly.finalStatus, 'completed_with_warning', 'review-only TI should complete with warning');
+  assert(reviewOnly.zipText.includes('Create_PR_CD_Source/REVIEW_REQUIRED_TI_20260610.csv'), 'review-only ZIP should preserve source review CSV');
+  assert(reviewOnly.zipText.includes('Review_Required_Report.xlsx'), 'review-only ZIP should include platform review report');
+  assert(reviewOnly.zipText.includes('Summary.json'), 'review-only ZIP should include Summary.json');
+
+  const duplicates = await createTiResultScenario({
+    suffix: 'DUP',
+    files: [
+      {
+        name: 'DUPLICATES_SKIPPED_TI_20260610.csv',
+        content: 'Site_ID,Region,SubCon_TI,Tx_SOW,Existing_PR,Reason\nTI002,South,Vendor B,TI Install,PR123,Duplicate - PR already exists\n'
+      }
+    ]
+  });
+  assert.strictEqual(duplicates.summary.outputFileCount, 0, 'duplicate TI should have zero ECC output');
+  assert.strictEqual(duplicates.summary.warningCount, 1, 'duplicate TI should persist warning item');
+  assert.strictEqual(duplicates.finalStatus, 'completed_with_warning', 'duplicate TI should complete with warning');
+  assert(duplicates.zipText.includes('Create_PR_CD_Source/DUPLICATES_SKIPPED_TI_20260610.csv'), 'duplicate ZIP should preserve source duplicate CSV');
+  assert(duplicates.zipText.includes('Error_Warning_Report.xlsx'), 'duplicate ZIP should include platform warning report');
+
+  const unexplainedJobId = `${QA_PREFIX}-TI-ZERO-${Date.now()}`;
+  cleanupJobIds.add(unexplainedJobId);
+  await storageService.createJobFolders(unexplainedJobId);
+  await Job.create({
+    jobId: unexplainedJobId,
+    workerType: 'pr-worker',
+    status: 'exporting',
+    generationScope: 'site_code',
+    prScope: 'TI'
+  });
+  const unexplainedCollection = await collectOutputs(unexplainedJobId);
+  const unexplainedSummary = await buildAndSaveSummary({
+    jobId: unexplainedJobId,
+    filteringResult: {
+      requestedSiteCount: 1,
+      matchedSiteCount: 1,
+      unmatchedSiteCount: 0
+    },
+    outputCollection: unexplainedCollection
+  });
+  assert.throws(
+    () => determineFinalStatus(unexplainedSummary),
+    (error) => error.code === 'ZERO_OUTPUT_WITHOUT_EXPLANATION',
+    'zero TI output without review/warning explanation should fail with ZERO_OUTPUT_WITHOUT_EXPLANATION'
+  );
+
+  return {
+    ecc: { jobId: ecc.jobId, status: ecc.finalStatus, files: ecc.filesAfter.map((file) => file.fileName) },
+    reviewOnly: { jobId: reviewOnly.jobId, status: reviewOnly.finalStatus, files: reviewOnly.filesAfter.map((file) => file.fileName) },
+    duplicates: { jobId: duplicates.jobId, status: duplicates.finalStatus, files: duplicates.filesAfter.map((file) => file.fileName) },
+    unexplained: { jobId: unexplainedJobId, errorCode: 'ZERO_OUTPUT_WITHOUT_EXPLANATION' }
   };
 };
 
@@ -389,6 +523,7 @@ const main = async () => {
     serverInfo = await createServer();
 
     results.apiWorker = await testApiAndWorker(serverInfo.baseUrl);
+    results.tiResultHandling = await testTiResultHandling();
     results.admin = await testAdminApi(serverInfo.baseUrl);
     results.websocket = await testWebSocket(serverInfo.wsUrl);
     results.resourceProtection = await testResourceProtection();

@@ -1904,6 +1904,18 @@ body:has(.home-cockpit) {
   padding: 5px 6px;
 }
 
+.completion-message.warning {
+  background: #fffbeb;
+  border-left-color: #d97706;
+  color: #92400e;
+}
+
+.completion-message.danger {
+  background: #fef2f2;
+  border-left-color: #dc2626;
+  color: #991b1b;
+}
+
 .download-summary-grid {
   display: grid;
   gap: 3px 8px;

@@ -17,6 +17,7 @@
       <span><small>Completed</small><strong>{{ formatDateTime(job.completedAt) }}</strong></span>
       <span><small>Cancelled</small><strong>{{ formatDateTime(job.cancelledAt) }}</strong></span>
     </div>
+    <p v-if="zeroOutputNotice" class="completion-message" :class="zeroOutputTone">{{ zeroOutputNotice }}</p>
     <p v-if="job.error && job.error.message" class="error-text">{{ job.error.message }}</p>
   </section>
 </template>
@@ -29,6 +30,23 @@ export default {
   name: 'JobDetailSummary',
   props: {
     job: { type: Object, required: true }
+  },
+  computed: {
+    zeroOutputNotice() {
+      if (!(this.job.matchedSiteCount > 0 && this.job.outputFileCount === 0)) return '';
+      if (this.job.status === 'failed') {
+        return this.job.error && this.job.error.message
+          ? this.job.error.message
+          : 'No ECC output was generated.';
+      }
+      if ((this.job.reviewRequiredCount || 0) > 0 || (this.job.warningCount || 0) > 0) {
+        return `No ECC output was generated; review/warning records explain the result.`;
+      }
+      return 'No ECC output was generated and no review/warning explanation is available.';
+    },
+    zeroOutputTone() {
+      return this.job.status === 'failed' ? 'danger' : 'warning';
+    }
   },
   methods: {
     formatDateTime,

@@ -110,7 +110,7 @@
               <dd>{{ item.value }}</dd>
             </div>
           </dl>
-          <p v-if="jobReady" class="completion-message">{{ resultCompletionMessage }}</p>
+          <p v-if="jobReady" class="completion-message" :class="resultTone">{{ resultCompletionMessage }}</p>
           <a
             v-if="canDownload"
             class="download-button"
@@ -321,6 +321,10 @@ export default {
       }
 
       const job = this.jobDetail.job;
+      if (job.status === 'failed') {
+        return job.error && job.error.message ? job.error.message : 'Job failed before outputs were generated.';
+      }
+
       const outputs = this.hasValue(job.outputFileCount)
         ? job.outputFileCount
         : this.outputCount > 0
@@ -332,7 +336,20 @@ export default {
       const outputText = this.hasValue(outputs) ? `Outputs ${outputs}` : 'Outputs ready';
       const warningText = this.hasValue(warnings) ? `warnings ${warnings}` : 'warnings not available';
       const reviewText = this.hasValue(reviewRequired) ? `review required ${reviewRequired}` : 'review required not available';
+      if (job.matchedSiteCount > 0 && outputs === 0) {
+        if ((warnings || 0) > 0 || (reviewRequired || 0) > 0) {
+          return `No ECC output generated; explained by ${warningText} and ${reviewText}.`;
+        }
+        return 'No ECC output generated and no warning or review explanation is available.';
+      }
       return `${outputText}; ${warningText}; ${reviewText}.`;
+    },
+    resultTone() {
+      const job = this.jobDetail && this.jobDetail.job ? this.jobDetail.job : {};
+      if (job.status === 'failed') return 'danger';
+      if (job.status === 'completed_with_warning') return 'warning';
+      if (job.matchedSiteCount > 0 && job.outputFileCount === 0) return 'warning';
+      return 'success';
     },
     downloadSummaryItems() {
       const job = this.jobDetail && this.jobDetail.job ? this.jobDetail.job : {};
@@ -424,7 +441,7 @@ export default {
           label: 'Result',
           title: `Result ${job.status || 'available'}`,
           body: this.resultCompletionMessage,
-          tone: job.status && job.status.includes('failed') ? 'danger' : 'success',
+          tone: this.resultTone,
           time: job.updatedAt || this.updatedAt
         });
 

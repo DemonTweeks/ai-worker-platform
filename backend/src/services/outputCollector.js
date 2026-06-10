@@ -15,10 +15,26 @@ const {
 } = require('./reportGenerator');
 
 const OUTPUT_EXTENSIONS = new Set(['.xls', '.xlsx', '.csv', '.json', '.txt']);
-const GENERATED_FILE_TYPES = ['ecc_output', 'review_required_report', 'warning_report', 'summary', 'zip_package'];
+const GENERATED_FILE_TYPES = [
+  'ecc_output',
+  'source_review_required',
+  'source_duplicates_skipped',
+  'review_required_report',
+  'warning_report',
+  'summary',
+  'zip_package'
+];
 
 const classifyFileType = (fileName) => {
   const lower = fileName.toLowerCase();
+
+  if (/^review_required_ti_.*\.csv$/i.test(fileName)) {
+    return 'source_review_required';
+  }
+
+  if (/^duplicates_skipped_ti_.*\.csv$/i.test(fileName)) {
+    return 'source_duplicates_skipped';
+  }
 
   if (lower.includes('review')) {
     return 'review_required_report';
@@ -142,6 +158,10 @@ const buildArchiveEntries = (jobFiles) => jobFiles.map((file) => {
     archiveName = WARNING_REPORT_FILE;
   }
 
+  if (file.fileType === 'source_review_required' || file.fileType === 'source_duplicates_skipped') {
+    archiveName = `Create_PR_CD_Source/${path.basename(file.fileName)}`;
+  }
+
   if (file.fileType === 'summary') {
     archiveName = SUMMARY_FILE;
   }
@@ -163,7 +183,14 @@ const generateReportsAndPackage = async (jobId) => {
 
   const packageFiles = await JobFile.find({
     jobId,
-    fileType: { $in: ['ecc_output', 'review_required_report', 'warning_report', 'summary'] }
+    fileType: { $in: [
+      'ecc_output',
+      'source_review_required',
+      'source_duplicates_skipped',
+      'review_required_report',
+      'warning_report',
+      'summary'
+    ] }
   }).sort({ fileType: 1, createdAt: 1 });
 
   const zipFile = await createZipPackage({

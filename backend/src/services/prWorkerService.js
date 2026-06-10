@@ -7,6 +7,8 @@ const { parseIepmsWorkbook } = require('./iepmsParser');
 const { filterSites } = require('./siteFilteringService');
 const { runCreatePrCd } = require('./childProcessRunner');
 const { collectOutputs, generateReportsAndPackage } = require('./outputCollector');
+const { ingestTiResultFiles } = require('./tiResultIngestionService');
+const { determineFinalStatus, getNoEccExplanation } = require('./zeroOutputPolicyService');
 const { buildAndSaveSummary } = require('./summaryBuilder');
 const { saveFinalSummary } = require('./finalSummaryService');
 const { JOB_EVENTS, publishJobEvent } = require('../websocket/eventPublisher');
@@ -48,14 +50,16 @@ const failJob = async (jobId, error) => {
       reviewRequiredCount: 0
     }
   });
+  const failedJob = await Job.findOne({ jobId }).lean().catch(() => null);
   await saveFinalSummary({ jobId, summary: {
-    requestedSiteCount: 0,
-    matchedSiteCount: 0,
-    unmatchedSiteCount: 0,
-    outputFileCount: 0,
-    reviewRequiredCount: 0,
-    warningCount: 0
+    requestedSiteCount: failedJob ? failedJob.requestedSiteCount || 0 : 0,
+    matchedSiteCount: failedJob ? failedJob.matchedSiteCount || 0 : 0,
+    unmatchedSiteCount: failedJob ? failedJob.unmatchedSiteCount || 0 : 0,
+    outputFileCount: failedJob ? failedJob.outputFileCount || 0 : 0,
+    reviewRequiredCount: failedJob ? failedJob.reviewRequiredCount || 0 : 0,
+    warningCount: failedJob ? failedJob.warningCount || 0 : 0
   } }).catch(() => {});
+  await generateReportsAndPackage(jobId).catch(() => {});
 };
 
 const readJobRequest = async (jobId) => {
@@ -173,6 +177,7 @@ const runPrWorkerJob = async (jobId) => {
 
     if (runnerResult.cancelled) {
       const partialCollection = await collectOutputs(jobId);
+      await ingestTiResultFiles(jobId);
       const partialSummary = await buildAndSaveSummary({ jobId, filteringResult, outputCollection: partialCollection });
       const partialStatus = partialCollection.outputFileCount > 0 ? 'cancelled_with_partial_result' : 'cancelled';
       await setJobStatus(jobId, partialStatus, {
@@ -204,6 +209,14 @@ const runPrWorkerJob = async (jobId) => {
       message: 'Export collection started.'
     });
     const outputCollection = await collectOutputs(jobId);
+    const tiIngestion = await ingestTiResultFiles(jobId);
+    if (tiIngestion.parsedReviewRequiredCount > 0 || tiIngestion.parsedWarningCount > 0) {
+      await publishJobEvent(jobId, 'TI_RESULT_EVIDENCE_INGESTED', {
+        phase: 'OUTPUT_COLLECTION_STARTED',
+        status: 'exporting',
+        message: `Parsed TI source result files: ${tiIngestion.parsedReviewRequiredCount} review-required row(s), ${tiIngestion.parsedWarningCount} duplicate warning row(s).`
+      });
+    }
     workerStateService.setPhase(jobId, 'OUTPUT_COLLECTION_COMPLETED', 'Output collection completed.');
     await publishJobEvent(jobId, JOB_EVENTS.OUTPUT_COLLECTION_COMPLETED, {
       phase: 'OUTPUT_COLLECTION_COMPLETED',
@@ -212,8 +225,10 @@ const runPrWorkerJob = async (jobId) => {
     });
 
     const summary = await buildAndSaveSummary({ jobId, filteringResult, outputCollection });
-    const finalWorkerSummary = await saveFinalSummary({ jobId, summary });
-    const finalStatus = summary.warningCount > 0 ? 'completed_with_warning' : 'completed';
+    const noEccExplanation = getNoEccExplanation(summary);
+    const finalStatus = determineFinalStatus(summary);
+    const finalWorkerSummary = await saveFinalSummary({ jobId, summary, statusOverride: finalStatus });
+    await generateReportsAndPackage(jobId);
 
     await setJobStatus(jobId, finalStatus, {
       completedAt: new Date(),
@@ -225,7 +240,7 @@ const runPrWorkerJob = async (jobId) => {
     await publishJobEvent(jobId, JOB_EVENTS.JOB_COMPLETED, {
       phase: 'COMPLETED',
       status: finalStatus,
-      message: 'Job completed.',
+      message: noEccExplanation || 'Job completed.',
       summary
     });
   } catch (error) {

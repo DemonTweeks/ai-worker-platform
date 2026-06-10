@@ -34,7 +34,7 @@
         View Detail
       </router-link>
       <a
-        v-if="job.outputFileCount > 0"
+        v-if="hasDownloadableResult"
         class="secondary-link"
         :href="zipUrl"
       >
@@ -68,6 +68,10 @@ export default {
     summaryPreview() {
       const text = this.job.finalWorkerSummary || 'Final worker summary is not available yet.';
       return text.length > 180 ? `${text.slice(0, 177)}...` : text;
+    },
+    hasDownloadableResult() {
+      return ['completed', 'completed_with_warning', 'cancelled_with_partial_result'].includes(this.job.status)
+        && ((this.job.outputFileCount || 0) > 0 || (this.job.reviewRequiredCount || 0) > 0 || (this.job.warningCount || 0) > 0);
     }
   },
   methods: {

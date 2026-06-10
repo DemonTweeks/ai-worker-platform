@@ -18,6 +18,8 @@ const prWorkerService = require('../src/services/prWorkerService');
 const { Job } = require('../src/models');
 const { saveFinalSummary } = require('../src/services/finalSummaryService');
 const outputCollector = require('../src/services/outputCollector');
+const tiResultIngestionService = require('../src/services/tiResultIngestionService');
+const zeroOutputPolicyService = require('../src/services/zeroOutputPolicyService');
 const reportGenerator = require('../src/services/reportGenerator');
 const cleanupService = require('../src/services/cleanupService');
 const healthService = require('../src/services/healthService');
@@ -37,6 +39,7 @@ const run = async () => {
   assert(jobRoutes && adminRoutes && healthRoutes, 'route imports should load');
   assert(jobService && jobQueue && prWorkerService, 'job/queue/worker imports should load');
   assert(outputCollector && reportGenerator, 'output/report imports should load');
+  assert(tiResultIngestionService && zeroOutputPolicyService, 'TI result ingestion/policy imports should load');
   assert(cleanupService && healthService, 'cleanup/health imports should load');
   assert(websocketServer && llmClient, 'websocket/llm imports should load');
 
@@ -58,6 +61,18 @@ const run = async () => {
   });
   assert.strictEqual(llmDisabled.ok, false);
   assert.strictEqual(llmDisabled.code, 'LLM_DISABLED');
+  assert.strictEqual(zeroOutputPolicyService.determineFinalStatus({
+    matchedSiteCount: 1,
+    outputFileCount: 0,
+    reviewRequiredCount: 1,
+    warningCount: 0
+  }), 'completed_with_warning');
+  assert.throws(() => zeroOutputPolicyService.determineFinalStatus({
+    matchedSiteCount: 1,
+    outputFileCount: 0,
+    reviewRequiredCount: 0,
+    warningCount: 0
+  }), /No ECC files were generated/);
 
   const obsoleteQueueSummary = 'Job created and queued. PR Worker execution will run after the worker queue layer is implemented.';
   const queuedJobId = `QA-SMOKE-QUEUED-${Date.now()}`;
@@ -104,6 +119,7 @@ const run = async () => {
       'path_utils',
       'admin_asset_routes',
       'llm_disabled',
+      'zero_output_policy',
       'queued_job_summary_empty',
       'completed_job_final_summary',
       'firebase_db_connected'

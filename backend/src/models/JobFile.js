@@ -5,6 +5,8 @@ const FILE_TYPES = [
   'uploaded_export',
   'filtered_input',
   'ecc_output',
+  'source_review_required',
+  'source_duplicates_skipped',
   'review_required_report',
   'warning_report',
   'summary',
