@@ -15,6 +15,8 @@ const healthRoutes = require('../src/routes/health');
 const jobService = require('../src/services/jobService');
 const jobQueue = require('../src/queue/jobQueue');
 const prWorkerService = require('../src/services/prWorkerService');
+const { Job } = require('../src/models');
+const { saveFinalSummary } = require('../src/services/finalSummaryService');
 const outputCollector = require('../src/services/outputCollector');
 const reportGenerator = require('../src/services/reportGenerator');
 const cleanupService = require('../src/services/cleanupService');
@@ -57,6 +59,40 @@ const run = async () => {
   assert.strictEqual(llmDisabled.ok, false);
   assert.strictEqual(llmDisabled.code, 'LLM_DISABLED');
 
+  const obsoleteQueueSummary = 'Job created and queued. PR Worker execution will run after the worker queue layer is implemented.';
+  const queuedJobId = `QA-SMOKE-QUEUED-${Date.now()}`;
+  const queuedJob = await Job.create({
+    jobId: queuedJobId,
+    workerType: 'pr-worker',
+    status: 'queued',
+    generationScope: 'site_code',
+    prScope: 'TSS'
+  });
+  assert.strictEqual(queuedJob.finalWorkerSummary, '', 'queued jobs should not start with final worker summary');
+  assert.notStrictEqual(queuedJob.finalWorkerSummary, obsoleteQueueSummary, 'queued jobs should not use obsolete queue summary');
+
+  const completedJobId = `QA-SMOKE-COMPLETED-${Date.now()}`;
+  await Job.create({
+    jobId: completedJobId,
+    workerType: 'pr-worker',
+    status: 'completed',
+    generationScope: 'site_code',
+    prScope: 'TSS'
+  });
+  const finalWorkerSummary = await saveFinalSummary({
+    jobId: completedJobId,
+    summary: {
+      requestedSiteCount: 1,
+      matchedSiteCount: 1,
+      unmatchedSiteCount: 0,
+      outputFileCount: 1,
+      reviewRequiredCount: 0,
+      warningCount: 0
+    }
+  });
+  assert(finalWorkerSummary.includes('Task completed.'), 'completed jobs should receive terminal final summary');
+  assert.notStrictEqual(finalWorkerSummary, obsoleteQueueSummary, 'completed final summary should not use obsolete queue summary');
+
   console.log(JSON.stringify({
     ok: true,
     checks: [
@@ -68,6 +104,8 @@ const run = async () => {
       'path_utils',
       'admin_asset_routes',
       'llm_disabled',
+      'queued_job_summary_empty',
+      'completed_job_final_summary',
       'firebase_db_connected'
     ]
   }));

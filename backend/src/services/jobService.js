@@ -123,8 +123,7 @@ const createJob = async ({ prevalidatedFileId, generationScope, siteCodes, prSco
     prScope: normalizedPrScope,
     generationScope,
     requestedSiteCount: generationScope === 'site_code' ? normalizedSiteCodes.length : 0,
-    fileRetentionUntil: retentionUntil,
-    finalWorkerSummary: 'Job created and queued. PR Worker execution will run after the worker queue layer is implemented.'
+    fileRetentionUntil: retentionUntil
   });
 
   const jobFile = await JobFile.create({
@@ -316,6 +315,7 @@ const cancelJob = async (jobId) => {
 
   job.status = 'cancelled';
   job.cancelledAt = new Date();
+  job.finalWorkerSummary = 'Task cancelled. Any completed partial output files have been preserved where available.';
   await job.save();
 
   return {

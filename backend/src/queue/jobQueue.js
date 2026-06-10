@@ -59,7 +59,13 @@ const cancelQueuedJob = async (jobId) => {
   if (queuedIndex !== -1) {
     queuedJobIds.splice(queuedIndex, 1);
     knownJobIds.delete(jobId);
-    await Job.updateOne({ jobId }, { $set: { status: 'cancelled', cancelledAt: new Date() } });
+    await Job.updateOne({ jobId }, {
+      $set: {
+        status: 'cancelled',
+        cancelledAt: new Date(),
+        finalWorkerSummary: 'Task cancelled. Any completed partial output files have been preserved where available.'
+      }
+    });
     workerStateService.setCancelled(jobId, 'Queued job cancelled before execution.');
     await publishJobEvent(jobId, JOB_EVENTS.JOB_CANCELLED, {
       phase: 'CANCELLED',

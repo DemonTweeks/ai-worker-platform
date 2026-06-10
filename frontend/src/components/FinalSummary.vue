@@ -13,18 +13,36 @@
         <span>Warnings: <strong>{{ detail.job.warningCount || 0 }}</strong></span>
         <span>Review Required: <strong>{{ detail.job.reviewRequiredCount || 0 }}</strong></span>
       </div>
-      <div class="section-subtitle">AI Explanation</div>
-      <pre class="summary-text">{{ detail.finalWorkerSummary || detail.job.finalWorkerSummary || 'Summary unavailable.' }}</pre>
+      <template v-if="hasFinalSummary">
+        <div class="section-subtitle">AI Explanation</div>
+        <pre class="summary-text">{{ finalSummaryText }}</pre>
+      </template>
+      <p v-else-if="!isTerminal" class="muted">Final summary will appear when the worker reaches a terminal result.</p>
+      <p v-else class="muted">Final summary is not available.</p>
       <p v-if="detail.job.error && detail.job.error.message" class="error-text">{{ detail.job.error.message }}</p>
     </div>
   </section>
 </template>
 
 <script>
+import { isTerminalStatus } from '../utils/statusUtils';
+
 export default {
   name: 'FinalSummary',
   props: {
     detail: { type: Object, default: null }
+  },
+  computed: {
+    finalSummaryText() {
+      if (!this.detail || !this.detail.job) return '';
+      return this.detail.finalWorkerSummary || this.detail.job.finalWorkerSummary || '';
+    },
+    hasFinalSummary() {
+      return this.isTerminal && Boolean(this.finalSummaryText);
+    },
+    isTerminal() {
+      return this.detail && this.detail.job && isTerminalStatus(this.detail.job.status);
+    }
   }
 };
 </script>

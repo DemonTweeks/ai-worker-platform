@@ -428,14 +428,17 @@ export default {
           time: job.updatedAt || this.updatedAt
         });
 
-        items.push({
-          id: 'final-summary',
-          label: 'AI Explanation',
-          title: 'Final worker summary',
-          body: this.jobDetail.finalWorkerSummary || job.finalWorkerSummary || 'Summary unavailable.',
-          tone: 'info',
-          time: job.updatedAt || this.updatedAt
-        });
+        const finalSummary = this.jobDetail.finalWorkerSummary || job.finalWorkerSummary || '';
+        if (isTerminalStatus(job.status) && finalSummary) {
+          items.push({
+            id: 'final-summary',
+            label: 'AI Explanation',
+            title: 'Final worker summary',
+            body: finalSummary,
+            tone: 'info',
+            time: job.updatedAt || this.updatedAt
+          });
+        }
 
         if (job.error && job.error.message) {
           items.push({

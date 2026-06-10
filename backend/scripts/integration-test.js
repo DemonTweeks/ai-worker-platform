@@ -23,6 +23,7 @@ const { JOB_EVENTS, publishJobEvent } = require('../src/websocket/eventPublisher
 const { answerReAsk } = require('../src/llm/reAskService');
 
 const QA_PREFIX = 'QA15';
+const OBSOLETE_QUEUE_SUMMARY = 'Job created and queued. PR Worker execution will run after the worker queue layer is implemented.';
 const terminalStatuses = new Set(['completed', 'completed_with_warning', 'failed', 'cancelled', 'cancelled_with_partial_result']);
 const cleanupJobIds = new Set();
 
@@ -143,6 +144,18 @@ const runJobFlow = async ({ baseUrl, prScope, siteCodes }) => {
   assert.strictEqual(created.response.status, 201, `${prScope} job should be created`);
   const jobId = created.body.job.jobId;
   cleanupJobIds.add(jobId);
+  assert.strictEqual(created.body.job.status, 'queued', `${prScope} job should be created with queued status`);
+  assert(!created.body.job.finalWorkerSummary, `${prScope} queued job should not include a final worker summary`);
+  assert.notStrictEqual(created.body.job.finalWorkerSummary, OBSOLETE_QUEUE_SUMMARY, `${prScope} queued job should not include obsolete queue text`);
+  assert.strictEqual(created.body.message, 'Job record and input file were prepared and queued for PR Worker execution.');
+  assert(
+    created.body.queue
+      && (
+        (created.body.queue.queuedJobIds || []).includes(jobId)
+        || (created.body.queue.activeJobIds || []).includes(jobId)
+      ),
+    `${prScope} job should be present in queued or active queue state`
+  );
 
   const detail = await waitForJobTerminal(baseUrl, jobId);
   assert(
@@ -150,6 +163,9 @@ const runJobFlow = async ({ baseUrl, prScope, siteCodes }) => {
     `${prScope} job should complete, got ${detail.job.status}: ${JSON.stringify(detail.job.error || {})}`
   );
   assert.strictEqual(detail.job.prScope, prScope);
+  assert(detail.job.finalWorkerSummary, `${prScope} completed job should include final worker summary`);
+  assert.notStrictEqual(detail.job.finalWorkerSummary, OBSOLETE_QUEUE_SUMMARY, `${prScope} final summary should be the real terminal summary`);
+  assert.strictEqual(detail.finalWorkerSummary, detail.job.finalWorkerSummary, `${prScope} detail summary should mirror job final summary`);
   assert(detail.outputs.some((file) => file.fileType === 'zip_package' && file.available), 'ZIP package should be tracked and available');
   assert(detail.outputs.some((file) => file.fileType === 'summary'), 'Summary.json should be tracked');
 
