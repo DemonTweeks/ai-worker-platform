@@ -102,6 +102,26 @@ Sabah/Sarawak TI coordinate-to-city mapping was verified through the platform wo
 - Job status: `completed`.
 - Known unresolved rule: Lawas Inland Transportation can resolve; Lawas Simple Packing remains fail-closed because the business mapping is not confirmed.
 
+## 10.2 XLSX Output Format Maintenance Validation
+
+Generated ECC workbooks previously used a `.xls` filename even though the `create-pr-cd` generator wrote Open XML workbook content through `openpyxl`. This caused Excel extension/format mismatch warnings in UAT.
+
+- Issue: Platform TI UAT generated `Sabah-GTSB TX Mini Project TI PR 20260611.xls` for an Open XML workbook.
+- Corrected behavior: New ECC outputs use `.xlsx` filenames and XLSX/Open XML content.
+- Standalone implementation commit: `32f1da236a62042989ea63dce30ca95c4b3006ea` (`fix: generate ECC workbooks as xlsx`).
+- Parent submodule pointer commit: `883146734092ea88892eaff2467374437f7cbf91` (`chore: update create-pr-cd xlsx output fix`).
+- Regression validation: standalone Python compile passed, standalone geography unit tests passed, standalone TI smoke tests passed, backend `npm test` passed, and frontend `npm test` passed.
+- Platform UAT job: `PR-20260611-019`.
+- UAT scope/site: `TI`, site code `7312B_HU`.
+- Generated ECC: `Sabah-GTSB TX Mini Project TI PR 20260611.xlsx`.
+- Verified workbook signature: `PK`, confirming ZIP/Open XML content.
+- Verified workbook parser reopen: `details` sheet opened successfully through the backend `xlsx` parser.
+- Verified ECC material codes: `350000212476`, `350001095405`, `350000589315`.
+- Verified ECC item count: 3.
+- `REVIEW_REQUIRED` count: 0.
+- ZIP verification: `PR-20260611-019-outputs.zip` contains `ECC_Output/Sabah-GTSB TX Mini Project TI PR 20260611.xlsx`.
+- API/download metadata: ECC download response used `attachment; filename="Sabah-GTSB TX Mini Project TI PR 20260611.xlsx"`.
+
 ## 11. Resource Protection Summary
 
 The MVP enforces upload size, row count, site-code count, queue concurrency, job timeout, output file count, and retention metadata. Cleanup supports dry-run and controlled deletion of expired terminal-job files while preserving metadata.
