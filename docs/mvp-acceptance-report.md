@@ -83,6 +83,25 @@ EPIC 15 integration verification covered WebSocket connection, malformed message
 
 Generated outputs are collected, reports are generated, and ZIP package downloads are available. ZIP packaging includes `ECC_Output/` and `Summary.json`, with warning/review reports generated when applicable.
 
+## 10.1 Post-MVP Maintenance Validation
+
+Sabah/Sarawak TI coordinate-to-city mapping was verified through the platform workflow after the `create-pr-cd` geography resolver update.
+
+- Issue: Sabah/Sarawak TI coordinate-to-city mapping for TI route and warehouse resolution.
+- Standalone implementation commit: `00685336058c097a293dee0d72a1fbc8170c0b4f` (`feat: resolve Sabah Sarawak TI routes by coordinates`).
+- Parent submodule pointer commit: `79dbf57793c0ea3039ff8819b9f7493bc7beda65` (`chore: update create-pr-cd geography resolver`).
+- Parent lockfile cleanup commit: `5ddf7034dfa6cf8124884374b30feb9b7d3bfbd7` (`chore: remove stale mongoose lockfile entries`).
+- Regression validation: backend `npm ci` passed, backend smoke passed, backend integration passed, frontend production build passed, and frontend route smoke passed.
+- Platform UAT job: `PR-20260611-014`.
+- UAT scope/site: `TI`, site code `7312B_HU`.
+- Generated ECC: `Sabah-GTSB TX Mini Project TI PR 20260611.xls`.
+- Verified ECC material codes: `350000212476`, `350001095405`, `350000589315`.
+- Verified ECC item count: 3.
+- Verified resolution: State `Sabah`, route/district bucket `Tawau`, Sabah warehouse selected.
+- `REVIEW_REQUIRED` count: 0.
+- Job status: `completed`.
+- Known unresolved rule: Lawas Inland Transportation can resolve; Lawas Simple Packing remains fail-closed because the business mapping is not confirmed.
+
 ## 11. Resource Protection Summary
 
 The MVP enforces upload size, row count, site-code count, queue concurrency, job timeout, output file count, and retention metadata. Cleanup supports dry-run and controlled deletion of expired terminal-job files while preserving metadata.
