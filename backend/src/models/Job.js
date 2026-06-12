@@ -22,6 +22,12 @@ const PR_SCOPES = ['TSS', 'TI'];
 class Job {
   constructor(data) {
     Object.assign(this, data);
+    if (typeof this.requestedSiteCount === 'undefined') this.requestedSiteCount = null;
+    if (typeof this.matchedSiteCount === 'undefined') this.matchedSiteCount = null;
+    if (typeof this.unmatchedSiteCount === 'undefined') this.unmatchedSiteCount = null;
+    if (typeof this.outputFileCount === 'undefined') this.outputFileCount = null;
+    if (typeof this.reviewRequiredCount === 'undefined') this.reviewRequiredCount = null;
+    if (typeof this.warningCount === 'undefined') this.warningCount = null;
   }
 
   toJSON() {

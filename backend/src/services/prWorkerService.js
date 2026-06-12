@@ -31,13 +31,54 @@ const failJob = async (jobId, error) => {
     details: error.details || {}
   };
 
+  // Classify worker failures distinctly so metrics are not mistaken for valid zero results
+  if (safeError.code === 'WORKER_PROCESS_FAILED' || safeError.code === 'WORKER_TIMEOUT') {
+    safeError.failureType = 'worker_execution_failed';
+    if (safeError.details && typeof safeError.details.exitCode !== 'undefined') {
+      safeError.exitCode = safeError.details.exitCode;
+    }
+  } else if (safeError.code === 'ZERO_OUTPUT_WITHOUT_EXPLANATION') {
+    safeError.failureType = 'summary_missing';
+  } else if (safeError.code === 'SUMMARY_PARSE_FAILED') {
+    safeError.failureType = 'summary_parse_failed';
+  } else if (safeError.code === 'OUTPUT_GENERATION_FAILED') {
+    safeError.failureType = 'output_generation_failed';
+  } else {
+    // Default fallback to worker_execution_failed for generic worker errors
+    safeError.failureType = 'worker_execution_failed';
+  }
+
+  const failedJob = await Job.findOne({ jobId }).lean().catch(() => null);
+
+  const isFailure = [
+    'worker_execution_failed',
+    'summary_missing',
+    'summary_parse_failed',
+    'output_generation_failed'
+  ].includes(safeError.failureType);
+
+  // For execution failures, do not default unknown metrics to zero — use null to indicate unknown
+  const summaryForFinal = {
+    requestedSiteCount: failedJob ? (typeof failedJob.requestedSiteCount === 'number' ? failedJob.requestedSiteCount : null) : null,
+    matchedSiteCount: isFailure ? null : (failedJob ? failedJob.matchedSiteCount || 0 : 0),
+    unmatchedSiteCount: isFailure ? null : (failedJob ? failedJob.unmatchedSiteCount || 0 : 0),
+    outputFileCount: isFailure ? null : (failedJob ? failedJob.outputFileCount || 0 : 0),
+    reviewRequiredCount: failedJob ? failedJob.reviewRequiredCount || 0 : 0,
+    warningCount: failedJob ? failedJob.warningCount || 0 : 0
+  };
+
   await setJobStatus(jobId, 'failed', {
     completedAt: new Date(),
     ...(safeError.code === 'WORKER_TIMEOUT' ? {
       timedOutAt: new Date(),
       timeoutReason: safeError.message
     } : {}),
-    error: safeError
+    error: safeError,
+    matchedSiteCount: summaryForFinal.matchedSiteCount,
+    unmatchedSiteCount: summaryForFinal.unmatchedSiteCount,
+    outputFileCount: summaryForFinal.outputFileCount,
+    reviewRequiredCount: summaryForFinal.reviewRequiredCount,
+    warningCount: summaryForFinal.warningCount
   });
   workerStateService.setError(jobId, safeError);
   await publishJobEvent(jobId, JOB_EVENTS.JOB_FAILED, {
@@ -45,20 +86,15 @@ const failJob = async (jobId, error) => {
     status: 'failed',
     message: safeError.message,
     summary: {
-      outputFileCount: 0,
-      warningCount: 0,
-      reviewRequiredCount: 0
+      outputFileCount: summaryForFinal.outputFileCount,
+      warningCount: summaryForFinal.warningCount,
+      reviewRequiredCount: summaryForFinal.reviewRequiredCount,
+      matchedSiteCount: summaryForFinal.matchedSiteCount,
+      unmatchedSiteCount: summaryForFinal.unmatchedSiteCount
     }
   });
-  const failedJob = await Job.findOne({ jobId }).lean().catch(() => null);
-  await saveFinalSummary({ jobId, summary: {
-    requestedSiteCount: failedJob ? failedJob.requestedSiteCount || 0 : 0,
-    matchedSiteCount: failedJob ? failedJob.matchedSiteCount || 0 : 0,
-    unmatchedSiteCount: failedJob ? failedJob.unmatchedSiteCount || 0 : 0,
-    outputFileCount: failedJob ? failedJob.outputFileCount || 0 : 0,
-    reviewRequiredCount: failedJob ? failedJob.reviewRequiredCount || 0 : 0,
-    warningCount: failedJob ? failedJob.warningCount || 0 : 0
-  } }).catch(() => {});
+
+  await saveFinalSummary({ jobId, summary: summaryForFinal }).catch(() => {});
   await generateReportsAndPackage(jobId).catch(() => {});
 };
 
@@ -209,7 +245,16 @@ const runPrWorkerJob = async (jobId) => {
       message: 'Export collection started.'
     });
     const outputCollection = await collectOutputs(jobId);
-    const tiIngestion = await ingestTiResultFiles(jobId);
+    let tiIngestion;
+    try {
+      tiIngestion = await ingestTiResultFiles(jobId);
+    } catch (err) {
+      const wrapErr = new Error(`Failed to parse TI result CSV files: ${err.message}`);
+      wrapErr.code = 'SUMMARY_PARSE_FAILED';
+      wrapErr.details = { originalError: err.message };
+      throw wrapErr;
+    }
+
     if (tiIngestion.parsedReviewRequiredCount > 0 || tiIngestion.parsedWarningCount > 0) {
       await publishJobEvent(jobId, 'TI_RESULT_EVIDENCE_INGESTED', {
         phase: 'OUTPUT_COLLECTION_STARTED',
@@ -227,15 +272,23 @@ const runPrWorkerJob = async (jobId) => {
     const summary = await buildAndSaveSummary({ jobId, filteringResult, outputCollection });
     const noEccExplanation = getNoEccExplanation(summary);
     const finalStatus = determineFinalStatus(summary);
-    const finalWorkerSummary = await saveFinalSummary({ jobId, summary, statusOverride: finalStatus });
-    await generateReportsAndPackage(jobId);
+
+    let finalWorkerSummary;
+    try {
+      finalWorkerSummary = await saveFinalSummary({ jobId, summary, statusOverride: finalStatus });
+      await generateReportsAndPackage(jobId);
+    } catch (err) {
+      const wrapErr = new Error(`Failed to generate reports or package outputs: ${err.message}`);
+      wrapErr.code = 'OUTPUT_GENERATION_FAILED';
+      wrapErr.details = { originalError: err.message };
+      throw wrapErr;
+    }
 
     await setJobStatus(jobId, finalStatus, {
       completedAt: new Date(),
       finalWorkerSummary,
       error: undefined
     });
-    await generateReportsAndPackage(jobId);
     workerStateService.setComplete(jobId);
     await publishJobEvent(jobId, JOB_EVENTS.JOB_COMPLETED, {
       phase: 'COMPLETED',

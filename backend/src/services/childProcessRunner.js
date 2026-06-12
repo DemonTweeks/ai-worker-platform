@@ -42,7 +42,8 @@ const buildCommand = ({
   return {
     command: getPythonExecutable(),
     args,
-    cwd: createPrCdRoot
+    cwd: createPrCdRoot,
+    scriptPath
   };
 };
 
@@ -56,7 +57,12 @@ const runCommand = ({ command, args, cwd, timeoutMs, isCancellationRequested }) 
   const child = spawn(command, args, {
     cwd,
     shell: false,
-    windowsHide: true
+    windowsHide: true,
+    env: {
+      ...process.env,
+      PYTHONUTF8: '1',
+      PYTHONIOENCODING: 'utf-8'
+    }
   });
 
   const stopChild = () => {
@@ -175,14 +181,32 @@ const runCreatePrCd = async ({
     if (result.timedOut) {
       const error = new Error(`create-pr-cd timed out while running ${scope}.`);
       error.code = 'WORKER_TIMEOUT';
-      error.details = { scope, stdout: result.stdout.slice(-2000), stderr: result.stderr.slice(-2000) };
+      error.details = {
+        scope,
+        exitCode: result.exitCode,
+        stdout: result.stdout.slice(-2000),
+        stderr: result.stderr.slice(-2000),
+        pythonExecutable: commandSpec.command,
+        workingDirectory: commandSpec.cwd,
+        resolvedSkillPath: commandSpec.scriptPath,
+        outputPath
+      };
       throw error;
     }
 
     if (result.exitCode !== 0) {
       const error = new Error(`create-pr-cd failed while running ${scope}.`);
       error.code = 'WORKER_PROCESS_FAILED';
-      error.details = { scope, exitCode: result.exitCode, stdout: result.stdout.slice(-2000), stderr: result.stderr.slice(-2000) };
+      error.details = {
+        scope,
+        exitCode: result.exitCode,
+        stdout: result.stdout.slice(-2000),
+        stderr: result.stderr.slice(-2000),
+        pythonExecutable: commandSpec.command,
+        workingDirectory: commandSpec.cwd,
+        resolvedSkillPath: commandSpec.scriptPath,
+        outputPath
+      };
       throw error;
     }
   }

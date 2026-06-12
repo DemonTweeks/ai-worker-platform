@@ -511,6 +511,186 @@ const testResourceProtection = async () => {
   return { dryRunCandidates: dryRun.candidates.length, deleted: actual.deleted.length };
 };
 
+const testFailureClassifications = async (baseUrl) => {
+  console.log('\n--- Running Failure Classification & Hardening Tests ---');
+
+  const { runCommand } = require('../src/services/childProcessRunner');
+
+  // 1. UTF-8 environment validation
+  const pythonExec = process.platform === 'win32' ? 'python' : 'python3';
+  const res = await runCommand({
+    command: pythonExec,
+    args: ['-c', 'import os; print(os.environ.get("PYTHONUTF8"), os.environ.get("PYTHONIOENCODING"))'],
+    cwd: process.cwd(),
+    timeoutMs: 5000
+  });
+  assert.strictEqual(res.exitCode, 0, 'Python check should exit with 0');
+  assert(res.stdout.includes('1'), 'PYTHONUTF8 should be passed as 1');
+  assert(res.stdout.toLowerCase().includes('utf-8'), 'PYTHONIOENCODING should be passed as utf-8');
+  console.log('Pass: UTF-8 environment validation');
+
+  // Test that Python prints checkmark successfully with environment settings
+  console.log('Testing scenario: Unicode printing under Windows-style environment...');
+  const resUnicode = await runCommand({
+    command: pythonExec,
+    args: ['-c', 'print("✓")'],
+    cwd: process.cwd(),
+    timeoutMs: 5000
+  });
+  assert.strictEqual(resUnicode.exitCode, 0, 'Python checkmark print should exit with 0');
+  assert(resUnicode.stdout.includes('✓') || resUnicode.stdout.includes('\u2713'), 'Python stdout should contain checkmark');
+  console.log('Pass: Unicode console output handling');
+
+  // We will setup mock skills directory
+  const config = require('../src/config/env');
+  const origCreatePrCdRoot = config.createPrCdRoot;
+  const mockRoot = path.join(repoRoot, 'backend', 'test-mock-skill');
+
+  const setupMockScript = async (scriptContent) => {
+    await fs.promises.mkdir(path.join(mockRoot, 'scripts'), { recursive: true });
+    await fs.promises.writeFile(path.join(mockRoot, 'scripts', 'generate_tss_pr_ecc.py'), scriptContent, 'utf8');
+  };
+
+  const cleanMockScript = async () => {
+    try {
+      await fs.promises.rm(mockRoot, { recursive: true, force: true });
+    } catch (err) {}
+  };
+
+  config.createPrCdRoot = mockRoot;
+
+  try {
+    // 2. Python worker execution crash test
+    console.log('Testing scenario: Worker execution crash...');
+    await setupMockScript(`
+import sys
+sys.stderr.write("Traceback (most recent call last):\\nUnicodeEncodeError: 'charmap' codec can't encode character\\n")
+sys.exit(5)
+`);
+
+    const prevalidation = await uploadFile(baseUrl, '/api/jobs/prevalidate', sampleInputPath);
+    assert(prevalidation.response.ok, 'prevalidation should pass');
+    const siteCode = getSampleSiteCode();
+
+    const createdCrash = await postJson(baseUrl, '/api/jobs', {
+      prevalidatedFileId: prevalidation.body.prevalidatedFileId,
+      prScope: 'TSS',
+      generationScope: 'site_code',
+      siteCodes: [siteCode]
+    });
+    assert.strictEqual(createdCrash.response.status, 201, 'job should be created');
+    const crashJobId = createdCrash.body.job.jobId;
+    cleanupJobIds.add(crashJobId);
+
+    const crashJobDetail = await waitForJobTerminal(baseUrl, crashJobId);
+    assert.strictEqual(crashJobDetail.job.status, 'failed', 'job should fail');
+    assert.strictEqual(crashJobDetail.job.error.code, 'WORKER_PROCESS_FAILED', 'error code should be WORKER_PROCESS_FAILED');
+    assert.strictEqual(crashJobDetail.job.error.failureType, 'worker_execution_failed', 'failureType should be worker_execution_failed');
+    assert.strictEqual(crashJobDetail.job.error.details.exitCode, 5, 'exitCode should be 5');
+    assert(crashJobDetail.job.error.details.stderr.includes('UnicodeEncodeError'), 'details.stderr should contain traceback');
+    assert.strictEqual(crashJobDetail.job.matchedSiteCount, null, 'matchedSiteCount should be null on execution failure');
+    assert.strictEqual(crashJobDetail.job.unmatchedSiteCount, null, 'unmatchedSiteCount should be null on execution failure');
+    assert.strictEqual(crashJobDetail.job.outputFileCount, null, 'outputFileCount should be null on execution failure');
+    console.log('Pass: Worker execution crash handling');
+
+    // 3. Missing summary test (ZERO_OUTPUT_WITHOUT_EXPLANATION -> summary_missing)
+    console.log('Testing scenario: Missing summary...');
+    await setupMockScript(`
+import sys
+sys.exit(0)
+`);
+
+    const prevalidation2 = await uploadFile(baseUrl, '/api/jobs/prevalidate', sampleInputPath);
+    assert(prevalidation2.response.ok, 'prevalidation should pass');
+    const createdMissing = await postJson(baseUrl, '/api/jobs', {
+      prevalidatedFileId: prevalidation2.body.prevalidatedFileId,
+      prScope: 'TI',
+      generationScope: 'site_code',
+      siteCodes: [siteCode]
+    });
+    assert.strictEqual(createdMissing.response.status, 201, 'job should be created');
+    const missingJobId = createdMissing.body.job.jobId;
+    cleanupJobIds.add(missingJobId);
+
+    const missingJobDetail = await waitForJobTerminal(baseUrl, missingJobId);
+    assert.strictEqual(missingJobDetail.job.status, 'failed', 'job should fail');
+    assert.strictEqual(missingJobDetail.job.error.code, 'ZERO_OUTPUT_WITHOUT_EXPLANATION', 'error code should be ZERO_OUTPUT_WITHOUT_EXPLANATION');
+    assert.strictEqual(missingJobDetail.job.error.failureType, 'summary_missing', 'failureType should be summary_missing');
+    assert.strictEqual(missingJobDetail.job.matchedSiteCount, null, 'matchedSiteCount should be null on summary missing');
+    assert.strictEqual(missingJobDetail.job.unmatchedSiteCount, null, 'unmatchedSiteCount should be null on summary missing');
+    assert.strictEqual(missingJobDetail.job.outputFileCount, null, 'outputFileCount should be null on summary missing');
+    console.log('Pass: Missing summary handling');
+
+    // 4. Summary parse failure test
+    console.log('Testing scenario: Summary parse failure...');
+    await setupMockScript(`
+import sys
+import os
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--output', required=True)
+args, _ = parser.parse_known_args()
+
+os.makedirs(args.output, exist_ok=True)
+with open(os.path.join(args.output, "REVIEW_REQUIRED_TI_20260610.csv"), "wb") as f:
+    f.write(b"PK\\x03\\x04garbage_corrupt_data_here")
+sys.exit(0)
+`);
+
+    const prevalidation3 = await uploadFile(baseUrl, '/api/jobs/prevalidate', sampleInputPath);
+    assert(prevalidation3.response.ok, 'prevalidation should pass');
+    const createdParseFail = await postJson(baseUrl, '/api/jobs', {
+      prevalidatedFileId: prevalidation3.body.prevalidatedFileId,
+      prScope: 'TI',
+      generationScope: 'site_code',
+      siteCodes: [siteCode]
+    });
+    assert.strictEqual(createdParseFail.response.status, 201, 'job should be created');
+    const parseFailJobId = createdParseFail.body.job.jobId;
+    cleanupJobIds.add(parseFailJobId);
+
+    const parseFailJobDetail = await waitForJobTerminal(baseUrl, parseFailJobId);
+    assert.strictEqual(parseFailJobDetail.job.status, 'failed', 'job should fail');
+    assert.strictEqual(parseFailJobDetail.job.error.code, 'SUMMARY_PARSE_FAILED', 'error code should be SUMMARY_PARSE_FAILED');
+    assert.strictEqual(parseFailJobDetail.job.error.failureType, 'summary_parse_failed', 'failureType should be summary_parse_failed');
+    assert.strictEqual(parseFailJobDetail.job.matchedSiteCount, null, 'matchedSiteCount should be null on parse failure');
+    console.log('Pass: Summary parse failure handling');
+
+    // 5. Genuine completed zero-match result test
+    console.log('Testing scenario: Genuine completed zero-match...');
+    await setupMockScript(`
+import sys
+sys.exit(0)
+`);
+
+    const prevalidation4 = await uploadFile(baseUrl, '/api/jobs/prevalidate', sampleInputPath);
+    assert(prevalidation4.response.ok, 'prevalidation should pass');
+    const createdZeroMatch = await postJson(baseUrl, '/api/jobs', {
+      prevalidatedFileId: prevalidation4.body.prevalidatedFileId,
+      prScope: 'TI',
+      generationScope: 'site_code',
+      siteCodes: ['QA15_NONEXISTENT_SITE']
+    });
+    assert.strictEqual(createdZeroMatch.response.status, 201, 'job should be created');
+    const zeroMatchJobId = createdZeroMatch.body.job.jobId;
+    cleanupJobIds.add(zeroMatchJobId);
+
+    const zeroMatchJobDetail = await waitForJobTerminal(baseUrl, zeroMatchJobId);
+    assert(['completed', 'completed_with_warning'].includes(zeroMatchJobDetail.job.status), 'job should complete successfully (or with warnings)');
+    assert.strictEqual(zeroMatchJobDetail.job.matchedSiteCount, 0, 'matchedSiteCount should be 0');
+    assert.strictEqual(zeroMatchJobDetail.job.outputFileCount, 0, 'outputFileCount should be 0');
+    console.log('Pass: Genuine completed zero-match handling');
+
+  } finally {
+    config.createPrCdRoot = origCreatePrCdRoot;
+    await cleanMockScript();
+  }
+
+  console.log('--- All Failure Classification & Hardening Tests Passed ---\n');
+  return { ok: true };
+};
+
 const main = async () => {
   let serverInfo = null;
   const results = {};
@@ -527,6 +707,7 @@ const main = async () => {
     results.admin = await testAdminApi(serverInfo.baseUrl);
     results.websocket = await testWebSocket(serverInfo.wsUrl);
     results.resourceProtection = await testResourceProtection();
+    results.failureClassifications = await testFailureClassifications(serverInfo.baseUrl);
 
     console.log(JSON.stringify({ ok: true, results }, null, 2));
   } finally {
