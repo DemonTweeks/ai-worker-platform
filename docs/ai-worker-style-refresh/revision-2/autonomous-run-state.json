@@ -1,0 +1,63 @@
+{
+  "revision": 2,
+  "mission": "AI Worker UI Style Refresh Revision 2",
+  "repository": "C:\\dev\\ai-worker-platform-style-refresh",
+  "branch": "feature/ai-worker-style-refresh",
+  "master_prompt": "C:\\dev\\codex-prompts\\ai-worker-style-refresh-revision-2-master-automation-prompt.md",
+  "completed": false,
+  "acceptance_status": "not_ready",
+  "current_status": "revision_2_initialized",
+  "next_action": "IMPLEMENT_PRODUCTIZED_WORKBENCH_HOME",
+  "last_bounded_step": "Initialized isolated Revision 2 state, design brief, execution plan, and logs, then created the initialization checkpoint.",
+  "heartbeat_automation": {
+    "name": "ai-worker-style-refresh-revision-2-hourly-follow-up",
+    "cadence": "FREQ=HOURLY;INTERVAL=1",
+    "destination": "same_thread",
+    "status": "ACTIVE"
+  },
+  "constraints": {
+    "do_not_push": true,
+    "do_not_merge": true,
+    "do_not_deploy": true,
+    "do_not_modify_main": true,
+    "do_not_modify_backend_logic": true,
+    "do_not_modify_submodules": true,
+    "preserve_revision_1_evidence": true
+  },
+  "allowed_change_scope": [
+    "frontend/src/views/HomeView.vue",
+    "frontend/src/styles.css",
+    "docs/ai-worker-style-refresh/revision-2"
+  ],
+  "verification_gates": {
+    "frontend_tests": "pending",
+    "backend_tests": "pending",
+    "browser_routes": "pending",
+    "desktop_before_screenshot": "pending",
+    "desktop_after_screenshot": "pending",
+    "mobile_after_screenshot": "pending",
+    "operational_sections_after_screenshot": "pending",
+    "git_checkpoint": "initialization_checkpoint_created",
+    "human_visual_acceptance": "pending"
+  },
+  "checkpoint_history": [
+    {
+      "sha": "see_git_log_for_commit_containing_this_state",
+      "message": "docs: initialize revision 2 autonomous state",
+      "scope": "docs/ai-worker-style-refresh/revision-2"
+    }
+  ],
+  "evidence": {
+    "browser_evidence_dir": "C:\\dev\\ai-worker-platform-style-refresh\\docs\\ai-worker-style-refresh\\revision-2\\browser-evidence",
+    "latest_screenshot": null
+  },
+  "superpowers_methodology_used": [
+    "using-superpowers",
+    "using-git-worktrees",
+    "brainstorming with mission-prompt approval override",
+    "writing-plans",
+    "executing-plans readiness",
+    "verification-before-completion readiness"
+  ],
+  "updated_at": "2026-06-18T00:00:00+08:00"
+}
