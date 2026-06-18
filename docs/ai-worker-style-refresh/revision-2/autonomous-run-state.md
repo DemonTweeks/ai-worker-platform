@@ -1,6 +1,6 @@
 # AI Worker UI Style Refresh Revision 2 State
 
-Status: Automated verification ready; pending human visual review.
+Status: Completed.
 
 Completion is controlled only by this directory:
 
@@ -9,13 +9,13 @@ Completion is controlled only by this directory:
 
 The old Revision 1 state and completion marker remain historical evidence and must not be interpreted as Revision 2 completion.
 
-Current status: `automated_verification_ready_pending_human_visual_review`
+Current status: `completed`
 
-Next action: `WAIT_FOR_HUMAN_VISUAL_REVIEW`
+Next action: `NO_OP_COMPLETED`
 
-Acceptance status: `pending_human_visual_review`
+Acceptance status: `passed`
 
-Latest checkpoint: `docs: record revision 2 backend verification`
+Latest checkpoint: `docs: complete revision 2 after visual acceptance`
 
 Latest screenshot evidence:
 
@@ -33,4 +33,4 @@ Backend verification passed with:
 
 Environment note: `C:\dev\ai-worker-platform.venv` is a Windows junction to `C:\dev\ai-worker-platform\.venv` so the prompt-required executable path resolves without repository changes.
 
-Revision 2 is not complete. Human visual acceptance is still required before writing the `COMPLETED` marker.
+Revision 2 is complete. Future heartbeat wake-ups should perform the read-only no-op path and reply only `NO_OP_COMPLETED`.
