@@ -10,4 +10,6 @@ Implementation update: the first CSS subphase has been applied in `frontend/src/
 
 Implementation update: the second CSS subphase refined cards, buttons, forms, badges, alerts, table wrappers, status treatments, history/detail/admin surfaces, and segmented controls. The full frontend baseline command `npm --prefix frontend test` passed, including required route smoke checks.
 
+Browser evidence update: route and viewport checks passed across seven required routes and widths from 1440px to 360px. Screenshot and JSON evidence is stored in `docs/ai-worker-style-refresh/browser-evidence/`. A mobile cockpit card squeeze and responsive filter overflow were found and fixed during this phase.
+
 Final acceptance gates have not yet been run.

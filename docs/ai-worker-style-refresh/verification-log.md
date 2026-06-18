@@ -73,3 +73,29 @@ Backend tests: not run in this frontend styling subphase.
 Frontend baseline test: passed.
 
 Backend tests: not run in this frontend styling subphase.
+
+## 2026-06-18T19:47:26.4547377+08:00
+
+- Re-read `C:\dev\codex-prompts\ai-worker-style-refresh-master-automation-prompt.md`.
+- Read `docs/ai-worker-style-refresh/autonomous-run-state.json`; state was incomplete and next action targeted browser/viewport checks.
+- `git -C C:\dev\ai-worker-platform-style-refresh status --short`: clean before browser evidence phase.
+- `git -C C:\dev\ai-worker-platform-style-refresh rev-parse --short HEAD`: `d668e73`.
+- `git -C C:\dev\ai-worker-platform-style-refresh branch --show-current`: `feature/ai-worker-style-refresh`.
+- Started Vite preview at `http://127.0.0.1:4174/` and verified HTTP 200.
+- Used bundled Playwright with `C:\Program Files\Google\Chrome\Application\chrome.exe`.
+- Browser matrix checked 49 combinations: routes `/`, `/history`, `/jobs/QA15-ROUTE-SMOKE`, `/admin/login`, `/admin/assets`, `/admin/audit-logs`, `/admin/health` at widths 1440, 1280, 1024, 768, 430, 390, and 360.
+- Initial matrix found mobile cockpit squeezing and filter/table overflow; fixed responsive CSS and rebuilt.
+- Final matrix result: 49 checks, 0 blocking failures, 0 console warnings/errors. Results saved to `docs/ai-worker-style-refresh/browser-evidence/viewport-check-results.json` and summary saved to `viewport-check-summary.json`.
+- Screenshot evidence saved for home, history, job detail, admin login, admin assets, admin audit logs, and admin health in `docs/ai-worker-style-refresh/browser-evidence/`.
+- `npm --prefix frontend test`: exit 0 after final responsive CSS. Vite transformed 99 modules and route smoke returned all required routes.
+- Stopped preview server on port 4174 after checks.
+
+Frontend baseline test: passed.
+
+Browser checks: passed.
+
+Viewport checks: passed.
+
+Screenshots: captured.
+
+Backend tests: not run in this browser evidence phase.

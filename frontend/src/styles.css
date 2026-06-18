@@ -315,9 +315,11 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-width: 0;
   padding: 0;
   max-width: 1200px;
   margin: 0 auto;
+  width: 100%;
 }
 
 .portal-shell .hero-band {
@@ -491,6 +493,7 @@ textarea {
   border: 1px solid var(--zte-line);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-panel);
+  min-width: 0;
   padding: 16px;
   transition: border-color 0.22s ease, box-shadow 0.22s ease;
 }
@@ -1440,6 +1443,7 @@ textarea {
 .table-wrap {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
+  max-width: 100%;
   overflow-x: auto;
 }
 
@@ -1771,9 +1775,11 @@ body:has(.home-cockpit) {
 .cockpit-card-heading {
   align-items: center;
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   justify-content: space-between;
   margin: 0;
+  min-width: 0;
 }
 
 .cockpit-card .panel-heading h2,
@@ -1794,6 +1800,8 @@ body:has(.home-cockpit) {
   color: #607d96;
   font-size: 12px;
   font-weight: 800;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .cockpit-card .step-marker {
@@ -2299,6 +2307,12 @@ body:has(.home-cockpit) {
   .top-nav {
     margin-top: 6px;
   }
+
+  .history-filters .filter-grid,
+  .admin-form-grid,
+  .audit-filter-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 760px) {
@@ -2322,6 +2336,20 @@ body:has(.home-cockpit) {
 }
 
 @media (max-width: 640px) {
+  body:has(.home-cockpit) {
+    overflow: auto;
+  }
+
+  .app-shell:has(.home-cockpit) {
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
+  .app-shell:has(.home-cockpit) .page-main {
+    overflow: visible;
+  }
+
   .app-header {
     margin-top: 10px;
     width: min(100% - 20px, 1180px);
@@ -2337,8 +2365,37 @@ body:has(.home-cockpit) {
     gap: 12px;
   }
 
+  .portal-shell .hero-band,
+  .portal-shell .panel,
+  .admin-nav-row,
+  .history-filters {
+    width: 100%;
+  }
+
   .home-cockpit {
+    height: auto;
+    min-height: calc(100dvh - 180px);
+    overflow: visible;
     padding: 0 10px 12px;
+  }
+
+  .cockpit-card-row {
+    flex: 0 0 auto;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cockpit-card {
+    min-height: 180px;
+  }
+
+  .cockpit-card-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .cockpit-console-shell {
+    min-height: 320px;
   }
 }
 

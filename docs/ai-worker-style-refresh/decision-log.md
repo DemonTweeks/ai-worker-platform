@@ -39,3 +39,14 @@
 - Narrowed the generic button hover selector so active segmented controls keep their selected treatment.
 - Preserved all Vue templates, route definitions, API calls, backend code, submodules, storage files, and workflows.
 - Ran the full frontend baseline command because this subphase touched broad shared styling and route smoke coverage is required by the master prompt.
+
+## 2026-06-18T19:47:26.4547377+08:00
+
+- Used Superpowers `verification-before-completion` guidance and Vercel browser verification guidance for the browser evidence phase.
+- Recovered from incorrect Vercel skill path expansion by reading the skill files from `C:\Users\Win11-JJ\.codex\plugins\cache\openai-curated-remote\vercel\0.21.2\skills`.
+- `agent-browser` was not available on PATH and Playwright's bundled browser was not installed, so the run used the bundled Playwright package with system Chrome. This avoided adding project dependencies or downloading browser binaries into the repo.
+- Stubbed API responses inside the browser context to verify frontend route/layout behavior without starting or altering the backend.
+- Initial viewport checks found mobile cockpit card squeezing and high-specificity filter grid overflow; fixed both in `frontend/src/styles.css`.
+- Treated audit-log table horizontal overflow as acceptable only after separately verifying it is contained inside `.table-wrap` and does not create document/body overflow.
+- Captured screenshot evidence and JSON route/viewport results under `docs/ai-worker-style-refresh/browser-evidence/`.
+- Stopped the local preview server after checks.

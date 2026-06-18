@@ -4,17 +4,17 @@ Task: AI Worker style-and-layout refresh
 
 Current phase: implementation
 
-Current subphase: card-form-button-status-refinement-complete
+Current subphase: browser-and-viewport-evidence-complete
 
 Completed: false
 
-Wake-up count: 4
+Wake-up count: 5
 
-Last action: Refined cards, buttons, forms, status treatments, history/detail/admin surfaces, tables, badges, and alerts in `frontend/src/styles.css` while preserving Vue templates, routes, and workflows. Confirmed `npm --prefix frontend test` passed, including the required route smoke list.
+Last action: Performed browser and viewport checks across all required routes and seven viewport widths using bundled Playwright with system Chrome. Fixed mobile cockpit and responsive filter/table containment issues in `frontend/src/styles.css`. Captured screenshot and JSON evidence under `docs/ai-worker-style-refresh/browser-evidence`. Re-ran `npm --prefix frontend test` successfully.
 
-Next action: Perform page-specific responsive refinement and browser/viewport checks for home, history, detail, and admin routes; capture or document before/after visual evidence.
+Next action: Run backend baseline tests with the required Python environment available, then perform code review and final verification phases.
 
-Last successful implementation checkpoint commit: `ffb8a31`
+Last successful implementation checkpoint commit: `d668e73`
 
 Notes:
 
@@ -26,3 +26,5 @@ Notes:
 - The Superpowers brainstorming skill includes routine user approval gates. The master automation prompt forbids routine approval waits, so this run used the context exploration, approach comparison, and documentation parts while continuing autonomously.
 - `npm --prefix frontend ci` installed dependencies into ignored `frontend/node_modules` so frontend verification can run in this worktree.
 - Frontend baseline `npm --prefix frontend test` passed after the card/form/button/status refinement.
+- Browser/viewport evidence is captured in `docs/ai-worker-style-refresh/browser-evidence/`.
+- The audit log table intentionally uses contained horizontal scrolling on narrow screens; the document/body itself does not overflow.
