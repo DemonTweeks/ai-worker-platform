@@ -6,9 +6,9 @@ Evidence directory:
 
 Required screenshots:
 
-- [ ] Desktop homepage before.
-- [ ] Desktop homepage after.
-- [ ] Mobile homepage after.
-- [ ] Key operational sections after.
+- [x] Desktop homepage before: `browser-evidence/desktop-home-before-revision-2.png`.
+- [x] Desktop homepage after: `browser-evidence/desktop-home-after-revision-2.png`.
+- [x] Mobile homepage after: `browser-evidence/mobile-home-after-revision-2.png`.
+- [x] Key operational sections after: `browser-evidence/operational-sections-after-revision-2.png`.
 
-No Revision 2 screenshots have been captured yet.
+Revision 2 screenshot evidence has been captured. Human visual acceptance is still pending.
