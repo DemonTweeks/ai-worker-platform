@@ -8,4 +8,6 @@ Planning update: repository and reference analysis inspection is complete. The i
 
 Implementation update: the first CSS subphase has been applied in `frontend/src/styles.css`. It adds original design tokens, stronger global focus and form styling, restrained shell/card shadows, consistent content widths, mobile gutter safeguards, and `prefers-reduced-motion` handling. Frontend build verification passed after installing dependencies with `npm --prefix frontend ci`.
 
+Implementation update: the second CSS subphase refined cards, buttons, forms, badges, alerts, table wrappers, status treatments, history/detail/admin surfaces, and segmented controls. The full frontend baseline command `npm --prefix frontend test` passed, including required route smoke checks.
+
 Final acceptance gates have not yet been run.

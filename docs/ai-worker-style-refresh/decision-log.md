@@ -30,3 +30,12 @@
 - Did not run `npm audit fix` or other dependency remediation because the master prompt forbids dependency remediation unless required.
 - Implemented the first style-refresh subphase in `frontend/src/styles.css`, focusing on original tokens, shell rhythm, focus/form affordance, restrained shadows, mobile gutters, and reduced-motion safeguards.
 - Removed a radial background accent during review because it risked reading as decorative orb styling, which is outside the desired frontend design constraints.
+
+## 2026-06-18T19:32:44.4924252+08:00
+
+- Continued from the master prompt and run state; the next planned action was card, button, form, status, history/detail/admin treatment.
+- Kept the subphase CSS-only because existing Vue components already expose sufficient class hooks and template changes were not needed to improve visual hierarchy.
+- Refined primary/secondary/download button hierarchy, segmented controls, badges, alerts, history cards, stat cards, admin nav, health cards, table wrappers, filter form rhythm, file states, checklists, and worker messages.
+- Narrowed the generic button hover selector so active segmented controls keep their selected treatment.
+- Preserved all Vue templates, route definitions, API calls, backend code, submodules, storage files, and workflows.
+- Ran the full frontend baseline command because this subphase touched broad shared styling and route smoke coverage is required by the master prompt.
