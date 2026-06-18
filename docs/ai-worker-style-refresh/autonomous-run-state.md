@@ -14,7 +14,7 @@ Last action: Inspected frontend routes, Vue shell/views, global CSS, route smoke
 
 Next action: Implement the first frontend styling subphase: design tokens, global shell polish, reduced-motion safeguards, and responsive container rhythm in `frontend/src/styles.css`.
 
-Last successful setup checkpoint commit: `9d162f8`
+Last successful checkpoint commit: `719ad42`
 
 Notes:
 
