@@ -11,7 +11,7 @@
   "wakeup_count": 1,
   "last_action": "Created required isolated worktree at C:\\dev\\ai-worker-platform-style-refresh on branch feature/ai-worker-style-refresh from source baseline b72ce9a; initialized persistent automation documentation.",
   "next_action": "Inspect repository structure and reference analysis, then produce the autonomous implementation plan.",
-  "last_successful_commit": "df6e9bc",
+  "last_successful_commit": "1c05845",
   "last_error_class": "RECOVERED_SKILL_PATH_EXPANSION",
   "retry_count": 0,
   "max_retries": 3,
