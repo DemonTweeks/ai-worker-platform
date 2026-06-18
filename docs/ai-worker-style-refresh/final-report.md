@@ -12,4 +12,6 @@ Implementation update: the second CSS subphase refined cards, buttons, forms, ba
 
 Browser evidence update: route and viewport checks passed across seven required routes and widths from 1440px to 360px. Screenshot and JSON evidence is stored in `docs/ai-worker-style-refresh/browser-evidence/`. A mobile cockpit card squeeze and responsive filter overflow were found and fixed during this phase.
 
+Backend verification update: `npm --prefix backend test` passed with `C:\dev\ai-worker-platform\.venv\Scripts` first on `PATH` and `PYTHON` set to `C:\dev\ai-worker-platform\.venv\Scripts\python.exe`.
+
 Final acceptance gates have not yet been run.

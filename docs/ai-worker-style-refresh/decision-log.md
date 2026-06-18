@@ -50,3 +50,12 @@
 - Treated audit-log table horizontal overflow as acceptable only after separately verifying it is contained inside `.table-wrap` and does not create document/body overflow.
 - Captured screenshot evidence and JSON route/viewport results under `docs/ai-worker-style-refresh/browser-evidence/`.
 - Stopped the local preview server after checks.
+
+## 2026-06-18T19:51:59.5399190+08:00
+
+- Read the master automation prompt and current run state before backend testing.
+- Used Superpowers `verification-before-completion` guidance for the backend baseline phase.
+- Installed backend dependencies with `npm --prefix backend ci` from the existing lockfile because `backend/node_modules` was absent.
+- Initialized `skills/create-pr-cd` at recorded commit `32f1da236a62042989ea63dce30ca95c4b3006ea` because the backend integration test fixture `Info/input/site_pr_po_view.xlsx` lives in that submodule. No submodule logic was edited.
+- Ran backend baseline with `PATH` prefixed by `C:\dev\ai-worker-platform\.venv\Scripts`, `PYTHON=C:\dev\ai-worker-platform\.venv\Scripts\python.exe`, `PYTHONUTF8=1`, and `PYTHONIOENCODING=utf-8`.
+- Did not run dependency remediation despite audit warnings because the master prompt forbids dependency remediation unless required.

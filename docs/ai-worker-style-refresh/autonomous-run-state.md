@@ -4,17 +4,17 @@ Task: AI Worker style-and-layout refresh
 
 Current phase: implementation
 
-Current subphase: browser-and-viewport-evidence-complete
+Current subphase: backend-baseline-complete
 
 Completed: false
 
-Wake-up count: 5
+Wake-up count: 6
 
-Last action: Performed browser and viewport checks across all required routes and seven viewport widths using bundled Playwright with system Chrome. Fixed mobile cockpit and responsive filter/table containment issues in `frontend/src/styles.css`. Captured screenshot and JSON evidence under `docs/ai-worker-style-refresh/browser-evidence`. Re-ran `npm --prefix frontend test` successfully.
+Last action: Installed backend dependencies from `package-lock.json`, initialized the required `skills/create-pr-cd` submodule at its recorded commit for test fixtures, and ran `npm --prefix backend test` with `PATH` prefixed by `C:\dev\ai-worker-platform\.venv\Scripts` and `PYTHON` set to `C:\dev\ai-worker-platform\.venv\Scripts\python.exe`. Backend smoke and integration tests passed.
 
-Next action: Run backend baseline tests with the required Python environment available, then perform code review and final verification phases.
+Next action: Perform code review, record findings, resolve or close findings, then run final verification gates.
 
-Last successful implementation checkpoint commit: `4f8a0e7`
+Last successful implementation checkpoint commit: `b71bec8`
 
 Notes:
 
@@ -28,3 +28,5 @@ Notes:
 - Frontend baseline `npm --prefix frontend test` passed after the card/form/button/status refinement.
 - Browser/viewport evidence is captured in `docs/ai-worker-style-refresh/browser-evidence/`.
 - The audit log table intentionally uses contained horizontal scrolling on narrow screens; the document/body itself does not overflow.
+- Backend baseline passed with the required Python venv on `PATH`.
+- `skills/create-pr-cd` is initialized at the recorded commit for test fixtures and remains unchanged.

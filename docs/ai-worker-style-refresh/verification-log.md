@@ -99,3 +99,22 @@ Viewport checks: passed.
 Screenshots: captured.
 
 Backend tests: not run in this browser evidence phase.
+
+## 2026-06-18T19:51:59.5399190+08:00
+
+- Re-read `C:\dev\codex-prompts\ai-worker-style-refresh-master-automation-prompt.md`.
+- Read `docs/ai-worker-style-refresh/autonomous-run-state.json`; state was incomplete and next action targeted backend baseline tests.
+- `git -C C:\dev\ai-worker-platform-style-refresh status --short`: clean before backend setup.
+- `git -C C:\dev\ai-worker-platform-style-refresh rev-parse --short HEAD`: `b71bec8`.
+- `git -C C:\dev\ai-worker-platform-style-refresh branch --show-current`: `feature/ai-worker-style-refresh`.
+- Verified `C:\dev\ai-worker-platform\.venv\Scripts\python.exe` exists and printed as the active Python executable before running backend tests.
+- `npm --prefix backend ci`: exit 0; installed 292 packages. Output reported existing audit/deprecation warnings; no remediation was performed.
+- `git submodule update --init -- skills/create-pr-cd`: checked out `32f1da236a62042989ea63dce30ca95c4b3006ea` for required test fixtures.
+- Backend test command:
+  `PATH=C:\dev\ai-worker-platform\.venv\Scripts;%PATH%; PYTHON=C:\dev\ai-worker-platform\.venv\Scripts\python.exe; PYTHONUTF8=1; PYTHONIOENCODING=utf-8; npm --prefix backend test`
+- The command printed `python=C:\dev\ai-worker-platform\.venv\Scripts\python.exe`.
+- `npm --prefix backend test`: exit 0. Smoke test returned `{"ok":true,...,"firebase_db_connected"}`. Integration test returned `{"ok":true,"results":{...}}`, including API/worker flow, TI result handling, admin API, websocket, resource protection, and failure classification hardening checks.
+- `git -C C:\dev\ai-worker-platform-style-refresh status --short`: no tracked runtime artifacts after the backend test run.
+- `git -C C:\dev\ai-worker-platform-style-refresh submodule status`: `skills/create-pr-cd` at `32f1da236a62042989ea63dce30ca95c4b3006ea`; `agent-guideline/vscode-agent` remains uninitialized.
+
+Backend baseline test: passed.
