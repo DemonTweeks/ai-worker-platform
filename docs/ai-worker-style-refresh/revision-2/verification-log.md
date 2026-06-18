@@ -54,10 +54,29 @@ Browser verification:
 
 Backend verification:
 
-- Pending.
-- Required prompt executable `C:\dev\ai-worker-platform.venv\Scripts\python.exe` is missing.
-- Existing Revision 1 evidence references `C:\dev\ai-worker-platform\.venv\Scripts\python.exe`, but Revision 2 prompt requires `C:\dev\ai-worker-platform.venv\Scripts\python.exe`; this step did not substitute a different executable.
+- Initially pending because required prompt executable `C:\dev\ai-worker-platform.venv\Scripts\python.exe` was missing.
+- Created Windows junction `C:\dev\ai-worker-platform.venv` -> `C:\dev\ai-worker-platform\.venv` outside the repository.
+- `C:\dev\ai-worker-platform.venv\Scripts\python.exe --version`: `Python 3.11.9`.
+- Ran backend verification with:
+  - `PATH=C:\dev\ai-worker-platform.venv\Scripts;%PATH%`
+  - `PYTHON=C:\dev\ai-worker-platform.venv\Scripts\python.exe`
+  - `PYTHONUTF8=1`
+  - `PYTHONIOENCODING=utf-8`
+  - `npm --prefix backend test`
+- `npm --prefix backend test`: exit 0.
+- Smoke test returned `{"ok":true,...,"firebase_db_connected"}`.
+- Integration test returned `{"ok":true,"results":{...}}`, including API/worker flow, TI result handling, admin API, websocket, resource protection, and failure classification hardening checks.
+- Failure classification scenarios passed: Unicode console output, worker execution crash, missing summary, summary parse failure, and genuine completed zero-match handling.
+- `git status --short --ignored` after backend tests showed only ignored `backend/node_modules/`, `frontend/dist/`, and `frontend/node_modules/`.
+- `git submodule status --recursive` showed no modified submodules; `agent-guideline/vscode-agent` remains uninitialized as existing state and `skills/create-pr-cd` remains at `32f1da236a62042989ea63dce30ca95c4b3006ea`.
 
 Checkpoint:
 
-- Checkpoint planned with message `feat: productize revision 2 home workbench`.
+- Productized workbench checkpoint exists: `feat: productize revision 2 home workbench`.
+- Backend verification checkpoint planned with message `docs: record revision 2 backend verification`.
+
+Acceptance status:
+
+- Automated implementation, frontend tests, backend tests, browser route checks, screenshot evidence, and changed-file scope are ready.
+- Revision 2 remains incomplete until explicit human visual acceptance is received.
+- State set to `acceptance_status = "pending_human_visual_review"` and `next_action = "WAIT_FOR_HUMAN_VISUAL_REVIEW"`.

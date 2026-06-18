@@ -17,3 +17,11 @@ Reason: `superpowers:brainstorming` normally requires user approval before imple
 Decision: Plan implementation around `frontend/src/views/HomeView.vue` and `frontend/src/styles.css`.
 
 Reason: The master prompt allows these files and prefers avoiding broad frontend architecture rewrites.
+
+## 2026-06-18 - Resolve Prompt-Required Python Path
+
+Decision: Created a Windows junction from `C:\dev\ai-worker-platform.venv` to `C:\dev\ai-worker-platform\.venv`.
+
+Reason: The Revision 2 prompt requires backend verification using `C:\dev\ai-worker-platform.venv\Scripts\python.exe`, but that path was absent while the existing project venv was available at `C:\dev\ai-worker-platform\.venv`. The junction makes the exact required executable path resolve without modifying repository files, backend logic, submodules, API contracts, or source code.
+
+Verification: `C:\dev\ai-worker-platform.venv\Scripts\python.exe --version` printed `Python 3.11.9`.

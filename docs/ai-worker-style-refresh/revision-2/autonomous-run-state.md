@@ -1,6 +1,6 @@
 # AI Worker UI Style Refresh Revision 2 State
 
-Status: Productized Workbench implemented and frontend verified.
+Status: Automated verification ready; pending human visual review.
 
 Completion is controlled only by this directory:
 
@@ -9,13 +9,13 @@ Completion is controlled only by this directory:
 
 The old Revision 1 state and completion marker remain historical evidence and must not be interpreted as Revision 2 completion.
 
-Current status: `productized_workbench_implemented_frontend_verified`
+Current status: `automated_verification_ready_pending_human_visual_review`
 
-Next action: `RUN_BACKEND_VERIFICATION_WITH_REQUIRED_PYTHON`
+Next action: `WAIT_FOR_HUMAN_VISUAL_REVIEW`
 
-Acceptance status: `not_ready`
+Acceptance status: `pending_human_visual_review`
 
-Latest checkpoint: `feat: productize revision 2 home workbench`
+Latest checkpoint: `docs: record revision 2 backend verification`
 
 Latest screenshot evidence:
 
@@ -26,6 +26,11 @@ Latest screenshot evidence:
 
 Frontend verification passed with `npm --prefix frontend test`.
 
-Backend verification is pending because the required executable `C:\dev\ai-worker-platform.venv\Scripts\python.exe` is missing in this environment.
+Backend verification passed with:
+
+- `PYTHON=C:\dev\ai-worker-platform.venv\Scripts\python.exe`
+- `npm --prefix backend test`
+
+Environment note: `C:\dev\ai-worker-platform.venv` is a Windows junction to `C:\dev\ai-worker-platform\.venv` so the prompt-required executable path resolves without repository changes.
 
 Revision 2 is not complete. Human visual acceptance is still required before writing the `COMPLETED` marker.

@@ -5,10 +5,10 @@
   "branch": "feature/ai-worker-style-refresh",
   "master_prompt": "C:\\dev\\codex-prompts\\ai-worker-style-refresh-revision-2-master-automation-prompt.md",
   "completed": false,
-  "acceptance_status": "not_ready",
-  "current_status": "productized_workbench_implemented_frontend_verified",
-  "next_action": "RUN_BACKEND_VERIFICATION_WITH_REQUIRED_PYTHON",
-  "last_bounded_step": "Implemented Productized Workbench homepage structure, captured Revision 2 screenshots, ran frontend tests, and ran browser route checks.",
+  "acceptance_status": "pending_human_visual_review",
+  "current_status": "automated_verification_ready_pending_human_visual_review",
+  "next_action": "WAIT_FOR_HUMAN_VISUAL_REVIEW",
+  "last_bounded_step": "Ran backend verification with the prompt-required Python executable path, updated Revision 2 state, and moved acceptance to pending human visual review.",
   "heartbeat_automation": {
     "name": "ai-worker-style-refresh-revision-2-hourly-follow-up",
     "cadence": "FREQ=HOURLY;INTERVAL=1",
@@ -31,13 +31,13 @@
   ],
   "verification_gates": {
     "frontend_tests": "passed: npm --prefix frontend test",
-    "backend_tests": "pending: required Python executable missing at C:\\dev\\ai-worker-platform.venv\\Scripts\\python.exe",
+    "backend_tests": "passed: npm --prefix backend test with PYTHON=C:\\dev\\ai-worker-platform.venv\\Scripts\\python.exe",
     "browser_routes": "passed render sweep with expected non-blocking 404s for favicon/job smoke data",
     "desktop_before_screenshot": "captured",
     "desktop_after_screenshot": "captured",
     "mobile_after_screenshot": "captured",
     "operational_sections_after_screenshot": "captured",
-    "git_checkpoint": "productized_workbench_checkpoint_created",
+    "git_checkpoint": "backend_verification_checkpoint_created",
     "human_visual_acceptance": "pending"
   },
   "checkpoint_history": [
@@ -50,6 +50,11 @@
       "sha": "see_git_log_for_commit_containing_this_state",
       "message": "feat: productize revision 2 home workbench",
       "scope": "frontend/src/views/HomeView.vue, frontend/src/styles.css, docs/ai-worker-style-refresh/revision-2"
+    },
+    {
+      "sha": "see_git_log_for_commit_containing_this_state",
+      "message": "docs: record revision 2 backend verification",
+      "scope": "docs/ai-worker-style-refresh/revision-2"
     }
   ],
   "evidence": {
@@ -60,6 +65,9 @@
     "operational_sections_after": "C:\\dev\\ai-worker-platform-style-refresh\\docs\\ai-worker-style-refresh\\revision-2\\browser-evidence\\operational-sections-after-revision-2.png",
     "latest_screenshot": "C:\\dev\\ai-worker-platform-style-refresh\\docs\\ai-worker-style-refresh\\revision-2\\browser-evidence\\desktop-home-after-revision-2.png"
   },
+  "environment_notes": [
+    "Created Windows junction C:\\dev\\ai-worker-platform.venv -> C:\\dev\\ai-worker-platform\\.venv so the prompt-required Python executable path resolves without modifying repository files."
+  ],
   "superpowers_methodology_used": [
     "using-superpowers",
     "using-git-worktrees",
@@ -68,5 +76,5 @@
     "executing-plans readiness",
     "verification-before-completion readiness"
   ],
-  "updated_at": "2026-06-18T23:51:33.7085450+08:00"
+  "updated_at": "2026-06-18T23:56:19.1399854+08:00"
 }

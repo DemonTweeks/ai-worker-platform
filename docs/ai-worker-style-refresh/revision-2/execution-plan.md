@@ -50,10 +50,10 @@
 - Modify: `docs/ai-worker-style-refresh/revision-2/autonomous-run-state.json`
 
 - [x] Run `npm --prefix frontend test`.
-- [ ] Run backend tests with `C:\dev\ai-worker-platform.venv\Scripts\python.exe`.
+- [x] Run backend tests with `C:\dev\ai-worker-platform.venv\Scripts\python.exe`.
 - [x] Browser-check `/`, `/history`, `/jobs/QA15-ROUTE-SMOKE`, `/admin/login`, `/admin/assets`, `/admin/audit-logs`, and `/admin/health`.
 - [x] Capture desktop after, mobile after, and operational section screenshots.
-- [ ] Set `acceptance_status` to `pending_human_visual_review` only after verification and screenshot evidence are ready.
+- [x] Set `acceptance_status` to `pending_human_visual_review` only after verification and screenshot evidence are ready.
 
 ## Task 5: Git Checkpoint
 
