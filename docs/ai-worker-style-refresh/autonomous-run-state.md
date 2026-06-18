@@ -14,7 +14,7 @@ Last action: Implemented the first frontend styling subphase in `frontend/src/st
 
 Next action: Implement the next frontend styling subphase: refine card, button, form, status, history/detail/admin treatment while preserving all routes and workflows.
 
-Last successful checkpoint commit: `480c295`
+Last successful implementation checkpoint commit: `c424a7c`
 
 Notes:
 

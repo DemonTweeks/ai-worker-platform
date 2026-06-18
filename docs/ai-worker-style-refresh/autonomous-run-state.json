@@ -11,7 +11,7 @@
   "wakeup_count": 3,
   "last_action": "Implemented the first frontend styling subphase in frontend/src/styles.css: original design tokens, global shell polish, form/focus rhythm, reduced-motion safeguards, and responsive container adjustments. Installed frontend dependencies with npm ci after build verification found missing node_modules, then confirmed npm --prefix frontend run build passed.",
   "next_action": "Implement the next frontend styling subphase: refine card, button, form, status, history/detail/admin treatment while preserving all routes and workflows.",
-  "last_successful_commit": "480c295",
+  "last_successful_commit": "c424a7c",
   "last_error_class": null,
   "retry_count": 0,
   "max_retries": 3,
