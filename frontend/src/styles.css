@@ -3,28 +3,43 @@
 }
 
 :root {
-  --blue: #1d4ed8;
-  --blue-soft: #dbeafe;
-  --bg: #f8fafc;
-  --text: #0f172a;
-  --text-muted: #64748b;
-  --border: #dce3ee;
+  --blue: #0f6fba;
+  --blue-soft: #e2f3ff;
+  --bg: #f4f7fb;
+  --bg-band: #edf5fa;
+  --bg-warm: #f8faf7;
+  --text: #102033;
+  --text-muted: #617286;
+  --text-soft: #7a8aa0;
+  --border: #d8e2eb;
+  --border-strong: #b8cfe2;
   --panel: #ffffff;
-  --danger: #dc2626;
-  --success: #16a34a;
-  --warning: #b45309;
+  --panel-muted: #f8fbfd;
+  --panel-tint: #eef8fb;
+  --danger: #c73535;
+  --success: #18885d;
+  --warning: #a86c13;
+  --focus-ring: #2583c5;
+  --radius-sm: 8px;
+  --radius-md: 10px;
   --radius-lg: 12px;
+  --shadow-soft: 0 18px 48px -34px rgba(20, 74, 116, 0.42);
+  --shadow-panel: 0 14px 34px -28px rgba(31, 76, 113, 0.48);
+  --shadow-focus: 0 0 0 3px rgba(37, 131, 197, 0.16);
   --zte-blue: #0072ce;
   --zte-blue-strong: #005aa3;
   --zte-blue-soft: #e6f4ff;
-  --zte-line: #c8e1f7;
+  --zte-line: #bfd9ed;
 }
 
 body {
   margin: 0;
-  background: var(--bg);
+  background:
+    linear-gradient(180deg, var(--bg-band) 0%, var(--bg) 36%, #ffffff 100%);
   color: var(--text);
   font-family: "Geist", "Satoshi", "Segoe UI", Arial, sans-serif;
+  line-height: 1.5;
+  min-width: 320px;
 }
 
 a {
@@ -44,9 +59,10 @@ button,
   font-weight: 700;
   justify-content: center;
   line-height: 1.15;
+  min-height: 38px;
   padding: 10px 14px;
   text-decoration: none;
-  transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 
 button:hover,
@@ -71,8 +87,9 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid #1e40af;
-  outline-offset: 1px;
+  box-shadow: var(--shadow-focus);
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 button:disabled,
@@ -82,7 +99,7 @@ button[aria-busy='true'] {
 }
 
 button {
-  background: var(--blue);
+  background: linear-gradient(180deg, var(--blue), #0b5f9f);
   color: #ffffff;
 }
 
@@ -90,9 +107,9 @@ button {
 .secondary-button,
 .secondary-link,
 .tertiary-action {
-  background: #eef2ff;
-  border-color: #dbeafe;
-  color: #1e293b;
+  background: var(--panel-tint);
+  border-color: #c6deef;
+  color: #22435d;
 }
 
 .tertiary-action {
@@ -103,11 +120,26 @@ input,
 select,
 textarea {
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   color: var(--text);
   font: inherit;
+  line-height: 1.35;
+  min-height: 40px;
   padding: 10px 12px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
   width: 100%;
+}
+
+input,
+select,
+textarea {
+  background: #ffffff;
+}
+
+input:hover,
+select:hover,
+textarea:hover {
+  border-color: var(--border-strong);
 }
 
 textarea {
@@ -119,22 +151,23 @@ textarea {
 }
 
 .app-shell {
+  background:
+    linear-gradient(180deg, var(--bg-band) 0%, var(--bg) 42%, #ffffff 100%);
   min-height: 100dvh;
 }
 
 /* Global unified topbar (ZTE PR Creator style) */
 .app-header {
   align-items: center;
-  background: rgba(255, 255, 255, 0.96);
+  background: rgba(255, 255, 255, 0.94);
   border: 1px solid var(--zte-line);
-  border-radius: 8px;
-  box-shadow: 0 16px 40px -30px rgba(0, 78, 140, 0.45);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-soft);
   display: flex;
   justify-content: space-between;
   gap: 12px;
   margin: 14px auto 0;
-  width: calc(100% - 28px);
-  max-width: 1052px;
+  width: min(1180px, calc(100% - 28px));
   min-height: 54px;
   padding: 8px 14px;
 }
@@ -247,32 +280,33 @@ textarea {
 
 .app-header h1 {
   font-size: 26px;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 
 .page-main,
 .admin-main {
   margin: 0 auto;
-  max-width: 1400px;
-  padding: 24px 32px 36px;
+  max-width: 1280px;
+  padding: 28px 32px 40px;
+  width: 100%;
 }
 
 /* ===== ZTE Portal Shell Extensions ===== */
 .portal-shell {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 14px;
+  gap: 16px;
+  padding: 0;
   max-width: 1200px;
   margin: 0 auto;
 }
 
 .portal-shell .hero-band {
   align-items: center;
-  background: rgba(255, 255, 255, 0.96);
+  background: rgba(255, 255, 255, 0.95);
   border: 1px solid var(--zte-line);
-  border-radius: 8px;
-  box-shadow: 0 12px 32px -24px rgba(0, 78, 140, 0.4);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-panel);
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
@@ -430,9 +464,9 @@ textarea {
 .portal-shell .panel {
   background: rgba(255, 255, 255, 0.96);
   border: 1px solid var(--zte-line);
-  border-radius: 8px;
-  box-shadow: 0 14px 36px -28px rgba(0, 78, 140, 0.45);
-  padding: 14px;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-panel);
+  padding: 16px;
   transition: border-color 0.22s ease, box-shadow 0.22s ease;
 }
 
@@ -935,6 +969,7 @@ textarea {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.82), var(--shadow-panel);
   padding: 20px;
 }
 
@@ -1501,7 +1536,7 @@ body:has(.home-cockpit) {
 
 .app-shell:has(.home-cockpit) {
   background:
-    linear-gradient(180deg, #eef7ff 0%, #f8fbff 42%, #ffffff 100%);
+    linear-gradient(180deg, var(--bg-band) 0%, #f8fbff 48%, #ffffff 100%);
   height: 100dvh;
   overflow: hidden;
   display: flex;
@@ -1519,17 +1554,18 @@ body:has(.home-cockpit) {
   --zte-blue: #0072ce;
   --zte-blue-strong: #005aa3;
   --zte-blue-soft: #e6f4ff;
-  --zte-line: #c8e1f7;
+  --zte-line: #bfd9ed;
   color: #12304a;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  padding: 0 14px 14px;
-  max-width: 1080px;
+  padding: 0 16px 16px;
+  max-width: 1180px;
   margin: 0 auto;
+  width: 100%;
 }
 
 .home-cockpit > .error-banner {
@@ -1544,10 +1580,10 @@ body:has(.home-cockpit) {
 
 .cockpit-topbar {
   align-items: center;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.94);
   border: 1px solid var(--zte-line);
-  border-radius: 8px;
-  box-shadow: 0 16px 40px -30px rgba(0, 78, 140, 0.45);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-soft);
   display: flex;
   flex: 0 0 auto;
   justify-content: space-between;
@@ -1643,7 +1679,7 @@ body:has(.home-cockpit) {
 .cockpit-card-row {
   display: grid;
   flex: 0 0 264px;
-  gap: 10px;
+  gap: 12px;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   min-height: 0;
 }
@@ -1651,8 +1687,8 @@ body:has(.home-cockpit) {
 .cockpit-card {
   background: rgba(255, 255, 255, 0.96);
   border-color: var(--zte-line);
-  border-radius: 8px;
-  box-shadow: 0 18px 48px -38px rgba(0, 78, 140, 0.58);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-panel);
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -1664,8 +1700,8 @@ body:has(.home-cockpit) {
 
 .cockpit-card:hover {
   border-color: #9fcbee;
-  box-shadow: 0 22px 52px -36px rgba(0, 78, 140, 0.72);
-  transform: translateY(-2px) scale(1.005);
+  box-shadow: var(--shadow-soft);
+  transform: translateY(-1px);
 }
 
 .cockpit-card .panel-heading,
@@ -1953,10 +1989,10 @@ body:has(.home-cockpit) {
 }
 
 .cockpit-command {
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.94);
   border: 1px solid var(--zte-line);
-  border-radius: 8px;
-  box-shadow: 0 18px 44px -38px rgba(0, 78, 140, 0.55);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-panel);
   display: grid;
   flex: 0 0 auto;
   gap: 6px;
@@ -1989,8 +2025,8 @@ body:has(.home-cockpit) {
 .cockpit-console-shell {
   background: rgba(255, 255, 255, 0.94);
   border: 1px solid var(--zte-line);
-  border-radius: 8px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75), 0 22px 58px -42px rgba(0, 78, 140, 0.68);
+  border-radius: var(--radius-sm);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75), var(--shadow-soft);
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
@@ -2194,7 +2230,7 @@ body:has(.home-cockpit) {
 
   .page-main,
   .admin-main {
-    padding: 16px;
+    padding: 20px 16px 28px;
   }
 
   .top-nav {
@@ -2210,5 +2246,64 @@ body:has(.home-cockpit) {
 
   .hero-band h1 {
     font-size: 28px;
+  }
+
+  .top-nav {
+    justify-content: flex-start;
+  }
+
+  .top-nav .nav-link,
+  .top-nav .nav-health {
+    min-height: 36px;
+  }
+}
+
+@media (max-width: 640px) {
+  .app-header {
+    margin-top: 10px;
+    width: min(100% - 20px, 1180px);
+  }
+
+  .page-main,
+  .admin-main {
+    padding: 16px 12px 24px;
+  }
+
+  .portal-shell,
+  .admin-shell {
+    gap: 12px;
+  }
+
+  .home-cockpit {
+    padding: 0 10px 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  button:hover,
+  .download-button:hover,
+  .secondary-button:hover,
+  .secondary-link:hover,
+  .tertiary-action:hover,
+  .action-button:hover,
+  .top-nav .nav-link:hover,
+  .portal-topbar-nav a:hover,
+  .portal-topbar-nav .nav-link:hover,
+  .portal-shell .secondary-button:hover,
+  .portal-shell .download-button:hover,
+  .admin-nav-links a:hover,
+  .health-card:hover,
+  .cockpit-nav-link:hover,
+  .cockpit-card:hover {
+    transform: none;
   }
 }
