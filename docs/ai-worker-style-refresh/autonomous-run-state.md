@@ -14,7 +14,7 @@ Last action: Refined cards, buttons, forms, status treatments, history/detail/ad
 
 Next action: Perform page-specific responsive refinement and browser/viewport checks for home, history, detail, and admin routes; capture or document before/after visual evidence.
 
-Last successful implementation checkpoint commit: `5e96476`
+Last successful implementation checkpoint commit: `ffb8a31`
 
 Notes:
 

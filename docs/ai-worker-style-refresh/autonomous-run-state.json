@@ -11,7 +11,7 @@
   "wakeup_count": 4,
   "last_action": "Refined cards, buttons, forms, status treatments, history/detail/admin surfaces, tables, badges, and alerts in frontend/src/styles.css while preserving Vue templates, routes, and workflows. Confirmed npm --prefix frontend test passed, including the required route smoke list.",
   "next_action": "Perform page-specific responsive refinement and browser/viewport checks for home, history, detail, and admin routes; capture or document before/after visual evidence.",
-  "last_successful_commit": "5e96476",
+  "last_successful_commit": "ffb8a31",
   "last_error_class": null,
   "retry_count": 0,
   "max_retries": 3,
