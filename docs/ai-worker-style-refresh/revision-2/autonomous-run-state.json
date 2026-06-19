@@ -1,0 +1,85 @@
+{
+  "revision": 2,
+  "mission": "AI Worker UI Style Refresh Revision 2",
+  "repository": "C:\\dev\\ai-worker-platform-style-refresh",
+  "branch": "feature/ai-worker-style-refresh",
+  "master_prompt": "C:\\dev\\codex-prompts\\ai-worker-style-refresh-revision-2-master-automation-prompt.md",
+  "completed": true,
+  "acceptance_status": "passed",
+  "current_status": "completed",
+  "next_action": "NO_OP_COMPLETED",
+  "last_bounded_step": "Received explicit human visual acceptance, wrote final completion artifacts, and prepared the final Revision 2 checkpoint.",
+  "heartbeat_automation": {
+    "name": "ai-worker-style-refresh-revision-2-hourly-follow-up",
+    "cadence": "FREQ=HOURLY;INTERVAL=1",
+    "destination": "same_thread",
+    "status": "ACTIVE"
+  },
+  "constraints": {
+    "do_not_push": true,
+    "do_not_merge": true,
+    "do_not_deploy": true,
+    "do_not_modify_main": true,
+    "do_not_modify_backend_logic": true,
+    "do_not_modify_submodules": true,
+    "preserve_revision_1_evidence": true
+  },
+  "allowed_change_scope": [
+    "frontend/src/views/HomeView.vue",
+    "frontend/src/styles.css",
+    "docs/ai-worker-style-refresh/revision-2"
+  ],
+  "verification_gates": {
+    "frontend_tests": "passed: npm --prefix frontend test",
+    "backend_tests": "passed: npm --prefix backend test with PYTHON=C:\\dev\\ai-worker-platform.venv\\Scripts\\python.exe",
+    "browser_routes": "passed render sweep with expected non-blocking 404s for favicon/job smoke data",
+    "desktop_before_screenshot": "captured",
+    "desktop_after_screenshot": "captured",
+    "mobile_after_screenshot": "captured",
+    "operational_sections_after_screenshot": "captured",
+    "git_checkpoint": "final_completion_checkpoint_created",
+    "human_visual_acceptance": "passed"
+  },
+  "checkpoint_history": [
+    {
+      "sha": "see_git_log_for_commit_containing_this_state",
+      "message": "docs: initialize revision 2 autonomous state",
+      "scope": "docs/ai-worker-style-refresh/revision-2"
+    },
+    {
+      "sha": "see_git_log_for_commit_containing_this_state",
+      "message": "feat: productize revision 2 home workbench",
+      "scope": "frontend/src/views/HomeView.vue, frontend/src/styles.css, docs/ai-worker-style-refresh/revision-2"
+    },
+    {
+      "sha": "see_git_log_for_commit_containing_this_state",
+      "message": "docs: record revision 2 backend verification",
+      "scope": "docs/ai-worker-style-refresh/revision-2"
+    },
+    {
+      "sha": "see_git_log_for_commit_containing_this_state",
+      "message": "docs: complete revision 2 after visual acceptance",
+      "scope": "docs/ai-worker-style-refresh/revision-2"
+    }
+  ],
+  "evidence": {
+    "browser_evidence_dir": "C:\\dev\\ai-worker-platform-style-refresh\\docs\\ai-worker-style-refresh\\revision-2\\browser-evidence",
+    "desktop_before": "C:\\dev\\ai-worker-platform-style-refresh\\docs\\ai-worker-style-refresh\\revision-2\\browser-evidence\\desktop-home-before-revision-2.png",
+    "desktop_after": "C:\\dev\\ai-worker-platform-style-refresh\\docs\\ai-worker-style-refresh\\revision-2\\browser-evidence\\desktop-home-after-revision-2.png",
+    "mobile_after": "C:\\dev\\ai-worker-platform-style-refresh\\docs\\ai-worker-style-refresh\\revision-2\\browser-evidence\\mobile-home-after-revision-2.png",
+    "operational_sections_after": "C:\\dev\\ai-worker-platform-style-refresh\\docs\\ai-worker-style-refresh\\revision-2\\browser-evidence\\operational-sections-after-revision-2.png",
+    "latest_screenshot": "C:\\dev\\ai-worker-platform-style-refresh\\docs\\ai-worker-style-refresh\\revision-2\\browser-evidence\\desktop-home-after-revision-2.png"
+  },
+  "environment_notes": [
+    "Created Windows junction C:\\dev\\ai-worker-platform.venv -> C:\\dev\\ai-worker-platform\\.venv so the prompt-required Python executable path resolves without modifying repository files."
+  ],
+  "superpowers_methodology_used": [
+    "using-superpowers",
+    "using-git-worktrees",
+    "brainstorming with mission-prompt approval override",
+    "writing-plans",
+    "executing-plans readiness",
+    "verification-before-completion readiness"
+  ],
+  "updated_at": "2026-06-19T00:00:16.5668986+08:00"
+}

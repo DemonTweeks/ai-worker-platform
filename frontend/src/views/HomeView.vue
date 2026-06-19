@@ -2,129 +2,165 @@
   <div class="home-cockpit">
     <ErrorBanner :message="errorMessage" />
 
-    <section class="cockpit-card-row" aria-label="AI worker actions">
-      <UploadPanel
-        class="cockpit-card upload-card"
-        :result="prevalidation"
-        :loading="prevalidating"
-        :disable-action="creating"
-        @file-selected="onFileSelected"
-        @prevalidate="prevalidate"
-      />
+    <section class="workbench-hero" aria-label="AI Worker PR Creator workbench">
+      <div class="workbench-hero-copy">
+        <p class="workbench-kicker">ZTE AI Worker</p>
+        <h2>Turn site exports into PR-ready worker jobs.</h2>
+        <p class="workbench-subtitle">
+          Upload, validate, scope, and launch TSS or TI generation from one polished operational workbench.
+        </p>
 
-      <section class="panel cockpit-card cockpit-scope-card">
-        <div class="cockpit-card-heading">
-          <span>Job Scope</span>
-          <small>{{ generationScopeLabel }}</small>
+        <div class="workbench-chip-row" aria-label="Workflow status">
+          <span class="workbench-chip">Upload</span>
+          <span class="workbench-chip">Validate</span>
+          <span class="workbench-chip">{{ generationScopeLabel }}</span>
+          <span class="workbench-chip">{{ healthLabel }}</span>
         </div>
 
-        <div class="cockpit-field-group">
-          <span class="field-label">Site mode</span>
-          <div class="segmented compact-segmented">
-            <button
-              type="button"
-              :class="{ active: generationScope === 'site_code' }"
-              @click="generationScope = 'site_code'"
-            >
-              Single site
-            </button>
-            <button
-              type="button"
-              :class="{ active: generationScope === 'all_sites' }"
-              @click="generationScope = 'all_sites'"
-            >
-              All sites
-            </button>
+        <div class="workbench-action-row" aria-label="Primary actions">
+          <a class="workbench-primary-link" href="#pr-creator-workbench">Create PR Job</a>
+          <a class="workbench-secondary-link" href="#worker-console">View Live Output</a>
+        </div>
+      </div>
+
+      <section id="pr-creator-workbench" class="workbench-surface" aria-label="PR Creator workflow">
+        <div class="workbench-surface-header">
+          <div>
+            <p class="eyebrow">Operational Workflow</p>
+            <h3>PR Creator</h3>
           </div>
+          <span class="workbench-status-pill">{{ progressStateLabel }}</span>
         </div>
 
-        <div class="cockpit-field-group">
-          <span class="field-label">Task Type</span>
-          <div class="segmented compact-segmented">
-            <button
-              v-for="option in workerOptions"
-              :key="option"
-              type="button"
-              :class="{ active: prScope === option }"
-              @click="prScope = option"
-            >
-              {{ option }}
-            </button>
+        <div class="workbench-main-grid">
+          <UploadPanel
+            class="cockpit-card upload-card workbench-upload-card"
+            :result="prevalidation"
+            :loading="prevalidating"
+            :disable-action="creating"
+            @file-selected="onFileSelected"
+            @prevalidate="prevalidate"
+          />
+
+          <section class="panel cockpit-card workbench-config-card">
+            <div class="cockpit-card-heading">
+              <span>Job Scope</span>
+              <small>{{ generationScopeLabel }}</small>
+            </div>
+
+            <div class="workbench-config-grid">
+              <div class="cockpit-field-group">
+                <span class="field-label">Site mode</span>
+                <div class="segmented compact-segmented">
+                  <button
+                    type="button"
+                    :class="{ active: generationScope === 'site_code' }"
+                    @click="generationScope = 'site_code'"
+                  >
+                    Single site
+                  </button>
+                  <button
+                    type="button"
+                    :class="{ active: generationScope === 'all_sites' }"
+                    @click="generationScope = 'all_sites'"
+                  >
+                    All sites
+                  </button>
+                </div>
+              </div>
+
+              <div class="cockpit-field-group">
+                <span class="field-label">Task Type</span>
+                <div class="segmented compact-segmented">
+                  <button
+                    v-for="option in workerOptions"
+                    :key="option"
+                    type="button"
+                    :class="{ active: prScope === option }"
+                    @click="prScope = option"
+                  >
+                    {{ option }}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="cockpit-field-group workbench-sites-field">
+              <div class="cockpit-card-heading">
+                <span>Sites</span>
+                <small>{{ siteCodeCount }} site(s)</small>
+              </div>
+              <textarea
+                v-if="generationScope === 'site_code'"
+                class="cockpit-sites-input"
+                :value="siteCodesText"
+                rows="5"
+                placeholder="Paste site codes, comma or line separated"
+                @input="siteCodesText = $event.target.value"
+              />
+              <div v-else class="cockpit-empty-card">
+                All sites mode is selected.
+              </div>
+            </div>
+
+            <div class="workbench-create-row">
+              <LoadingButton
+                label="Create Job"
+                loading-text="Creating..."
+                :loading="creating"
+                :disabled="!canCreateJob"
+                @click="createWorkerJob"
+              />
+              <p v-if="createDisabledReason" class="cockpit-note">{{ createDisabledReason }}</p>
+              <p v-else class="cockpit-ready">Ready to create Job</p>
+            </div>
+          </section>
+        </div>
+
+        <section class="panel cockpit-card workbench-result-card">
+          <div class="cockpit-card-heading">
+            <span>Result Delivery</span>
+            <small>{{ outputCount }} output(s)</small>
           </div>
-        </div>
-
-        <LoadingButton
-          label="Create Job"
-          loading-text="Creating..."
-          :loading="creating"
-          :disabled="!canCreateJob"
-          @click="createWorkerJob"
-        />
-        <p v-if="createDisabledReason" class="cockpit-note">{{ createDisabledReason }}</p>
-        <p v-else class="cockpit-ready">Ready to create Job</p>
-      </section>
-
-      <section class="panel cockpit-card cockpit-sites-card">
-        <div class="cockpit-card-heading">
-          <span>Sites</span>
-          <small>{{ siteCodeCount }} site(s)</small>
-        </div>
-        <textarea
-          v-if="generationScope === 'site_code'"
-          class="cockpit-sites-input"
-          :value="siteCodesText"
-          rows="5"
-          placeholder="Paste site codes, comma or line separated"
-          @input="siteCodesText = $event.target.value"
-        />
-        <div v-else class="cockpit-empty-card">
-          All sites mode is selected.
-        </div>
-      </section>
-
-      <section class="panel cockpit-card cockpit-download-card">
-        <div class="cockpit-card-heading">
-          <span>Download</span>
-          <small>{{ outputCount }} output(s)</small>
-        </div>
-        <div v-if="!currentJobId" class="cockpit-empty-card">
-          Create a Job to enable result delivery.
-        </div>
-        <div v-else class="download-compact">
-          <p class="cockpit-note">Job: <strong>{{ currentJobId }}</strong></p>
-          <div class="download-progress">
-            <div class="download-progress-topline">
-              <span>{{ downloadProgressLabel }}</span>
-              <strong>{{ downloadProgressPercent !== null ? `${downloadProgressPercent}%` : progressStateLabel }}</strong>
-            </div>
-            <div
-              class="download-progress-track"
-              :class="{ indeterminate: downloadProgressPercent === null && currentJobId && !jobReady }"
-            >
-              <span :style="{ width: `${downloadProgressPercent !== null ? downloadProgressPercent : 100}%` }"></span>
-            </div>
+          <div v-if="!currentJobId" class="cockpit-empty-card">
+            Create a Job to enable result delivery.
           </div>
-          <dl class="download-summary-grid">
-            <div v-for="item in downloadSummaryItems" :key="item.label">
-              <dt>{{ item.label }}</dt>
-              <dd>{{ item.value }}</dd>
+          <div v-else class="download-compact">
+            <p class="cockpit-note">Job: <strong>{{ currentJobId }}</strong></p>
+            <div class="download-progress">
+              <div class="download-progress-topline">
+                <span>{{ downloadProgressLabel }}</span>
+                <strong>{{ downloadProgressPercent !== null ? `${downloadProgressPercent}%` : progressStateLabel }}</strong>
+              </div>
+              <div
+                class="download-progress-track"
+                :class="{ indeterminate: downloadProgressPercent === null && currentJobId && !jobReady }"
+              >
+                <span :style="{ width: `${downloadProgressPercent !== null ? downloadProgressPercent : 100}%` }"></span>
+              </div>
             </div>
-          </dl>
-          <p v-if="jobReady" class="completion-message" :class="resultTone">{{ resultCompletionMessage }}</p>
-          <a
-            v-if="canDownload"
-            class="download-button"
-            :href="downloadUrl"
-          >
-            Download ZIP
-          </a>
-          <p v-else class="cockpit-note">{{ downloadUnavailableMessage }}</p>
-          <p v-if="jobReady && !canDownload" class="cockpit-note">Output delivery is complete for this Job.</p>
-        </div>
+            <dl class="download-summary-grid">
+              <div v-for="item in downloadSummaryItems" :key="item.label">
+                <dt>{{ item.label }}</dt>
+                <dd>{{ item.value }}</dd>
+              </div>
+            </dl>
+            <p v-if="jobReady" class="completion-message" :class="resultTone">{{ resultCompletionMessage }}</p>
+            <a
+              v-if="canDownload"
+              class="download-button"
+              :href="downloadUrl"
+            >
+              Download ZIP
+            </a>
+            <p v-else class="cockpit-note">{{ downloadUnavailableMessage }}</p>
+            <p v-if="jobReady && !canDownload" class="cockpit-note">Output delivery is complete for this Job.</p>
+          </div>
+        </section>
       </section>
     </section>
 
-    <form class="cockpit-command" @submit.prevent="submitCommand">
+    <form class="cockpit-command workbench-command" @submit.prevent="submitCommand">
       <label class="field-label" for="cockpit-command-input">AI Chatbox</label>
       <div class="command-input-row">
         <input
@@ -141,7 +177,7 @@
       <p v-if="commandNotice" class="cockpit-note">{{ commandNotice }}</p>
     </form>
 
-    <section class="cockpit-console-shell">
+    <section id="worker-console" class="cockpit-console-shell">
       <div class="console-title-row">
         <div>
           <p class="eyebrow">Live Output</p>
@@ -367,7 +403,7 @@ export default {
 
       items.push({
         id: 'session-ready',
-        label: 'Cockpit',
+        label: 'Workbench',
         title: 'Ready for source upload',
         body: 'Upload a source file, validate it, create a Job, then track progress and outputs here.',
         tone: 'info',
