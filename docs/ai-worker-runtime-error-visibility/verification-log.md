@@ -38,4 +38,24 @@
 - Ran backend verification:
   - Command: `npm --prefix backend test`
   - Result: PASS
-- Frontend verification remains pending.
+
+## 2026-06-24 - Frontend error visibility checkpoint
+
+- Added a shared safe formatter in `frontend/src/utils/jobErrorUtils.js` for:
+  - dependency-missing root cause summaries
+  - resolved interpreter display
+  - recommended repair command
+  - bounded technical details
+- Updated `frontend/src/components/detail/JobDetailSummary.vue` to show:
+  - root cause
+  - resolved interpreter
+  - recommended fix command
+  - expandable technical details
+- Updated `frontend/src/components/history/JobHistoryCard.vue` to surface failed-job root cause directly in History cards.
+- Updated `frontend/src/components/ErrorBanner.vue` and `frontend/src/views/HomeView.vue` so the timeout notification:
+  - uses manual dismiss
+  - auto-dismisses after 7 seconds
+  - shows `Request timed out. The job may still be running. Please check History.` for create-job request timeouts
+- Ran frontend verification:
+  - Command: `npm --prefix frontend test`
+  - Result: PASS

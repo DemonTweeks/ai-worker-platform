@@ -22,6 +22,10 @@
     </div>
 
     <p class="summary-preview">{{ summaryPreview }}</p>
+    <div v-if="errorPresentation" class="history-error-preview">
+      <strong>Root cause:</strong> {{ errorPresentation.rootCause }}
+      <span v-if="errorPresentation.interpreter"> · {{ errorPresentation.interpreter }}</span>
+    </div>
 
     <div class="job-card-footer">
       <small>Created: {{ formatDateTime(job.createdAt) }}</small>
@@ -49,6 +53,7 @@
 import { getZipDownloadUrl } from '../../api/jobApi';
 import { formatDateTime } from '../../utils/formatUtils';
 import { generationScopeLabel } from '../../utils/jobStatusUtils';
+import { getJobErrorPresentation } from '../../utils/jobErrorUtils';
 import JobScopeBadge from './JobScopeBadge.vue';
 import JobStatusBadge from './JobStatusBadge.vue';
 
@@ -65,8 +70,13 @@ export default {
     zipUrl() {
       return getZipDownloadUrl(this.job.jobId);
     },
+    errorPresentation() {
+      return getJobErrorPresentation(this.job);
+    },
     summaryPreview() {
-      const text = this.job.finalWorkerSummary || 'Final worker summary is not available yet.';
+      const text = this.errorPresentation
+        ? this.errorPresentation.summary
+        : (this.job.finalWorkerSummary || 'Final worker summary is not available yet.');
       return text.length > 180 ? `${text.slice(0, 177)}...` : text;
     },
     hasDownloadableResult() {

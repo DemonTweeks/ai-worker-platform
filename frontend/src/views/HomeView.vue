@@ -1,6 +1,6 @@
 <template>
   <div class="home-cockpit">
-    <ErrorBanner :message="errorMessage" />
+    <ErrorBanner :message="errorMessage" @dismiss="clearErrorMessage" />
 
     <section class="workbench-hero" aria-label="AI Worker PR Creator workbench">
       <div class="workbench-hero-copy">
@@ -223,6 +223,7 @@ import JobWebSocketClient from '../services/websocketClient';
 import { createJob, getErrorMessage, getHealth, getJobDetail, getZipDownloadUrl, prevalidateUpload } from '../api/jobApi';
 import { askJob } from '../api/reAskApi';
 import { displayMessage, isTerminalStatus } from '../utils/statusUtils';
+import { getJobErrorPresentation, getRequestTimeoutBanner, isRequestTimeoutError } from '../utils/jobErrorUtils';
 
 export default {
   name: 'HomeView',
@@ -358,7 +359,8 @@ export default {
 
       const job = this.jobDetail.job;
       if (job.status === 'failed') {
-        return job.error && job.error.message ? job.error.message : 'Job failed before outputs were generated.';
+        const errorPresentation = getJobErrorPresentation(job);
+        return errorPresentation ? errorPresentation.summary : 'Job failed before outputs were generated.';
       }
 
       const outputs = this.hasValue(job.outputFileCount)
@@ -472,6 +474,7 @@ export default {
 
       if (this.jobDetail && this.jobDetail.job) {
         const job = this.jobDetail.job;
+        const errorPresentation = getJobErrorPresentation(job);
         items.push({
           id: 'result-state',
           label: 'Result',
@@ -498,7 +501,7 @@ export default {
             id: 'job-error',
             label: 'Error',
             title: 'Job error',
-            body: job.error.message,
+            body: errorPresentation ? errorPresentation.summary : job.error.message,
             tone: 'danger',
             time: job.updatedAt || this.updatedAt
           });
@@ -625,7 +628,11 @@ export default {
         this.consoleAutoStick = true;
         this.wsClient.connect(this.currentJobId);
       } catch (error) {
-        this.errorMessage = getErrorMessage(error);
+        if (isRequestTimeoutError(error)) {
+          this.setAutoDismissBanner(getRequestTimeoutBanner());
+        } else {
+          this.errorMessage = getErrorMessage(error);
+        }
       } finally {
         this.creating = false;
       }
@@ -702,10 +709,7 @@ export default {
           meta: [answer.answerSource, answer.llmStatus].filter(Boolean).join(' / ')
         });
       } catch (error) {
-        const isTimeout = error && (
-          error.code === 'ECONNABORTED' ||
-          String(error.message || '').toLowerCase().includes('timeout')
-        );
+        const isTimeout = isRequestTimeoutError(error);
         const message = isTimeout
           ? 'AI Chatbox took longer than expected. Please try again; the Job result remains available.'
           : getErrorMessage(error);
@@ -772,15 +776,27 @@ export default {
         this.transientErrorTimer = null;
       }
     },
-    setTransientError(message) {
-      this.errorMessage = message;
+    clearErrorMessage() {
+      this.errorMessage = '';
       this.clearTransientErrorTimer();
+    },
+    setAutoDismissBanner(payload) {
+      this.errorMessage = payload;
+      this.clearTransientErrorTimer();
+      const activeId = payload.id;
+      const timeoutMs = Number(payload.autoDismissMs) > 0 ? Number(payload.autoDismissMs) : 7000;
       this.transientErrorTimer = setTimeout(() => {
-        if (this.errorMessage === message) {
+        if (this.errorMessage && typeof this.errorMessage === 'object' && this.errorMessage.id === activeId) {
           this.errorMessage = '';
         }
         this.transientErrorTimer = null;
-      }, 30000);
+      }, timeoutMs);
+    },
+    setTransientError(message) {
+      const payload = getRequestTimeoutBanner();
+      payload.message = message;
+      payload.tone = 'danger';
+      this.setAutoDismissBanner(payload);
     }
   }
 };

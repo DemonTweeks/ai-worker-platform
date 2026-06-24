@@ -18,13 +18,30 @@
       <span><small>Cancelled</small><strong>{{ formatDateTime(job.cancelledAt) }}</strong></span>
     </div>
     <p v-if="zeroOutputNotice" class="completion-message" :class="zeroOutputTone">{{ zeroOutputNotice }}</p>
-    <p v-if="job.error && job.error.message" class="error-text">{{ job.error.message }}</p>
+    <div v-if="errorPresentation" class="job-error-panel">
+      <p class="completion-message danger">{{ errorPresentation.summary }}</p>
+      <div class="job-error-grid">
+        <span><small>Root cause</small><strong>{{ errorPresentation.rootCause }}</strong></span>
+        <span v-if="errorPresentation.interpreter"><small>Resolved interpreter</small><strong>{{ errorPresentation.interpreter }}</strong></span>
+        <span v-if="errorPresentation.repairCommand" class="job-error-span-full"><small>Recommended fix</small><code>{{ errorPresentation.repairCommand }}</code></span>
+      </div>
+      <details v-if="errorPresentation.technicalDetails.length" class="job-error-details">
+        <summary>Technical details</summary>
+        <div class="job-error-technical-grid">
+          <span v-for="detail in errorPresentation.technicalDetails" :key="detail.label">
+            <small>{{ detail.label }}</small>
+            <strong>{{ detail.value }}</strong>
+          </span>
+        </div>
+      </details>
+    </div>
   </section>
 </template>
 
 <script>
 import { formatDateTime } from '../../utils/formatUtils';
 import { generationScopeLabel, statusLabel } from '../../utils/jobStatusUtils';
+import { getJobErrorPresentation } from '../../utils/jobErrorUtils';
 
 export default {
   name: 'JobDetailSummary',
@@ -46,6 +63,9 @@ export default {
     },
     zeroOutputTone() {
       return this.job.status === 'failed' ? 'danger' : 'warning';
+    },
+    errorPresentation() {
+      return getJobErrorPresentation(this.job);
     }
   },
   methods: {

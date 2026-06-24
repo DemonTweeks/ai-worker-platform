@@ -10,9 +10,10 @@ Status: in progress
 - Persistent mission state initialized
 - Backend runtime contract implemented and verified
 - Worker dependency manifest and local `.venv` setup documented
+- Frontend root-cause visibility and timeout banner behavior implemented
+- Frontend build/smoke verification passed
 
 ## Remaining work
 
-- Expose failure details directly in Job Detail and History
-- Correct timeout banner UX
-- Run frontend verification
+- Run final cross-checks and self-review
+- Perform delivery steps: push branch and create draft PR if all gates pass

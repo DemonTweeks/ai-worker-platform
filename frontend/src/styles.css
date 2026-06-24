@@ -1064,6 +1064,41 @@ textarea {
   padding: 12px 14px;
 }
 
+.error-banner {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.error-banner.is-warning {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #92400e;
+}
+
+.error-banner-content {
+  min-width: 0;
+}
+
+.error-banner-content p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.error-banner-dismiss {
+  background: transparent;
+  border-color: currentColor;
+  color: inherit;
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding: 7px 10px;
+}
+
+.error-banner-dismiss:hover {
+  background: rgba(255, 255, 255, 0.55);
+}
+
 .success-text {
   background: #effaf5;
   border: 1px solid #86efac;
@@ -1389,6 +1424,13 @@ textarea {
 .summary-preview {
   color: #31465d;
   line-height: 1.5;
+}
+
+.history-error-preview {
+  color: #7f1d1d;
+  font-size: 12px;
+  line-height: 1.45;
+  margin-top: 8px;
 }
 
 .badge,
@@ -2021,6 +2063,96 @@ body:has(.home-cockpit) {
   background: #fef2f2;
   border-left-color: #dc2626;
   color: #991b1b;
+}
+
+.job-error-panel {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.job-error-grid,
+.job-error-technical-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.job-error-grid span,
+.job-error-technical-grid span {
+  background: var(--panel-muted);
+  border: 1px solid #e2ebf3;
+  border-radius: 8px;
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px 12px;
+}
+
+.job-error-grid small,
+.job-error-technical-grid small {
+  color: #607d96;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.job-error-grid strong,
+.job-error-technical-grid strong {
+  color: #12304a;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.job-error-grid code {
+  background: rgba(0, 114, 206, 0.08);
+  border-radius: 6px;
+  color: #0b5f9f;
+  display: block;
+  font-family: "Geist Mono", "JetBrains Mono", monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  padding: 8px 10px;
+}
+
+.job-error-span-full {
+  grid-column: 1 / -1;
+}
+
+.job-error-details {
+  background: rgba(244, 249, 255, 0.75);
+  border: 1px solid #d7e8f4;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.job-error-details summary {
+  color: #21435f;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+  list-style: none;
+}
+
+.job-error-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.job-error-details summary::after {
+  color: #607d96;
+  content: 'Expand';
+  float: right;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.job-error-details[open] summary::after {
+  content: 'Collapse';
+}
+
+.job-error-technical-grid {
+  margin-top: 10px;
 }
 
 .download-summary-grid {

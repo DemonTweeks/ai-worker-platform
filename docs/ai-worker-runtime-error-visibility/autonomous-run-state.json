@@ -9,9 +9,9 @@
   "persistent_state_dir": "docs/ai-worker-runtime-error-visibility",
   "completed": false,
   "acceptance_status": "in_progress",
-  "active_phase": "backend-runtime-contract",
-  "active_subphase": "verified-runtime-resolution-and-preflight",
-  "next_action": "Implement direct Job Detail/History failure visibility and the timeout notification behavior, then run frontend verification.",
+  "active_phase": "frontend-error-visibility",
+  "active_subphase": "verified-job-detail-history-and-timeout-banner",
+  "next_action": "Run final cross-checks, perform self-review/code-review, then push the branch and open the draft PR if all acceptance gates pass.",
   "methodology": [
     "using-superpowers",
     "using-git-worktrees",
@@ -33,12 +33,12 @@
   },
   "test_outcomes": {
     "backend": "passed",
-    "frontend": "not_run",
+    "frontend": "passed",
     "worker_venv": "passed",
     "focused_runtime_checks": "passed"
   },
-  "last_checkpoint_sha": "ce11a2217867d7ad237e6fb25e4be96f77a58261",
+  "last_checkpoint_sha": "22ba84323fada4954e4d690dafece86fb3a2df5e",
   "blockers": [],
   "recovery_notes": [],
-  "updated_at": "2026-06-24T10:41:50+08:00"
+  "updated_at": "2026-06-24T10:53:00+08:00"
 }

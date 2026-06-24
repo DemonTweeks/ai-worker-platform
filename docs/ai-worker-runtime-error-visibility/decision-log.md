@@ -29,3 +29,9 @@
 - Context: the backend integration suite exercises real Create PR/TI worker flows that now depend on deterministic repository-root `.venv` resolution.
 - Decision: add `ensureRepoWorkerVenv()` in `backend/scripts/integration-test.js` so the suite provisions `.venv` and installs `requirements-worker.txt` when needed before running the live worker paths.
 - Reason: this keeps the integration suite self-contained, validates the intended runtime contract, and avoids relying on whichever global Python happens to be first on `PATH`.
+
+## 2026-06-24 - Reuse the existing ErrorBanner as the timeout notification surface
+
+- Context: the frontend does not have a separate toast library or notification framework; the only shared request-failure surface is `frontend/src/components/ErrorBanner.vue`.
+- Decision: extend `ErrorBanner` to support dismissible, auto-expiring banner objects and use it for the timeout message in `HomeView`.
+- Reason: this satisfies the timeout UX requirement without introducing a new notification system or redesigning the workbench.
