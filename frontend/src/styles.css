@@ -1061,7 +1061,35 @@ textarea {
   border: 1px solid #fecaca;
   border-radius: 10px;
   color: #991b1b;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  align-items: flex-start;
   padding: 12px 14px;
+}
+
+.error-banner-message {
+  flex: 1;
+}
+
+.error-banner-dismiss {
+  appearance: none;
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  color: inherit;
+  cursor: pointer;
+  flex-shrink: 0;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  padding: 6px 10px;
+}
+
+.error-banner-dismiss:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
 }
 
 .success-text {

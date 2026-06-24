@@ -5,5 +5,8 @@ module.exports = defineConfig({
   plugins: [vue()],
   server: {
     port: 3000
+  },
+  test: {
+    environment: 'jsdom'
   }
 });

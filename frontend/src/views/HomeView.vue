@@ -1,6 +1,10 @@
 <template>
   <div class="home-cockpit">
-    <ErrorBanner :message="errorMessage" />
+    <ErrorBanner
+      :message="errorMessage"
+      :dismissible="Boolean(errorMessage)"
+      @dismiss="dismissErrorMessage"
+    />
 
     <section class="workbench-hero" aria-label="AI Worker PR Creator workbench">
       <div class="workbench-hero-copy">
@@ -223,6 +227,12 @@ import JobWebSocketClient from '../services/websocketClient';
 import { createJob, getErrorMessage, getHealth, getJobDetail, getZipDownloadUrl, prevalidateUpload } from '../api/jobApi';
 import { askJob } from '../api/reAskApi';
 import { displayMessage, isTerminalStatus } from '../utils/statusUtils';
+import {
+  scheduleNotificationDismiss,
+  isWorkerTimeoutError,
+  WORKER_NOTIFICATION_TIMEOUT_MS,
+  WORKER_TIMEOUT_NOTIFICATION_MESSAGE
+} from '../utils/workerNotificationUtils';
 
 export default {
   name: 'HomeView',
@@ -254,6 +264,8 @@ export default {
       health: null,
       healthError: false,
       errorMessage: '',
+      errorNotificationId: 0,
+      errorNotificationExpiresAt: 0,
       wsClient: null,
       currentPhase: '',
       commandText: '',
@@ -605,7 +617,7 @@ export default {
     async createWorkerJob() {
       if (!this.canCreateJob) return;
       this.creating = true;
-      this.errorMessage = '';
+      this.dismissErrorMessage();
       this.events = [];
       this.jobDetail = null;
       this.reAskAnswer = null;
@@ -625,7 +637,7 @@ export default {
         this.consoleAutoStick = true;
         this.wsClient.connect(this.currentJobId);
       } catch (error) {
-        this.errorMessage = getErrorMessage(error);
+        this.showWorkerNotification(this.getWorkerNotificationMessage(error));
       } finally {
         this.creating = false;
       }
@@ -640,12 +652,12 @@ export default {
           this.currentPhase = this.jobDetail.job.phase || '';
         }
       } catch (error) {
-        this.errorMessage = getErrorMessage(error);
+        this.showWorkerNotification(getErrorMessage(error));
       }
     },
     handleWebSocketMessage(message) {
       if (message.type === 'ERROR') {
-        this.errorMessage = message.message || 'Realtime connection error.';
+        this.showWorkerNotification(message.message || 'Realtime connection error.');
         return;
       }
 
@@ -689,8 +701,7 @@ export default {
     async askQuestion(question) {
       if (!this.currentJobId || !question.trim()) return;
       this.asking = true;
-      this.errorMessage = '';
-      this.clearTransientErrorTimer();
+      this.dismissErrorMessage();
       try {
         const answer = await askJob(this.currentJobId, question);
         this.reAskAnswer = answer;
@@ -703,20 +714,12 @@ export default {
         });
       } catch (error) {
         const isTimeout = error && (
-          error.code === 'ECONNABORTED' ||
-          String(error.message || '').toLowerCase().includes('timeout')
+          isWorkerTimeoutError(error)
         );
         const message = isTimeout
-          ? 'AI Chatbox took longer than expected. Please try again; the Job result remains available.'
+          ? WORKER_TIMEOUT_NOTIFICATION_MESSAGE
           : getErrorMessage(error);
-        this.appendChatMessage({
-          role: 'assistant',
-          body: message,
-          tone: 'danger',
-          label: 'AI Error',
-          meta: 'request failed'
-        });
-        this.setTransientError(message);
+        this.showWorkerNotification(message);
       } finally {
         this.asking = false;
       }
@@ -768,19 +771,53 @@ export default {
     },
     clearTransientErrorTimer() {
       if (this.transientErrorTimer) {
-        clearTimeout(this.transientErrorTimer);
+        window.clearTimeout(this.transientErrorTimer);
         this.transientErrorTimer = null;
       }
     },
-    setTransientError(message) {
-      this.errorMessage = message;
+    dismissErrorMessage() {
       this.clearTransientErrorTimer();
-      this.transientErrorTimer = setTimeout(() => {
-        if (this.errorMessage === message) {
-          this.errorMessage = '';
-        }
-        this.transientErrorTimer = null;
-      }, 30000);
+      this.errorNotificationExpiresAt = 0;
+      this.errorMessage = '';
+    },
+    getWorkerNotificationMessage(error) {
+      if (isWorkerTimeoutError(error)) {
+        return WORKER_TIMEOUT_NOTIFICATION_MESSAGE;
+      }
+
+      return getErrorMessage(error);
+    },
+    showWorkerNotification(message) {
+      if (!message) {
+        this.dismissErrorMessage();
+        return;
+      }
+
+      if (this.errorMessage === message && this.transientErrorTimer) {
+        return;
+      }
+
+      this.clearTransientErrorTimer();
+      this.errorNotificationId += 1;
+      const notificationId = this.errorNotificationId;
+      this.errorMessage = message;
+      const scheduledDismiss = scheduleNotificationDismiss({
+        activeNotificationId: notificationId,
+        clearTimer: (timer) => window.clearTimeout(timer),
+        currentTimer: this.transientErrorTimer,
+        onDismiss: (dismissedNotificationId) => {
+          if (this.errorNotificationId === dismissedNotificationId) {
+            this.dismissErrorMessage();
+          }
+        },
+        setTimer: (callback, timeoutMs) => window.setTimeout(callback, timeoutMs),
+        timeoutMs: WORKER_NOTIFICATION_TIMEOUT_MS
+      });
+      this.errorNotificationExpiresAt = scheduledDismiss.expiresAt;
+      this.transientErrorTimer = scheduledDismiss.timer;
+    },
+    setTransientError(message) {
+      this.showWorkerNotification(message);
     }
   }
 };
