@@ -59,3 +59,29 @@
 - Ran frontend verification:
   - Command: `npm --prefix frontend test`
   - Result: PASS
+
+## 2026-06-24 - Final acceptance verification
+
+- Re-ran backend verification:
+  - Command: `npm --prefix backend test`
+  - Result: PASS
+- Re-ran frontend verification:
+  - Command: `npm --prefix frontend test`
+  - Result: PASS
+- Re-ran worker dependency verification:
+  - Command: `.\.venv\Scripts\python.exe -c "import sys, pandas, openpyxl; print(sys.executable); print('worker deps OK')"`
+  - Result: PASS
+- Re-ran repository checks:
+  - Command: `git status --short`
+  - Result: clean working tree before final docs commit
+  - Command: `git branch --show-current`
+  - Result: `fix/issue-4-runtime-error-visibility`
+  - Command: `git diff --check 4229c002f43aeb4dde37e0f9f0fbbb65613660dc..HEAD`
+  - Result: PASS
+  - Command: `git diff --name-status 4229c002f43aeb4dde37e0f9f0fbbb65613660dc..HEAD`
+  - Result: only mission-scoped files changed
+  - Command: `git submodule status --recursive`
+  - Result: `skills/create-pr-cd` unchanged at `32f1da236a62042989ea63dce30ca95c4b3006ea`
+- Self-review / code review result:
+  - Reviewed the final diff for runtime resolution, structured dependency preflight, UI error visibility, and timeout handling.
+  - No unresolved correctness findings remained after the final verification pass.

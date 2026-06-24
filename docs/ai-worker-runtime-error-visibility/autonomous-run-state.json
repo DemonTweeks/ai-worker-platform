@@ -7,11 +7,11 @@
   "feature_branch": "fix/issue-4-runtime-error-visibility",
   "feature_worktree": "C:\\dev\\ai-worker-platform-runtime-error-visibility",
   "persistent_state_dir": "docs/ai-worker-runtime-error-visibility",
-  "completed": false,
-  "acceptance_status": "in_progress",
-  "active_phase": "frontend-error-visibility",
-  "active_subphase": "verified-job-detail-history-and-timeout-banner",
-  "next_action": "Run final cross-checks, perform self-review/code-review, then push the branch and open the draft PR if all acceptance gates pass.",
+  "completed": true,
+  "acceptance_status": "passed",
+  "active_phase": "delivery",
+  "active_subphase": "ready-for-no-op-completed",
+  "next_action": "NO_OP_COMPLETED",
   "methodology": [
     "using-superpowers",
     "using-git-worktrees",
@@ -37,8 +37,8 @@
     "worker_venv": "passed",
     "focused_runtime_checks": "passed"
   },
-  "last_checkpoint_sha": "22ba84323fada4954e4d690dafece86fb3a2df5e",
+  "last_checkpoint_sha": "346c10e837d74f6e2c56bff771176e7c7ced47f9",
   "blockers": [],
   "recovery_notes": [],
-  "updated_at": "2026-06-24T10:53:00+08:00"
+  "updated_at": "2026-06-24T09:53:00+08:00"
 }
