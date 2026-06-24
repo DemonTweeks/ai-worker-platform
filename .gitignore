@@ -10,6 +10,7 @@ prompts/
 .env
 .env.*
 !.env.example
+.venv/
 
 # Node dependencies and build output
 node_modules/

@@ -1,0 +1,44 @@
+{
+  "mission": "ai-worker-runtime-error-visibility",
+  "master_prompt_path": "C:\\dev\\codex-prompts\\ai-worker-runtime-error-visibility-master-automation-prompt.md",
+  "baseline_branch": "main",
+  "baseline_sha_expected": "4229c002f43aeb4dde37e0f9f0fbbb65613660dc",
+  "baseline_sha_actual": "4229c002f43aeb4dde37e0f9f0fbbb65613660dc",
+  "feature_branch": "fix/issue-4-runtime-error-visibility",
+  "feature_worktree": "C:\\dev\\ai-worker-platform-runtime-error-visibility",
+  "persistent_state_dir": "docs/ai-worker-runtime-error-visibility",
+  "completed": false,
+  "acceptance_status": "not_started",
+  "active_phase": "baseline-and-setup",
+  "active_subphase": "inspection-complete-state-initialized",
+  "next_action": "Write failing backend coverage for Python resolution and dependency preflight, then implement the runtime contract behind those tests.",
+  "methodology": [
+    "using-superpowers",
+    "using-git-worktrees",
+    "writing-plans",
+    "executing-plans"
+  ],
+  "issues_reviewed": [4, 5, 6, 7],
+  "automation": {
+    "name": "ai-worker-runtime-error-visibility-hourly-follow-up",
+    "id": "ai-worker-runtime-error-visibility-hourly-follow-up",
+    "schedule": "every 1 hour"
+  },
+  "worktree_status": {
+    "created_from": "origin/main",
+    "head_sha": "4229c002f43aeb4dde37e0f9f0fbbb65613660dc",
+    "submodule_initialized": [
+      "skills/create-pr-cd"
+    ]
+  },
+  "test_outcomes": {
+    "backend": "not_run",
+    "frontend": "not_run",
+    "worker_venv": "not_run",
+    "focused_runtime_checks": "not_run"
+  },
+  "last_checkpoint_sha": null,
+  "blockers": [],
+  "recovery_notes": [],
+  "updated_at": "2026-06-24T09:21:49.8393205+08:00"
+}
