@@ -25,11 +25,13 @@ const resolveFromRepoRoot = (value, fallback) => {
 };
 
 const config = {
+  repoRoot,
   port: numberFromEnv('PORT', 8000),
   firebaseDbUrl: process.env.FIREBASE_DB_URL || 'https://zte-app-state-mgmt-01-default-rtdb.asia-southeast1.firebasedatabase.app/ai-worker-platform',
   firebaseDbMock: booleanFromEnv('FIREBASE_DB_MOCK', false),
   storageRoot: resolveFromRepoRoot(process.env.STORAGE_ROOT, './storage'),
   createPrCdRoot: resolveFromRepoRoot(process.env.CREATE_PR_CD_ROOT, './skills/create-pr-cd'),
+  pythonExecutable: String(process.env.PYTHON_EXECUTABLE || '').trim(),
   llmBaseUrl: process.env.LLM_BASE_URL || '',
   llmApiKey: process.env.LLM_API_KEY || '',
   llm: {

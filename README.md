@@ -176,6 +176,20 @@ cd ../frontend
 npm test
 ```
 
+## Local Python Worker Runtime
+
+The PR Worker backend launches the Python-based `create-pr-cd` worker from this repository and expects a project-local virtual environment for worker dependencies.
+
+Recommended local setup on Windows:
+
+```powershell
+py -3 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements-worker.txt
+.\.venv\Scripts\python.exe -c "import pandas, openpyxl; print('worker deps OK')"
+```
+
+If you need the backend to use a specific interpreter, set `PYTHON_EXECUTABLE` in `.env` to that Python path. When it is blank, the backend checks the repository root `.venv` first and then falls back to the platform default command.
+
 ## Docker Deployment
 
 The root `docker-compose.yml` defines:

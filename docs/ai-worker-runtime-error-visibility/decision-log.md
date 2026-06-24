@@ -23,3 +23,9 @@
 - Context: the writing-plans skill normally ends by asking the user to choose between subagent-driven and inline execution.
 - Decision: continue with inline execution under `executing-plans` without prompting for a choice.
 - Reason: the user explicitly requested one autonomous mission with same-thread recovery and immediate execution of the first bounded step.
+
+## 2026-06-24 - Backend integration harness provisions the repo worker virtualenv
+
+- Context: the backend integration suite exercises real Create PR/TI worker flows that now depend on deterministic repository-root `.venv` resolution.
+- Decision: add `ensureRepoWorkerVenv()` in `backend/scripts/integration-test.js` so the suite provisions `.venv` and installs `requirements-worker.txt` when needed before running the live worker paths.
+- Reason: this keeps the integration suite self-contained, validates the intended runtime contract, and avoids relying on whichever global Python happens to be first on `PATH`.

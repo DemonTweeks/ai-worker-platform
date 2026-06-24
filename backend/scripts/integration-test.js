@@ -2,6 +2,7 @@ const assert = require('assert');
 const fs = require('fs');
 const http = require('http');
 const path = require('path');
+const { execFileSync } = require('child_process');
 const xlsx = require('xlsx');
 const WebSocket = require('ws');
 
@@ -30,6 +31,7 @@ const QA_PREFIX = 'QA15';
 const OBSOLETE_QUEUE_SUMMARY = 'Job created and queued. PR Worker execution will run after the worker queue layer is implemented.';
 const terminalStatuses = new Set(['completed', 'completed_with_warning', 'failed', 'cancelled', 'cancelled_with_partial_result']);
 const cleanupJobIds = new Set();
+const tempRuntimePaths = new Set();
 
 const repoRoot = path.resolve(__dirname, '../..');
 const skillRoot = path.join(repoRoot, 'skills', 'create-pr-cd');
@@ -246,6 +248,165 @@ const writeOutputFile = async (jobId, fileName, content) => {
   const filePath = storageService.resolveJobOutputPath(jobId, fileName);
   await fs.promises.writeFile(filePath, content, 'utf8');
   return filePath;
+};
+
+const getBootstrapPython = () => {
+  if (process.platform === 'win32') {
+    return { command: 'py', args: ['-3'] };
+  }
+
+  return { command: 'python3', args: [] };
+};
+
+const runBootstrapPython = (extraArgs, options = {}) => {
+  const bootstrap = getBootstrapPython();
+  return execFileSync(bootstrap.command, [...bootstrap.args, ...extraArgs], {
+    cwd: repoRoot,
+    stdio: ['ignore', 'pipe', 'pipe'],
+    ...options
+  });
+};
+
+const getVenvPython = (venvRoot) => (
+  process.platform === 'win32'
+    ? path.join(venvRoot, 'Scripts', 'python.exe')
+    : path.join(venvRoot, 'bin', 'python')
+);
+
+const getVenvSitePackages = (venvPython) => (
+  String(execFileSync(venvPython, ['-c', 'import site; print(site.getsitepackages()[0])'], {
+    cwd: repoRoot,
+    stdio: ['ignore', 'pipe', 'pipe']
+  })).trim()
+);
+
+const createPythonVenv = async ({ root, packages = [] }) => {
+  await fs.promises.rm(root, { recursive: true, force: true }).catch(() => {});
+  await fs.promises.mkdir(path.dirname(root), { recursive: true });
+  runBootstrapPython(['-m', 'venv', root]);
+  tempRuntimePaths.add(root);
+
+  const venvPython = getVenvPython(root);
+  const sitePackages = getVenvSitePackages(venvPython);
+  for (const packageName of packages) {
+    await fs.promises.writeFile(
+      path.join(sitePackages, `${packageName}.py`),
+      `__all__ = []\nPACKAGE_NAME = ${JSON.stringify(packageName)}\n`,
+      'utf8'
+    );
+  }
+
+  return {
+    root,
+    python: venvPython,
+    sitePackages
+  };
+};
+
+const ensureRepoWorkerVenv = async () => {
+  const repoVenvRoot = path.join(repoRoot, '.venv');
+  const repoVenvPython = getVenvPython(repoVenvRoot);
+
+  if (!fs.existsSync(repoVenvPython)) {
+    await fs.promises.rm(repoVenvRoot, { recursive: true, force: true }).catch(() => {});
+    runBootstrapPython(['-m', 'venv', repoVenvRoot]);
+  }
+
+  let workerDepsReady = false;
+  try {
+    execFileSync(repoVenvPython, ['-c', 'import pandas, openpyxl'], {
+      cwd: repoRoot,
+      stdio: ['ignore', 'pipe', 'pipe']
+    });
+    workerDepsReady = true;
+  } catch (error) {
+    workerDepsReady = false;
+  }
+
+  if (!workerDepsReady) {
+    execFileSync(repoVenvPython, ['-m', 'pip', 'install', '-r', path.join(repoRoot, 'requirements-worker.txt')], {
+      cwd: repoRoot,
+      stdio: ['ignore', 'pipe', 'pipe']
+    });
+  }
+
+  return {
+    root: repoVenvRoot,
+    python: repoVenvPython
+  };
+};
+
+const createRuntimeContractFixture = async ({ scriptContent, pythonExecutable } = {}) => {
+  const fixtureRoot = path.join(repoRoot, 'backend', 'test-runtime-contract');
+  const skillRoot = path.join(fixtureRoot, 'skill');
+  const markerPath = path.join(fixtureRoot, 'script-ran.txt');
+  const inputPath = path.join(fixtureRoot, 'filtered-input.xlsx');
+
+  await fs.promises.rm(fixtureRoot, { recursive: true, force: true }).catch(() => {});
+  await fs.promises.mkdir(path.join(skillRoot, 'scripts'), { recursive: true });
+  await fs.promises.writeFile(path.join(skillRoot, 'scripts', 'generate_tss_pr_ecc.py'), scriptContent, 'utf8');
+  await fs.promises.writeFile(inputPath, 'fixture', 'utf8');
+  tempRuntimePaths.add(fixtureRoot);
+
+  return {
+    fixtureRoot,
+    skillRoot,
+    markerPath,
+    inputPath,
+    async run(jobId, overrides = {}) {
+      await storageService.createJobFolders(jobId);
+      cleanupJobIds.add(jobId);
+
+      const config = require('../src/config/env');
+      const originalCreatePrCdRoot = config.createPrCdRoot;
+      const originalPythonExecutable = config.pythonExecutable;
+      const originalEnvPythonExecutable = process.env.PYTHON_EXECUTABLE;
+
+      config.createPrCdRoot = skillRoot;
+      config.pythonExecutable = pythonExecutable || '';
+      if (pythonExecutable) {
+        process.env.PYTHON_EXECUTABLE = pythonExecutable;
+      } else {
+        delete process.env.PYTHON_EXECUTABLE;
+      }
+
+      try {
+        return await require('../src/services/childProcessRunner').runCreatePrCd({
+          jobId,
+          filteredInputPath: inputPath,
+          generationScope: 'site_code',
+          siteCodes: ['QA15SITE'],
+          prScope: 'TSS',
+          ...overrides
+        });
+      } finally {
+        config.createPrCdRoot = originalCreatePrCdRoot;
+        config.pythonExecutable = originalPythonExecutable;
+        if (typeof originalEnvPythonExecutable === 'string') {
+          process.env.PYTHON_EXECUTABLE = originalEnvPythonExecutable;
+        } else {
+          delete process.env.PYTHON_EXECUTABLE;
+        }
+      }
+    }
+  };
+};
+
+const createStubPackageDir = async (packageNames) => {
+  const stubRoot = path.join(repoRoot, 'backend', 'test-runtime-envs', `stub-packages-${Date.now()}`);
+  await fs.promises.rm(stubRoot, { recursive: true, force: true }).catch(() => {});
+  await fs.promises.mkdir(stubRoot, { recursive: true });
+  tempRuntimePaths.add(stubRoot);
+
+  for (const packageName of packageNames) {
+    await fs.promises.writeFile(
+      path.join(stubRoot, `${packageName}.py`),
+      `PACKAGE_NAME = ${JSON.stringify(packageName)}\n`,
+      'utf8'
+    );
+  }
+
+  return stubRoot;
 };
 
 const createTiResultScenario = async ({ suffix, files, matchedSiteCount = 1 }) => {
@@ -691,6 +852,124 @@ sys.exit(0)
   return { ok: true };
 };
 
+const testPythonRuntimeContract = async () => {
+  console.log('\n--- Running Python Runtime Contract Tests ---');
+
+  const missingEnv = await createPythonVenv({
+    root: path.join(repoRoot, 'backend', 'test-runtime-envs', 'missing-deps')
+  });
+
+  const explicitPythonFixture = await createRuntimeContractFixture({
+    pythonExecutable: missingEnv.python,
+    scriptContent: `
+import os
+from pathlib import Path
+
+Path(os.environ["RUNTIME_MARKER_PATH"]).write_text("script-ran", encoding="utf-8")
+import pandas
+print("script should not run before dependency preflight")
+`
+  });
+
+  const explicitJobId = `${QA_PREFIX}-PY-RUNTIME-MISSING-${Date.now()}`;
+  let explicitFailure = null;
+  process.env.RUNTIME_MARKER_PATH = explicitPythonFixture.markerPath;
+  try {
+    await explicitPythonFixture.run(explicitJobId, {
+      isCancellationRequested: () => false
+    });
+  } catch (error) {
+    explicitFailure = error;
+  } finally {
+    delete process.env.RUNTIME_MARKER_PATH;
+  }
+
+  assert(explicitFailure, 'missing dependency runtime should fail');
+  assert.strictEqual(explicitFailure.code, 'WORKER_DEPENDENCY_MISSING', 'missing dependency should have stable dependency code');
+  assert.deepStrictEqual(explicitFailure.details.missingPackages, ['openpyxl', 'pandas'], 'preflight should detect each missing package');
+  assert.strictEqual(explicitFailure.details.pythonExecutable, missingEnv.python, 'explicit PYTHON_EXECUTABLE should be preserved in error details');
+  assert(explicitFailure.details.actualPythonExecutable, 'actual interpreter path should be captured');
+  assert(
+    explicitFailure.details.recommendedFixCommand.includes('-m pip install -r requirements-worker.txt'),
+    'recommended fix command should point to requirements-worker.txt'
+  );
+  assert.strictEqual(fs.existsSync(explicitPythonFixture.markerPath), false, 'dependency preflight should fail before business script execution');
+
+  console.log('Pass: explicit PYTHON_EXECUTABLE missing dependency preflight');
+
+  const repoVenv = await ensureRepoWorkerVenv();
+  const repoVenvRoot = repoVenv.root;
+  tempRuntimePaths.delete(repoVenvRoot);
+
+  const repoVenvFixture = await createRuntimeContractFixture({
+    scriptContent: `
+import os
+import sys
+from pathlib import Path
+
+Path(os.environ["RUNTIME_MARKER_PATH"]).write_text(sys.executable, encoding="utf-8")
+print(sys.executable)
+`
+  });
+
+  process.env.RUNTIME_MARKER_PATH = repoVenvFixture.markerPath;
+  const repoVenvJobId = `${QA_PREFIX}-PY-RUNTIME-VENV-${Date.now()}`;
+  const repoVenvResult = await repoVenvFixture.run(repoVenvJobId, {
+    isCancellationRequested: () => false
+  });
+  delete process.env.RUNTIME_MARKER_PATH;
+
+  assert.strictEqual(repoVenvResult.runs[0].command, repoVenv.python, 'repo .venv python should be selected when no explicit override exists');
+  assert(repoVenvResult.runs[0].actualPythonExecutable, 'actual interpreter path should be captured for successful worker runs');
+  assert.strictEqual(fs.existsSync(repoVenvFixture.markerPath), true, 'script should run when dependency preflight passes');
+
+  console.log('Pass: repository .venv fallback runtime selection');
+  tempRuntimePaths.delete(repoVenvRoot);
+
+  const fallbackFixture = await createRuntimeContractFixture({
+    scriptContent: `
+import sys
+print(sys.executable)
+`
+  });
+
+  const fallbackJobId = `${QA_PREFIX}-PY-RUNTIME-FALLBACK-${Date.now()}`;
+  const fallbackStubRoot = await createStubPackageDir(['pandas', 'openpyxl']);
+  const repoVenvRootForFallback = path.join(repoRoot, '.venv');
+  const repoVenvBackupRoot = path.join(repoRoot, '.venv-runtime-contract-backup');
+  const originalPythonPath = process.env.PYTHONPATH;
+  let fallbackResult;
+  try {
+    await fs.promises.rm(repoVenvBackupRoot, { recursive: true, force: true }).catch(() => {});
+    if (fs.existsSync(repoVenvRootForFallback)) {
+      await fs.promises.rename(repoVenvRootForFallback, repoVenvBackupRoot);
+    }
+    process.env.PYTHONPATH = fallbackStubRoot;
+    fallbackResult = await fallbackFixture.run(fallbackJobId, {
+      isCancellationRequested: () => false
+    });
+  } finally {
+    if (fs.existsSync(repoVenvBackupRoot) && !fs.existsSync(repoVenvRootForFallback)) {
+      await fs.promises.rename(repoVenvBackupRoot, repoVenvRootForFallback);
+    }
+    if (typeof originalPythonPath === 'string') {
+      process.env.PYTHONPATH = originalPythonPath;
+    } else {
+      delete process.env.PYTHONPATH;
+    }
+  }
+
+  const fallbackCommand = process.platform === 'win32' ? 'python' : 'python3';
+  assert.strictEqual(fallbackResult.runs[0].command, fallbackCommand, 'platform fallback command should remain the candidate command');
+  assert(fallbackResult.runs[0].actualPythonExecutable, 'platform fallback should still record the actual interpreter path');
+  assert.notStrictEqual(fallbackResult.runs[0].actualPythonExecutable, fallbackCommand, 'actual interpreter path should not pretend to be the generic fallback command');
+
+  console.log('Pass: platform fallback actual interpreter capture');
+  console.log('--- All Python Runtime Contract Tests Passed ---\n');
+
+  return { ok: true };
+};
+
 const main = async () => {
   let serverInfo = null;
   const results = {};
@@ -699,6 +978,7 @@ const main = async () => {
     const conn = await checkFirebaseConnection();
     assert(conn.connected, 'Firebase RTDB should be reachable for testing');
     await storageService.ensureBaseStorage();
+    await ensureRepoWorkerVenv();
     await cleanDatabase();
     serverInfo = await createServer();
 
@@ -708,6 +988,7 @@ const main = async () => {
     results.websocket = await testWebSocket(serverInfo.wsUrl);
     results.resourceProtection = await testResourceProtection();
     results.failureClassifications = await testFailureClassifications(serverInfo.baseUrl);
+    results.pythonRuntimeContract = await testPythonRuntimeContract();
 
     console.log(JSON.stringify({ ok: true, results }, null, 2));
   } finally {
@@ -716,6 +997,9 @@ const main = async () => {
     }
     await cleanDatabase().catch(() => {});
     await cleanStorage().catch(() => {});
+    for (const tempPath of tempRuntimePaths) {
+      await fs.promises.rm(tempPath, { recursive: true, force: true }).catch(() => {});
+    }
   }
 };
 

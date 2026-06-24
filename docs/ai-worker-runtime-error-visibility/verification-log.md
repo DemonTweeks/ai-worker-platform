@@ -16,3 +16,26 @@
   - `frontend/src/components/history/JobHistoryCard.vue`
   - `frontend/src/api.js`
 - No automated tests have been run yet in this mission step.
+
+## 2026-06-24 - Backend runtime contract checkpoint
+
+- Added `requirements-worker.txt` with:
+  - `pandas`
+  - `openpyxl`
+- Updated `.env.example` with intentionally blank `PYTHON_EXECUTABLE=`.
+- Updated `README.md` with the project-local `.venv` worker setup and verification flow.
+- Implemented deterministic Python selection and structured dependency preflight in `backend/src/services/childProcessRunner.js`.
+- Added focused backend integration coverage for:
+  - explicit `PYTHON_EXECUTABLE`
+  - repository `.venv` fallback
+  - platform command fallback
+  - dependency preflight before business-script execution
+  - structured dependency error fields
+  - actual interpreter path capture
+- Provisioned the feature-worktree `.venv` and verified worker dependencies explicitly:
+  - Command: `.\.venv\Scripts\python.exe -c "import sys, pandas, openpyxl; print(sys.executable); print('worker deps OK')"`
+  - Result: printed `C:\dev\ai-worker-platform-runtime-error-visibility\.venv\Scripts\python.exe` and `worker deps OK`
+- Ran backend verification:
+  - Command: `npm --prefix backend test`
+  - Result: PASS
+- Frontend verification remains pending.

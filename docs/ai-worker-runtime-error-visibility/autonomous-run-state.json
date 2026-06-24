@@ -8,10 +8,10 @@
   "feature_worktree": "C:\\dev\\ai-worker-platform-runtime-error-visibility",
   "persistent_state_dir": "docs/ai-worker-runtime-error-visibility",
   "completed": false,
-  "acceptance_status": "not_started",
-  "active_phase": "baseline-and-setup",
-  "active_subphase": "inspection-complete-state-initialized",
-  "next_action": "Write failing backend coverage for Python resolution and dependency preflight, then implement the runtime contract behind those tests.",
+  "acceptance_status": "in_progress",
+  "active_phase": "backend-runtime-contract",
+  "active_subphase": "verified-runtime-resolution-and-preflight",
+  "next_action": "Implement direct Job Detail/History failure visibility and the timeout notification behavior, then run frontend verification.",
   "methodology": [
     "using-superpowers",
     "using-git-worktrees",
@@ -32,13 +32,13 @@
     ]
   },
   "test_outcomes": {
-    "backend": "not_run",
+    "backend": "passed",
     "frontend": "not_run",
-    "worker_venv": "not_run",
-    "focused_runtime_checks": "not_run"
+    "worker_venv": "passed",
+    "focused_runtime_checks": "passed"
   },
-  "last_checkpoint_sha": null,
+  "last_checkpoint_sha": "ce11a2217867d7ad237e6fb25e4be96f77a58261",
   "blockers": [],
   "recovery_notes": [],
-  "updated_at": "2026-06-24T09:21:49.8393205+08:00"
+  "updated_at": "2026-06-24T10:41:50+08:00"
 }
