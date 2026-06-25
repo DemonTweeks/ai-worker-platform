@@ -1,0 +1,62 @@
+{
+  "mission": "ran-pr-worker-integration",
+  "master_prompt": "C:\\dev\\codex-prompts\\ran-pr-worker-integration-master-automation-prompt.md",
+  "workspace": "C:\\dev\\ai-worker-platform-ran-pr",
+  "branch": "feature/ran-pr-worker-integration",
+  "baseline": {
+    "base_branch": "origin/main",
+    "expected_commit": "a2d51d5",
+    "head_commit": "a2d51d528fa49e5e56bd239cc37e89d3585ff7ad",
+    "merge_base_with_origin_main": "a2d51d528fa49e5e56bd239cc37e89d3585ff7ad",
+    "matches_expected_baseline": true
+  },
+  "engine": {
+    "repository": "ammarofficial11/create-pr-cd-ran",
+    "tag": "v1.0.0",
+    "commit": "239910e2816153339a94881597bbb95355059741"
+  },
+  "current_phase": "Phase 0 - Discovery and ADR",
+  "current_status": "ACTIVE",
+  "completed": false,
+  "acceptance_status": "not-started",
+  "completed_work": [
+    "Read the authoritative master prompt fresh",
+    "Confirmed requested workspace and branch",
+    "Verified HEAD equals origin/main merge-base and expected baseline commit",
+    "Created autonomous /goal for the integration mission",
+    "Created hourly heartbeat automation in this thread"
+  ],
+  "next_action": "Inspect the actual MW execution path and persistence/history flow, then document findings in Phase 0 logs before any architecture changes.",
+  "blockers": [],
+  "checkpoint_commits": [],
+  "remaining_acceptance_gates": [
+    "RAN submodule pinned at required tag and SHA",
+    "Standard PR golden test passes",
+    "General Item golden test passes",
+    "Workspace isolation/concurrency test passes",
+    "Invalid input safe-error test passes",
+    "MW regression passes",
+    "Backend tests pass",
+    "Frontend tests pass",
+    "Frontend build passes",
+    "History persistence/reload proof passes",
+    "Changed-file scope reviewed",
+    "No generated/secret files staged",
+    "git diff --check passes",
+    "Final report exists",
+    "Worktree clean after final checkpoint"
+  ],
+  "methodology": [
+    "superpowers:using-superpowers",
+    "superpowers:using-git-worktrees (user-directed workspace in place; no new worktree created)",
+    "master prompt bounded-step execution discipline"
+  ],
+  "artifacts": {
+    "state_markdown": "docs/ran-pr-worker-integration/autonomous-run-state.md",
+    "execution_plan": "docs/ran-pr-worker-integration/execution-plan.md",
+    "decision_log": "docs/ran-pr-worker-integration/decision-log.md",
+    "verification_log": "docs/ran-pr-worker-integration/verification-log.md",
+    "final_report": "docs/ran-pr-worker-integration/final-report.md"
+  },
+  "last_updated_utc": "2026-06-25T00:00:00Z"
+}
