@@ -36,10 +36,11 @@
 - Added direct backend coverage for successful and cooperatively cancelled RAN adapter runs, and wired that coverage into the backend test script.
 - Added the MW adapter plus registry-backed queue dispatch resolution, with direct backend coverage for worker selection by `workerId`.
 - Added worker-aware backend create/list/detail payloads with explicit worker identity and audit metadata while preserving MW as the default-compatible create flow.
+- Added the first backend RAN create path with upload-kind-aware prevalidation, tracked BOM/EPMS job inputs, validated run-mode selection, and direct backend coverage.
 
 ## Next Action
 
-Continue Task 4 by adding the first backend RAN job-creation path for BOM/EPMS/run-mode inputs while preserving the existing MW route behavior.
+Continue Task 4 by adding route/integration coverage for upload-kind-aware prevalidation and the new `ran-pr` create body so the backend API contract is exercised end-to-end.
 
 ## Blockers
 
@@ -62,6 +63,8 @@ Continue Task 4 by adding the first backend RAN job-creation path for BOM/EPMS/r
 - `superpowers:executing-plans` for Task 3 direct adapter-coverage work
 - `superpowers:executing-plans` for Task 4 registry-dispatch transition work
 - `superpowers:executing-plans` for Task 4 worker-aware backend payload work
+- `superpowers:subagent-driven-development` evaluated for this continuation; kept in-session because the RAN create-flow slice was tightly coupled
+- `superpowers:executing-plans` for Task 4 first backend RAN create-path work
 
 ## Notes
 

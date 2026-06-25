@@ -8,7 +8,7 @@ const {
   WarningItem
 } = require('../models');
 const storageService = require('./storageService');
-const { consumePrevalidatedUpload } = require('./prevalidationService');
+const { consumePrevalidatedUpload, UPLOAD_KINDS } = require('./prevalidationService');
 const { parseSiteCodes } = require('./siteCodeParser');
 const workerStateService = require('./workerStateService');
 const jobQueue = require('../queue/jobQueue');
@@ -17,6 +17,7 @@ const { generateUniqueJobId } = require('../utils/jobIdGenerator');
 const { assertPathInsideRoot, toStorageRelativePath } = require('../utils/pathUtils');
 const { createApiError } = require('../utils/apiError');
 const { sanitizeRanStageName } = require('../workers/ranFailureService');
+const { validateRanRunConfiguration } = require('../workers/ranProjectCatalogService');
 const { WORKER_IDS } = require('../workers/workerTypes');
 const { getWorkerManifest } = require('../workers/workerRegistry');
 
@@ -37,6 +38,7 @@ const TERMINAL_STATUSES = [
   'cancelled_with_partial_result'
 ];
 const PR_SCOPES = ['TSS', 'TI'];
+const INPUT_FILE_TYPES = new Set(['uploaded_export', 'ran_bom_upload', 'ran_epms_upload']);
 
 const normalizeSiteCodes = (siteCodes = []) => parseSiteCodes(siteCodes).siteCodes;
 
@@ -65,6 +67,17 @@ const getWorkerPresentation = (job = {}) => {
       engineVersion: job.engineVersion || null,
       engineCommit: job.engineCommit || null
     };
+  }
+};
+
+const isRanWorker = (workerId) => workerId === WORKER_IDS.RAN_PR;
+const getDisplayPrScope = (job = {}) => (
+  isRanWorker(job.workerId) ? (job.prScope || null) : (job.prScope || 'TSS')
+);
+
+const assertUploadKind = (upload, expectedKind, label) => {
+  if (!upload || upload.uploadKind !== expectedKind) {
+    throw createApiError(400, 'VALIDATION_ERROR', `${label} prevalidated file is invalid or expired.`);
   }
 };
 
@@ -256,7 +269,7 @@ const serializeJobSummary = (job) => ({
   createdAt: job.createdAt,
   completedAt: job.completedAt,
   generationScope: job.generationScope,
-  prScope: job.prScope || 'TSS',
+  prScope: getDisplayPrScope(job),
   runMode: job.runMode || null,
   selectedProject: job.selectedProject || null,
   requestedSiteCount: job.requestedSiteCount,
@@ -279,7 +292,14 @@ const assertJobExists = async (jobId) => {
   return job;
 };
 
-const createJob = async ({ prevalidatedFileId, generationScope, siteCodes, prScope, workerId }) => {
+const createMwJob = async ({
+  prevalidatedFileId,
+  generationScope,
+  siteCodes,
+  prScope,
+  workerManifest,
+  normalizedWorkerId
+}) => {
   if (!prevalidatedFileId) {
     throw createApiError(400, 'VALIDATION_ERROR', 'prevalidatedFileId is required.');
   }
@@ -304,20 +324,10 @@ const createJob = async ({ prevalidatedFileId, generationScope, siteCodes, prSco
     throw createApiError(400, 'SITE_CODE_LIMIT_EXCEEDED', `Site code count exceeds the configured limit of ${config.limits.maxSiteCodes}.`);
   }
 
-  const normalizedWorkerId = normalizeWorkerId(workerId);
-  let workerManifest;
-
-  try {
-    workerManifest = getWorkerManifest(normalizedWorkerId);
-  } catch (error) {
-    throw createApiError(400, 'VALIDATION_ERROR', `workerId must be one of ${Object.values(WORKER_IDS).join(' or ')}.`);
-  }
-
-  if (normalizedWorkerId !== WORKER_IDS.MW_PR) {
-    throw createApiError(400, 'VALIDATION_ERROR', `${workerManifest.displayName} job creation is not enabled on this route yet.`);
-  }
-
   const upload = await consumePrevalidatedUpload(prevalidatedFileId);
+  if (upload.uploadKind && upload.uploadKind !== UPLOAD_KINDS.MW_EXPORT) {
+    throw createApiError(400, 'VALIDATION_ERROR', 'prevalidatedFileId must reference an iEPMS export upload.');
+  }
   const jobId = await generateUniqueJobId();
   await storageService.createJobFolders(jobId);
 
@@ -375,6 +385,162 @@ const createJob = async ({ prevalidatedFileId, generationScope, siteCodes, prSco
     queue: queueState,
     message: 'Job record and input file were prepared and queued for PR Worker execution.'
   };
+};
+
+const createRanJob = async ({
+  bomPrevalidatedFileId,
+  epmsPrevalidatedFileId,
+  runMode,
+  selectedProject,
+  workerManifest,
+  normalizedWorkerId
+}) => {
+  if (!bomPrevalidatedFileId) {
+    throw createApiError(400, 'VALIDATION_ERROR', 'bomPrevalidatedFileId is required for RAN PR Worker jobs.');
+  }
+
+  if (!epmsPrevalidatedFileId) {
+    throw createApiError(400, 'VALIDATION_ERROR', 'epmsPrevalidatedFileId is required for RAN PR Worker jobs.');
+  }
+
+  let normalizedRunConfiguration;
+  try {
+    normalizedRunConfiguration = validateRanRunConfiguration({ runMode, selectedProject });
+  } catch (error) {
+    throw createApiError(400, 'VALIDATION_ERROR', error.message);
+  }
+
+  const [bomUpload, epmsUpload] = await Promise.all([
+    consumePrevalidatedUpload(bomPrevalidatedFileId),
+    consumePrevalidatedUpload(epmsPrevalidatedFileId)
+  ]);
+  assertUploadKind(bomUpload, UPLOAD_KINDS.RAN_BOM, 'BOM');
+  assertUploadKind(epmsUpload, UPLOAD_KINDS.RAN_EPMS, 'EPMS');
+
+  const jobId = await generateUniqueJobId();
+  await storageService.createJobFolders(jobId);
+
+  const retentionUntil = addRetentionDays();
+  const bomInputPath = storageService.resolveJobInputPath(jobId, bomUpload.originalFileName);
+  const epmsInputPath = storageService.resolveJobInputPath(jobId, epmsUpload.originalFileName);
+
+  await Promise.all([
+    fs.promises.copyFile(bomUpload.absolutePath, bomInputPath),
+    fs.promises.copyFile(epmsUpload.absolutePath, epmsInputPath)
+  ]);
+  await Promise.all([
+    storageService.deleteFileSafe(bomUpload.absolutePath),
+    storageService.deleteFileSafe(epmsUpload.absolutePath)
+  ]);
+
+  const [bomMetadata, epmsMetadata] = await Promise.all([
+    storageService.buildFileMetadata(bomInputPath),
+    storageService.buildFileMetadata(epmsInputPath)
+  ]);
+  const requestPath = storageService.resolveJobTempPath(jobId, 'job-request.json');
+  await storageService.saveBufferToFile(
+    requestPath,
+    Buffer.from(JSON.stringify({
+      jobId,
+      workerId: normalizedWorkerId,
+      runMode: normalizedRunConfiguration.runMode,
+      selectedProject: normalizedRunConfiguration.selectedProject,
+      createdAt: new Date().toISOString(),
+      inputs: {
+        bomFileName: bomUpload.originalFileName,
+        epmsFileName: epmsUpload.originalFileName
+      }
+    }, null, 2))
+  );
+
+  const job = await Job.create({
+    jobId,
+    workerId: normalizedWorkerId,
+    engineVersion: workerManifest.engineVersion,
+    engineCommit: workerManifest.engineCommit,
+    workerType: 'pr-worker',
+    status: 'queued',
+    generationScope: 'all_sites',
+    prScope: null,
+    runMode: normalizedRunConfiguration.runMode,
+    selectedProject: normalizedRunConfiguration.selectedProject,
+    requestedSiteCount: 0,
+    fileRetentionUntil: retentionUntil
+  });
+
+  const jobFiles = await JobFile.insertMany([
+    {
+      jobId,
+      fileType: 'ran_bom_upload',
+      fileName: bomUpload.originalFileName,
+      filePath: bomMetadata.filePath,
+      fileSize: bomMetadata.fileSize,
+      retentionUntil
+    },
+    {
+      jobId,
+      fileType: 'ran_epms_upload',
+      fileName: epmsUpload.originalFileName,
+      filePath: epmsMetadata.filePath,
+      fileSize: epmsMetadata.fileSize,
+      retentionUntil
+    }
+  ]);
+  const queueState = await jobQueue.enqueueJob(jobId);
+
+  return {
+    job: serializeJobSummary(job),
+    jobFiles: jobFiles.map((file) => ({
+      id: file._id.toString(),
+      fileType: file.fileType,
+      fileName: file.fileName,
+      fileSize: file.fileSize,
+      retentionUntil: file.retentionUntil
+    })),
+    queue: queueState,
+    message: 'RAN job record and tracked BOM/EPMS inputs were prepared and queued for PR Worker execution.'
+  };
+};
+
+const createJob = async ({
+  prevalidatedFileId,
+  generationScope,
+  siteCodes,
+  prScope,
+  workerId,
+  bomPrevalidatedFileId,
+  epmsPrevalidatedFileId,
+  runMode,
+  selectedProject
+}) => {
+  const normalizedWorkerId = normalizeWorkerId(workerId);
+  let workerManifest;
+
+  try {
+    workerManifest = getWorkerManifest(normalizedWorkerId);
+  } catch (error) {
+    throw createApiError(400, 'VALIDATION_ERROR', `workerId must be one of ${Object.values(WORKER_IDS).join(' or ')}.`);
+  }
+
+  if (normalizedWorkerId === WORKER_IDS.MW_PR) {
+    return createMwJob({
+      prevalidatedFileId,
+      generationScope,
+      siteCodes,
+      prScope,
+      workerManifest,
+      normalizedWorkerId
+    });
+  }
+
+  return createRanJob({
+    bomPrevalidatedFileId,
+    epmsPrevalidatedFileId,
+    runMode,
+    selectedProject,
+    workerManifest,
+    normalizedWorkerId
+  });
 };
 
 const buildListFilter = async (query) => {
@@ -499,14 +665,14 @@ const getJobDetail = async (jobId) => {
       ...serializeJobSummary(job),
       startedAt: job.startedAt,
       cancelledAt: job.cancelledAt,
-      prScope: job.prScope || 'TSS',
+      prScope: getDisplayPrScope(job),
       assetVersions: job.assetVersions || {},
       fileRetentionUntil: job.fileRetentionUntil,
       failureDiagnosis: getFailureDiagnosis(job)
     },
     workerState: workerStateService.getState(jobId),
     finalWorkerSummary: job.finalWorkerSummary,
-    outputs: filesWithAvailability.filter((file) => file.fileType !== 'uploaded_export'),
+    outputs: filesWithAvailability.filter((file) => !INPUT_FILE_TYPES.has(file.fileType)),
     files: filesWithAvailability,
     reviewRequiredItems,
     warnings,

@@ -281,3 +281,17 @@ The queue can now resolve adapters through the registry, but the backend API con
 ### Impact
 
 The next continuation can focus directly on the first backend RAN create flow, building on payloads that already represent worker identity and audit metadata consistently in create/list/detail responses.
+
+## 2026-06-26 - Task 4 First RAN Create Path Scope
+
+### Decision
+
+Add the first backend `ran-pr` create path by extending the existing job service and prevalidation manifest contract, while preserving the legacy MW route body and response shape for `mw-pr`.
+
+### Why
+
+The worker registry and payload serialization were already in place, but the backend still could not create a queued RAN job with tracked BOM and EPMS inputs. Extending the prevalidation manifest with an explicit `uploadKind` lets the platform distinguish MW exports from RAN BOM/EPMS workbooks safely without duplicating upload infrastructure, while keeping the bounded step focused on service-layer creation rather than full end-to-end route coverage.
+
+### Impact
+
+The backend can now queue the first `ran-pr` jobs with validated `runMode` and `selectedProject` metadata, audited engine pinning, and tracked `ran_bom_upload` / `ran_epms_upload` files. The next continuation should exercise this new API seam through route/integration coverage and then continue deeper into backend lifecycle behavior.

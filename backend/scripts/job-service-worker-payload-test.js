@@ -43,10 +43,48 @@ const runTests = async () => {
     await fs.promises.writeFile(uploadPath, 'upload');
 
     setCachedModule(path.join(repoRoot, 'src/services/prevalidationService.js'), {
-      consumePrevalidatedUpload: async () => ({
-        originalFileName: 'worker-input.xlsx',
-        absolutePath: uploadPath
-      })
+      UPLOAD_KINDS: {
+        MW_EXPORT: 'mw-export',
+        RAN_BOM: 'ran-bom',
+        RAN_EPMS: 'ran-epms'
+      },
+      consumePrevalidatedUpload: async (prevalidatedFileId) => {
+        if (prevalidatedFileId === 'ran-bom-1') {
+          return {
+            uploadKind: 'ran-bom',
+            originalFileName: 'ran-bom.xlsx',
+            absolutePath: uploadPath
+          };
+        }
+
+        if (prevalidatedFileId === 'ran-epms-1') {
+          return {
+            uploadKind: 'ran-epms',
+            originalFileName: 'ran-epms.xlsx',
+            absolutePath: uploadPath
+          };
+        }
+
+        return {
+          uploadKind: 'mw-export',
+          originalFileName: 'worker-input.xlsx',
+          absolutePath: uploadPath
+        };
+      }
+    });
+    setCachedModule(path.join(repoRoot, 'src/workers/ranProjectCatalogService.js'), {
+      validateRanRunConfiguration: ({ runMode, selectedProject }) => {
+        if (runMode !== 'general-item' && runMode !== 'standard-pr') {
+          const error = new Error('RAN run mode must be standard-pr or general-item.');
+          error.code = 'INVALID_RAN_RUN_MODE';
+          throw error;
+        }
+
+        return {
+          runMode,
+          selectedProject: runMode === 'general-item' ? selectedProject : null
+        };
+      }
     });
     delete require.cache[require.resolve('../src/services/jobService')];
     const jobService = require('../src/services/jobService');
@@ -108,6 +146,37 @@ const runTests = async () => {
     assert(copiedBuffers[0].includes('"workerId": "mw-pr"'));
     assert.strictEqual(createdFiles[0].fileType, 'uploaded_export');
 
+    createdJobs.length = 0;
+    createdFiles.length = 0;
+    copiedBuffers.length = 0;
+
+    const ranCreateResult = await jobService.createJob({
+      workerId: 'ran-pr',
+      bomPrevalidatedFileId: 'ran-bom-1',
+      epmsPrevalidatedFileId: 'ran-epms-1',
+      runMode: 'general-item',
+      selectedProject: 'Project Thanos'
+    });
+
+    assert.strictEqual(ranCreateResult.job.workerId, 'ran-pr');
+    assert.strictEqual(ranCreateResult.job.workerDisplayName, 'RAN PR Worker');
+    assert.strictEqual(ranCreateResult.job.engineVersion, 'v1.0.0');
+    assert.strictEqual(ranCreateResult.job.engineCommit, '239910e2816153339a94881597bbb95355059741');
+    assert.strictEqual(ranCreateResult.job.runMode, 'general-item');
+    assert.strictEqual(ranCreateResult.job.selectedProject, 'Project Thanos');
+    assert.strictEqual(ranCreateResult.job.prScope, null);
+    assert.strictEqual(createdJobs[0].workerId, 'ran-pr');
+    assert.strictEqual(createdJobs[0].runMode, 'general-item');
+    assert.strictEqual(createdJobs[0].selectedProject, 'Project Thanos');
+    assert.strictEqual(createdFiles.length, 2);
+    assert.deepStrictEqual(
+      createdFiles.map((file) => file.fileType).sort(),
+      ['ran_bom_upload', 'ran_epms_upload']
+    );
+    assert(copiedBuffers[0].includes('"workerId": "ran-pr"'));
+    assert(copiedBuffers[0].includes('"runMode": "general-item"'));
+    assert(copiedBuffers[0].includes('"selectedProject": "Project Thanos"'));
+
     await assert.rejects(
       () => jobService.createJob({
         prevalidatedFileId: 'prevalidated-2',
@@ -122,14 +191,13 @@ const runTests = async () => {
 
     await assert.rejects(
       () => jobService.createJob({
-        prevalidatedFileId: 'prevalidated-3',
         workerId: 'ran-pr',
-        prScope: 'TSS',
-        generationScope: 'all_sites',
-        siteCodes: []
+        bomPrevalidatedFileId: 'ran-bom-1',
+        epmsPrevalidatedFileId: 'ran-epms-1',
+        runMode: 'unsupported-mode'
       }),
       (error) => error.statusCode === 400 && error.code === 'VALIDATION_ERROR',
-      'ran create flow should not be enabled on the legacy route yet'
+      'invalid ran run modes should be rejected'
     );
 
     const mockJobs = [

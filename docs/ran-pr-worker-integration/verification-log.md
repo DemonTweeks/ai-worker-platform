@@ -175,3 +175,26 @@
 - Ran `node backend/scripts/job-service-worker-payload-test.js` successfully.
 - Ran `npm.cmd --prefix backend run test:job-service-workers` successfully.
 - Ran `git diff --check`; only CRLF conversion warnings were reported, with no diff hygiene errors.
+
+## 2026-06-26 - Task 4 First RAN Create Path Evidence
+
+- Updated `backend/src/services/prevalidationService.js` so upload prevalidation now records `uploadKind`, supports `mw-export`, `ran-bom`, and `ran-epms`, and only applies workbook row-count inspection where it is appropriate.
+- Updated `backend/src/routes/jobRoutes.js` so `/api/jobs/prevalidate` can receive `uploadKind` from multipart form fields without changing the existing MW upload field name.
+- Updated `backend/src/services/jobService.js` so:
+  - `mw-pr` creation preserves the existing request contract and queueing behavior
+  - `ran-pr` creation now accepts BOM and EPMS prevalidated uploads plus `runMode` and `selectedProject`
+  - RAN create requests validate run-mode/project selection, track BOM and EPMS inputs as `ran_bom_upload` and `ran_epms_upload`, and queue the job with pinned engine audit metadata
+  - Job detail/output serialization no longer misclassifies tracked RAN input files as downloadable outputs
+- Updated `backend/src/services/jobContextService.js` so safe job-context output lists also exclude tracked RAN inputs.
+- Extended `backend/scripts/job-service-worker-payload-test.js` with direct coverage for:
+  - successful `ran-pr` job creation with tracked BOM/EPMS files
+  - persisted RAN engine and run-mode metadata
+  - invalid RAN run-mode rejection
+- Ran `node --check backend/src/services/prevalidationService.js` successfully.
+- Ran `node --check backend/src/services/jobService.js` successfully.
+- Ran `node --check backend/src/routes/jobRoutes.js` successfully.
+- Ran `node --check backend/src/services/jobContextService.js` successfully.
+- Ran `node --check backend/scripts/job-service-worker-payload-test.js` successfully.
+- Ran `node backend/scripts/job-service-worker-payload-test.js` successfully.
+- Ran `npm.cmd --prefix backend run test:job-service-workers` successfully.
+- Ran `git diff --check`; only CRLF conversion warnings were reported, with no diff hygiene errors.

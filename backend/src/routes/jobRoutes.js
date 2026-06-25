@@ -10,7 +10,9 @@ const asyncHandler = (handler) => (req, res, next) => (
 );
 
 router.post('/prevalidate', upload.single('file'), asyncHandler(async (req, res) => {
-  const result = await prevalidationService.validateUpload(req.file);
+  const result = await prevalidationService.validateUpload(req.file, {
+    uploadKind: req.body ? req.body.uploadKind : undefined
+  });
   res.status(result.passed ? 200 : 400).json(result);
 }));
 

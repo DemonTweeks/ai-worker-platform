@@ -1,6 +1,7 @@
 const path = require('path');
 const { Job, JobFile, ReviewRequiredItem, WarningItem } = require('../models');
 const workerStateService = require('./workerStateService');
+const INPUT_FILE_TYPES = new Set(['uploaded_export', 'ran_bom_upload', 'ran_epms_upload']);
 
 const serializeFile = (file) => ({
   id: file._id.toString(),
@@ -69,7 +70,7 @@ const buildSafeJobContext = async (jobId) => {
       severity: item.severity,
       createdAt: item.createdAt
     })),
-    outputs: files.filter((file) => file.fileType !== 'uploaded_export').map(serializeFile),
+    outputs: files.filter((file) => !INPUT_FILE_TYPES.has(file.fileType)).map(serializeFile),
     files: files.map(serializeFile)
   };
 };

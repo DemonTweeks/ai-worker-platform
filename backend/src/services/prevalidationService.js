@@ -14,6 +14,29 @@ const { createApiError } = require('../utils/apiError');
 
 const ALLOWED_EXTENSIONS = ['.xlsx', '.xls'];
 const MANIFEST_SUFFIX = '.prevalidation.json';
+const UPLOAD_KINDS = {
+  MW_EXPORT: 'mw-export',
+  RAN_BOM: 'ran-bom',
+  RAN_EPMS: 'ran-epms'
+};
+
+const UPLOAD_KIND_CONFIG = {
+  [UPLOAD_KINDS.MW_EXPORT]: {
+    missingFileMessage: 'Please upload an iEPMS export file.',
+    successExplanation: 'The uploaded iEPMS export passed the initial technical checks. You can continue to job creation; business-rule validation will run in the worker layer later.',
+    inspectWorkbook: true
+  },
+  [UPLOAD_KINDS.RAN_BOM]: {
+    missingFileMessage: 'Please upload a RAN BOM workbook.',
+    successExplanation: 'The uploaded RAN BOM workbook passed the initial technical checks. Worker-level validation will continue after the job is created.',
+    inspectWorkbook: false
+  },
+  [UPLOAD_KINDS.RAN_EPMS]: {
+    missingFileMessage: 'Please upload a RAN EPMS workbook.',
+    successExplanation: 'The uploaded RAN EPMS workbook passed the initial technical checks. Worker-level validation will continue after the job is created.',
+    inspectWorkbook: true
+  }
+};
 
 const buildChecklistItem = (key, label, passed, message) => ({
   key,
@@ -22,9 +45,27 @@ const buildChecklistItem = (key, label, passed, message) => ({
   message
 });
 
-const buildWorkerExplanation = (passed, failedMessages = []) => {
+const getUploadConfig = (uploadKind) => {
+  const normalizedUploadKind = String(uploadKind || UPLOAD_KINDS.MW_EXPORT).trim();
+  const uploadConfig = UPLOAD_KIND_CONFIG[normalizedUploadKind];
+
+  if (!uploadConfig) {
+    throw createApiError(
+      400,
+      'VALIDATION_ERROR',
+      `uploadKind must be one of ${Object.values(UPLOAD_KINDS).join(', ')}.`
+    );
+  }
+
+  return {
+    uploadKind: normalizedUploadKind,
+    ...uploadConfig
+  };
+};
+
+const buildWorkerExplanation = (passed, uploadConfig, failedMessages = []) => {
   if (passed) {
-    return 'The uploaded iEPMS export passed the initial technical checks. You can continue to job creation; business-rule validation will run in the worker layer later.';
+    return uploadConfig.successExplanation;
   }
 
   return `I cannot start the task yet. ${failedMessages.join(' ')}`;
@@ -54,7 +95,8 @@ const deleteManifest = async (prevalidatedFileId) => {
   await storageService.deleteFileSafe(getManifestPath(prevalidatedFileId));
 };
 
-const validateUpload = async (file) => {
+const validateUpload = async (file, options = {}) => {
+  const uploadConfig = getUploadConfig(options.uploadKind);
   const checklist = [];
   const failedMessages = [];
   const maxBytes = config.limits.maxUploadSizeMb * 1024 * 1024;
@@ -109,7 +151,7 @@ const validateUpload = async (file) => {
   const passed = checklist.every((item) => item.passed);
 
   if (!fileExists) {
-    failedMessages.push('Please upload an iEPMS export file.');
+    failedMessages.push(uploadConfig.missingFileMessage);
   }
 
   if (!extensionAllowed) {
@@ -123,39 +165,43 @@ const validateUpload = async (file) => {
   if (!passed) {
     return {
       passed,
+      uploadKind: uploadConfig.uploadKind,
       originalFileName: originalName,
       fileSize: file ? file.size : 0,
       checklist,
-      workerExplanation: buildWorkerExplanation(false, failedMessages)
+      workerExplanation: buildWorkerExplanation(false, uploadConfig, failedMessages)
     };
   }
 
   let workbookMetadata = null;
 
-  try {
-    workbookMetadata = inspectIepmsWorkbookBuffer(file.buffer);
-    checklist.push(buildChecklistItem(
-      'row_count',
-      'Row count is within limit',
-      true,
-      `Workbook has ${workbookMetadata.rowCount} data rows, within the configured limit of ${config.limits.maxRowCount}.`
-    ));
-  } catch (error) {
-    checklist.push(buildChecklistItem(
-      'row_count',
-      'Row count is within limit',
-      false,
-      error.message || 'Workbook row count could not be validated.'
-    ));
-    failedMessages.push(error.message || 'Workbook row count could not be validated.');
+  if (uploadConfig.inspectWorkbook) {
+    try {
+      workbookMetadata = inspectIepmsWorkbookBuffer(file.buffer);
+      checklist.push(buildChecklistItem(
+        'row_count',
+        'Row count is within limit',
+        true,
+        `Workbook has ${workbookMetadata.rowCount} data rows, within the configured limit of ${config.limits.maxRowCount}.`
+      ));
+    } catch (error) {
+      checklist.push(buildChecklistItem(
+        'row_count',
+        'Row count is within limit',
+        false,
+        error.message || 'Workbook row count could not be validated.'
+      ));
+      failedMessages.push(error.message || 'Workbook row count could not be validated.');
 
-    return {
-      passed: false,
-      originalFileName: originalName,
-      fileSize: file ? file.size : 0,
-      checklist,
-      workerExplanation: buildWorkerExplanation(false, failedMessages)
-    };
+      return {
+        passed: false,
+        uploadKind: uploadConfig.uploadKind,
+        originalFileName: originalName,
+        fileSize: file ? file.size : 0,
+        checklist,
+        workerExplanation: buildWorkerExplanation(false, uploadConfig, failedMessages)
+      };
+    }
   }
 
   const prevalidatedFileId = `preval-${Date.now()}-${crypto.randomUUID()}`;
@@ -165,6 +211,7 @@ const validateUpload = async (file) => {
 
   const manifest = {
     prevalidatedFileId,
+    uploadKind: uploadConfig.uploadKind,
     originalFileName: safeOriginalFileName,
     fileSize: metadata.fileSize,
     tempFilePath: metadata.filePath,
@@ -181,12 +228,13 @@ const validateUpload = async (file) => {
 
   return {
     prevalidatedFileId,
+    uploadKind: uploadConfig.uploadKind,
     originalFileName: safeOriginalFileName,
     fileSize: metadata.fileSize,
     workbook: workbookMetadata,
     checklist,
     passed: true,
-    workerExplanation: buildWorkerExplanation(true)
+    workerExplanation: buildWorkerExplanation(true, uploadConfig)
   };
 };
 
@@ -219,7 +267,9 @@ const consumePrevalidatedUpload = async (prevalidatedFileId) => {
 
 module.exports = {
   ALLOWED_EXTENSIONS,
+  UPLOAD_KINDS,
   consumePrevalidatedUpload,
   getPrevalidatedUpload,
+  getUploadConfig,
   validateUpload
 };
