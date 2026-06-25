@@ -8,7 +8,89 @@ const { assertPathInsideRoot } = require('../utils/pathUtils');
 const SCRIPT_RELATIVE_PATH = path.join('scripts', 'generate_tss_pr_ecc.py');
 const SUPPORTED_SCOPES = ['TSS', 'TI'];
 
-const getPythonExecutable = () => (process.platform === 'win32' ? 'python' : 'python3');
+const getPythonExecutable = () => {
+  if (process.env.PYTHON_EXECUTABLE) {
+    return process.env.PYTHON_EXECUTABLE;
+  }
+
+  const repoRoot = path.resolve(__dirname, '../../..');
+
+  if (process.platform === 'win32') {
+    const winVenvPython = path.join(repoRoot, '.venv', 'Scripts', 'python.exe');
+    if (fs.existsSync(winVenvPython)) {
+      return winVenvPython;
+    }
+    return 'python';
+  } else {
+    const nixVenvPython = path.join(repoRoot, '.venv', 'bin', 'python');
+    if (fs.existsSync(nixVenvPython)) {
+      return nixVenvPython;
+    }
+    return 'python3';
+  }
+};
+
+const runPreflight = async () => {
+  const pythonPath = getPythonExecutable();
+  const checkCode = `
+import sys
+missing = []
+try:
+    import pandas
+except ImportError:
+    missing.append('pandas')
+try:
+    import openpyxl
+except ImportError:
+    missing.append('openpyxl')
+
+if missing:
+    print("MISSING:" + ",".join(missing))
+print("RESOLVED_PATH:" + sys.executable)
+if missing:
+    sys.exit(1)
+sys.exit(0)
+`;
+
+  const result = await module.exports.runCommand({
+    command: pythonPath,
+    args: ['-c', checkCode],
+    cwd: path.resolve(__dirname, '../../..'),
+    timeoutMs: 15000
+  });
+
+  const stdout = result.stdout || '';
+  const stderr = result.stderr || '';
+
+  let missingPackages = [];
+  const missingMatch = stdout.match(/MISSING:(.+)/);
+  if (missingMatch) {
+    missingPackages = missingMatch[1].split(',').map(p => p.trim());
+  }
+
+  let resolvedPythonPath = pythonPath;
+  const resolvedMatch = stdout.match(/RESOLVED_PATH:(.+)/);
+  if (resolvedMatch) {
+    resolvedPythonPath = resolvedMatch[1].trim();
+  }
+
+  if (result.exitCode !== 0 || missingPackages.length > 0) {
+    if (missingPackages.length === 0) {
+      missingPackages = ['pandas', 'openpyxl'];
+    }
+    const recCmd = `"${resolvedPythonPath}" -m pip install -r requirements-worker.txt`;
+    const error = new Error(`Create PR worker preflight check failed due to missing dependencies: ${missingPackages.join(', ')}.`);
+    error.code = 'PREFLIGHT_FAILED';
+    error.details = {
+      missingPackages,
+      pythonExecutable: resolvedPythonPath,
+      recommendedCommand: recCmd,
+      stdout,
+      stderr
+    };
+    throw error;
+  }
+};
 
 const getCreatePrCdRoot = () => path.resolve(config.createPrCdRoot);
 
@@ -157,7 +239,7 @@ const runCreatePrCd = async ({
       scope
     });
 
-    const result = await runCommand({
+    const result = await module.exports.runCommand({
       ...commandSpec,
       timeoutMs,
       isCancellationRequested
@@ -222,5 +304,7 @@ module.exports = {
   buildCommand,
   getCreatePrCdRoot,
   runCommand,
-  runCreatePrCd
+  runCreatePrCd,
+  getPythonExecutable,
+  runPreflight
 };

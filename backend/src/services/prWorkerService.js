@@ -5,7 +5,7 @@ const { assertPathInsideRoot } = require('../utils/pathUtils');
 const workerStateService = require('./workerStateService');
 const { parseIepmsWorkbook } = require('./iepmsParser');
 const { filterSites } = require('./siteFilteringService');
-const { runCreatePrCd } = require('./childProcessRunner');
+const { runCreatePrCd, runPreflight } = require('./childProcessRunner');
 const { collectOutputs, generateReportsAndPackage } = require('./outputCollector');
 const { ingestTiResultFiles } = require('./tiResultIngestionService');
 const { determineFinalStatus, getNoEccExplanation } = require('./zeroOutputPolicyService');
@@ -200,6 +200,9 @@ const runPrWorkerJob = async (jobId) => {
       });
       return;
     }
+
+    await setPhaseAndStatus(jobId, 'GENERATION_STARTED', 'Running dependency preflight check.');
+    await runPreflight();
 
     await setPhaseAndStatus(jobId, 'GENERATION_STARTED', 'Running create-pr-cd child process.');
     const runnerResult = await runCreatePrCd({

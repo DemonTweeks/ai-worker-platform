@@ -133,6 +133,7 @@ Core variables from `.env.example` and Docker Compose:
 | `MONGO_URI` | Provided by Docker Compose for the MongoDB service |
 | `STORAGE_ROOT` | Backend storage root |
 | `CREATE_PR_CD_ROOT` | Path to `skills/create-pr-cd` |
+| `PYTHON_EXECUTABLE` | Optional path to custom Python interpreter (overrides default virtual env search and fallback) |
 | `WS_HEARTBEAT_INTERVAL_MS`, `WS_MAX_PAYLOAD_BYTES` | WebSocket runtime limits |
 | `LLM_ENABLED`, `LLM_PROVIDER`, `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` | LLM provider configuration |
 | `LLM_TIMEOUT_MS`, `LLM_MAX_RETRIES` | LLM request behavior |
@@ -147,6 +148,35 @@ Core variables from `.env.example` and Docker Compose:
 ## Local Development
 
 1. Copy `.env.example` to `.env` and adjust local values.
+
+### Python Worker Dependencies Setup
+
+The PR Worker execution requires Python and its third-party dependencies (`pandas` and `openpyxl`).
+
+To configure the worker dependencies:
+1. Create a Python virtual environment named `.venv` at the repository root:
+   ```bash
+   python -m venv .venv
+   ```
+2. Activate the virtual environment and install the required dependencies:
+   * **Windows**:
+     ```powershell
+     .venv\Scripts\activate
+     pip install -r requirements-worker.txt
+     ```
+   * **Linux/macOS**:
+     ```bash
+     source .venv/bin/activate
+     pip install -r requirements-worker.txt
+     ```
+
+Alternatively, you can install the dependencies in your global Python environment and configure `PYTHON_EXECUTABLE` in `.env` to point to your Python interpreter.
+
+Because the application uses `spawn(..., { shell: false })` to invoke Python, paths containing spaces are fully supported. To configure an interpreter path with spaces on Windows, format it as a quoted, dotenv-compatible value, for example:
+```dotenv
+PYTHON_EXECUTABLE="C:\Program Files\Python311\python.exe"
+```
+
 2. Install and run the backend:
 
 ```bash
