@@ -94,6 +94,10 @@
     {
       "commit": "bf4db61fedc73600c4acf330122717d8df446e5c",
       "message": "feat: add ran job creation path"
+    },
+    {
+      "commit": "3dd5e227e93eb7734eebaf2994b5f03ae3777e5e",
+      "message": "test: cover ran route creation flow"
     }
   ],
   "remaining_acceptance_gates": [
@@ -141,5 +145,5 @@
     "prototype_ux_contract": "docs/ran-pr-worker-integration/prototype-ux-contract.md",
     "worker_skill_contract_adr": "docs/ran-pr-worker-integration/worker-skill-contract-adr.md"
   },
-  "last_updated_utc": "2026-06-25T16:25:20Z"
+  "last_updated_utc": "2026-06-25T16:26:33Z"
 }

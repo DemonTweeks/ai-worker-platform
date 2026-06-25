@@ -72,3 +72,4 @@ Continue Task 4 by integrating RAN queue lifecycle/progress coverage so `ran-pr`
 
 - The user explicitly directed work to remain in `C:\dev\ai-worker-platform-ran-pr` on `feature/ran-pr-worker-integration`, so no additional worktree was created.
 - The `COMPLETED` marker is intentionally absent until all acceptance gates pass.
+- Latest checkpoint commit: `3dd5e22` (`test: cover ran route creation flow`).
