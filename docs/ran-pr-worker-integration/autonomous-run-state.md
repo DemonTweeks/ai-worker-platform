@@ -26,10 +26,11 @@
 - Initialized the persistent state bundle under `docs/ran-pr-worker-integration/`.
 - Documented the current MW execution, persistence/history, websocket, cancellation, output packaging, download, cleanup, and safe-error flow from the live codebase.
 - Inspected the pinned upstream RAN engine pipeline, workbook config sources, sample input/output assets, and dynamic General Item project-selection source.
+- Documented the prototype platform UX contract and worker-skill ADR constraints for MW/RAN coexistence.
 
 ## Next Action
 
-Document the prototype UX contract and worker-contract ADR constraints before Phase 1 engine integration work begins.
+Translate the Phase 0 design checkpoint into an implementation-oriented execution plan for Phase 1 engine compatibility and Phase 2 registry integration.
 
 ## Blockers
 
@@ -42,6 +43,7 @@ Document the prototype UX contract and worker-contract ADR constraints before Ph
 - Master prompt bounded-step execution discipline
 - Source inspection of the active backend/frontend implementation
 - Read-only inspection of the pinned upstream RAN repository
+- Internal design checkpoint using the brainstorming methodology with the mission-level autonomy override recorded in the decision log
 
 ## Notes
 

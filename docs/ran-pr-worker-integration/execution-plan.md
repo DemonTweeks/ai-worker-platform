@@ -38,8 +38,8 @@ Deliver a production-oriented RAN PR Worker v1 integration on `feature/ran-pr-wo
 
 ## Current Bounded Step
 
-Inspect and document the pinned upstream RAN engine inputs, outputs, config sources, sample assets, and dynamic project-selection source.
+Document the prototype UX contract and worker-contract ADR constraints that connect the platform shell to the pinned RAN engine.
 
 ## Next Bounded Step
 
-Document the prototype UX contract and worker-contract ADR constraints that connect the current MW platform flow to the pinned RAN engine behavior without reusing upstream UI or routes.
+Translate the Phase 0 design checkpoint into an implementation-oriented execution plan for Phase 1 engine compatibility and Phase 2 registry integration.

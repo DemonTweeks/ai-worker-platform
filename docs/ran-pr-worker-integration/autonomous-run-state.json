@@ -26,9 +26,10 @@
     "Created autonomous /goal for the integration mission",
     "Created hourly heartbeat automation in this thread",
     "Inspected and documented the current MW execution, persistence/history, websocket, cancellation, download, ZIP, cleanup, and safe-error flow",
-    "Inspected the pinned upstream RAN engine pipeline, workbook config sources, sample inputs/outputs, and dynamic General Item project-selection source"
+    "Inspected the pinned upstream RAN engine pipeline, workbook config sources, sample inputs/outputs, and dynamic General Item project-selection source",
+    "Documented the prototype platform UX contract and worker-skill ADR constraints for MW/RAN coexistence"
   ],
-  "next_action": "Document the prototype UX contract and worker-contract ADR constraints before Phase 1 engine integration work begins.",
+  "next_action": "Translate the Phase 0 design checkpoint into an implementation-oriented execution plan for Phase 1 engine compatibility and Phase 2 registry integration.",
   "blockers": [],
   "checkpoint_commits": [
     {
@@ -38,6 +39,10 @@
     {
       "commit": "fd885a9ae9d214b9778e0786b21807246b0185bf",
       "message": "docs: capture mw flow discovery for ran integration"
+    },
+    {
+      "commit": "189a08afec7bdb5d00b599d020cd7cc629567122",
+      "message": "docs: capture ran engine discovery baseline"
     }
   ],
   "remaining_acceptance_gates": [
@@ -69,7 +74,9 @@
     "execution_plan": "docs/ran-pr-worker-integration/execution-plan.md",
     "decision_log": "docs/ran-pr-worker-integration/decision-log.md",
     "verification_log": "docs/ran-pr-worker-integration/verification-log.md",
-    "final_report": "docs/ran-pr-worker-integration/final-report.md"
+    "final_report": "docs/ran-pr-worker-integration/final-report.md",
+    "prototype_ux_contract": "docs/ran-pr-worker-integration/prototype-ux-contract.md",
+    "worker_skill_contract_adr": "docs/ran-pr-worker-integration/worker-skill-contract-adr.md"
   },
-  "last_updated_utc": "2026-06-25T02:00:00Z"
+  "last_updated_utc": "2026-06-25T03:00:00Z"
 }

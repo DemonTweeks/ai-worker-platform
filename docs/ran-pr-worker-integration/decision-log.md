@@ -127,3 +127,31 @@ The following upstream findings now guide the implementation:
 - `src/simple_pr_generator.py` also supports `Optional` project flags gated by a combined quantity threshold over a fixed set of item keys such as `AAU`, `Antenna`, `Battery`, `BBU`, `Bracket`, `Cabinet`, `Power Module`, `Combiner`, `PadPower`, `Post`, `RRU`, `RRU Cage`, `Security Bar`, `Feeder 1/2`, `Feeder 1 5/8`, and `Feeder 7/8`.
 - The upstream FastAPI and `web/index.html` layers write uploads directly to fixed shared files, expose a global `JOB_STATUS`, and mix PR generation with BOM comparison workflows; these are explicitly out of scope for reuse and confirm why the platform must integrate only the engine logic.
 - The sample EPMS workbook uses sheet `data` with the real lookup header row at row 4, which matches the `header=3` assumptions in upstream code; the sample BOM workbook uses row 3 as the header row, matching the `header=2` assumptions in `src/simple_normalize.py`.
+
+## 2026-06-25 - Prototype UX And ADR Checkpoint
+
+### Decision
+
+Use the existing platform routes and job surfaces as the only user-facing shell for RAN, with worker-aware branching added inside the platform rather than a second application shell.
+
+### Why
+
+Phase 0 discovery showed that the current platform already has coherent home, history, and job-detail flows, while the upstream RAN repo contains a fixed-file FastAPI/web prototype that the mission explicitly forbids reusing. A platform-native worker experience minimizes regression risk and aligns with the worker-registry architecture.
+
+### Impact
+
+The initial UX contract is now captured in `docs/ran-pr-worker-integration/prototype-ux-contract.md`, and the architectural boundary is captured in `docs/ran-pr-worker-integration/worker-skill-contract-adr.md`.
+
+## 2026-06-25 - Superpowers Brainstorming Conflict
+
+### Decision
+
+Apply the `superpowers:brainstorming` skill as a methodology check, but do not block this autonomous mission on its normal interactive approval loop.
+
+### Why
+
+The brainstorming skill requires interactive clarification and user approval before design handoff, while the master prompt requires exactly one bounded autonomous continuation step per wake-up and explicitly says not to wait for routine approval for discovery, documentation, or checkpointing.
+
+### Impact
+
+This turn produced an internal design checkpoint and recorded the conflict. If the user later requests interactive design review, the documents created in this step can serve as the starting point.

@@ -44,3 +44,12 @@
 - Confirmed the workbook currently contains additional project columns beyond the eight hard-coded CLI menu options, proving the interactive menu is not the right validation source.
 - Confirmed upstream outputs include the standard JSON intermediates, standard ECC workbook, General Item JSON, combined PR JSON, and General Item ECC workbook under a fixed `output/` directory.
 - Confirmed the upstream FastAPI/web layer uses fixed shared upload/output files and a global in-process status model, which is incompatible with the platform’s per-job isolation and persistence requirements.
+
+## 2026-06-25 - Prototype UX And ADR Evidence
+
+- Confirmed the active platform routes are `/`, `/history`, and `/jobs/:jobId` in `frontend/src/router.js`, which form the platform-native shell for the RAN worker UX.
+- Confirmed the current home flow in `frontend/src/views/HomeView.vue` is MW-oriented and needs worker-aware branching rather than route duplication.
+- Confirmed history filters currently lack worker selection in `frontend/src/components/history/JobHistoryFilters.vue`.
+- Confirmed job detail currently exposes worker type, scope, lifecycle metrics, file downloads, and failure diagnostics in `frontend/src/components/detail/JobDetailHeader.vue` and `frontend/src/components/detail/JobDetailSummary.vue`.
+- Wrote `docs/ran-pr-worker-integration/prototype-ux-contract.md` to define the platform-facing RAN UX contract.
+- Wrote `docs/ran-pr-worker-integration/worker-skill-contract-adr.md` to define the worker contract, adapter boundaries, and methodology conflict note.
