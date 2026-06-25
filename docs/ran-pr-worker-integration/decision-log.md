@@ -155,3 +155,17 @@ The brainstorming skill requires interactive clarification and user approval bef
 ### Impact
 
 This turn produced an internal design checkpoint and recorded the conflict. If the user later requests interactive design review, the documents created in this step can serve as the starting point.
+
+## 2026-06-25 - Implementation Planning Checkpoint
+
+### Decision
+
+Store the implementation-oriented execution plan inside `docs/ran-pr-worker-integration/execution-plan.md` instead of the default Superpowers plans directory.
+
+### Why
+
+The master prompt says all mission state should remain inside `docs/ran-pr-worker-integration/`, which overrides the default `docs/superpowers/plans/...` location from the planning skill.
+
+### Impact
+
+The mission now has a single in-repo plan artifact that the heartbeat loop can reread directly before implementation steps.

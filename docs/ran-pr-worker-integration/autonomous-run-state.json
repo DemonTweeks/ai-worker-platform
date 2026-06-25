@@ -27,9 +27,10 @@
     "Created hourly heartbeat automation in this thread",
     "Inspected and documented the current MW execution, persistence/history, websocket, cancellation, download, ZIP, cleanup, and safe-error flow",
     "Inspected the pinned upstream RAN engine pipeline, workbook config sources, sample inputs/outputs, and dynamic General Item project-selection source",
-    "Documented the prototype platform UX contract and worker-skill ADR constraints for MW/RAN coexistence"
+    "Documented the prototype platform UX contract and worker-skill ADR constraints for MW/RAN coexistence",
+    "Replaced the lightweight mission outline with a concrete implementation plan covering engine compatibility, registry integration, frontend integration, and verification"
   ],
-  "next_action": "Translate the Phase 0 design checkpoint into an implementation-oriented execution plan for Phase 1 engine compatibility and Phase 2 registry integration.",
+  "next_action": "Begin Task 1 from the implementation plan: add and pin the skills/create-pr-cd-ran submodule, create worker manifests, and introduce registry scaffolding.",
   "blockers": [],
   "checkpoint_commits": [
     {
@@ -43,6 +44,10 @@
     {
       "commit": "189a08afec7bdb5d00b599d020cd7cc629567122",
       "message": "docs: capture ran engine discovery baseline"
+    },
+    {
+      "commit": "e6c080824c4cfb1389476e778c80a38fba71ac0b",
+      "message": "docs: define ran ux contract and worker adr"
     }
   ],
   "remaining_acceptance_gates": [
@@ -67,7 +72,8 @@
     "superpowers:using-git-worktrees (user-directed workspace in place; no new worktree created)",
     "master prompt bounded-step execution discipline",
     "codebase discovery of the active MW backend and frontend flow",
-    "read-only inspection of pinned upstream RAN source"
+    "read-only inspection of pinned upstream RAN source",
+    "superpowers:writing-plans with the mission-state location override"
   ],
   "artifacts": {
     "state_markdown": "docs/ran-pr-worker-integration/autonomous-run-state.md",
@@ -78,5 +84,5 @@
     "prototype_ux_contract": "docs/ran-pr-worker-integration/prototype-ux-contract.md",
     "worker_skill_contract_adr": "docs/ran-pr-worker-integration/worker-skill-contract-adr.md"
   },
-  "last_updated_utc": "2026-06-25T03:00:00Z"
+  "last_updated_utc": "2026-06-25T04:00:00Z"
 }

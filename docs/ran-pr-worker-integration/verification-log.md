@@ -53,3 +53,12 @@
 - Confirmed job detail currently exposes worker type, scope, lifecycle metrics, file downloads, and failure diagnostics in `frontend/src/components/detail/JobDetailHeader.vue` and `frontend/src/components/detail/JobDetailSummary.vue`.
 - Wrote `docs/ran-pr-worker-integration/prototype-ux-contract.md` to define the platform-facing RAN UX contract.
 - Wrote `docs/ran-pr-worker-integration/worker-skill-contract-adr.md` to define the worker contract, adapter boundaries, and methodology conflict note.
+
+## 2026-06-25 - Implementation Plan Evidence
+
+- Re-read the Phase 0 UX contract and worker contract ADR before planning implementation.
+- Mapped the current backend files most likely to move during Phase 1 and Phase 2, including `jobService`, `jobQueue`, `prWorkerService`, `childProcessRunner`, `storageService`, and `Job`/`JobFile` models.
+- Mapped the current frontend files most likely to move during Phase 3, including `HomeView`, `JobHistoryView`, `JobDetailView`, `jobApi`, and history/detail components.
+- Verified the backend test command is `npm.cmd --prefix backend test`.
+- Verified the frontend test and build commands are `npm.cmd --prefix frontend test` and `npm.cmd --prefix frontend run build`.
+- Replaced the lightweight phase outline in `docs/ran-pr-worker-integration/execution-plan.md` with a concrete implementation plan, task order, file boundaries, and checkpoint commands.

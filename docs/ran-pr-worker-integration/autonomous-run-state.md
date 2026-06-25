@@ -27,10 +27,11 @@
 - Documented the current MW execution, persistence/history, websocket, cancellation, output packaging, download, cleanup, and safe-error flow from the live codebase.
 - Inspected the pinned upstream RAN engine pipeline, workbook config sources, sample input/output assets, and dynamic General Item project-selection source.
 - Documented the prototype platform UX contract and worker-skill ADR constraints for MW/RAN coexistence.
+- Replaced the lightweight mission outline with a concrete implementation plan covering engine compatibility, registry integration, frontend integration, and verification.
 
 ## Next Action
 
-Translate the Phase 0 design checkpoint into an implementation-oriented execution plan for Phase 1 engine compatibility and Phase 2 registry integration.
+Begin Task 1 from the implementation plan: add and pin the `skills/create-pr-cd-ran` submodule, create worker manifests, and introduce registry scaffolding.
 
 ## Blockers
 
@@ -44,6 +45,7 @@ Translate the Phase 0 design checkpoint into an implementation-oriented executio
 - Source inspection of the active backend/frontend implementation
 - Read-only inspection of the pinned upstream RAN repository
 - Internal design checkpoint using the brainstorming methodology with the mission-level autonomy override recorded in the decision log
+- `superpowers:writing-plans` with the master-prompt state-directory override
 
 ## Notes
 
