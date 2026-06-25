@@ -25,14 +25,19 @@
     "Verified HEAD equals origin/main merge-base and expected baseline commit",
     "Created autonomous /goal for the integration mission",
     "Created hourly heartbeat automation in this thread",
-    "Inspected and documented the current MW execution, persistence/history, websocket, cancellation, download, ZIP, cleanup, and safe-error flow"
+    "Inspected and documented the current MW execution, persistence/history, websocket, cancellation, download, ZIP, cleanup, and safe-error flow",
+    "Inspected the pinned upstream RAN engine pipeline, workbook config sources, sample inputs/outputs, and dynamic General Item project-selection source"
   ],
-  "next_action": "Inspect the upstream RAN engine inputs, outputs, configuration, templates, imports, sample assets, and validated General Item project-selection source before planning compatibility work.",
+  "next_action": "Document the prototype UX contract and worker-contract ADR constraints before Phase 1 engine integration work begins.",
   "blockers": [],
   "checkpoint_commits": [
     {
       "commit": "3ff6d9a4fc9c3ed7ae53fec421032d64f18d6aed",
       "message": "chore: initialize ran integration mission state"
+    },
+    {
+      "commit": "fd885a9ae9d214b9778e0786b21807246b0185bf",
+      "message": "docs: capture mw flow discovery for ran integration"
     }
   ],
   "remaining_acceptance_gates": [
@@ -56,7 +61,8 @@
     "superpowers:using-superpowers",
     "superpowers:using-git-worktrees (user-directed workspace in place; no new worktree created)",
     "master prompt bounded-step execution discipline",
-    "codebase discovery of the active MW backend and frontend flow"
+    "codebase discovery of the active MW backend and frontend flow",
+    "read-only inspection of pinned upstream RAN source"
   ],
   "artifacts": {
     "state_markdown": "docs/ran-pr-worker-integration/autonomous-run-state.md",
@@ -65,5 +71,5 @@
     "verification_log": "docs/ran-pr-worker-integration/verification-log.md",
     "final_report": "docs/ran-pr-worker-integration/final-report.md"
   },
-  "last_updated_utc": "2026-06-25T01:00:00Z"
+  "last_updated_utc": "2026-06-25T02:00:00Z"
 }

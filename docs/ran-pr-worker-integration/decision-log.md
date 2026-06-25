@@ -84,3 +84,46 @@ The following baseline findings now guide the implementation:
 - Cleanup and retention are platform-owned in `backend/src/services/cleanupService.js`, which deletes tracked files only for terminal jobs and marks them unavailable in Firebase rather than deleting job history.
 - Job History currently filters only `workerType: 'pr-worker'` in `frontend/src/views/JobHistoryView.vue`, and Job Detail currently expects the existing detail payload shape in `frontend/src/views/JobDetailView.vue`.
 - Safe failure visibility already exists: `jobService` redacts paths, argument values, and secrets before surfacing worker stderr in failure diagnosis payloads rendered by `frontend/src/components/detail/FailureDiagnosis.vue`.
+
+## 2026-06-25 - Phase 0 RAN Engine Discovery
+
+### Decision
+
+Anchor the RAN adapter design to the pinned upstream pipeline scripts and workbook-backed web/API project source, not to the legacy interactive CLI menu.
+
+### Why
+
+At tag `v1.0.0` / commit `239910e2816153339a94881597bbb95355059741`, the upstream repository contains both a legacy CLI selection menu in `src/run_pipeline.py` and a dynamic FastAPI `/projects` implementation in `api/app.py`. The CLI exposes only eight hard-coded project names, while the workbook/API path derives projects from the General Item workbook and already includes additional live project columns. The mission explicitly requires dynamic and validated General Item project selection, so the platform must follow the workbook/API source of truth instead of the stale interactive menu.
+
+### Impact
+
+The RAN worker contract should validate General Item selections against parsed workbook project columns, preserve Standard PR non-interactive execution when no project is selected, and avoid copying or reusing the upstream FastAPI/web layer.
+
+## 2026-06-25 - Key Upstream RAN Findings
+
+### Decision
+
+Record the pinned upstream RAN engine structure and artifact expectations as the authoritative compatibility baseline for Phase 1 engine integration.
+
+### Why
+
+The mission requires inspection of actual RAN engine inputs, outputs, configurations, imports, templates, samples, and project-selection source before implementing the submodule and adapter.
+
+### Impact
+
+The following upstream findings now guide the implementation:
+
+- The pinned upstream repository root includes `src/`, `config/`, `input/`, `output/`, `api/`, `web/`, `build/`, `dist/`, `launcher.py`, and `launcher.exe`, but only `src/`, `config/`, and validated reference assets are eligible for isolated workspace copying under mission constraints.
+- The main processing path is the four-step pipeline in `src/run_pipeline.py`: `src/simple_normalize.py`, `src/simple_calculation.py`, `src/simple_pr_generator.py`, and `src/simple_ecc_export.py`.
+- `src/run_pipeline.py` invokes subprocesses using `["python", script_name]`, which is incompatible with the mission constraint against bare `python`; the platform adapter must replace this with explicit invocation of the platform-resolved interpreter.
+- Standard PR is already supported non-interactively by running the pipeline with no selected project; General Item processing is enabled only when `SELECTED_PROJECT`, `GENERAL_ITEM_PROJECT`, or `--selected-project` is present for `src/simple_pr_generator.py`.
+- Input file paths are fixed upstream through environment variables with defaults `input/BOM.xlsx` and `input/EPMS.xlsx` in `src/simple_normalize.py` and `src/simple_pr_generator.py`, so the platform must materialize per-job copies using those filenames inside an isolated workspace rather than letting jobs touch the submodule or a shared upstream `input/` folder.
+- Output paths are fixed upstream to `output/simple_normalized.json`, `output/simple_calculated.json`, `output/simple_pr_output.json`, `output/general_pr_output.json`, `output/simple_pr_output_with_general_items.json`, `output/ECC_PR_Output.xlsx`, and `output/ECC_PR_Output_With_GeneralItems.xlsx`, plus `output/job_info.json` in the FastAPI wrapper.
+- The primary workbook configuration comes from `config/MainConfig.xlsx`, which contains at least `MainRuleTable`, `Equipment_Normalization`, and `Calculation_Rules` sheets consumed by the four pipeline stages.
+- General Item rules come from `config/GENERAL ITEM FOR ALL DU PROJECT Overall.xlsx`, with region sheets `Central`, `Sabah`, `Sarawak`, `Northern`, plus `EM Transportation Model`.
+- Dynamic project selection in `api/app.py` reads project names from workbook columns starting at column index 4 across all sheets, filtering empty and `Unnamed` headers; this is the closest upstream source of truth for valid General Item options.
+- The workbook currently exposes more projects than the legacy CLI menu, including the original eight names plus newer entries such as `Decomm Cabinet CR`, `Imacro BBU Swap`, `Decomm Reuse`, `2025 NIC revisit`, `Highways Add Sec`, `MSQos_2025`, and `Project Thanos`.
+- `src/simple_pr_generator.py` applies region-sensitive General Item logic: Central rows always match, Northern matches `Province/State`, Sabah/Sarawak match through `City` plus the `EM Transportation Model` mapping derived from EPMS data.
+- `src/simple_pr_generator.py` also supports `Optional` project flags gated by a combined quantity threshold over a fixed set of item keys such as `AAU`, `Antenna`, `Battery`, `BBU`, `Bracket`, `Cabinet`, `Power Module`, `Combiner`, `PadPower`, `Post`, `RRU`, `RRU Cage`, `Security Bar`, `Feeder 1/2`, `Feeder 1 5/8`, and `Feeder 7/8`.
+- The upstream FastAPI and `web/index.html` layers write uploads directly to fixed shared files, expose a global `JOB_STATUS`, and mix PR generation with BOM comparison workflows; these are explicitly out of scope for reuse and confirm why the platform must integrate only the engine logic.
+- The sample EPMS workbook uses sheet `data` with the real lookup header row at row 4, which matches the `header=3` assumptions in upstream code; the sample BOM workbook uses row 3 as the header row, matching the `header=2` assumptions in `src/simple_normalize.py`.

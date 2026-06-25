@@ -38,8 +38,8 @@ Deliver a production-oriented RAN PR Worker v1 integration on `feature/ran-pr-wo
 
 ## Current Bounded Step
 
-Inspect and document the existing MW execution path, persistence/history flow, realtime behavior, downloads, cleanup, and safe-error surface.
+Inspect and document the pinned upstream RAN engine inputs, outputs, config sources, sample assets, and dynamic project-selection source.
 
 ## Next Bounded Step
 
-Inspect the upstream RAN engine inputs, outputs, configuration, templates, imports, sample assets, and General Item project-selection source, then record the compatibility implications for the adapter design.
+Document the prototype UX contract and worker-contract ADR constraints that connect the current MW platform flow to the pinned RAN engine behavior without reusing upstream UI or routes.

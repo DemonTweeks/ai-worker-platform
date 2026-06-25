@@ -25,10 +25,11 @@
 - Created the hourly heartbeat automation `ran-pr-worker-integration-hourly-follow-up`.
 - Initialized the persistent state bundle under `docs/ran-pr-worker-integration/`.
 - Documented the current MW execution, persistence/history, websocket, cancellation, output packaging, download, cleanup, and safe-error flow from the live codebase.
+- Inspected the pinned upstream RAN engine pipeline, workbook config sources, sample input/output assets, and dynamic General Item project-selection source.
 
 ## Next Action
 
-Inspect the upstream RAN engine inputs, outputs, configuration, templates, imports, sample assets, and validated General Item project-selection source before planning compatibility work.
+Document the prototype UX contract and worker-contract ADR constraints before Phase 1 engine integration work begins.
 
 ## Blockers
 
@@ -40,6 +41,7 @@ Inspect the upstream RAN engine inputs, outputs, configuration, templates, impor
 - `superpowers:using-git-worktrees`
 - Master prompt bounded-step execution discipline
 - Source inspection of the active backend/frontend implementation
+- Read-only inspection of the pinned upstream RAN repository
 
 ## Notes
 
