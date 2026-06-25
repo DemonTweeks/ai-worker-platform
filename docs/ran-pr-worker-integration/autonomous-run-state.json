@@ -34,9 +34,10 @@
     "Added the Task 3 execution foundation: explicit Python stage runner, initial RAN adapter skeleton, worker registry adapter wiring, and job/file metadata support",
     "Added platform-owned RAN ECC output ingestion so approved upstream workbooks are copied into job storage, tracked in JobFile, and included in summary/package accounting",
     "Added worker-aware safe RAN failure shaping plus backend error-visibility coverage for sanitized stage-based summaries and diagnosis",
-    "Added direct backend coverage for successful and cooperatively cancelled RAN adapter runs, and wired that coverage into the backend test script"
+    "Added direct backend coverage for successful and cooperatively cancelled RAN adapter runs, and wired that coverage into the backend test script",
+    "Added the MW adapter plus registry-backed queue dispatch resolution, with direct backend coverage for worker selection by workerId"
   ],
-  "next_action": "Begin Task 4 by wrapping the existing MW path behind an adapter and making backend job creation and queue dispatch registry-aware.",
+  "next_action": "Continue Task 4 by making backend job creation/detail payloads explicitly worker-aware while preserving the existing MW external behavior.",
   "blockers": [],
   "checkpoint_commits": [
     {
@@ -78,6 +79,10 @@
     {
       "commit": "c27967c7f8af3f9ddb51b5512806fd376ed1f1b6",
       "message": "feat: harden ran failure visibility"
+    },
+    {
+      "commit": "011a8383ae3611cfd7c2b49ca689b7716d815bbd",
+      "message": "test: cover ran adapter execution paths"
     }
   ],
   "remaining_acceptance_gates": [
@@ -109,7 +114,8 @@
     "superpowers:executing-plans for Task 3 execution-foundation work",
     "superpowers:executing-plans for Task 3 output-ingestion work",
     "superpowers:executing-plans for Task 3 safe-failure and coverage work",
-    "superpowers:executing-plans for Task 3 direct adapter-coverage work"
+    "superpowers:executing-plans for Task 3 direct adapter-coverage work",
+    "superpowers:executing-plans for Task 4 registry-dispatch transition work"
   ],
   "artifacts": {
     "state_markdown": "docs/ran-pr-worker-integration/autonomous-run-state.md",
@@ -120,5 +126,5 @@
     "prototype_ux_contract": "docs/ran-pr-worker-integration/prototype-ux-contract.md",
     "worker_skill_contract_adr": "docs/ran-pr-worker-integration/worker-skill-contract-adr.md"
   },
-  "last_updated_utc": "2026-06-25T10:00:00Z"
+  "last_updated_utc": "2026-06-25T11:00:00Z"
 }

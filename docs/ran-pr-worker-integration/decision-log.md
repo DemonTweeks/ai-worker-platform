@@ -253,3 +253,17 @@ The adapter already had execution, ingestion, and failure-shaping pieces, but Ta
 ### Impact
 
 The next continuation can enter Task 4 with the RAN adapter seam covered across success, cancellation, output ingestion, and safe failure behavior.
+
+## 2026-06-25 - Task 4 Registry Dispatch Scope
+
+### Decision
+
+Keep this Task 4 continuation narrowly focused on introducing the MW adapter and routing queue execution through the worker registry, without yet changing create-route payloads, history/detail serialization, or frontend behavior.
+
+### Why
+
+The registry and RAN adapter already existed, but queued execution still bypassed them by calling the legacy MW runner directly. Switching only the queue dispatch seam to registry-owned adapter resolution creates the backend execution spine for both workers while keeping the wake-up bounded and limiting regression risk.
+
+### Impact
+
+The next continuation can focus on worker-aware backend payloads and job-creation behavior, building on a queue that already resolves execution through explicit registered adapters.

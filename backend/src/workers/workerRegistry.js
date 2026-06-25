@@ -1,12 +1,13 @@
 const mwPrManifest = require('./manifests/mwPrManifest');
 const ranPrManifest = require('./manifests/ranPrManifest');
+const mwPrAdapter = require('./adapters/mwPrAdapter');
 const ranPrAdapter = require('./adapters/ranPrAdapter');
 const { WORKER_IDS } = require('./workerTypes');
 
 const registry = new Map([
   [WORKER_IDS.MW_PR, {
     manifest: mwPrManifest,
-    adapterFactory: null
+    adapterFactory: () => mwPrAdapter
   }],
   [WORKER_IDS.RAN_PR, {
     manifest: ranPrManifest,
@@ -30,7 +31,13 @@ const getWorkerManifest = (workerId) => assertRegisteredWorker(workerId).manifes
 
 const getWorkerAdapter = (workerId) => {
   const entry = assertRegisteredWorker(workerId);
-  return entry.adapterFactory ? entry.adapterFactory() : null;
+  if (!entry.adapterFactory) {
+    const error = new Error(`Worker ${workerId} does not have an execution adapter.`);
+    error.code = 'WORKER_ADAPTER_MISSING';
+    throw error;
+  }
+
+  return entry.adapterFactory();
 };
 
 const listWorkers = () => Array.from(registry.values()).map(({ manifest }) => manifest);

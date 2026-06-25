@@ -136,3 +136,21 @@
 - Ran `node backend/scripts/ran-adapter-test.js` successfully.
 - Ran `npm.cmd --prefix backend run test:ran-adapter` successfully.
 - Ran `git diff --check`; only CRLF conversion warnings were reported, with no diff hygiene errors.
+
+## 2026-06-25 - Task 4 Registry Dispatch Evidence
+
+- Added `backend/src/workers/adapters/mwPrAdapter.js` so the existing MW execution path now has an explicit worker adapter.
+- Updated `backend/src/workers/workerRegistry.js` so both `mw-pr` and `ran-pr` resolve executable adapters through the registry, and missing adapters now fail explicitly.
+- Updated `backend/src/queue/jobQueue.js` so queued execution resolves the current job record, determines `workerId` with `mw-pr` fallback, and runs the registered adapter instead of calling `runPrWorkerJob(...)` directly.
+- Added `backend/scripts/queue-registry-test.js` with direct coverage for:
+  - `mw-pr` adapter resolution
+  - `ran-pr` adapter resolution
+  - default `mw-pr` fallback when `workerId` is absent
+  - missing queued job handling
+  - unregistered worker handling
+- Updated `backend/package.json` so `npm.cmd --prefix backend test` now includes `npm run test:queue-registry`.
+- Ran `node --check` successfully on `backend/src/workers/adapters/mwPrAdapter.js`, `backend/src/workers/workerRegistry.js`, `backend/src/queue/jobQueue.js`, and `backend/scripts/queue-registry-test.js`.
+- Verified `backend/package.json` parses successfully as JSON.
+- Ran `node backend/scripts/queue-registry-test.js` successfully.
+- Ran `npm.cmd --prefix backend run test:queue-registry` successfully.
+- Ran `git diff --check`; only CRLF conversion warnings were reported, with no diff hygiene errors.
