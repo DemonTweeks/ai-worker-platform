@@ -239,3 +239,17 @@ The platform already had hardened MW error visibility, but the new RAN adapter p
 ### Impact
 
 The next continuation can either finish any remaining direct adapter-path coverage or move into Task 4 with RAN failure presentation already aligned to platform safety expectations.
+
+## 2026-06-25 - Task 3 Direct Adapter Coverage Scope
+
+### Decision
+
+Keep this continuation focused on direct backend coverage for the RAN adapter’s successful and cooperative-cancellation paths, and wire that coverage into the backend test command without yet switching the runtime dispatch over to the worker registry.
+
+### Why
+
+The adapter already had execution, ingestion, and failure-shaping pieces, but Task 3 still lacked direct evidence that those seams behave correctly in success and cancellation scenarios. Adding a focused mock-driven adapter test closes that gap while preserving the bounded-step rule and avoiding premature Task 4 coupling.
+
+### Impact
+
+The next continuation can enter Task 4 with the RAN adapter seam covered across success, cancellation, output ingestion, and safe failure behavior.

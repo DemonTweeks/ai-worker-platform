@@ -121,3 +121,18 @@
 - Ran `node --check` successfully on `backend/src/workers/ranFailureService.js`, `backend/src/workers/adapters/ranPrAdapter.js`, `backend/src/services/jobService.js`, and `backend/scripts/error-visibility-test.js`.
 - Ran `node backend/scripts/error-visibility-test.js` successfully; all existing MW assertions plus the new RAN assertions passed.
 - Ran `git diff --check`; only CRLF conversion warnings were reported, with no diff hygiene errors.
+
+## 2026-06-25 - Task 3 Direct Adapter Coverage Evidence
+
+- Added `backend/scripts/ran-adapter-test.js` with direct mock-driven coverage for:
+  - successful `ranPrAdapter.run(...)` execution across all four stages
+  - validated General Item argument/env propagation into `simple_pr_generator.py`
+  - metadata persistence for `workerId`, engine version, engine commit, run mode, and selected project
+  - approved output ingestion on success
+  - cooperative cancellation when a stage returns `cancelled: true`
+- Updated `backend/package.json` so `npm.cmd --prefix backend test` now includes `npm run test:ran-adapter`.
+- Ran `node --check backend/scripts/ran-adapter-test.js` successfully.
+- Verified `backend/package.json` parses successfully as JSON.
+- Ran `node backend/scripts/ran-adapter-test.js` successfully.
+- Ran `npm.cmd --prefix backend run test:ran-adapter` successfully.
+- Ran `git diff --check`; only CRLF conversion warnings were reported, with no diff hygiene errors.

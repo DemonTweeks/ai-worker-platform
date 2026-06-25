@@ -33,9 +33,10 @@
     "Added the workbook-derived RAN project catalog and isolated workspace staging services for Task 2",
     "Added the Task 3 execution foundation: explicit Python stage runner, initial RAN adapter skeleton, worker registry adapter wiring, and job/file metadata support",
     "Added platform-owned RAN ECC output ingestion so approved upstream workbooks are copied into job storage, tracked in JobFile, and included in summary/package accounting",
-    "Added worker-aware safe RAN failure shaping plus backend error-visibility coverage for sanitized stage-based summaries and diagnosis"
+    "Added worker-aware safe RAN failure shaping plus backend error-visibility coverage for sanitized stage-based summaries and diagnosis",
+    "Added direct backend coverage for successful and cooperatively cancelled RAN adapter runs, and wired that coverage into the backend test script"
   ],
-  "next_action": "Continue Task 3 with direct backend coverage for successful/cancelled RAN adapter execution paths, then begin Task 4 registry-backed job creation and dispatch changes.",
+  "next_action": "Begin Task 4 by wrapping the existing MW path behind an adapter and making backend job creation and queue dispatch registry-aware.",
   "blockers": [],
   "checkpoint_commits": [
     {
@@ -73,6 +74,10 @@
     {
       "commit": "96b05afdd4ff5c64eb79eb43cecd1d66e0088d4d",
       "message": "feat: ingest ran outputs into platform storage"
+    },
+    {
+      "commit": "c27967c7f8af3f9ddb51b5512806fd376ed1f1b6",
+      "message": "feat: harden ran failure visibility"
     }
   ],
   "remaining_acceptance_gates": [
@@ -103,7 +108,8 @@
     "superpowers:executing-plans for Task 2 catalog and staging work",
     "superpowers:executing-plans for Task 3 execution-foundation work",
     "superpowers:executing-plans for Task 3 output-ingestion work",
-    "superpowers:executing-plans for Task 3 safe-failure and coverage work"
+    "superpowers:executing-plans for Task 3 safe-failure and coverage work",
+    "superpowers:executing-plans for Task 3 direct adapter-coverage work"
   ],
   "artifacts": {
     "state_markdown": "docs/ran-pr-worker-integration/autonomous-run-state.md",
@@ -114,5 +120,5 @@
     "prototype_ux_contract": "docs/ran-pr-worker-integration/prototype-ux-contract.md",
     "worker_skill_contract_adr": "docs/ran-pr-worker-integration/worker-skill-contract-adr.md"
   },
-  "last_updated_utc": "2026-06-25T09:00:00Z"
+  "last_updated_utc": "2026-06-25T10:00:00Z"
 }
