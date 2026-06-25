@@ -74,4 +74,4 @@ Continue Task 4 by adding route/integration coverage for live `ran-pr` execution
 
 - The user explicitly directed work to remain in `C:\dev\ai-worker-platform-ran-pr` on `feature/ran-pr-worker-integration`, so no additional worktree was created.
 - The `COMPLETED` marker is intentionally absent until all acceptance gates pass.
-- Latest checkpoint commit: `64d42d3` (`docs: record ran route coverage checkpoint`).
+- Latest checkpoint commit: `03e7865` (`feat: add ran worker lifecycle runtime`).

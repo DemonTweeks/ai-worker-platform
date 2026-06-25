@@ -103,6 +103,10 @@
     {
       "commit": "64d42d35226baa647e26336d55e884782d959bc6",
       "message": "docs: record ran route coverage checkpoint"
+    },
+    {
+      "commit": "03e7865acfad4dd752410ca8f83ea61218662f94",
+      "message": "feat: add ran worker lifecycle runtime"
     }
   ],
   "remaining_acceptance_gates": [
@@ -151,5 +155,5 @@
     "prototype_ux_contract": "docs/ran-pr-worker-integration/prototype-ux-contract.md",
     "worker_skill_contract_adr": "docs/ran-pr-worker-integration/worker-skill-contract-adr.md"
   },
-  "last_updated_utc": "2026-06-25T16:32:27Z"
+  "last_updated_utc": "2026-06-25T16:33:41Z"
 }
