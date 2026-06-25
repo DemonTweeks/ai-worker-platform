@@ -198,3 +198,25 @@
 - Ran `node backend/scripts/job-service-worker-payload-test.js` successfully.
 - Ran `npm.cmd --prefix backend run test:job-service-workers` successfully.
 - Ran `git diff --check`; only CRLF conversion warnings were reported, with no diff hygiene errors.
+
+## 2026-06-26 - Task 4 RAN Route Coverage And BOM Hardening Evidence
+
+- Added `backend/scripts/ran-job-route-test.js` as a focused backend route/integration script covering:
+  - rejection of unreadable `ran-bom` uploads on `/api/jobs/prevalidate`
+  - successful `ran-bom` and `ran-epms` prevalidation with `uploadKind` echoed in the API response
+  - successful `ran-pr` job creation through `POST /api/jobs`
+  - detail payload tracking of `ran_bom_upload` and `ran_epms_upload`
+  - confirmation that tracked RAN inputs do not leak into `outputs`
+  - rejection of `ran-pr` create attempts that reuse a legacy MW upload kind
+- Updated `backend/package.json` so `npm.cmd --prefix backend test` now includes `npm run test:ran-routes`.
+- Hardened `backend/src/services/prevalidationService.js` so `ran-bom` uploads must match real Excel file signatures and open as readable workbooks before a prevalidated file id is issued.
+- Verified the RED phase by running `node backend/scripts/ran-job-route-test.js` before the hardening change and observing the expected failure:
+  - `invalid ran-bom workbook should be rejected`
+  - actual HTTP status `200`
+  - expected HTTP status `400`
+- Ran `node --check backend/src/services/prevalidationService.js` successfully.
+- Ran `node --check backend/scripts/ran-job-route-test.js` successfully.
+- Verified `backend/package.json` parses successfully as JSON.
+- Ran `node backend/scripts/ran-job-route-test.js` successfully.
+- Ran `npm.cmd --prefix backend run test:ran-routes` successfully.
+- Ran `git diff --check`; only CRLF conversion warnings were reported, with no diff hygiene errors.

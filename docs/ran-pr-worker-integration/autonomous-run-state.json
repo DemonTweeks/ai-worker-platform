@@ -37,9 +37,10 @@
     "Added direct backend coverage for successful and cooperatively cancelled RAN adapter runs, and wired that coverage into the backend test script",
     "Added the MW adapter plus registry-backed queue dispatch resolution, with direct backend coverage for worker selection by workerId",
     "Added worker-aware backend create/list/detail payloads with explicit worker identity and audit metadata while preserving MW as the default-compatible create flow",
-    "Added the first backend RAN create path with upload-kind-aware prevalidation, tracked BOM/EPMS job inputs, validated run-mode selection, and direct backend coverage"
+    "Added the first backend RAN create path with upload-kind-aware prevalidation, tracked BOM/EPMS job inputs, validated run-mode selection, and direct backend coverage",
+    "Added route-level backend coverage for ran-pr prevalidation and create flows, and hardened ran-bom prevalidation so unreadable Excel payloads are rejected before job creation"
   ],
-  "next_action": "Continue Task 4 by adding route/integration coverage for upload-kind-aware prevalidation and the new ran-pr create body so the backend API contract is exercised end-to-end.",
+  "next_action": "Continue Task 4 by integrating RAN queue lifecycle/progress coverage so ran-pr jobs publish the expected shared backend state transitions and cancellation behavior.",
   "blockers": [],
   "checkpoint_commits": [
     {
@@ -89,6 +90,10 @@
     {
       "commit": "4b3e4f5f7f6c17db8ddf33ea901ba8ebba84a9d0",
       "message": "feat: route queued jobs through worker registry"
+    },
+    {
+      "commit": "bf4db61fedc73600c4acf330122717d8df446e5c",
+      "message": "feat: add ran job creation path"
     }
   ],
   "remaining_acceptance_gates": [
@@ -124,7 +129,8 @@
     "superpowers:executing-plans for Task 4 registry-dispatch transition work",
     "superpowers:executing-plans for Task 4 worker-aware backend payload work",
     "superpowers:subagent-driven-development evaluated for this continuation; kept in-session because the RAN create-flow slice was tightly coupled",
-    "superpowers:executing-plans for Task 4 first backend RAN create-path work"
+    "superpowers:executing-plans for Task 4 first backend RAN create-path work",
+    "superpowers:test-driven-development for Task 4 route-level RAN coverage and ran-bom prevalidation hardening"
   ],
   "artifacts": {
     "state_markdown": "docs/ran-pr-worker-integration/autonomous-run-state.md",
@@ -135,5 +141,5 @@
     "prototype_ux_contract": "docs/ran-pr-worker-integration/prototype-ux-contract.md",
     "worker_skill_contract_adr": "docs/ran-pr-worker-integration/worker-skill-contract-adr.md"
   },
-  "last_updated_utc": "2026-06-25T16:16:12Z"
+  "last_updated_utc": "2026-06-25T16:25:20Z"
 }

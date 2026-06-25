@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const xlsx = require('xlsx');
 const config = require('../config/env');
 const storageService = require('./storageService');
 const { inspectIepmsWorkbookBuffer } = require('./iepmsParser');
@@ -29,12 +30,14 @@ const UPLOAD_KIND_CONFIG = {
   [UPLOAD_KINDS.RAN_BOM]: {
     missingFileMessage: 'Please upload a RAN BOM workbook.',
     successExplanation: 'The uploaded RAN BOM workbook passed the initial technical checks. Worker-level validation will continue after the job is created.',
-    inspectWorkbook: false
+    inspectWorkbook: false,
+    verifyWorkbookReadable: true
   },
   [UPLOAD_KINDS.RAN_EPMS]: {
     missingFileMessage: 'Please upload a RAN EPMS workbook.',
     successExplanation: 'The uploaded RAN EPMS workbook passed the initial technical checks. Worker-level validation will continue after the job is created.',
-    inspectWorkbook: true
+    inspectWorkbook: true,
+    verifyWorkbookReadable: false
   }
 };
 
@@ -69,6 +72,51 @@ const buildWorkerExplanation = (passed, uploadConfig, failedMessages = []) => {
   }
 
   return `I cannot start the task yet. ${failedMessages.join(' ')}`;
+};
+
+const hasZipSignature = (buffer) => (
+  buffer.length >= 4
+  && buffer[0] === 0x50
+  && buffer[1] === 0x4B
+  && [0x03, 0x05, 0x07].includes(buffer[2])
+  && [0x04, 0x06, 0x08].includes(buffer[3])
+);
+
+const hasOleSignature = (buffer) => (
+  buffer.length >= 8
+  && buffer[0] === 0xD0
+  && buffer[1] === 0xCF
+  && buffer[2] === 0x11
+  && buffer[3] === 0xE0
+  && buffer[4] === 0xA1
+  && buffer[5] === 0xB1
+  && buffer[6] === 0x1A
+  && buffer[7] === 0xE1
+);
+
+const assertWorkbookReadable = (buffer, extension) => {
+  if (extension === '.xlsx' && !hasZipSignature(buffer)) {
+    throw new Error('Workbook must be a valid .xlsx file.');
+  }
+
+  if (extension === '.xls' && !hasOleSignature(buffer)) {
+    throw new Error('Workbook must be a valid .xls file.');
+  }
+
+  const workbook = xlsx.read(buffer, {
+    type: 'buffer',
+    cellDates: false,
+    cellNF: false,
+    cellStyles: false
+  });
+
+  if (!Array.isArray(workbook.SheetNames) || workbook.SheetNames.length === 0) {
+    const error = new Error('Workbook must contain at least one worksheet.');
+    error.code = 'WORKBOOK_EMPTY';
+    throw error;
+  }
+
+  return workbook;
 };
 
 const getManifestPath = (prevalidatedFileId) => {
@@ -171,6 +219,35 @@ const validateUpload = async (file, options = {}) => {
       checklist,
       workerExplanation: buildWorkerExplanation(false, uploadConfig, failedMessages)
     };
+  }
+
+  if (uploadConfig.verifyWorkbookReadable) {
+    try {
+      assertWorkbookReadable(file.buffer, extension);
+      checklist.push(buildChecklistItem(
+        'workbook_readable',
+        'Workbook can be opened',
+        true,
+        'Workbook contents can be read successfully.'
+      ));
+    } catch (error) {
+      checklist.push(buildChecklistItem(
+        'workbook_readable',
+        'Workbook can be opened',
+        false,
+        error.message || 'Workbook contents could not be read.'
+      ));
+      failedMessages.push(error.message || 'Workbook contents could not be read.');
+
+      return {
+        passed: false,
+        uploadKind: uploadConfig.uploadKind,
+        originalFileName: originalName,
+        fileSize: file ? file.size : 0,
+        checklist,
+        workerExplanation: buildWorkerExplanation(false, uploadConfig, failedMessages)
+      };
+    }
   }
 
   let workbookMetadata = null;

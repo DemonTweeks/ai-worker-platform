@@ -295,3 +295,17 @@ The worker registry and payload serialization were already in place, but the bac
 ### Impact
 
 The backend can now queue the first `ran-pr` jobs with validated `runMode` and `selectedProject` metadata, audited engine pinning, and tracked `ran_bom_upload` / `ran_epms_upload` files. The next continuation should exercise this new API seam through route/integration coverage and then continue deeper into backend lifecycle behavior.
+
+## 2026-06-26 - Task 4 Route Coverage And BOM Hardening Scope
+
+### Decision
+
+Use a focused backend route test to exercise `ran-pr` prevalidation and create behavior end-to-end, and tighten `ran-bom` prevalidation so the API rejects unreadable Excel payloads before issuing resumable file ids.
+
+### Why
+
+The prior step added service-layer RAN creation, but the API contract still lacked direct route coverage and left a real validation gap: `ran-bom` uploads accepted arbitrary `.xlsx`-named blobs because they were not required to look like actual Excel workbooks. A route-level TDD slice closes both issues in one bounded continuation without yet pulling in the full RAN execution lifecycle.
+
+### Impact
+
+The backend now has explicit route evidence for upload-kind handling and `ran-pr` create serialization, and unreadable BOM payloads are stopped before job creation. The next continuation can move on to shared queue lifecycle, progress, and cancellation behavior for RAN jobs.

@@ -37,10 +37,11 @@
 - Added the MW adapter plus registry-backed queue dispatch resolution, with direct backend coverage for worker selection by `workerId`.
 - Added worker-aware backend create/list/detail payloads with explicit worker identity and audit metadata while preserving MW as the default-compatible create flow.
 - Added the first backend RAN create path with upload-kind-aware prevalidation, tracked BOM/EPMS job inputs, validated run-mode selection, and direct backend coverage.
+- Added route-level backend coverage for `ran-pr` prevalidation and create flows, and hardened `ran-bom` prevalidation so unreadable Excel payloads are rejected before job creation.
 
 ## Next Action
 
-Continue Task 4 by adding route/integration coverage for upload-kind-aware prevalidation and the new `ran-pr` create body so the backend API contract is exercised end-to-end.
+Continue Task 4 by integrating RAN queue lifecycle/progress coverage so `ran-pr` jobs publish the expected shared backend state transitions and cancellation behavior.
 
 ## Blockers
 
@@ -65,6 +66,7 @@ Continue Task 4 by adding route/integration coverage for upload-kind-aware preva
 - `superpowers:executing-plans` for Task 4 worker-aware backend payload work
 - `superpowers:subagent-driven-development` evaluated for this continuation; kept in-session because the RAN create-flow slice was tightly coupled
 - `superpowers:executing-plans` for Task 4 first backend RAN create-path work
+- `superpowers:test-driven-development` for Task 4 route-level RAN coverage and `ran-bom` prevalidation hardening
 
 ## Notes
 
