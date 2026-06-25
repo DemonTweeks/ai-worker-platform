@@ -3,8 +3,12 @@ const { QueryChain, matchFilter } = require('./compatibility');
 
 const FILE_TYPES = [
   'uploaded_export',
+  'ran_bom_upload',
+  'ran_epms_upload',
   'filtered_input',
   'ecc_output',
+  'ran_ecc_output',
+  'ran_ecc_output_with_general_items',
   'source_review_required',
   'source_duplicates_skipped',
   'review_required_report',

@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { spawn } = require('child_process');
+const { execFileSync, spawn } = require('child_process');
 const config = require('../config/env');
 const storageService = require('./storageService');
 const { assertPathInsideRoot } = require('../utils/pathUtils');
@@ -28,6 +28,44 @@ const getPythonExecutable = () => {
     }
     return 'python3';
   }
+};
+
+const getExplicitPythonExecutable = () => {
+  const configured = getPythonExecutable();
+
+  if (path.isAbsolute(configured) && fs.existsSync(configured)) {
+    return configured;
+  }
+
+  const repoRoot = path.resolve(__dirname, '../../..');
+  const candidates = process.platform === 'win32'
+    ? ['python.exe', 'python']
+    : ['python3', 'python'];
+  const locator = process.platform === 'win32' ? 'where.exe' : 'which';
+
+  for (const candidate of candidates) {
+    try {
+      const output = execFileSync(locator, [candidate], {
+        cwd: repoRoot,
+        stdio: ['ignore', 'pipe', 'ignore'],
+        encoding: 'utf8'
+      });
+      const resolved = String(output || '')
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .find((line) => path.isAbsolute(line) && fs.existsSync(line));
+
+      if (resolved) {
+        return resolved;
+      }
+    } catch (error) {
+      continue;
+    }
+  }
+
+  const error = new Error('A resolvable Python interpreter path is required for the RAN worker.');
+  error.code = 'PYTHON_EXECUTABLE_NOT_RESOLVED';
+  throw error;
 };
 
 const runPreflight = async () => {
@@ -129,7 +167,38 @@ const buildCommand = ({
   };
 };
 
-const runCommand = ({ command, args, cwd, timeoutMs, isCancellationRequested }) => new Promise((resolve) => {
+const runPythonStage = ({
+  pythonExecutable,
+  scriptPath,
+  scriptArgs = [],
+  cwd,
+  env = {},
+  timeoutMs,
+  isCancellationRequested
+}) => {
+  if (!pythonExecutable || typeof pythonExecutable !== 'string') {
+    throw new Error('pythonExecutable is required.');
+  }
+
+  if (!scriptPath || typeof scriptPath !== 'string') {
+    throw new Error('scriptPath is required.');
+  }
+
+  if (path.basename(pythonExecutable).toLowerCase() === 'python' || pythonExecutable.toLowerCase() === 'python') {
+    throw new Error('pythonExecutable must resolve to an explicit interpreter path.');
+  }
+
+  return module.exports.runCommand({
+    command: pythonExecutable,
+    args: [scriptPath, ...scriptArgs],
+    cwd,
+    timeoutMs,
+    isCancellationRequested,
+    env
+  });
+};
+
+const runCommand = ({ command, args, cwd, timeoutMs, isCancellationRequested, env = {} }) => new Promise((resolve) => {
   let stdout = '';
   let stderr = '';
   let timedOut = false;
@@ -142,6 +211,7 @@ const runCommand = ({ command, args, cwd, timeoutMs, isCancellationRequested }) 
     windowsHide: true,
     env: {
       ...process.env,
+      ...env,
       PYTHONUTF8: '1',
       PYTHONIOENCODING: 'utf-8'
     }
@@ -302,8 +372,10 @@ const runCreatePrCd = async ({
 module.exports = {
   SUPPORTED_SCOPES,
   buildCommand,
+  getExplicitPythonExecutable,
   getCreatePrCdRoot,
   runCommand,
+  runPythonStage,
   runCreatePrCd,
   getPythonExecutable,
   runPreflight

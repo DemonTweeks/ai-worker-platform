@@ -197,3 +197,17 @@ This preserves a clean checkpoint boundary between shared preparation services a
 ### Impact
 
 The next implementation step can consume tested catalog and staging primitives instead of mixing parsing, staging, and execution logic together.
+
+## 2026-06-25 - Task 3 Execution Foundation Scope
+
+### Decision
+
+Keep this Task 3 checkpoint limited to the reusable execution foundation: explicit Python stage launching, an initial `ranPrAdapter` skeleton, registry wiring for the RAN adapter, and persistent job/file metadata fields.
+
+### Why
+
+The execution plan separates adapter/runtime groundwork from later output ingestion, safe-error shaping, and queue/route dispatch changes. Preserving that boundary makes it easier to verify the explicit-interpreter constraint and job metadata behavior without entangling broader backend rewiring in the same step.
+
+### Impact
+
+The next bounded continuation can focus on RAN output ingestion and failure handling using the new adapter/runner seam, while Task 4 can later switch queue dispatch over to the worker registry with less risk.

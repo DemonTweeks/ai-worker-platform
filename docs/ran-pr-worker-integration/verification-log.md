@@ -83,3 +83,14 @@
 - Installed backend dependencies locally with `npm.cmd install` in `backend/` to enable runtime verification for the new `xlsx`-based service.
 - Verified the runtime project catalog returned 15 workbook-backed project names, including `CD consolidation 2023 (Swap/ Modernize)`.
 - Verified isolated staging created a workspace under `storage/ran-workspaces/QA-RAN-STAGE` with copied `src/`, copied `config/`, and staged `input/BOM.xlsx` plus `input/EPMS.xlsx`.
+
+## 2026-06-25 - Task 3 Execution Foundation Evidence
+
+- Added `backend/src/services/childProcessRunner.js` support for `runPythonStage(...)` with explicit interpreter usage, injected environment overrides, and the existing cooperative cancellation model.
+- Added `backend/src/services/childProcessRunner.js` support for resolving an absolute Python interpreter path through local virtualenv detection or a system `where/which` lookup, instead of relying on bare `python` for the RAN path.
+- Added `backend/src/workers/adapters/ranPrAdapter.js` with the four required upstream stage paths, validated run-mode/project handling, staged-input lookup, per-job metadata persistence, and isolated workspace execution wiring.
+- Updated `backend/src/workers/workerRegistry.js` so the registered `ran-pr` worker now resolves to the new adapter module while `mw-pr` remains untouched.
+- Updated `backend/src/models/Job.js` and `backend/src/models/JobFile.js` to preserve worker identity, engine metadata, run mode, selected project, and RAN-specific tracked file types.
+- Ran `node --check` successfully on `backend/src/services/childProcessRunner.js`, `backend/src/workers/adapters/ranPrAdapter.js`, `backend/src/models/Job.js`, and `backend/src/models/JobFile.js`.
+- Verified `getExplicitPythonExecutable()` resolves to `C:\Users\Win11-JJ\AppData\Local\Programs\Python\Python311\python.exe` in this workspace.
+- Ran `git diff --check`; only CRLF conversion warnings were reported, with no diff hygiene errors.
