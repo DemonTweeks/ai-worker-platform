@@ -24,10 +24,11 @@
 - Created the long-running `/goal` mission controller.
 - Created the hourly heartbeat automation `ran-pr-worker-integration-hourly-follow-up`.
 - Initialized the persistent state bundle under `docs/ran-pr-worker-integration/`.
+- Documented the current MW execution, persistence/history, websocket, cancellation, output packaging, download, cleanup, and safe-error flow from the live codebase.
 
 ## Next Action
 
-Inspect the actual MW execution path and persistence/history flow, then document the findings in Phase 0 logs before any architecture changes.
+Inspect the upstream RAN engine inputs, outputs, configuration, templates, imports, sample assets, and validated General Item project-selection source before planning compatibility work.
 
 ## Blockers
 
@@ -38,6 +39,7 @@ Inspect the actual MW execution path and persistence/history flow, then document
 - `superpowers:using-superpowers`
 - `superpowers:using-git-worktrees`
 - Master prompt bounded-step execution discipline
+- Source inspection of the active backend/frontend implementation
 
 ## Notes
 

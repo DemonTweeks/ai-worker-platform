@@ -38,8 +38,8 @@ Deliver a production-oriented RAN PR Worker v1 integration on `feature/ran-pr-wo
 
 ## Current Bounded Step
 
-Initialize mission state and record the verified repository baseline and automation setup.
+Inspect and document the existing MW execution path, persistence/history flow, realtime behavior, downloads, cleanup, and safe-error surface.
 
 ## Next Bounded Step
 
-Inspect the existing MW execution path end-to-end and capture the findings in `decision-log.md` and `verification-log.md`.
+Inspect the upstream RAN engine inputs, outputs, configuration, templates, imports, sample assets, and General Item project-selection source, then record the compatibility implications for the adapter design.

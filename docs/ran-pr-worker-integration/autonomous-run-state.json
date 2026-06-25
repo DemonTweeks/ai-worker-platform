@@ -24,11 +24,17 @@
     "Confirmed requested workspace and branch",
     "Verified HEAD equals origin/main merge-base and expected baseline commit",
     "Created autonomous /goal for the integration mission",
-    "Created hourly heartbeat automation in this thread"
+    "Created hourly heartbeat automation in this thread",
+    "Inspected and documented the current MW execution, persistence/history, websocket, cancellation, download, ZIP, cleanup, and safe-error flow"
   ],
-  "next_action": "Inspect the actual MW execution path and persistence/history flow, then document findings in Phase 0 logs before any architecture changes.",
+  "next_action": "Inspect the upstream RAN engine inputs, outputs, configuration, templates, imports, sample assets, and validated General Item project-selection source before planning compatibility work.",
   "blockers": [],
-  "checkpoint_commits": [],
+  "checkpoint_commits": [
+    {
+      "commit": "3ff6d9a4fc9c3ed7ae53fec421032d64f18d6aed",
+      "message": "chore: initialize ran integration mission state"
+    }
+  ],
   "remaining_acceptance_gates": [
     "RAN submodule pinned at required tag and SHA",
     "Standard PR golden test passes",
@@ -49,7 +55,8 @@
   "methodology": [
     "superpowers:using-superpowers",
     "superpowers:using-git-worktrees (user-directed workspace in place; no new worktree created)",
-    "master prompt bounded-step execution discipline"
+    "master prompt bounded-step execution discipline",
+    "codebase discovery of the active MW backend and frontend flow"
   ],
   "artifacts": {
     "state_markdown": "docs/ran-pr-worker-integration/autonomous-run-state.md",
@@ -58,5 +65,5 @@
     "verification_log": "docs/ran-pr-worker-integration/verification-log.md",
     "final_report": "docs/ran-pr-worker-integration/final-report.md"
   },
-  "last_updated_utc": "2026-06-25T00:00:00Z"
+  "last_updated_utc": "2026-06-25T01:00:00Z"
 }
