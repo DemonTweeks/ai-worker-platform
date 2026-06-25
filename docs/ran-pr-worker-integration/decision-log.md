@@ -211,3 +211,17 @@ The execution plan separates adapter/runtime groundwork from later output ingest
 ### Impact
 
 The next bounded continuation can focus on RAN output ingestion and failure handling using the new adapter/runner seam, while Task 4 can later switch queue dispatch over to the worker registry with less risk.
+
+## 2026-06-25 - Task 3 Output Ingestion Scope
+
+### Decision
+
+Keep this continuation focused on platform-owned output ingestion for the approved RAN ECC workbooks, and make the existing summary/package layer count those tracked files without yet reshaping route payloads or the broader failure model.
+
+### Why
+
+The adapter could already run the upstream stage sequence, but without a storage-ingestion seam the platform had no durable RAN outputs to expose or package. Narrowing this step to approved file ingestion preserves the bounded-step rule while moving the RAN path closer to the platform contract used by Job Detail and ZIP downloads.
+
+### Impact
+
+The next bounded continuation can focus specifically on safe RAN error conversion and backend coverage, building on a durable output model rather than mixing output plumbing and failure semantics together.

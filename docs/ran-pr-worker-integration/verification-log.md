@@ -94,3 +94,17 @@
 - Ran `node --check` successfully on `backend/src/services/childProcessRunner.js`, `backend/src/workers/adapters/ranPrAdapter.js`, `backend/src/models/Job.js`, and `backend/src/models/JobFile.js`.
 - Verified `getExplicitPythonExecutable()` resolves to `C:\Users\Win11-JJ\AppData\Local\Programs\Python\Python311\python.exe` in this workspace.
 - Ran `git diff --check`; only CRLF conversion warnings were reported, with no diff hygiene errors.
+
+## 2026-06-25 - Task 3 Output Ingestion Evidence
+
+- Added `backend/src/workers/ranOutputIngestionService.js` to copy only approved RAN ECC workbooks from the isolated workspace into platform job storage and track them through `JobFile`.
+- Updated `backend/src/workers/adapters/ranPrAdapter.js` so successful stage execution now calls the new ingestion service before returning.
+- Updated `backend/src/services/outputCollector.js` and `backend/src/services/reportGenerator.js` so `ran_ecc_output` and `ran_ecc_output_with_general_items` are included in ZIP packaging and summary ECC counts.
+- Ran `node --check` successfully on `backend/src/workers/ranOutputIngestionService.js`, `backend/src/workers/adapters/ranPrAdapter.js`, `backend/src/services/outputCollector.js`, and `backend/src/services/reportGenerator.js`.
+- Ran a direct Node probe that staged `ECC_PR_Output.xlsx` and `ECC_PR_Output_With_GeneralItems.xlsx` in a temporary isolated workspace, ingested them into platform job storage, and verified:
+  - deletion scope targeted only `ran_ecc_output` and `ran_ecc_output_with_general_items`
+  - tracked file types were `ran_ecc_output` and `ran_ecc_output_with_general_items`
+  - `outputFileCount` returned `2`
+  - `buildSummaryData()` reported `eccFileCount: 2`
+  - platform job storage contained `ECC_PR_Output.xlsx` and `ECC_PR_Output_With_GeneralItems.xlsx`
+- Ran `git diff --check`; only CRLF conversion warnings were reported, with no diff hygiene errors.

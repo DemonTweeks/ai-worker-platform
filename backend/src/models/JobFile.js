@@ -9,6 +9,7 @@ const FILE_TYPES = [
   'ecc_output',
   'ran_ecc_output',
   'ran_ecc_output_with_general_items',
+  'ran_pipeline_summary',
   'source_review_required',
   'source_duplicates_skipped',
   'review_required_report',

@@ -31,9 +31,10 @@
     "Replaced the lightweight mission outline with a concrete implementation plan covering engine compatibility, registry integration, frontend integration, and verification",
     "Added the pinned RAN submodule plus worker manifest/registry/config scaffolding for Task 1",
     "Added the workbook-derived RAN project catalog and isolated workspace staging services for Task 2",
-    "Added the Task 3 execution foundation: explicit Python stage runner, initial RAN adapter skeleton, worker registry adapter wiring, and job/file metadata support"
+    "Added the Task 3 execution foundation: explicit Python stage runner, initial RAN adapter skeleton, worker registry adapter wiring, and job/file metadata support",
+    "Added platform-owned RAN ECC output ingestion so approved upstream workbooks are copied into job storage, tracked in JobFile, and included in summary/package accounting"
   ],
-  "next_action": "Continue Task 3 by adding RAN output ingestion, safe error conversion, and backend test coverage before Task 4 registry dispatch changes.",
+  "next_action": "Continue Task 3 by adding safe RAN failure conversion and backend coverage around the adapter/output-ingestion path before Task 4 registry dispatch changes.",
   "blockers": [],
   "checkpoint_commits": [
     {
@@ -63,6 +64,10 @@
     {
       "commit": "3fbbc0dcaf8a0fe1a8342da0c3a93c1aad09796e",
       "message": "feat: add ran project catalog and workspace staging"
+    },
+    {
+      "commit": "82f7537ef16dd9e574cc2fdf3287f62710d0e0ff",
+      "message": "feat: add ran adapter execution foundation"
     }
   ],
   "remaining_acceptance_gates": [
@@ -91,7 +96,8 @@
     "superpowers:writing-plans with the mission-state location override",
     "superpowers:executing-plans for Task 1 foundation work",
     "superpowers:executing-plans for Task 2 catalog and staging work",
-    "superpowers:executing-plans for Task 3 execution-foundation work"
+    "superpowers:executing-plans for Task 3 execution-foundation work",
+    "superpowers:executing-plans for Task 3 output-ingestion work"
   ],
   "artifacts": {
     "state_markdown": "docs/ran-pr-worker-integration/autonomous-run-state.md",
@@ -102,5 +108,5 @@
     "prototype_ux_contract": "docs/ran-pr-worker-integration/prototype-ux-contract.md",
     "worker_skill_contract_adr": "docs/ran-pr-worker-integration/worker-skill-contract-adr.md"
   },
-  "last_updated_utc": "2026-06-25T07:00:00Z"
+  "last_updated_utc": "2026-06-25T08:00:00Z"
 }

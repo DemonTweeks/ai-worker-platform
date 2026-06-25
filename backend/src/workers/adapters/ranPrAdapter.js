@@ -4,6 +4,7 @@ const { Job, JobFile } = require('../../models');
 const { getExplicitPythonExecutable, runPythonStage } = require('../../services/childProcessRunner');
 const storageService = require('../../services/storageService');
 const ranPrManifest = require('../manifests/ranPrManifest');
+const { ingestRanOutputs } = require('../ranOutputIngestionService');
 const { validateRanRunConfiguration } = require('../ranProjectCatalogService');
 const { prepareRanWorkspace } = require('../ranWorkspaceService');
 const { WORKER_IDS } = require('../workerTypes');
@@ -200,6 +201,10 @@ const run = async (jobId, options = {}) => {
     timeoutMs: options.timeoutMs,
     isCancellationRequested: options.isCancellationRequested
   });
+  const outputCollection = await ingestRanOutputs({
+    jobId,
+    workspaceOutputRoot: workspace.outputRoot
+  });
 
   return {
     workerId: WORKER_IDS.RAN_PR,
@@ -208,7 +213,8 @@ const run = async (jobId, options = {}) => {
     workspaceRoot: workspace.workspaceRoot,
     outputRoot: workspace.outputRoot,
     manifest: ranPrManifest,
-    pipelineResult
+    pipelineResult,
+    outputCollection
   };
 };
 

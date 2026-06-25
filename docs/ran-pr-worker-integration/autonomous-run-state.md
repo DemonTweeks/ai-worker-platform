@@ -31,10 +31,11 @@
 - Added the pinned RAN submodule plus worker manifest/registry/config scaffolding for Task 1.
 - Added the workbook-derived RAN project catalog and isolated workspace staging services for Task 2.
 - Added the Task 3 execution foundation: explicit Python stage runner, initial RAN adapter skeleton, worker registry adapter wiring, and job/file metadata support.
+- Added platform-owned RAN ECC output ingestion so approved upstream workbooks are copied into job storage, tracked in `JobFile`, and included in summary/package accounting.
 
 ## Next Action
 
-Continue Task 3 by adding RAN output ingestion, safe error conversion, and backend test coverage before Task 4 registry dispatch changes.
+Continue Task 3 by adding safe RAN failure conversion and backend coverage around the adapter/output-ingestion path before Task 4 registry dispatch changes.
 
 ## Blockers
 
@@ -52,6 +53,7 @@ Continue Task 3 by adding RAN output ingestion, safe error conversion, and backe
 - `superpowers:executing-plans` for Task 1 implementation
 - `superpowers:executing-plans` for Task 2 implementation
 - `superpowers:executing-plans` for Task 3 execution-foundation work
+- `superpowers:executing-plans` for Task 3 output-ingestion work
 
 ## Notes
 
