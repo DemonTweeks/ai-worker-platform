@@ -106,5 +106,18 @@
   - tracked file types were `ran_ecc_output` and `ran_ecc_output_with_general_items`
   - `outputFileCount` returned `2`
   - `buildSummaryData()` reported `eccFileCount: 2`
-  - platform job storage contained `ECC_PR_Output.xlsx` and `ECC_PR_Output_With_GeneralItems.xlsx`
+- platform job storage contained `ECC_PR_Output.xlsx` and `ECC_PR_Output_With_GeneralItems.xlsx`
+- Ran `git diff --check`; only CRLF conversion warnings were reported, with no diff hygiene errors.
+
+## 2026-06-25 - Task 3 Safe Failure And Coverage Evidence
+
+- Added `backend/src/workers/ranFailureService.js` to sanitize stage names down to safe basenames and construct worker-safe timeout/process-failure errors for the RAN adapter path.
+- Updated `backend/src/workers/adapters/ranPrAdapter.js` to use the new failure service instead of persisting relative script paths in timeout/process-failure errors.
+- Updated `backend/src/services/jobService.js` so failed `ran-pr` jobs now produce worker-aware failure summaries and failure diagnosis entries that reference sanitized stage names such as `simple_pr_generator.py` rather than full paths.
+- Extended `backend/scripts/error-visibility-test.js` with direct assertions for:
+  - RAN process-failure job detail summaries
+  - RAN failure diagnosis stage sanitization
+  - RAN timeout history summaries
+- Ran `node --check` successfully on `backend/src/workers/ranFailureService.js`, `backend/src/workers/adapters/ranPrAdapter.js`, `backend/src/services/jobService.js`, and `backend/scripts/error-visibility-test.js`.
+- Ran `node backend/scripts/error-visibility-test.js` successfully; all existing MW assertions plus the new RAN assertions passed.
 - Ran `git diff --check`; only CRLF conversion warnings were reported, with no diff hygiene errors.

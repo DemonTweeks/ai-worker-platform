@@ -32,9 +32,10 @@
     "Added the pinned RAN submodule plus worker manifest/registry/config scaffolding for Task 1",
     "Added the workbook-derived RAN project catalog and isolated workspace staging services for Task 2",
     "Added the Task 3 execution foundation: explicit Python stage runner, initial RAN adapter skeleton, worker registry adapter wiring, and job/file metadata support",
-    "Added platform-owned RAN ECC output ingestion so approved upstream workbooks are copied into job storage, tracked in JobFile, and included in summary/package accounting"
+    "Added platform-owned RAN ECC output ingestion so approved upstream workbooks are copied into job storage, tracked in JobFile, and included in summary/package accounting",
+    "Added worker-aware safe RAN failure shaping plus backend error-visibility coverage for sanitized stage-based summaries and diagnosis"
   ],
-  "next_action": "Continue Task 3 by adding safe RAN failure conversion and backend coverage around the adapter/output-ingestion path before Task 4 registry dispatch changes.",
+  "next_action": "Continue Task 3 with direct backend coverage for successful/cancelled RAN adapter execution paths, then begin Task 4 registry-backed job creation and dispatch changes.",
   "blockers": [],
   "checkpoint_commits": [
     {
@@ -68,6 +69,10 @@
     {
       "commit": "82f7537ef16dd9e574cc2fdf3287f62710d0e0ff",
       "message": "feat: add ran adapter execution foundation"
+    },
+    {
+      "commit": "96b05afdd4ff5c64eb79eb43cecd1d66e0088d4d",
+      "message": "feat: ingest ran outputs into platform storage"
     }
   ],
   "remaining_acceptance_gates": [
@@ -97,7 +102,8 @@
     "superpowers:executing-plans for Task 1 foundation work",
     "superpowers:executing-plans for Task 2 catalog and staging work",
     "superpowers:executing-plans for Task 3 execution-foundation work",
-    "superpowers:executing-plans for Task 3 output-ingestion work"
+    "superpowers:executing-plans for Task 3 output-ingestion work",
+    "superpowers:executing-plans for Task 3 safe-failure and coverage work"
   ],
   "artifacts": {
     "state_markdown": "docs/ran-pr-worker-integration/autonomous-run-state.md",
@@ -108,5 +114,5 @@
     "prototype_ux_contract": "docs/ran-pr-worker-integration/prototype-ux-contract.md",
     "worker_skill_contract_adr": "docs/ran-pr-worker-integration/worker-skill-contract-adr.md"
   },
-  "last_updated_utc": "2026-06-25T08:00:00Z"
+  "last_updated_utc": "2026-06-25T09:00:00Z"
 }

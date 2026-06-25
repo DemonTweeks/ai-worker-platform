@@ -3,6 +3,7 @@ const path = require('path');
 const { Job, JobFile } = require('../../models');
 const { getExplicitPythonExecutable, runPythonStage } = require('../../services/childProcessRunner');
 const storageService = require('../../services/storageService');
+const { buildRanExecutionError } = require('../ranFailureService');
 const ranPrManifest = require('../manifests/ranPrManifest');
 const { ingestRanOutputs } = require('../ranOutputIngestionService');
 const { validateRanRunConfiguration } = require('../ranProjectCatalogService');
@@ -148,25 +149,21 @@ const runPipelineStages = async ({
     }
 
     if (result.timedOut) {
-      const error = new Error(`RAN pipeline timed out while running ${relativeScriptPath}.`);
-      error.code = 'WORKER_TIMEOUT';
-      error.details = {
+      throw buildRanExecutionError({
+        type: 'timeout',
         stage: relativeScriptPath,
         exitCode: result.exitCode,
-        stderr: result.stderr.slice(-2000)
-      };
-      throw error;
+        stderr: result.stderr
+      });
     }
 
     if (result.exitCode !== 0) {
-      const error = new Error(`RAN pipeline failed while running ${relativeScriptPath}.`);
-      error.code = 'WORKER_PROCESS_FAILED';
-      error.details = {
+      throw buildRanExecutionError({
+        type: 'process_failed',
         stage: relativeScriptPath,
         exitCode: result.exitCode,
-        stderr: result.stderr.slice(-2000)
-      };
-      throw error;
+        stderr: result.stderr
+      });
     }
   }
 

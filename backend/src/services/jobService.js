@@ -16,6 +16,8 @@ const { answerReAsk } = require('../llm/reAskService');
 const { generateUniqueJobId } = require('../utils/jobIdGenerator');
 const { assertPathInsideRoot, toStorageRelativePath } = require('../utils/pathUtils');
 const { createApiError } = require('../utils/apiError');
+const { sanitizeRanStageName } = require('../workers/ranFailureService');
+const { WORKER_IDS } = require('../workers/workerTypes');
 
 const CANCELLABLE_BEFORE_WORKER_STATUSES = ['queued'];
 const RUNNING_STATUSES = [
@@ -92,6 +94,8 @@ const getFailureSummary = (job) => {
 
   const code = error.code;
   const details = error.details || {};
+  const ranStage = sanitizeRanStageName(details.stage);
+  const isRanJob = job.workerId === WORKER_IDS.RAN_PR;
 
   if (code === 'PREFLIGHT_FAILED') {
     const allowedPkgs = ['pandas', 'openpyxl'];
@@ -104,11 +108,21 @@ const getFailureSummary = (job) => {
     }
     return 'PR worker dependency check failed.';
   } else if (code === 'WORKER_TIMEOUT') {
+    if (isRanJob) {
+      return ranStage
+        ? `RAN PR worker execution timed out (${ranStage}).`
+        : 'RAN PR worker execution timed out.';
+    }
     if (details.scope === 'TSS' || details.scope === 'TI') {
       return `PR worker execution timed out (${details.scope}).`;
     }
     return 'PR worker execution timed out.';
   } else if (code === 'WORKER_PROCESS_FAILED') {
+    if (isRanJob) {
+      return ranStage
+        ? `RAN PR worker process failed (${ranStage}).`
+        : 'RAN PR worker process failed.';
+    }
     if (details.scope === 'TSS' || details.scope === 'TI') {
       return `PR worker process failed (${details.scope}).`;
     }
@@ -123,14 +137,18 @@ const getFailureDiagnosis = (job) => {
   if (!error) {
     return {
       category: 'WORKER_ERROR',
-      title: 'PR Worker execution failed',
-      summary: 'An unexpected error occurred during the PR worker execution process.',
+      title: job.workerId === WORKER_IDS.RAN_PR ? 'RAN PR Worker execution failed' : 'PR Worker execution failed',
+      summary: job.workerId === WORKER_IDS.RAN_PR
+        ? 'An unexpected error occurred during the RAN PR worker execution process.'
+        : 'An unexpected error occurred during the PR worker execution process.',
       technicalDetails: ''
     };
   }
 
   const code = error.code || 'WORKER_ERROR';
   const details = error.details || {};
+  const ranStage = sanitizeRanStageName(details.stage);
+  const isRanJob = job.workerId === WORKER_IDS.RAN_PR;
 
   const allowedCategories = ['PREFLIGHT_FAILED', 'WORKER_TIMEOUT', 'WORKER_PROCESS_FAILED'];
   const category = allowedCategories.includes(code) ? code : 'WORKER_ERROR';
@@ -167,16 +185,24 @@ const getFailureDiagnosis = (job) => {
     }
   } else if (category === 'WORKER_TIMEOUT') {
     title = 'Worker timeout';
-    summary = 'PR worker execution exceeded the maximum allowed time limit.';
+    summary = isRanJob
+      ? `RAN PR worker execution exceeded the maximum allowed time limit${ranStage ? ` while running ${ranStage}` : ''}.`
+      : 'PR worker execution exceeded the maximum allowed time limit.';
 
-    if (details.scope === 'TSS' || details.scope === 'TI') {
+    if (isRanJob && ranStage) {
+      scope = undefined;
+    } else if (details.scope === 'TSS' || details.scope === 'TI') {
       scope = details.scope;
     }
   } else if (category === 'WORKER_PROCESS_FAILED') {
     title = 'Worker process failed';
-    summary = 'PR worker child process exited with an error status during execution.';
+    summary = isRanJob
+      ? `RAN PR worker stage failed${ranStage ? ` while running ${ranStage}` : ''}.`
+      : 'PR worker child process exited with an error status during execution.';
 
-    if (details.scope === 'TSS' || details.scope === 'TI') {
+    if (isRanJob && ranStage) {
+      scope = undefined;
+    } else if (details.scope === 'TSS' || details.scope === 'TI') {
       scope = details.scope;
     }
 
@@ -193,6 +219,7 @@ const getFailureDiagnosis = (job) => {
     pythonExecutable,
     recommendedCommand,
     scope,
+    ...(ranStage ? { stage: ranStage } : {}),
     exitCode,
     technicalDetails
   };

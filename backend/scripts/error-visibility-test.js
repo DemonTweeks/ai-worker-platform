@@ -1,5 +1,6 @@
 const assert = require('assert');
 const jobService = require('../src/services/jobService');
+const { buildRanExecutionError } = require('../src/workers/ranFailureService');
 const { Job, JobFile } = require('../src/models');
 
 const runTests = async () => {
@@ -326,6 +327,73 @@ Authorization: Basic basic-secret
     jobDetail = detailResult.job;
     assert.strictEqual(jobDetail.failureDiagnosis, undefined);
     assert.strictEqual(jobDetail.error, undefined);
+
+    // 7. RAN failures are worker-aware and expose only sanitized stage names
+    console.log('Assertion 10: RAN failure summaries and diagnosis are stage-aware without leaking paths');
+    resetMocks();
+
+    const mockRanProcessFailure = {
+      jobId: 'RAN-FAILED-006',
+      workerId: 'ran-pr',
+      workerType: 'pr-worker',
+      status: 'failed',
+      createdAt: new Date().toISOString(),
+      error: buildRanExecutionError({
+        type: 'process_failed',
+        stage: 'src\\simple_pr_generator.py',
+        exitCode: 9,
+        stderr: hostileStderr
+      })
+    };
+
+    Job.findOne = () => ({
+      lean: () => ({
+        catch: () => mockRanProcessFailure
+      }),
+      ...mockRanProcessFailure
+    });
+
+    detailResult = await jobService.getJobDetail('RAN-FAILED-006');
+    jobDetail = detailResult.job;
+    assert.strictEqual(jobDetail.failureSummary, 'RAN PR worker process failed (simple_pr_generator.py).');
+    assert.strictEqual(jobDetail.failureDiagnosis.category, 'WORKER_PROCESS_FAILED');
+    assert.strictEqual(jobDetail.failureDiagnosis.stage, 'simple_pr_generator.py');
+    assert.strictEqual(jobDetail.failureDiagnosis.exitCode, 9);
+    assert.strictEqual(jobDetail.failureDiagnosis.summary.includes('src\\simple_pr_generator.py'), false);
+    assert.strictEqual(jobDetail.failureDiagnosis.summary.includes('simple_pr_generator.py'), true);
+    assert.strictEqual(jobDetail.failureDiagnosis.technicalDetails.includes('C:\\Users\\JJ\\uploads\\site_pr_po_view.xlsx'), false);
+
+    // 8. RAN timeout summaries are rendered in job history with sanitized stage names
+    console.log('Assertion 11: RAN timeout history summary uses worker-aware sanitized stage names');
+    resetMocks();
+
+    const mockRanTimeout = {
+      jobId: 'RAN-TIMEOUT-007',
+      workerId: 'ran-pr',
+      workerType: 'pr-worker',
+      status: 'failed',
+      createdAt: new Date().toISOString(),
+      error: buildRanExecutionError({
+        type: 'timeout',
+        stage: 'src/simple_ecc_export.py',
+        exitCode: null,
+        stderr: ''
+      })
+    };
+
+    Job.find = () => ({
+      sort: () => ({
+        skip: () => ({
+          limit: () => ({
+            lean: () => [mockRanTimeout]
+          })
+        })
+      })
+    });
+    Job.countDocuments = () => 1;
+
+    const ranListResult = await jobService.listJobs();
+    assert.strictEqual(ranListResult.items[0].failureSummary, 'RAN PR worker execution timed out (simple_ecc_export.py).');
 
     console.log('--- Hardened Error Visibility and Security Tests Passed! ---');
   } catch (err) {

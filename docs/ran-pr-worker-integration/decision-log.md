@@ -225,3 +225,17 @@ The adapter could already run the upstream stage sequence, but without a storage
 ### Impact
 
 The next bounded continuation can focus specifically on safe RAN error conversion and backend coverage, building on a durable output model rather than mixing output plumbing and failure semantics together.
+
+## 2026-06-25 - Task 3 Safe Failure Scope
+
+### Decision
+
+Keep this continuation limited to safe, worker-aware failure shaping for the RAN adapter path and direct backend coverage of those diagnostics, without yet moving queue dispatch, route payloads, or frontend behavior.
+
+### Why
+
+The platform already had hardened MW error visibility, but the new RAN adapter path needed equivalent stage-aware summaries and diagnosis that avoid leaking raw paths while still surfacing actionable context. Tightening only that seam keeps the wake-up bounded and gives the future registry integration a safer failure contract to build on.
+
+### Impact
+
+The next continuation can either finish any remaining direct adapter-path coverage or move into Task 4 with RAN failure presentation already aligned to platform safety expectations.
