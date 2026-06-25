@@ -584,10 +584,9 @@ sys.exit(5)
 
     const crashJobDetail = await waitForJobTerminal(baseUrl, crashJobId);
     assert.strictEqual(crashJobDetail.job.status, 'failed', 'job should fail');
-    assert.strictEqual(crashJobDetail.job.error.code, 'WORKER_PROCESS_FAILED', 'error code should be WORKER_PROCESS_FAILED');
-    assert.strictEqual(crashJobDetail.job.error.failureType, 'worker_execution_failed', 'failureType should be worker_execution_failed');
-    assert.strictEqual(crashJobDetail.job.error.details.exitCode, 5, 'exitCode should be 5');
-    assert(crashJobDetail.job.error.details.stderr.includes('UnicodeEncodeError'), 'details.stderr should contain traceback');
+    assert.strictEqual(crashJobDetail.job.failureDiagnosis.category, 'WORKER_PROCESS_FAILED', 'category should be WORKER_PROCESS_FAILED');
+    assert.strictEqual(crashJobDetail.job.failureDiagnosis.exitCode, 5, 'exitCode should be 5');
+    assert(crashJobDetail.job.failureDiagnosis.technicalDetails.includes('UnicodeEncodeError'), 'technicalDetails should contain traceback');
     assert.strictEqual(crashJobDetail.job.matchedSiteCount, null, 'matchedSiteCount should be null on execution failure');
     assert.strictEqual(crashJobDetail.job.unmatchedSiteCount, null, 'unmatchedSiteCount should be null on execution failure');
     assert.strictEqual(crashJobDetail.job.outputFileCount, null, 'outputFileCount should be null on execution failure');
@@ -614,8 +613,7 @@ sys.exit(0)
 
     const missingJobDetail = await waitForJobTerminal(baseUrl, missingJobId);
     assert.strictEqual(missingJobDetail.job.status, 'failed', 'job should fail');
-    assert.strictEqual(missingJobDetail.job.error.code, 'ZERO_OUTPUT_WITHOUT_EXPLANATION', 'error code should be ZERO_OUTPUT_WITHOUT_EXPLANATION');
-    assert.strictEqual(missingJobDetail.job.error.failureType, 'summary_missing', 'failureType should be summary_missing');
+    assert.strictEqual(missingJobDetail.job.failureDiagnosis.category, 'WORKER_ERROR', 'category should be WORKER_ERROR');
     assert.strictEqual(missingJobDetail.job.matchedSiteCount, null, 'matchedSiteCount should be null on summary missing');
     assert.strictEqual(missingJobDetail.job.unmatchedSiteCount, null, 'unmatchedSiteCount should be null on summary missing');
     assert.strictEqual(missingJobDetail.job.outputFileCount, null, 'outputFileCount should be null on summary missing');
@@ -652,8 +650,7 @@ sys.exit(0)
 
     const parseFailJobDetail = await waitForJobTerminal(baseUrl, parseFailJobId);
     assert.strictEqual(parseFailJobDetail.job.status, 'failed', 'job should fail');
-    assert.strictEqual(parseFailJobDetail.job.error.code, 'SUMMARY_PARSE_FAILED', 'error code should be SUMMARY_PARSE_FAILED');
-    assert.strictEqual(parseFailJobDetail.job.error.failureType, 'summary_parse_failed', 'failureType should be summary_parse_failed');
+    assert.strictEqual(parseFailJobDetail.job.failureDiagnosis.category, 'WORKER_ERROR', 'category should be WORKER_ERROR');
     assert.strictEqual(parseFailJobDetail.job.matchedSiteCount, null, 'matchedSiteCount should be null on parse failure');
     console.log('Pass: Summary parse failure handling');
 

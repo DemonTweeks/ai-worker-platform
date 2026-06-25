@@ -18,6 +18,7 @@
       <JobDetailHeader :job="detail.job" />
       <FinalSummary :detail="detail" />
       <JobDetailSummary :job="detail.job" />
+      <FailureDiagnosis :job="detail.job" />
       <div class="detail-grid-two">
         <section class="panel">
           <h2>Execution Timeline</h2>
@@ -51,6 +52,7 @@
 import ErrorBanner from '../components/ErrorBanner.vue';
 import FinalSummary from '../components/FinalSummary.vue';
 import ReAskPanel from '../components/ReAskPanel.vue';
+import FailureDiagnosis from '../components/detail/FailureDiagnosis.vue';
 import JobDetailAssetVersions from '../components/detail/JobDetailAssetVersions.vue';
 import JobDetailFiles from '../components/detail/JobDetailFiles.vue';
 import JobDetailHeader from '../components/detail/JobDetailHeader.vue';
@@ -69,6 +71,7 @@ export default {
   components: {
     ErrorBanner,
     FinalSummary,
+    FailureDiagnosis,
     JobDetailAssetVersions,
     JobDetailFiles,
     JobDetailHeader,

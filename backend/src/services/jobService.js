@@ -43,6 +43,161 @@ const addRetentionDays = () => (
   new Date(Date.now() + config.limits.fileRetentionDays * 24 * 60 * 60 * 1000)
 );
 
+const redactTechnicalDetails = (text) => {
+  if (!text || typeof text !== 'string') return '';
+
+  let clean = text;
+
+  // 1. Remove ANSI escape codes and non-printable control characters
+  clean = clean.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
+  clean = clean.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, '');
+
+  // 2. Redact secrets, credentials, tokens, bearer/basic headers entirely
+  const secretsRegex = /\b[a-zA-Z0-9_\-]*?(?:API_KEY|API\-KEY|APIKEY|TOKEN|SECRET|PASSWORD|AUTHORIZATION|BEARER)[a-zA-Z0-9_\-]*?\s*[:=]\s*(?:"[^"\r\n]*"|'[^'\r\n]*'|Bearer\s+[^\s\r\n]+|Basic\s+[^\s\r\n]+|[^\s\r\n]+)/gi;
+  clean = clean.replace(secretsRegex, '[redacted]');
+
+  // 3. Redact absolute paths (including paths containing spaces)
+  // UNC paths: \\server\share\...
+  const uncRegex = /\\\\[a-zA-Z0-9_\-\.%~]+(?:\s+[a-zA-Z0-9_\-\.%~]+)*\\[a-zA-Z0-9_\-\.%~]+(?:\s+[a-zA-Z0-9_\-\.%~]+)*(?:\\[a-zA-Z0-9_\-\.%~]+(?:\s+[a-zA-Z0-9_\-\.%~]+)*)*(?:\\[a-zA-Z0-9_\-\.%~]+(?:\s+[a-zA-Z0-9_\-\.%~]+)*\.[a-zA-Z0-9]{2,4}|[a-zA-Z0-9_\-\.%~]+)?/g;
+  clean = clean.replace(uncRegex, '[redacted]');
+
+  // file:// URLs
+  const fileUrlRegex = /file:\/\/\/[a-zA-Z0-9_\-\.%~]+(?:\s+[a-zA-Z0-9_\-\.%~]+)*(?:\/[a-zA-Z0-9_\-\.%~]+(?:\s+[a-zA-Z0-9_\-\.%~]+)*)*(?:\/[a-zA-Z0-9_\-\.%~]+(?:\s+[a-zA-Z0-9_\-\.%~]+)*\.[a-zA-Z0-9]{2,4}|[a-zA-Z0-9_\-\.%~]+)?/gi;
+  clean = clean.replace(fileUrlRegex, '[redacted]');
+
+  // Windows paths: C:\Users\..., D:\temp...
+  const winPathRegex = /[a-zA-Z]:\\(?:[a-zA-Z0-9_\-\.%~]+(?:\s+[a-zA-Z0-9_\-\.%~]+)*\\)*(?:[a-zA-Z0-9_\-\.%~]+(?:\s+[a-zA-Z0-9_\-\.%~]+)*\.[a-zA-Z0-9]{2,4}|[a-zA-Z0-9_\-\.%~]+)/g;
+  clean = clean.replace(winPathRegex, '[redacted]');
+
+  // POSIX absolute paths (starts with /)
+  const posixPathRegex = /\/(?:[a-zA-Z0-9_\-\.%~]+(?:\s+[a-zA-Z0-9_\-\.%~]+)*\/)*(?:[a-zA-Z0-9_\-\.%~]+(?:\s+[a-zA-Z0-9_\-\.%~]+)*\.[a-zA-Z0-9]{2,4}|[a-zA-Z0-9_\-\.%~]+)/g;
+  clean = clean.replace(posixPathRegex, (match) => {
+    if (match === '/health' || match === '/api/jobs' || match === '/history') {
+      return match;
+    }
+    return '[redacted]';
+  });
+
+  // 4. Redact command line argument values
+  const cmdArgValRegex = /(--[a-zA-Z0-9\-]+|-[a-zA-Z0-9])(?:\s+|=)(?:"[^"\r\n]*"|'[^'\r\n]*'|[^\s\r\n]+(?:\s+[^\s\-\r\n]+)*)/gi;
+  clean = clean.replace(cmdArgValRegex, '$1 [redacted]');
+
+  return clean;
+};
+
+const getFailureSummary = (job) => {
+  if (job.status !== 'failed') return null;
+  const error = job.error;
+  if (!error) return 'PR Worker execution failed.';
+
+  const code = error.code;
+  const details = error.details || {};
+
+  if (code === 'PREFLIGHT_FAILED') {
+    const allowedPkgs = ['pandas', 'openpyxl'];
+    let validPkgs = [];
+    if (Array.isArray(details.missingPackages)) {
+      validPkgs = details.missingPackages.filter(p => allowedPkgs.includes(p));
+    }
+    if (validPkgs.length > 0) {
+      return `Dependency missing: ${validPkgs.join(', ')}`;
+    }
+    return 'PR worker dependency check failed.';
+  } else if (code === 'WORKER_TIMEOUT') {
+    if (details.scope === 'TSS' || details.scope === 'TI') {
+      return `PR worker execution timed out (${details.scope}).`;
+    }
+    return 'PR worker execution timed out.';
+  } else if (code === 'WORKER_PROCESS_FAILED') {
+    if (details.scope === 'TSS' || details.scope === 'TI') {
+      return `PR worker process failed (${details.scope}).`;
+    }
+    return 'PR worker process failed.';
+  }
+  return 'PR Worker execution failed.';
+};
+
+const getFailureDiagnosis = (job) => {
+  if (job.status !== 'failed') return undefined;
+  const error = job.error;
+  if (!error) {
+    return {
+      category: 'WORKER_ERROR',
+      title: 'PR Worker execution failed',
+      summary: 'An unexpected error occurred during the PR worker execution process.',
+      technicalDetails: ''
+    };
+  }
+
+  const code = error.code || 'WORKER_ERROR';
+  const details = error.details || {};
+
+  const allowedCategories = ['PREFLIGHT_FAILED', 'WORKER_TIMEOUT', 'WORKER_PROCESS_FAILED'];
+  const category = allowedCategories.includes(code) ? code : 'WORKER_ERROR';
+
+  let title = 'PR Worker execution failed';
+  let summary = 'An unexpected error occurred during the PR worker execution process.';
+  let missingPackages;
+  let pythonExecutable;
+  let recommendedCommand;
+  let scope;
+  let exitCode;
+
+  const rawStderr = typeof details.stderr === 'string' ? details.stderr : '';
+  const technicalDetails = redactTechnicalDetails(rawStderr).slice(-2000);
+
+  if (category === 'PREFLIGHT_FAILED') {
+    title = 'Python worker dependency missing';
+    summary = 'PR worker preflight check failed because some required Python packages are not installed in the environment.';
+
+    const allowedPkgs = ['pandas', 'openpyxl'];
+    if (Array.isArray(details.missingPackages)) {
+      const filtered = details.missingPackages.filter(p => allowedPkgs.includes(p));
+      if (filtered.length > 0) {
+        missingPackages = filtered;
+      }
+    }
+
+    if (typeof details.pythonExecutable === 'string') {
+      const cleanPython = details.pythonExecutable.replace(/[\r\n\t]/g, '').replace(/["']/g, '').trim();
+      if (cleanPython.length > 0) {
+        pythonExecutable = cleanPython.slice(0, 200);
+        recommendedCommand = `"${pythonExecutable}" -m pip install -r requirements-worker.txt`;
+      }
+    }
+  } else if (category === 'WORKER_TIMEOUT') {
+    title = 'Worker timeout';
+    summary = 'PR worker execution exceeded the maximum allowed time limit.';
+
+    if (details.scope === 'TSS' || details.scope === 'TI') {
+      scope = details.scope;
+    }
+  } else if (category === 'WORKER_PROCESS_FAILED') {
+    title = 'Worker process failed';
+    summary = 'PR worker child process exited with an error status during execution.';
+
+    if (details.scope === 'TSS' || details.scope === 'TI') {
+      scope = details.scope;
+    }
+
+    if (Number.isInteger(details.exitCode)) {
+      exitCode = details.exitCode;
+    }
+  }
+
+  return {
+    category,
+    title,
+    summary,
+    missingPackages,
+    pythonExecutable,
+    recommendedCommand,
+    scope,
+    exitCode,
+    technicalDetails
+  };
+};
+
 const serializeJobSummary = (job) => ({
   jobId: job.jobId,
   workerType: job.workerType,
@@ -57,7 +212,8 @@ const serializeJobSummary = (job) => ({
   outputFileCount: job.outputFileCount,
   reviewRequiredCount: job.reviewRequiredCount,
   warningCount: job.warningCount,
-  finalWorkerSummary: job.finalWorkerSummary
+  finalWorkerSummary: job.finalWorkerSummary,
+  failureSummary: getFailureSummary(job)
 });
 
 const assertJobExists = async (jobId) => {
@@ -273,7 +429,7 @@ const getJobDetail = async (jobId) => {
       assetVersions: job.assetVersions || {},
       engineVersion: job.engineVersion,
       fileRetentionUntil: job.fileRetentionUntil,
-      error: job.error
+      failureDiagnosis: getFailureDiagnosis(job)
     },
     workerState: workerStateService.getState(jobId),
     finalWorkerSummary: job.finalWorkerSummary,
