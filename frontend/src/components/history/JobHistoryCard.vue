@@ -66,6 +66,9 @@ export default {
       return getZipDownloadUrl(this.job.jobId);
     },
     summaryPreview() {
+      if (this.job.status === 'failed') {
+        return this.job.failureSummary || 'PR Worker execution failed.';
+      }
       const text = this.job.finalWorkerSummary || 'Final worker summary is not available yet.';
       return text.length > 180 ? `${text.slice(0, 177)}...` : text;
     },
