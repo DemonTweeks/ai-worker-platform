@@ -30,6 +30,8 @@ const config = {
   firebaseDbMock: booleanFromEnv('FIREBASE_DB_MOCK', false),
   storageRoot: resolveFromRepoRoot(process.env.STORAGE_ROOT, './storage'),
   createPrCdRoot: resolveFromRepoRoot(process.env.CREATE_PR_CD_ROOT, './skills/create-pr-cd'),
+  ranCreatePrCdRoot: resolveFromRepoRoot(process.env.RAN_CREATE_PR_CD_ROOT, './skills/create-pr-cd-ran'),
+  ranWorkspaceRoot: resolveFromRepoRoot(process.env.RAN_WORKSPACE_ROOT, './storage/ran-workspaces'),
   llmBaseUrl: process.env.LLM_BASE_URL || '',
   llmApiKey: process.env.LLM_API_KEY || '',
   llm: {

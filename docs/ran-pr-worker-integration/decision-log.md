@@ -169,3 +169,17 @@ The master prompt says all mission state should remain inside `docs/ran-pr-worke
 ### Impact
 
 The mission now has a single in-repo plan artifact that the heartbeat loop can reread directly before implementation steps.
+
+## 2026-06-25 - Task 1 Worker Foundation
+
+### Decision
+
+Keep the first implementation checkpoint intentionally narrow: pin the upstream RAN submodule and add worker metadata/config scaffolding before introducing any execution-path behavior changes.
+
+### Why
+
+This reduces risk while establishing the pinned engine source and the shared registry/manifests that later tasks will build on.
+
+### Impact
+
+Subsequent implementation steps can now refer to the registered `mw-pr` and `ran-pr` identities, the pinned submodule path, and explicit RAN engine/workspace config roots.

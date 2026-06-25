@@ -28,10 +28,11 @@
 - Inspected the pinned upstream RAN engine pipeline, workbook config sources, sample input/output assets, and dynamic General Item project-selection source.
 - Documented the prototype platform UX contract and worker-skill ADR constraints for MW/RAN coexistence.
 - Replaced the lightweight mission outline with a concrete implementation plan covering engine compatibility, registry integration, frontend integration, and verification.
+- Added the pinned RAN submodule plus worker manifest/registry/config scaffolding for Task 1.
 
 ## Next Action
 
-Begin Task 1 from the implementation plan: add and pin the `skills/create-pr-cd-ran` submodule, create worker manifests, and introduce registry scaffolding.
+Begin Task 2 from the implementation plan: add the workbook-derived RAN project catalog and isolated workspace staging services.
 
 ## Blockers
 
@@ -46,6 +47,7 @@ Begin Task 1 from the implementation plan: add and pin the `skills/create-pr-cd-
 - Read-only inspection of the pinned upstream RAN repository
 - Internal design checkpoint using the brainstorming methodology with the mission-level autonomy override recorded in the decision log
 - `superpowers:writing-plans` with the master-prompt state-directory override
+- `superpowers:executing-plans` for Task 1 implementation
 
 ## Notes
 

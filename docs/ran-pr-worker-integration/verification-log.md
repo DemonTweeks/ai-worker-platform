@@ -62,3 +62,14 @@
 - Verified the backend test command is `npm.cmd --prefix backend test`.
 - Verified the frontend test and build commands are `npm.cmd --prefix frontend test` and `npm.cmd --prefix frontend run build`.
 - Replaced the lightweight phase outline in `docs/ran-pr-worker-integration/execution-plan.md` with a concrete implementation plan, task order, file boundaries, and checkpoint commands.
+
+## 2026-06-25 - Task 1 Foundation Evidence
+
+- Added the upstream submodule at `skills/create-pr-cd-ran`.
+- Verified `git submodule status` reports `239910e2816153339a94881597bbb95355059741 skills/create-pr-cd-ran (v1.0.0)`.
+- Added worker constants in `backend/src/workers/workerTypes.js`.
+- Added worker manifests in `backend/src/workers/manifests/mwPrManifest.js` and `backend/src/workers/manifests/ranPrManifest.js`.
+- Added initial worker registry scaffolding in `backend/src/workers/workerRegistry.js`.
+- Added `ranCreatePrCdRoot` and `ranWorkspaceRoot` config paths in `backend/src/config/env.js`.
+- Ran `git diff --check`; only CRLF conversion warnings were reported, with no diff hygiene errors.
+- Attempted a runtime load of the new backend config/registry modules, but local verification is currently limited because the backend dependency `dotenv` is not installed in this workspace environment.

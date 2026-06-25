@@ -4,3 +4,6 @@
 [submodule "agent-guideline/vscode-agent"]
 	path = agent-guideline/vscode-agent
 	url = https://github.com/3-Piggy/vscode-agent.git
+[submodule "skills/create-pr-cd-ran"]
+	path = skills/create-pr-cd-ran
+	url = https://github.com/ammarofficial11/create-pr-cd-ran.git
