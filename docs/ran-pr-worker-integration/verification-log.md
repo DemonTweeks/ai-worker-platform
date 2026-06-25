@@ -73,3 +73,13 @@
 - Added `ranCreatePrCdRoot` and `ranWorkspaceRoot` config paths in `backend/src/config/env.js`.
 - Ran `git diff --check`; only CRLF conversion warnings were reported, with no diff hygiene errors.
 - Attempted a runtime load of the new backend config/registry modules, but local verification is currently limited because the backend dependency `dotenv` is not installed in this workspace environment.
+
+## 2026-06-25 - Task 2 Catalog And Workspace Evidence
+
+- Added `backend/src/workers/ranProjectCatalogService.js` to parse workbook-derived General Item projects from `skills/create-pr-cd-ran/config/GENERAL ITEM FOR ALL DU PROJECT Overall.xlsx`.
+- Added `backend/src/workers/ranWorkspaceService.js` to create isolated workspaces, copy approved engine assets, and stage BOM/EPMS inputs under upstream-compatible filenames.
+- Extended `backend/src/services/storageService.js` with `ranWorkspaceRoot` helpers for creation, lookup, status, and cleanup.
+- Ran `node --check` successfully on `backend/src/workers/ranProjectCatalogService.js`, `backend/src/workers/ranWorkspaceService.js`, and `backend/src/services/storageService.js`.
+- Installed backend dependencies locally with `npm.cmd install` in `backend/` to enable runtime verification for the new `xlsx`-based service.
+- Verified the runtime project catalog returned 15 workbook-backed project names, including `CD consolidation 2023 (Swap/ Modernize)`.
+- Verified isolated staging created a workspace under `storage/ran-workspaces/QA-RAN-STAGE` with copied `src/`, copied `config/`, and staged `input/BOM.xlsx` plus `input/EPMS.xlsx`.

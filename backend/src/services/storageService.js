@@ -14,8 +14,10 @@ const JOB_FOLDERS = ['input', 'filtered', 'output', 'reports', 'temp'];
 const ASSET_TYPES = ['pr_model', 'ecc_template'];
 
 const storageRoot = path.resolve(config.storageRoot);
+const ranWorkspaceRoot = path.resolve(config.ranWorkspaceRoot);
 
 const getStorageRoot = () => storageRoot;
+const getRanWorkspaceRoot = () => ranWorkspaceRoot;
 
 const ensureDirectory = async (directoryPath) => {
   const safePath = assertPathInsideRoot(storageRoot, directoryPath);
@@ -27,6 +29,11 @@ const ensureBaseStorage = async () => {
   await fs.promises.mkdir(storageRoot, { recursive: true });
   await Promise.all(BASE_FOLDERS.map((folder) => ensureDirectory(path.join(storageRoot, folder))));
   return getStorageStatus();
+};
+
+const ensureRanWorkspaceBase = async () => {
+  await fs.promises.mkdir(ranWorkspaceRoot, { recursive: true });
+  return getRanWorkspaceStatus();
 };
 
 const getStorageStatus = () => {
@@ -71,6 +78,37 @@ const getStorageStatus = () => {
   }
 };
 
+const getRanWorkspaceStatus = () => {
+  let writable = false;
+  let lastError = null;
+
+  try {
+    const rootExists = fs.existsSync(ranWorkspaceRoot);
+
+    if (rootExists) {
+      fs.accessSync(ranWorkspaceRoot, fs.constants.W_OK);
+      writable = true;
+    }
+
+    return {
+      status: rootExists && writable ? 'ok' : 'degraded',
+      root: ranWorkspaceRoot,
+      exists: rootExists,
+      writable,
+      lastError
+    };
+  } catch (error) {
+    lastError = error.message;
+    return {
+      status: 'error',
+      root: ranWorkspaceRoot,
+      exists: fs.existsSync(ranWorkspaceRoot),
+      writable,
+      lastError
+    };
+  }
+};
+
 const getJobRootPath = (jobId) => {
   const safeJobId = sanitizeSegment(jobId, 'job id');
   return assertPathInsideRoot(storageRoot, path.join(storageRoot, 'jobs', safeJobId));
@@ -89,6 +127,27 @@ const createJobFolders = async (jobId) => {
       JOB_FOLDERS.map((folder) => [folder, path.join(jobRoot, folder)])
     )
   };
+};
+
+const getRanWorkspacePath = (jobId) => {
+  const safeJobId = sanitizeSegment(jobId, 'job id');
+  return assertPathInsideRoot(ranWorkspaceRoot, path.join(ranWorkspaceRoot, safeJobId));
+};
+
+const createRanWorkspace = async (jobId) => {
+  const workspaceRoot = getRanWorkspacePath(jobId);
+  await fs.promises.mkdir(workspaceRoot, { recursive: true });
+
+  return {
+    jobId: sanitizeSegment(jobId, 'job id'),
+    root: workspaceRoot,
+    relativeRoot: toStorageRelativePath(ranWorkspaceRoot, workspaceRoot)
+  };
+};
+
+const deleteRanWorkspace = async (jobId) => {
+  const workspaceRoot = getRanWorkspacePath(jobId);
+  await fs.promises.rm(workspaceRoot, { recursive: true, force: true });
 };
 
 const resolveJobFolderPath = (jobId, folder) => {
@@ -207,11 +266,17 @@ module.exports = {
   buildFileMetadata,
   cleanupTempFiles,
   createJobFolders,
+  createRanWorkspace,
   deleteFileSafe,
   deleteFolderSafe,
+  deleteRanWorkspace,
   ensureBaseStorage,
+  ensureRanWorkspaceBase,
   getJobRootPath,
+  getRanWorkspacePath,
+  getRanWorkspaceRoot,
   getStorageRoot,
+  getRanWorkspaceStatus,
   getStorageStatus,
   resolveAssetPath,
   resolveAssetTypeFolderPath,

@@ -183,3 +183,17 @@ This reduces risk while establishing the pinned engine source and the shared reg
 ### Impact
 
 Subsequent implementation steps can now refer to the registered `mw-pr` and `ran-pr` identities, the pinned submodule path, and explicit RAN engine/workspace config roots.
+
+## 2026-06-25 - Task 2 Workspace And Catalog Scope
+
+### Decision
+
+Keep Task 2 limited to workbook-derived project parsing and isolated workspace staging, without yet coupling those services into job creation or execution dispatch.
+
+### Why
+
+This preserves a clean checkpoint boundary between shared preparation services and the later adapter/registry behavior changes in Tasks 3 and 4.
+
+### Impact
+
+The next implementation step can consume tested catalog and staging primitives instead of mixing parsing, staging, and execution logic together.
