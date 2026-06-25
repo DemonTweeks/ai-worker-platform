@@ -35,9 +35,10 @@
     "Added platform-owned RAN ECC output ingestion so approved upstream workbooks are copied into job storage, tracked in JobFile, and included in summary/package accounting",
     "Added worker-aware safe RAN failure shaping plus backend error-visibility coverage for sanitized stage-based summaries and diagnosis",
     "Added direct backend coverage for successful and cooperatively cancelled RAN adapter runs, and wired that coverage into the backend test script",
-    "Added the MW adapter plus registry-backed queue dispatch resolution, with direct backend coverage for worker selection by workerId"
+    "Added the MW adapter plus registry-backed queue dispatch resolution, with direct backend coverage for worker selection by workerId",
+    "Added worker-aware backend create/list/detail payloads with explicit worker identity and audit metadata while preserving MW as the default-compatible create flow"
   ],
-  "next_action": "Continue Task 4 by making backend job creation/detail payloads explicitly worker-aware while preserving the existing MW external behavior.",
+  "next_action": "Continue Task 4 by adding the first backend RAN job-creation path for BOM/EPMS/run-mode inputs while preserving the existing MW route behavior.",
   "blockers": [],
   "checkpoint_commits": [
     {
@@ -83,6 +84,10 @@
     {
       "commit": "011a8383ae3611cfd7c2b49ca689b7716d815bbd",
       "message": "test: cover ran adapter execution paths"
+    },
+    {
+      "commit": "4b3e4f5f7f6c17db8ddf33ea901ba8ebba84a9d0",
+      "message": "feat: route queued jobs through worker registry"
     }
   ],
   "remaining_acceptance_gates": [
@@ -115,7 +120,8 @@
     "superpowers:executing-plans for Task 3 output-ingestion work",
     "superpowers:executing-plans for Task 3 safe-failure and coverage work",
     "superpowers:executing-plans for Task 3 direct adapter-coverage work",
-    "superpowers:executing-plans for Task 4 registry-dispatch transition work"
+    "superpowers:executing-plans for Task 4 registry-dispatch transition work",
+    "superpowers:executing-plans for Task 4 worker-aware backend payload work"
   ],
   "artifacts": {
     "state_markdown": "docs/ran-pr-worker-integration/autonomous-run-state.md",
@@ -126,5 +132,5 @@
     "prototype_ux_contract": "docs/ran-pr-worker-integration/prototype-ux-contract.md",
     "worker_skill_contract_adr": "docs/ran-pr-worker-integration/worker-skill-contract-adr.md"
   },
-  "last_updated_utc": "2026-06-25T11:00:00Z"
+  "last_updated_utc": "2026-06-26T02:00:00Z"
 }

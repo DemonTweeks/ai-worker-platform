@@ -11,9 +11,10 @@
     "smoke": "node scripts/smoke-test.js",
     "test:preflight": "node scripts/preflight-test.js",
     "test:integration": "node scripts/integration-test.js",
+    "test:job-service-workers": "node scripts/job-service-worker-payload-test.js",
     "test:queue-registry": "node scripts/queue-registry-test.js",
     "test:ran-adapter": "node scripts/ran-adapter-test.js",
-    "test": "npm run smoke && npm run test:preflight && npm run test:integration && node scripts/error-visibility-test.js && npm run test:ran-adapter && npm run test:queue-registry"
+    "test": "npm run smoke && npm run test:preflight && npm run test:integration && node scripts/error-visibility-test.js && npm run test:ran-adapter && npm run test:queue-registry && npm run test:job-service-workers"
   },
   "dependencies": {
     "archiver": "^7.0.1",

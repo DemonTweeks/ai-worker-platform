@@ -154,3 +154,24 @@
 - Ran `node backend/scripts/queue-registry-test.js` successfully.
 - Ran `npm.cmd --prefix backend run test:queue-registry` successfully.
 - Ran `git diff --check`; only CRLF conversion warnings were reported, with no diff hygiene errors.
+
+## 2026-06-26 - Task 4 Worker-Aware Payload Evidence
+
+- Updated `backend/src/services/jobService.js` so:
+  - create requests validate `workerId` and default it to `mw-pr`
+  - list filtering supports `workerId`
+  - serialized create/list/detail payloads expose `workerId`, `workerDisplayName`, `engineVersion`, `engineCommit`, `runMode`, and `selectedProject`
+  - the legacy create route remains MW-only for now and rejects `ran-pr` creation explicitly instead of silently misrouting it
+- Added `backend/scripts/job-service-worker-payload-test.js` with direct coverage for:
+  - MW create response serialization and persisted worker metadata
+  - workerId validation failure
+  - explicit rejection of `ran-pr` on the legacy create flow
+  - worker-aware list filtering/serialization
+  - worker-aware detail serialization for a RAN job record
+- Updated `backend/package.json` so `npm.cmd --prefix backend test` now includes `npm run test:job-service-workers`.
+- Ran `node --check backend/src/services/jobService.js` successfully.
+- Ran `node --check backend/scripts/job-service-worker-payload-test.js` successfully.
+- Verified `backend/package.json` parses successfully as JSON.
+- Ran `node backend/scripts/job-service-worker-payload-test.js` successfully.
+- Ran `npm.cmd --prefix backend run test:job-service-workers` successfully.
+- Ran `git diff --check`; only CRLF conversion warnings were reported, with no diff hygiene errors.

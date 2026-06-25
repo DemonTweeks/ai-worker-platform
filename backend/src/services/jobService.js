@@ -18,6 +18,7 @@ const { assertPathInsideRoot, toStorageRelativePath } = require('../utils/pathUt
 const { createApiError } = require('../utils/apiError');
 const { sanitizeRanStageName } = require('../workers/ranFailureService');
 const { WORKER_IDS } = require('../workers/workerTypes');
+const { getWorkerManifest } = require('../workers/workerRegistry');
 
 const CANCELLABLE_BEFORE_WORKER_STATUSES = ['queued'];
 const RUNNING_STATUSES = [
@@ -40,10 +41,32 @@ const PR_SCOPES = ['TSS', 'TI'];
 const normalizeSiteCodes = (siteCodes = []) => parseSiteCodes(siteCodes).siteCodes;
 
 const normalizePrScope = (prScope) => String(prScope || 'TSS').trim().toUpperCase();
+const normalizeWorkerId = (workerId) => String(workerId || WORKER_IDS.MW_PR).trim();
 
 const addRetentionDays = () => (
   new Date(Date.now() + config.limits.fileRetentionDays * 24 * 60 * 60 * 1000)
 );
+
+const getWorkerPresentation = (job = {}) => {
+  const workerId = job.workerId || WORKER_IDS.MW_PR;
+
+  try {
+    const manifest = getWorkerManifest(workerId);
+    return {
+      workerId,
+      workerDisplayName: manifest.displayName,
+      engineVersion: job.engineVersion || manifest.engineVersion || null,
+      engineCommit: job.engineCommit || manifest.engineCommit || null
+    };
+  } catch (error) {
+    return {
+      workerId,
+      workerDisplayName: workerId,
+      engineVersion: job.engineVersion || null,
+      engineCommit: job.engineCommit || null
+    };
+  }
+};
 
 const redactTechnicalDetails = (text) => {
   if (!text || typeof text !== 'string') return '';
@@ -226,6 +249,7 @@ const getFailureDiagnosis = (job) => {
 };
 
 const serializeJobSummary = (job) => ({
+  ...getWorkerPresentation(job),
   jobId: job.jobId,
   workerType: job.workerType,
   status: job.status,
@@ -233,6 +257,8 @@ const serializeJobSummary = (job) => ({
   completedAt: job.completedAt,
   generationScope: job.generationScope,
   prScope: job.prScope || 'TSS',
+  runMode: job.runMode || null,
+  selectedProject: job.selectedProject || null,
   requestedSiteCount: job.requestedSiteCount,
   matchedSiteCount: job.matchedSiteCount,
   unmatchedSiteCount: job.unmatchedSiteCount,
@@ -253,7 +279,7 @@ const assertJobExists = async (jobId) => {
   return job;
 };
 
-const createJob = async ({ prevalidatedFileId, generationScope, siteCodes, prScope }) => {
+const createJob = async ({ prevalidatedFileId, generationScope, siteCodes, prScope, workerId }) => {
   if (!prevalidatedFileId) {
     throw createApiError(400, 'VALIDATION_ERROR', 'prevalidatedFileId is required.');
   }
@@ -278,6 +304,19 @@ const createJob = async ({ prevalidatedFileId, generationScope, siteCodes, prSco
     throw createApiError(400, 'SITE_CODE_LIMIT_EXCEEDED', `Site code count exceeds the configured limit of ${config.limits.maxSiteCodes}.`);
   }
 
+  const normalizedWorkerId = normalizeWorkerId(workerId);
+  let workerManifest;
+
+  try {
+    workerManifest = getWorkerManifest(normalizedWorkerId);
+  } catch (error) {
+    throw createApiError(400, 'VALIDATION_ERROR', `workerId must be one of ${Object.values(WORKER_IDS).join(' or ')}.`);
+  }
+
+  if (normalizedWorkerId !== WORKER_IDS.MW_PR) {
+    throw createApiError(400, 'VALIDATION_ERROR', `${workerManifest.displayName} job creation is not enabled on this route yet.`);
+  }
+
   const upload = await consumePrevalidatedUpload(prevalidatedFileId);
   const jobId = await generateUniqueJobId();
   await storageService.createJobFolders(jobId);
@@ -292,6 +331,7 @@ const createJob = async ({ prevalidatedFileId, generationScope, siteCodes, prSco
     requestPath,
     Buffer.from(JSON.stringify({
       jobId,
+      workerId: normalizedWorkerId,
       prScope: normalizedPrScope,
       generationScope,
       siteCodes: normalizedSiteCodes,
@@ -301,6 +341,9 @@ const createJob = async ({ prevalidatedFileId, generationScope, siteCodes, prSco
 
   const job = await Job.create({
     jobId,
+    workerId: normalizedWorkerId,
+    engineVersion: workerManifest.engineVersion,
+    engineCommit: workerManifest.engineCommit,
     workerType: 'pr-worker',
     status: 'queued',
     prScope: normalizedPrScope,
@@ -336,6 +379,10 @@ const createJob = async ({ prevalidatedFileId, generationScope, siteCodes, prSco
 
 const buildListFilter = async (query) => {
   const filter = {};
+
+  if (query.workerId) {
+    filter.workerId = normalizeWorkerId(query.workerId);
+  }
 
   if (query.workerType) {
     filter.workerType = query.workerType;
@@ -454,7 +501,6 @@ const getJobDetail = async (jobId) => {
       cancelledAt: job.cancelledAt,
       prScope: job.prScope || 'TSS',
       assetVersions: job.assetVersions || {},
-      engineVersion: job.engineVersion,
       fileRetentionUntil: job.fileRetentionUntil,
       failureDiagnosis: getFailureDiagnosis(job)
     },

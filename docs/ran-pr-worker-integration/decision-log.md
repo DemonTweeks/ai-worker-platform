@@ -267,3 +267,17 @@ The registry and RAN adapter already existed, but queued execution still bypasse
 ### Impact
 
 The next continuation can focus on worker-aware backend payloads and job-creation behavior, building on a queue that already resolves execution through explicit registered adapters.
+
+## 2026-06-26 - Task 4 Worker-Aware Payload Scope
+
+### Decision
+
+Keep this continuation limited to making backend create/list/detail payloads explicitly worker-aware, while leaving the existing MW create route behavior intact as the default-compatible path and deferring full RAN create-body handling to the next step.
+
+### Why
+
+The queue can now resolve adapters through the registry, but the backend API contract still looked MW-only. Exposing `workerId`, display name, engine audit metadata, and RAN run metadata in the shared payloads moves the platform contract toward dual-worker support without forcing a larger create-route rewrite in the same bounded step.
+
+### Impact
+
+The next continuation can focus directly on the first backend RAN create flow, building on payloads that already represent worker identity and audit metadata consistently in create/list/detail responses.

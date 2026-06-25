@@ -35,10 +35,11 @@
 - Added worker-aware safe RAN failure shaping plus backend error-visibility coverage for sanitized stage-based summaries and diagnosis.
 - Added direct backend coverage for successful and cooperatively cancelled RAN adapter runs, and wired that coverage into the backend test script.
 - Added the MW adapter plus registry-backed queue dispatch resolution, with direct backend coverage for worker selection by `workerId`.
+- Added worker-aware backend create/list/detail payloads with explicit worker identity and audit metadata while preserving MW as the default-compatible create flow.
 
 ## Next Action
 
-Continue Task 4 by making backend job creation/detail payloads explicitly worker-aware while preserving the existing MW external behavior.
+Continue Task 4 by adding the first backend RAN job-creation path for BOM/EPMS/run-mode inputs while preserving the existing MW route behavior.
 
 ## Blockers
 
@@ -60,6 +61,7 @@ Continue Task 4 by making backend job creation/detail payloads explicitly worker
 - `superpowers:executing-plans` for Task 3 safe-failure and coverage work
 - `superpowers:executing-plans` for Task 3 direct adapter-coverage work
 - `superpowers:executing-plans` for Task 4 registry-dispatch transition work
+- `superpowers:executing-plans` for Task 4 worker-aware backend payload work
 
 ## Notes
 
