@@ -220,3 +220,37 @@
 - Ran `node backend/scripts/ran-job-route-test.js` successfully.
 - Ran `npm.cmd --prefix backend run test:ran-routes` successfully.
 - Ran `git diff --check`; only CRLF conversion warnings were reported, with no diff hygiene errors.
+
+## 2026-06-26 - Task 4 RAN Runtime Lifecycle Evidence
+
+- Added `backend/src/services/ranWorkerService.js` so queued `ran-pr` jobs now execute through a platform-owned runtime wrapper that:
+  - updates durable job status across validation, asset loading, generation, output collection, completion, cancellation, and failure
+  - updates in-memory worker state phases and stage-based progress during the four upstream RAN stages
+  - publishes websocket/job events for shared lifecycle phases
+  - packages completion and cancelled-partial outputs through the existing report/ZIP layer
+- Added `backend/src/workers/adapters/ranPrJobAdapter.js` as the runtime-facing adapter entrypoint for the worker registry.
+- Updated `backend/src/workers/workerRegistry.js` so registered `ran-pr` queue dispatch now resolves to the runtime wrapper adapter instead of the raw engine adapter module.
+- Updated `backend/src/workers/adapters/ranPrAdapter.js` so the engine adapter can surface lifecycle callbacks for:
+  - workspace preparation start/completion
+  - stage-by-stage generation progress
+  - output collection start/completion
+- Added `backend/scripts/ran-worker-service-test.js` with direct mock-driven coverage for:
+  - successful `ran-pr` runtime lifecycle status transitions
+  - stage progress updates across all four RAN stages
+  - packaged completion handling
+  - cancelled-with-partial-result handling
+  - registry-compatible runtime execution behavior
+- Updated `backend/scripts/queue-registry-test.js` so registry dispatch coverage stubs the new `ranWorkerService` seam instead of the raw engine adapter.
+- Updated `backend/package.json` so `npm.cmd --prefix backend test` now includes `npm run test:ran-worker-service`.
+- Verified the RED phase by running `node backend/scripts/ran-worker-service-test.js` before implementation and observing the expected missing-feature failure:
+  - `Cannot find module '../src/services/ranWorkerService'`
+- Ran `node --check backend/src/services/ranWorkerService.js` successfully.
+- Ran `node --check backend/src/workers/adapters/ranPrJobAdapter.js` successfully.
+- Ran `node --check backend/src/workers/adapters/ranPrAdapter.js` successfully.
+- Ran `node --check backend/scripts/ran-worker-service-test.js` successfully.
+- Verified `backend/package.json` parses successfully as JSON.
+- Ran `node backend/scripts/ran-worker-service-test.js` successfully.
+- Ran `npm.cmd --prefix backend run test:ran-worker-service` successfully.
+- Ran `npm.cmd --prefix backend run test:queue-registry` successfully after updating the registry harness for the runtime wrapper.
+- Ran `npm.cmd --prefix backend run test:ran-adapter` successfully to confirm the direct engine adapter coverage still passes.
+- Ran `git diff --check`; only CRLF conversion warnings were reported, with no diff hygiene errors.

@@ -10,6 +10,7 @@ const { validateRanRunConfiguration } = require('../ranProjectCatalogService');
 const { prepareRanWorkspace } = require('../ranWorkspaceService');
 const { WORKER_IDS } = require('../workerTypes');
 const { assertPathInsideRoot } = require('../../utils/pathUtils');
+const sanitizeStageLabel = (relativeScriptPath) => path.basename(relativeScriptPath || '');
 
 const RAN_PIPELINE_STAGES = [
   'src/simple_normalize.py',
@@ -99,7 +100,8 @@ const runPipelineStages = async ({
   runMode,
   selectedProject,
   timeoutMs,
-  isCancellationRequested
+  isCancellationRequested,
+  onStageStarted
 }) => {
   const pythonExecutable = getExplicitPythonExecutable();
   const stageResults = [];
@@ -111,6 +113,15 @@ const runPipelineStages = async ({
         cancelled: true,
         stageResults
       };
+    }
+
+    if (onStageStarted) {
+      await onStageStarted({
+        stage: relativeScriptPath,
+        stageLabel: sanitizeStageLabel(relativeScriptPath),
+        index: stageResults.length,
+        total: RAN_PIPELINE_STAGES.length
+      });
     }
 
     const result = await runPythonStage({
@@ -179,6 +190,9 @@ const run = async (jobId, options = {}) => {
     runMode: options.runMode || job.runMode,
     selectedProject: options.selectedProject || job.selectedProject
   });
+  if (options.onWorkspacePreparing) {
+    await options.onWorkspacePreparing('Preparing isolated RAN workspace.');
+  }
   const [bomFile, epmsFile] = await Promise.all([
     getTrackedInputFile(jobId, RAN_INPUT_FILE_TYPES.BOM),
     getTrackedInputFile(jobId, RAN_INPUT_FILE_TYPES.EPMS)
@@ -188,6 +202,9 @@ const run = async (jobId, options = {}) => {
     bomSourcePath: bomFile.absolutePath,
     epmsSourcePath: epmsFile.absolutePath
   });
+  if (options.onWorkspacePrepared) {
+    await options.onWorkspacePrepared('RAN workspace ready.');
+  }
 
   await persistJobMetadata(jobId, { runMode, selectedProject });
 
@@ -196,12 +213,19 @@ const run = async (jobId, options = {}) => {
     runMode,
     selectedProject,
     timeoutMs: options.timeoutMs,
-    isCancellationRequested: options.isCancellationRequested
+    isCancellationRequested: options.isCancellationRequested,
+    onStageStarted: options.onStageStarted
   });
+  if (options.onOutputsCollecting) {
+    await options.onOutputsCollecting('Collecting approved RAN outputs.');
+  }
   const outputCollection = await ingestRanOutputs({
     jobId,
     workspaceOutputRoot: workspace.outputRoot
   });
+  if (options.onOutputsCollected) {
+    await options.onOutputsCollected('Approved RAN outputs collected.');
+  }
 
   return {
     workerId: WORKER_IDS.RAN_PR,
@@ -221,5 +245,6 @@ module.exports = {
   buildPipelineEnv,
   persistJobMetadata,
   run,
+  sanitizeStageLabel,
   runPipelineStages
 };

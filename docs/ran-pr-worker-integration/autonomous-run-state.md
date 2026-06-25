@@ -38,10 +38,11 @@
 - Added worker-aware backend create/list/detail payloads with explicit worker identity and audit metadata while preserving MW as the default-compatible create flow.
 - Added the first backend RAN create path with upload-kind-aware prevalidation, tracked BOM/EPMS job inputs, validated run-mode selection, and direct backend coverage.
 - Added route-level backend coverage for `ran-pr` prevalidation and create flows, and hardened `ran-bom` prevalidation so unreadable Excel payloads are rejected before job creation.
+- Added a RAN worker runtime service plus registry wiring so queued `ran-pr` jobs now publish shared lifecycle phases, stage progress, cancellation results, and packaged completion outputs.
 
 ## Next Action
 
-Continue Task 4 by integrating RAN queue lifecycle/progress coverage so `ran-pr` jobs publish the expected shared backend state transitions and cancellation behavior.
+Continue Task 4 by adding route/integration coverage for live `ran-pr` execution state, including terminal status, websocket-visible phase progress, and ZIP-ready completion behavior.
 
 ## Blockers
 
@@ -67,9 +68,10 @@ Continue Task 4 by integrating RAN queue lifecycle/progress coverage so `ran-pr`
 - `superpowers:subagent-driven-development` evaluated for this continuation; kept in-session because the RAN create-flow slice was tightly coupled
 - `superpowers:executing-plans` for Task 4 first backend RAN create-path work
 - `superpowers:test-driven-development` for Task 4 route-level RAN coverage and `ran-bom` prevalidation hardening
+- `superpowers:test-driven-development` for Task 4 RAN runtime lifecycle, progress, and cancellation wrapper
 
 ## Notes
 
 - The user explicitly directed work to remain in `C:\dev\ai-worker-platform-ran-pr` on `feature/ran-pr-worker-integration`, so no additional worktree was created.
 - The `COMPLETED` marker is intentionally absent until all acceptance gates pass.
-- Latest checkpoint commit: `3dd5e22` (`test: cover ran route creation flow`).
+- Latest checkpoint commit: `64d42d3` (`docs: record ran route coverage checkpoint`).

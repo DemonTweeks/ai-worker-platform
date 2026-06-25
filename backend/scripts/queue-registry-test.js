@@ -11,8 +11,8 @@ setCachedModule(path.join(repoRoot, 'src/services/prWorkerService.js'), {
   runPrWorkerJob: async (jobId) => ({ jobId, worker: 'mw' })
 });
 
-setCachedModule(path.join(repoRoot, 'src/workers/adapters/ranPrAdapter.js'), {
-  run: async (jobId) => ({ jobId, worker: 'ran' })
+setCachedModule(path.join(repoRoot, 'src/services/ranWorkerService.js'), {
+  runRanWorkerJob: async (jobId) => ({ jobId, worker: 'ran' })
 });
 
 const { getWorkerAdapter } = require('../src/workers/workerRegistry');

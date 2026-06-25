@@ -1,7 +1,7 @@
 const mwPrManifest = require('./manifests/mwPrManifest');
 const ranPrManifest = require('./manifests/ranPrManifest');
 const mwPrAdapter = require('./adapters/mwPrAdapter');
-const ranPrAdapter = require('./adapters/ranPrAdapter');
+const ranPrJobAdapter = require('./adapters/ranPrJobAdapter');
 const { WORKER_IDS } = require('./workerTypes');
 
 const registry = new Map([
@@ -11,7 +11,7 @@ const registry = new Map([
   }],
   [WORKER_IDS.RAN_PR, {
     manifest: ranPrManifest,
-    adapterFactory: () => ranPrAdapter
+    adapterFactory: () => ranPrJobAdapter
   }]
 ]);
 

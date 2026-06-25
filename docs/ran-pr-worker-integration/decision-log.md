@@ -309,3 +309,17 @@ The prior step added service-layer RAN creation, but the API contract still lack
 ### Impact
 
 The backend now has explicit route evidence for upload-kind handling and `ran-pr` create serialization, and unreadable BOM payloads are stopped before job creation. The next continuation can move on to shared queue lifecycle, progress, and cancellation behavior for RAN jobs.
+
+## 2026-06-26 - Task 4 RAN Runtime Lifecycle Scope
+
+### Decision
+
+Introduce a dedicated `ranWorkerService` runtime wrapper and repoint the worker registry to it, instead of letting queued `ran-pr` jobs call the raw engine adapter directly.
+
+### Why
+
+The raw RAN adapter can execute the engine and ingest approved outputs, but it does not own platform job status, worker-state phases, websocket event publication, final summary persistence, or packaging behavior. The platform already treats MW execution through a worker-service layer, so mirroring that separation for RAN is the smallest aligned way to make queued RAN jobs participate in the shared lifecycle contract without overloading the engine adapter itself.
+
+### Impact
+
+Queued `ran-pr` jobs now have a platform runtime seam for lifecycle status, stage progress, cancellation results, and packaged completion outputs. The next continuation should exercise that runtime through higher-level route or integration coverage so Job Detail and websocket consumers are proven end-to-end against a live RAN execution path.
