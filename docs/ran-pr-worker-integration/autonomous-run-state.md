@@ -51,10 +51,12 @@
 - Captured fresh MW regression signoff by rerunning the focused legacy MW backend and frontend verification commands against the current branch state.
 - Completed a branch-level changed-file scope review and verified the diff remains limited to aligned backend/frontend/docs/submodule work with no generated artifact paths or unrelated feature changes.
 - Replaced the placeholder `final-report.md` with a real in-progress mission summary covering delivered scope, verified evidence, current acceptance status, and remaining publish steps.
+- Rebased `feature/ran-pr-worker-integration` onto the latest `origin/main` and reran the required backend, frontend, build, and diff-hygiene validation commands successfully afterward.
+- Reconfirmed the pinned RAN submodule SHA/tag after the rebase and refreshed the persistent checkpoint history to the rebased commit graph.
 
 ## Next Action
 
-Confirm submodule pin/final hygiene gates, then prepare publish steps.
+Write final completion markers/state, push the rebased feature branch, and open the Draft PR.
 
 ## Blockers
 
@@ -99,4 +101,4 @@ Confirm submodule pin/final hygiene gates, then prepare publish steps.
 
 - The user explicitly directed work to remain in `C:\dev\ai-worker-platform-ran-pr` on `feature/ran-pr-worker-integration`, so no additional worktree was created.
 - The `COMPLETED` marker is intentionally absent until all acceptance gates pass.
-- Latest checkpoint commit: pending docs checkpoint for the final-report slice.
+- Latest checkpoint commit: pending this rebase-validation docs checkpoint, followed by the final completion checkpoint after publish preparation.

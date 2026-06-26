@@ -491,3 +491,17 @@ By this stage the branch already has substantial verified evidence and only a fe
 ### Impact
 
 The remaining bounded work is now narrowed to final submodule-pin and worktree-hygiene confirmation plus fetch/rebase/rerun/push/Draft PR completion.
+
+## 2026-06-26 - Rebase Evidence Must Refresh Persistent Checkpoint History
+
+### Decision
+
+After rebasing onto the latest `origin/main`, update the mission state bundle before any publish step so its checkpoint inventory and next action reflect the rewritten branch history.
+
+### Why
+
+The successful rebase preserved the work but changed every feature-branch commit SHA. Leaving the persistent state on the old hashes would make the resume source of truth misleading during the final delivery steps and any later heartbeat recovery.
+
+### Impact
+
+The mission logs now record the rebase outcome, the rerun validation evidence, and the current rebased checkpoint list before the final completion, push, and Draft PR steps.

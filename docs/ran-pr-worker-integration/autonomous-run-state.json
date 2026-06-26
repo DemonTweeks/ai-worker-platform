@@ -51,118 +51,164 @@
     "Added a repeatable backend invalid-input/safe-error acceptance command and verified both create-time RAN input rejection and live sanitized worker-failure visibility",
     "Captured fresh MW regression signoff by rerunning the focused legacy MW backend and frontend verification commands against the current branch state",
     "Completed a branch-level changed-file scope review and verified the diff remains limited to aligned backend/frontend/docs/submodule work with no generated artifact paths or unrelated feature changes",
-    "Replaced the placeholder final-report with a real in-progress mission summary covering delivered scope, verified evidence, current acceptance status, and remaining publish steps"
+    "Replaced the placeholder final-report with a real in-progress mission summary covering delivered scope, verified evidence, current acceptance status, and remaining publish steps",
+    "Rebased feature/ran-pr-worker-integration onto the latest origin/main and reran the required backend, frontend, build, and diff-hygiene validation commands successfully afterward",
+    "Reconfirmed the pinned RAN submodule SHA/tag after the rebase and refreshed the persistent checkpoint history to the rebased commit graph"
   ],
-  "next_action": "Confirm submodule pin/final hygiene gates, then prepare publish steps.",
+  "next_action": "Write final completion markers/state, push the rebased branch, and open the Draft PR.",
   "blockers": [],
   "checkpoint_commits": [
     {
-      "commit": "3ff6d9a4fc9c3ed7ae53fec421032d64f18d6aed",
+      "commit": "216419a41371270a1fdb52b0293eb6f648dcf7b7",
       "message": "chore: initialize ran integration mission state"
     },
     {
-      "commit": "fd885a9ae9d214b9778e0786b21807246b0185bf",
+      "commit": "db016e478989bdfccb17ed641b4efcd6c4351abb",
       "message": "docs: capture mw flow discovery for ran integration"
     },
     {
-      "commit": "189a08afec7bdb5d00b599d020cd7cc629567122",
+      "commit": "796e289ad92fbae7f11e6abbe0d14386a42827db",
       "message": "docs: capture ran engine discovery baseline"
     },
     {
-      "commit": "e6c080824c4cfb1389476e778c80a38fba71ac0b",
+      "commit": "6d78019d7dc8732f52b9c7b4ce904c63de8d0e7e",
       "message": "docs: define ran ux contract and worker adr"
     },
     {
-      "commit": "a32c87f0a5f37769238a05681d626bb5679cce89",
+      "commit": "c4d80800d2673c97d572824f278d0e754a56d4f4",
       "message": "docs: expand ran integration implementation plan"
     },
     {
-      "commit": "2196ba7358ce52e170bea270bbcfa5d3d7408a25",
+      "commit": "1f85f5557b325056d854950ea7c72221dafa25ce",
       "message": "feat: add ran worker manifests and submodule pin"
     },
     {
-      "commit": "3fbbc0dcaf8a0fe1a8342da0c3a93c1aad09796e",
+      "commit": "c1252860c1e8c9f576c2e3b762af40f51fdc38d7",
       "message": "feat: add ran project catalog and workspace staging"
     },
     {
-      "commit": "82f7537ef16dd9e574cc2fdf3287f62710d0e0ff",
+      "commit": "91445d541cf7a3bacdc8d8b81659284d11872165",
       "message": "feat: add ran adapter execution foundation"
     },
     {
-      "commit": "96b05afdd4ff5c64eb79eb43cecd1d66e0088d4d",
+      "commit": "9211b334b62e7ba4f329d5c63536ae2efaca7f3d",
       "message": "feat: ingest ran outputs into platform storage"
     },
     {
-      "commit": "c27967c7f8af3f9ddb51b5512806fd376ed1f1b6",
+      "commit": "2ed53dc2735a70cfe1526c5b696f4df034e2924e",
       "message": "feat: harden ran failure visibility"
     },
     {
-      "commit": "011a8383ae3611cfd7c2b49ca689b7716d815bbd",
+      "commit": "48acb9ab35f408d863b456847a5de63793efbb2c",
       "message": "test: cover ran adapter execution paths"
     },
     {
-      "commit": "4b3e4f5f7f6c17db8ddf33ea901ba8ebba84a9d0",
+      "commit": "5f3d40502704cfb36b0bf111a737738a835c442d",
       "message": "feat: route queued jobs through worker registry"
     },
     {
-      "commit": "bf4db61fedc73600c4acf330122717d8df446e5c",
+      "commit": "ddca807350ae6e32ababff2c4eaeb7b21de8c319",
+      "message": "feat: expose worker-aware job payloads"
+    },
+    {
+      "commit": "75589a198f24332cfb969812b69b50b0a390a038",
       "message": "feat: add ran job creation path"
     },
     {
-      "commit": "3dd5e227e93eb7734eebaf2994b5f03ae3777e5e",
+      "commit": "5305fe54c7ec38a9f5bb2dd35be7ace7d3c7f48d",
       "message": "test: cover ran route creation flow"
     },
     {
-      "commit": "64d42d35226baa647e26336d55e884782d959bc6",
+      "commit": "f4f6d0f2d9ac2bebfeedfd290c0e5cbeaf6bf9d3",
       "message": "docs: record ran route coverage checkpoint"
     },
     {
-      "commit": "03e7865acfad4dd752410ca8f83ea61218662f94",
+      "commit": "3e3bf4899743f0c586d312c0ababe701da64af54",
       "message": "feat: add ran worker lifecycle runtime"
     },
     {
-      "commit": "ef0b3b849d60161fc710ba98164524f6abacf53c",
+      "commit": "8825df7fe72da69fbe0abf1c61428499abdbefa8",
       "message": "docs: record ran lifecycle checkpoint"
     },
     {
-      "commit": "b333924dec698f8729517b1b4e23b234a2ef5cea",
+      "commit": "71ab773b1a2bd82bac82690562a70ea4a7be2b5d",
       "message": "test: cover live ran runtime packaging"
     },
     {
-      "commit": "411c0ee774f919fd5940009f3499298963c3fbaa",
+      "commit": "daeba9767991002588929c2a422783ea82b6f3f0",
       "message": "docs: record live runtime checkpoint"
     },
     {
-      "commit": "776521e0b8db174d8d8412e2c80a23662109f08f",
+      "commit": "40f399a8b6d4548d399191531ae67e1321a54fb7",
       "message": "test: harden ran cancellation signaling"
     },
     {
-      "commit": "acadb79622c394596fd09adbeacf439dc88ee869",
+      "commit": "8f41ae9214af7116a36b4bbbddeabda709216904",
       "message": "docs: record cancellation signaling checkpoint"
     },
     {
-      "commit": "12404ce6c39ba31ee78bf3761f9ff4480b09a8b1",
+      "commit": "5edb64fc615051786900b056424931ad82c4598a",
       "message": "feat: add ran home launch flow"
     },
     {
-      "commit": "c3f842b5aab2bc0729f3f296e07d114e3ebc3cb0",
+      "commit": "565f2327ad2ae21f0bc860900a6fd09d751a12bd",
+      "message": "docs: record ran home flow checkpoint"
+    },
+    {
+      "commit": "dfd37130ed68fc66e22aa5e8d1456224912086ae",
       "message": "feat: add ran history and detail metadata"
     },
     {
-      "commit": "69423ad3ab9857e39a0e4ec601cce7ba1bf66103",
+      "commit": "80f5b427ba19d18c1e3ce073568c25511d278762",
+      "message": "docs: record ran history detail checkpoint"
+    },
+    {
+      "commit": "58e51c6ee02c553d30b425e127396bb64fde8909",
+      "message": "docs: record full-suite validation checkpoint"
+    },
+    {
+      "commit": "2dfbcf360e564419f6f159da91358c38947f5017",
       "message": "test: add ran golden verification"
     },
     {
-      "commit": "f3d106e18292a6d30ce547fa1c0a7e59cbf4b01f",
+      "commit": "400993ebd20419862dd4d434feaa35c1abd27a4c",
+      "message": "docs: record ran golden verification checkpoint"
+    },
+    {
+      "commit": "2936a1267017b9ab15875f65b8bbcc2da16689d5",
       "message": "test: add ran history reload verification"
     },
     {
-      "commit": "33fc8fc35bb415c585baa3d6972aef4f9553e95a",
+      "commit": "a47b34db5e33547fb8f04f80ef602a9b097a3c9a",
+      "message": "docs: record ran history reload checkpoint"
+    },
+    {
+      "commit": "1741db61794fed9ed7c33d18b4882b08e1ce8fb3",
       "message": "test: add ran concurrency verification"
     },
     {
-      "commit": "324cba46ece5fa694079de51d72822568ea6ad05",
+      "commit": "e784d2ce499adb6bb191de8251166d6304fcf833",
+      "message": "docs: record ran concurrency checkpoint"
+    },
+    {
+      "commit": "ff9e5936c9f9916d18e8d4fa9915d940d392eb0f",
       "message": "test: add ran invalid-input safe-error verification"
+    },
+    {
+      "commit": "c231684bc7e4da800d231f1bd9b933f6af1e4f75",
+      "message": "docs: record ran invalid-input checkpoint"
+    },
+    {
+      "commit": "5c9f079338761cbc20b3afdc4499b48542e57e07",
+      "message": "docs: record mw regression checkpoint"
+    },
+    {
+      "commit": "588b187cf7b5795300db1687cf8cff5c492fd770",
+      "message": "docs: record changed-file review checkpoint"
+    },
+    {
+      "commit": "cdd955bcc260eb2e3aa3f314ec8ad104903ebb7f",
+      "message": "docs: record final report checkpoint"
     }
   ],
   "remaining_acceptance_gates": [
@@ -201,7 +247,8 @@
     "superpowers:executing-plans for the first Phase 4 workspace isolation/concurrency verification slice",
     "superpowers:executing-plans for the first Phase 4 invalid-input and safe-error acceptance verification slice",
     "superpowers:verification-before-completion for the focused MW regression signoff command pass",
-    "superpowers:executing-plans for the branch-level changed-file scope review slice"
+    "superpowers:executing-plans for the branch-level changed-file scope review slice",
+    "superpowers:verification-before-completion for post-rebase validation evidence before final publish"
   ],
   "artifacts": {
     "state_markdown": "docs/ran-pr-worker-integration/autonomous-run-state.md",
@@ -212,5 +259,5 @@
     "prototype_ux_contract": "docs/ran-pr-worker-integration/prototype-ux-contract.md",
     "worker_skill_contract_adr": "docs/ran-pr-worker-integration/worker-skill-contract-adr.md"
   },
-  "last_updated_utc": "2026-06-26T14:18:00Z"
+  "last_updated_utc": "2026-06-26T13:44:08Z"
 }
