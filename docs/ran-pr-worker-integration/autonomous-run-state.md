@@ -42,10 +42,11 @@
 - Added live route/runtime coverage for queued `ran-pr` execution so terminal Job Detail polling, websocket lifecycle events, and ZIP download readiness are now verified together.
 - Added live cancellation parity coverage for running `ran-pr` jobs so cancellation requests, terminal `JOB_CANCELLED` events, partial-result ZIP availability, and detail state now stay aligned.
 - Added the first worker-aware frontend RAN launch slice on the home workbench, including BOM/EPMS validation, run-mode switching, workbook-backed General Item selection, and worker-aware create payloads.
+- Added worker-aware History and Job Detail rendering for `ran-pr`, including worker filters, worker badges/labels, run-mode/project visibility, and engine audit metadata.
 
 ## Next Action
 
-Continue Task 5 by extending worker awareness into History and Job Detail with worker badges/filters plus RAN audit metadata rendering.
+Begin Phase 4 verification work with backend/frontend full-suite validation and the first golden/business-result checks for Standard PR and General Item.
 
 ## Blockers
 
@@ -76,9 +77,10 @@ Continue Task 5 by extending worker awareness into History and Job Detail with w
 - `superpowers:test-driven-development` for Task 4 terminal-status ordering and ZIP-ready live detail behavior
 - `superpowers:test-driven-development` for Task 4 running-cancellation event semantics and partial-result detail parity
 - `superpowers:test-driven-development` for Task 5 home-view worker selection, RAN upload validation, and workbook-backed project selection
+- `superpowers:test-driven-development` for Task 5 History filters, worker-aware job cards, and RAN Job Detail audit metadata
 
 ## Notes
 
 - The user explicitly directed work to remain in `C:\dev\ai-worker-platform-ran-pr` on `feature/ran-pr-worker-integration`, so no additional worktree was created.
 - The `COMPLETED` marker is intentionally absent until all acceptance gates pass.
-- Latest checkpoint commit: `12404ce` (`feat: add ran home launch flow`).
+- Latest checkpoint commit: `c3f842b` (`feat: add ran history and detail metadata`).

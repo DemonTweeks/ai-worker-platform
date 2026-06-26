@@ -333,3 +333,30 @@
   - `npm run build`
   - `npm run smoke`
 - Ran `git diff --check`; only CRLF conversion warnings were reported, with no diff hygiene errors.
+
+## 2026-06-26 - Task 5 History And Detail Worker Awareness Evidence
+
+- Added a worker filter to the shared History controls by updating `frontend/src/components/history/JobHistoryFilters.vue` and `frontend/src/views/JobHistoryView.vue` so list queries can explicitly request `mw-pr` or `ran-pr` while preserving the shared `pr-worker` worker type.
+- Updated `frontend/src/components/history/JobHistoryCard.vue` so history cards now render:
+  - the worker display name and worker ID
+  - the selected run mode
+  - the validated General Item project when present
+- Updated `frontend/src/components/detail/JobDetailHeader.vue` and `frontend/src/components/detail/JobDetailSummary.vue` so Job Detail now exposes RAN audit metadata, including:
+  - worker display name and worker ID
+  - run mode
+  - selected project
+  - engine version
+  - engine commit
+- Added focused frontend coverage for the new worker-aware rendering and query behavior:
+  - `frontend/src/views/__tests__/JobHistoryView.spec.js`
+  - `frontend/src/components/detail/__tests__/JobDetailMetadata.spec.js`
+  - updated `frontend/src/components/history/__tests__/JobHistoryCard.spec.js`
+- Verified the RED phase by running `npm.cmd run test:unit -- JobHistoryCard JobHistoryView JobDetailMetadata` in `frontend/` before the UI updates and observing the expected failures:
+  - history cards still exposed the generic `pr-worker` information instead of RAN worker identity
+  - Job Detail omitted the RAN worker and engine audit metadata
+  - the new `JobHistoryView` test harness hit a mock-hoisting failure before the `vi.hoisted(...)` fix
+- Ran `npm.cmd run test:unit -- JobHistoryCard JobHistoryView JobDetailMetadata` successfully in `frontend/` after the history/detail changes.
+- Ran the full project-native frontend verification command `npm.cmd test` in `frontend/` successfully, including:
+  - `npm run test:unit`
+  - `npm run build`
+  - `npm run smoke`

@@ -42,9 +42,10 @@
     "Added a RAN worker runtime service plus registry wiring so queued ran-pr jobs now publish shared lifecycle phases, stage progress, cancellation results, and packaged completion outputs",
     "Added live route/runtime coverage for queued ran-pr execution so terminal Job Detail polling, websocket lifecycle events, and ZIP download readiness are now verified together",
     "Added live cancellation parity coverage for running ran-pr jobs so cancellation requests, terminal JOB_CANCELLED events, partial-result ZIP availability, and detail state now stay aligned",
-    "Added the first worker-aware frontend RAN launch slice on the home workbench, including BOM/EPMS validation, run-mode switching, workbook-backed General Item selection, and worker-aware create payloads"
+    "Added the first worker-aware frontend RAN launch slice on the home workbench, including BOM/EPMS validation, run-mode switching, workbook-backed General Item selection, and worker-aware create payloads",
+    "Added worker-aware History and Job Detail rendering for ran-pr, including worker filters, worker badges/labels, run-mode/project visibility, and engine audit metadata"
   ],
-  "next_action": "Continue Task 5 by extending worker awareness into History and Job Detail with worker badges/filters plus RAN audit metadata rendering.",
+  "next_action": "Begin Phase 4 verification work with backend/frontend full-suite validation and the first golden/business-result checks for Standard PR and General Item.",
   "blockers": [],
   "checkpoint_commits": [
     {
@@ -134,6 +135,10 @@
     {
       "commit": "12404ce6c39ba31ee78bf3761f9ff4480b09a8b1",
       "message": "feat: add ran home launch flow"
+    },
+    {
+      "commit": "c3f842b5aab2bc0729f3f296e07d114e3ebc3cb0",
+      "message": "feat: add ran history and detail metadata"
     }
   ],
   "remaining_acceptance_gates": [
@@ -175,7 +180,8 @@
     "superpowers:executing-plans for Task 4 live route/runtime RAN coverage",
     "superpowers:test-driven-development for Task 4 terminal-status ordering and ZIP-ready live detail behavior",
     "superpowers:test-driven-development for Task 4 running-cancellation event semantics and partial-result detail parity",
-    "superpowers:test-driven-development for Task 5 home-view worker selection, RAN upload validation, and workbook-backed project selection"
+    "superpowers:test-driven-development for Task 5 home-view worker selection, RAN upload validation, and workbook-backed project selection",
+    "superpowers:test-driven-development for Task 5 History filters, worker-aware job cards, and RAN Job Detail audit metadata"
   ],
   "artifacts": {
     "state_markdown": "docs/ran-pr-worker-integration/autonomous-run-state.md",
@@ -186,5 +192,5 @@
     "prototype_ux_contract": "docs/ran-pr-worker-integration/prototype-ux-contract.md",
     "worker_skill_contract_adr": "docs/ran-pr-worker-integration/worker-skill-contract-adr.md"
   },
-  "last_updated_utc": "2026-06-26T08:47:00Z"
+  "last_updated_utc": "2026-06-26T09:00:00Z"
 }

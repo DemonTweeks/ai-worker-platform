@@ -365,3 +365,17 @@ The backend already owns validated project derivation through `ranProjectCatalog
 ### Impact
 
 The home route can now launch both MW and RAN jobs through the platform workbench using worker-aware payloads and validated project choices. The next frontend continuation can move beyond launch inputs into history badges/filters and job-detail audit rendering without reopening the launch contract.
+
+## 2026-06-26 - Task 5 History And Detail Scope
+
+### Decision
+
+Extend the existing shared History and Job Detail surfaces with worker-aware filters, labels, and audit metadata instead of creating any RAN-specific route, page, or alternate detail experience.
+
+### Why
+
+The mission requires unified platform history and Job Detail, and the backend already supplies worker identity plus engine audit fields on the shared job payloads. Reusing those shared surfaces keeps MW behavior intact, avoids UI fragmentation, and lets the frontend prove worker-aware rendering with the smallest possible change set.
+
+### Impact
+
+History can now be filtered by worker and shows which worker produced each job, while Job Detail exposes the RAN audit metadata needed for traceability. The next continuation can leave the launch/history/detail UI path in place and move into Phase 4 verification work such as golden checks, regression coverage, and persistence proof.
