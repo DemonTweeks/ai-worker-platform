@@ -46,10 +46,11 @@
 - Ran the full backend and frontend project-native validation commands, including a clean standalone frontend build and `git diff --check`, after initializing the existing MW fixture submodule required by backend integration coverage.
 - Added a repeatable backend golden-test command and verified that live `ran-pr` Standard PR and General Item runs match the pinned upstream ECC workbooks by logical business content.
 - Added a repeatable backend reload-proof command and verified that a completed `ran-pr` General Item job survives full server restart in shared History, shared Job Detail, and ZIP download availability.
+- Added a repeatable backend concurrency-test command and verified that simultaneous `ran-pr` jobs use distinct isolated workspaces and distinct retained output paths.
 
 ## Next Action
 
-Verify workspace isolation/concurrency and invalid-input safe-error acceptance checks, then capture MW regression signoff and changed-file review.
+Verify invalid-input safe-error acceptance checks, then capture MW regression signoff and changed-file review.
 
 ## Blockers
 
@@ -85,9 +86,10 @@ Verify workspace isolation/concurrency and invalid-input safe-error acceptance c
 - `superpowers:systematic-debugging` to diagnose the initial backend suite failure to an uninitialized existing MW fixture submodule before rerunning validation
 - `superpowers:executing-plans` for the first Phase 4 golden/business-result verification slice
 - `superpowers:executing-plans` for the first Phase 4 history persistence/reload verification slice
+- `superpowers:executing-plans` for the first Phase 4 workspace isolation/concurrency verification slice
 
 ## Notes
 
 - The user explicitly directed work to remain in `C:\dev\ai-worker-platform-ran-pr` on `feature/ran-pr-worker-integration`, so no additional worktree was created.
 - The `COMPLETED` marker is intentionally absent until all acceptance gates pass.
-- Latest checkpoint commit: `f3d106e` (`test: add ran history reload verification`).
+- Latest checkpoint commit: `33fc8fc` (`test: add ran concurrency verification`).

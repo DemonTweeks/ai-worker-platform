@@ -421,3 +421,17 @@ The mission asks for history persistence/reload proof, and the discovered queue/
 ### Impact
 
 The branch now has a repeatable reload-proof command that demonstrates completed `ran-pr` jobs survive process restart in shared History, shared Job Detail, and ZIP download availability. The next bounded verification step can focus on workspace isolation/concurrency and invalid-input safe-error acceptance behavior.
+
+## 2026-06-26 - Workspace Isolation Proof Uses Simultaneous Live RAN Jobs
+
+### Decision
+
+Prove workspace isolation with two simultaneous live `ran-pr` executions instead of only inspecting a single staged workspace or using mock-only staging assertions.
+
+### Why
+
+Single-job staging checks prove the workspace-preparation service copies the expected inputs, but they do not prove that concurrent queue/runtime execution keeps workspace roots, staged inputs, retained outputs, and ZIP packaging isolated from one another. Running one `standard-pr` job and one `general-item` job at the same time exercises the real route, queue, runtime, storage, and cleanup path under concurrent load.
+
+### Impact
+
+The branch now has stronger acceptance evidence for the workspace-isolation gate. The next bounded verification step can focus on invalid-input safe-error acceptance behavior, then finish MW regression signoff and changed-file review before publish preparation.

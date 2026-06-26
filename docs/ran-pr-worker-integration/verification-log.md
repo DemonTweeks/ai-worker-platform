@@ -433,3 +433,23 @@
   - worker identity and audit metadata remained intact
   - the retained `ran_ecc_output_with_general_items`, `Summary.json`, and ZIP package were still reported as available
 - Verified post-restart download continuity through `GET /api/jobs/:jobId/download-zip`, including preservation of the ZIP file signature.
+
+## 2026-06-26 - Phase 4 Workspace Isolation And Concurrency Evidence
+
+- Added `backend/scripts/ran-concurrency-test.js` plus the package entrypoint `npm.cmd --prefix backend run test:ran-concurrency` so the branch now has a repeatable live workspace-isolation acceptance command.
+- Ran `npm.cmd --prefix backend run test:ran-concurrency` successfully against the real platform route/queue/runtime path using the pinned sample inputs:
+  - `skills/create-pr-cd-ran/input/BOM.xlsx`
+  - `skills/create-pr-cd-ran/input/EPMS.xlsx`
+- The script created two simultaneous live `ran-pr` jobs:
+  - one `standard-pr`
+  - one `general-item` for the workbook-backed project `CD consolidation 2023 (Swap/ Modernize)`
+- Verified both jobs were concurrently active before either completed by polling shared History/Detail state while both held non-terminal runtime statuses.
+- Verified each job received a distinct isolated workspace root under the platform-owned RAN workspace storage path.
+- Verified each isolated workspace contained only the expected staged engine/runtime assets:
+  - copied `src/`
+  - copied `config/`
+  - staged `input/BOM.xlsx`
+  - staged `input/EPMS.xlsx`
+- Verified both jobs completed successfully through the shared platform lifecycle and retained `Summary.json` plus ZIP outputs.
+- Verified the retained ZIP/output storage paths were distinct across the two jobs, proving no cross-job output mixing.
+- Verified the script cleaned its temporary jobs, tracked files, platform storage folders, and per-job RAN workspaces after the proof completed.

@@ -46,9 +46,10 @@
     "Added worker-aware History and Job Detail rendering for ran-pr, including worker filters, worker badges/labels, run-mode/project visibility, and engine audit metadata",
     "Ran the full backend and frontend project-native validation commands, including a clean standalone frontend build and git diff --check, after initializing the existing MW fixture submodule required by backend integration coverage",
     "Added a repeatable backend golden-test command and verified that live ran-pr Standard PR and General Item runs match the pinned upstream ECC workbooks by logical business content",
-    "Added a repeatable backend reload-proof command and verified that a completed ran-pr General Item job survives full server restart in shared History, shared Job Detail, and ZIP download availability"
+    "Added a repeatable backend reload-proof command and verified that a completed ran-pr General Item job survives full server restart in shared History, shared Job Detail, and ZIP download availability",
+    "Added a repeatable backend concurrency-test command and verified that simultaneous ran-pr jobs use distinct isolated workspaces and distinct retained output paths"
   ],
-  "next_action": "Verify workspace isolation/concurrency and invalid-input safe-error acceptance checks, then capture MW regression signoff and changed-file review.",
+  "next_action": "Verify invalid-input safe-error acceptance checks, then capture MW regression signoff and changed-file review.",
   "blockers": [],
   "checkpoint_commits": [
     {
@@ -150,11 +151,14 @@
     {
       "commit": "f3d106e18292a6d30ce547fa1c0a7e59cbf4b01f",
       "message": "test: add ran history reload verification"
+    },
+    {
+      "commit": "33fc8fc35bb415c585baa3d6972aef4f9553e95a",
+      "message": "test: add ran concurrency verification"
     }
   ],
   "remaining_acceptance_gates": [
     "RAN submodule pinned at required tag and SHA",
-    "Workspace isolation/concurrency test passes",
     "Invalid input safe-error test passes",
     "MW regression passes",
     "Changed-file scope reviewed",
@@ -189,7 +193,8 @@
     "superpowers:executing-plans for the first Phase 4 full-suite validation slice",
     "superpowers:systematic-debugging to diagnose the initial backend suite failure to an uninitialized existing MW fixture submodule before rerunning validation",
     "superpowers:executing-plans for the first Phase 4 golden/business-result verification slice",
-    "superpowers:executing-plans for the first Phase 4 history persistence/reload verification slice"
+    "superpowers:executing-plans for the first Phase 4 history persistence/reload verification slice",
+    "superpowers:executing-plans for the first Phase 4 workspace isolation/concurrency verification slice"
   ],
   "artifacts": {
     "state_markdown": "docs/ran-pr-worker-integration/autonomous-run-state.md",
@@ -200,5 +205,5 @@
     "prototype_ux_contract": "docs/ran-pr-worker-integration/prototype-ux-contract.md",
     "worker_skill_contract_adr": "docs/ran-pr-worker-integration/worker-skill-contract-adr.md"
   },
-  "last_updated_utc": "2026-06-26T09:24:00Z"
+  "last_updated_utc": "2026-06-26T09:30:48Z"
 }
