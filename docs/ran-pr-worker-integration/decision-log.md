@@ -407,3 +407,17 @@ The upstream sample output bundle already records that project in `skills/create
 ### Impact
 
 The branch now has a repeatable golden-test command that proves the real platform execution path reproduces both the Standard PR and General Item sample business outputs. The next bounded verification step can move to persistence/history reload and workspace-isolation coverage.
+
+## 2026-06-26 - Persistence Proof Uses A Full Server Restart
+
+### Decision
+
+Prove RAN history/detail persistence by fully stopping and restarting the backend server between job completion and the verification requests, rather than only re-querying within one process lifetime.
+
+### Why
+
+The mission asks for history persistence/reload proof, and the discovered queue/runtime state is process-local. A same-process re-fetch would only prove that in-memory request handlers still see the completed job. Restarting the server forces the proof to rely on the true systems of record: Firebase-backed job metadata plus platform-managed storage files.
+
+### Impact
+
+The branch now has a repeatable reload-proof command that demonstrates completed `ran-pr` jobs survive process restart in shared History, shared Job Detail, and ZIP download availability. The next bounded verification step can focus on workspace isolation/concurrency and invalid-input safe-error acceptance behavior.

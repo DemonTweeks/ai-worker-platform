@@ -414,3 +414,22 @@
   - the full logical row set matched exactly
 - Verified both golden runs also produced platform-owned `Summary.json` and ZIP outputs before workbook comparison.
 - Wrote the structured summary to `docs/ran-pr-worker-integration/golden-test-evidence.md`.
+
+## 2026-06-26 - Phase 4 History Persistence And Reload Evidence
+
+- Added `backend/scripts/ran-history-reload-test.js` plus the package entrypoint `npm.cmd --prefix backend run test:ran-history-reload` so the branch now has a repeatable persistence/reload verification command.
+- Ran `npm.cmd --prefix backend run test:ran-history-reload` successfully against the real platform route/queue/runtime path.
+- The script created a live `ran-pr` `general-item` job using the pinned sample BOM/EPMS inputs and the workbook-backed project `CD consolidation 2023 (Swap/ Modernize)`, waited for terminal completion, then fully restarted the backend server before verification.
+- After the restart, verified shared History reload behavior through `GET /api/jobs?workerId=ran-pr&limit=20&page=1`:
+  - the completed job still appeared in the shared list response
+  - `workerId` remained `ran-pr`
+  - `workerDisplayName` remained `RAN PR Worker`
+  - `runMode` remained `general-item`
+  - `selectedProject` remained `CD consolidation 2023 (Swap/ Modernize)`
+  - `engineVersion` remained `v1.0.0`
+  - `engineCommit` remained `239910e2816153339a94881597bbb95355059741`
+- After the restart, verified shared Job Detail reload behavior through `GET /api/jobs/:jobId`:
+  - the completed job detail still loaded successfully
+  - worker identity and audit metadata remained intact
+  - the retained `ran_ecc_output_with_general_items`, `Summary.json`, and ZIP package were still reported as available
+- Verified post-restart download continuity through `GET /api/jobs/:jobId/download-zip`, including preservation of the ZIP file signature.

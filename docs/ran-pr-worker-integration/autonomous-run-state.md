@@ -45,10 +45,11 @@
 - Added worker-aware History and Job Detail rendering for `ran-pr`, including worker filters, worker badges/labels, run-mode/project visibility, and engine audit metadata.
 - Ran the full backend and frontend project-native validation commands, including a clean standalone frontend build and `git diff --check`, after initializing the existing MW fixture submodule required by backend integration coverage.
 - Added a repeatable backend golden-test command and verified that live `ran-pr` Standard PR and General Item runs match the pinned upstream ECC workbooks by logical business content.
+- Added a repeatable backend reload-proof command and verified that a completed `ran-pr` General Item job survives full server restart in shared History, shared Job Detail, and ZIP download availability.
 
 ## Next Action
 
-Capture persistence/history reload proof, then verify workspace isolation/concurrency and invalid-input safe-error acceptance checks.
+Verify workspace isolation/concurrency and invalid-input safe-error acceptance checks, then capture MW regression signoff and changed-file review.
 
 ## Blockers
 
@@ -83,9 +84,10 @@ Capture persistence/history reload proof, then verify workspace isolation/concur
 - `superpowers:executing-plans` for the first Phase 4 full-suite validation slice
 - `superpowers:systematic-debugging` to diagnose the initial backend suite failure to an uninitialized existing MW fixture submodule before rerunning validation
 - `superpowers:executing-plans` for the first Phase 4 golden/business-result verification slice
+- `superpowers:executing-plans` for the first Phase 4 history persistence/reload verification slice
 
 ## Notes
 
 - The user explicitly directed work to remain in `C:\dev\ai-worker-platform-ran-pr` on `feature/ran-pr-worker-integration`, so no additional worktree was created.
 - The `COMPLETED` marker is intentionally absent until all acceptance gates pass.
-- Latest checkpoint commit: `69423ad` (`test: add ran golden verification`).
+- Latest checkpoint commit: `f3d106e` (`test: add ran history reload verification`).
