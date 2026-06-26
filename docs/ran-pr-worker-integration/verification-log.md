@@ -504,3 +504,32 @@
   - `tssStatus: completed_with_warning`
   - `tiResult: completed_with_warning`
 - Verified `npm.cmd run test:unit -- HomeView` passed and still preserves the existing MW home-launch flow alongside the RAN additions.
+
+## 2026-06-26 - Phase 4 Changed-File Scope Review Evidence
+
+- Reviewed the full branch diff against `origin/main` with:
+  - `git diff --stat origin/main...HEAD`
+  - `git diff --name-status origin/main...HEAD`
+  - `git submodule status --recursive`
+- Verified the branch change inventory remains mission-scoped:
+  - `backend`: worker registry, RAN adapters/services, worker-aware job handling, validation/runtime packaging, and verification scripts
+  - `frontend`: worker-aware home/history/detail rendering and tests
+  - `docs/ran-pr-worker-integration`: persistent mission state, verification evidence, ADR/plan artifacts, and the in-progress final-report placeholder
+  - `.gitmodules` plus the single `skills/create-pr-cd-ran` gitlink addition
+- Reviewed representative boundary files to confirm the scope matches the mission architecture rather than unrelated product changes:
+  - `.gitmodules`
+  - `backend/src/workers/workerRegistry.js`
+  - `backend/src/services/jobService.js`
+  - `backend/src/workers/manifests/ranPrManifest.js`
+  - `frontend/src/views/HomeView.vue`
+  - `frontend/src/views/JobHistoryView.vue`
+  - `docs/ran-pr-worker-integration/final-report.md`
+- Verified the submodule inventory still shows the pinned RAN engine gitlink at `239910e2816153339a94881597bbb95355059741`.
+- Verified the branch diff contains no tracked changes under suspicious generated/runtime paths such as:
+  - `storage/`
+  - `node_modules/`
+  - `dist/`
+  - `build/`
+  - upload/temp artifact directories
+- Verified the branch diff contains no tracked generated binary artifacts such as `.zip`, `.xlsx`, `.xls`, or `.csv` outputs; the changed files are source, test, metadata, and documentation only.
+- Scope review finding: no unrelated feature work, no duplicated upstream web/API prototype reuse, and no staged/generated output artifacts were found in the branch diff.

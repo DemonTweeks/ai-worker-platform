@@ -463,3 +463,17 @@ The remaining question for this gate is whether the worker-registry and shared U
 ### Impact
 
 The MW regression gate now has fresh direct evidence, and the remaining bounded work is narrowed to changed-file scope review and final delivery preparation.
+
+## 2026-06-26 - Changed-File Scope Review Uses Branch-Level Inventory Plus Boundary Sampling
+
+### Decision
+
+Prove the changed-file review gate with a branch-level diff inventory and representative boundary-file sampling instead of rereading every changed file line-by-line in one pass.
+
+### Why
+
+The branch now spans backend runtime, frontend UI, verification commands, submodule metadata, and mission documentation. The key review question is whether the changed scope stays aligned to the approved architecture and excludes unrelated/generated artifacts. A full diff inventory, suspicious-path scan, and representative boundary review of registry, job service, worker manifest, UI entrypoints, and docs gives stronger scope assurance than pretending a single-turn line-by-line reread of all 60 changed paths would be equally thorough.
+
+### Impact
+
+The changed-file scope gate now has explicit evidence. The remaining work is narrowed to final-report completion, submodule-pin/final hygiene confirmation, and publish preparation.

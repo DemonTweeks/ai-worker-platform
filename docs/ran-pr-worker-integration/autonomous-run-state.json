@@ -49,9 +49,10 @@
     "Added a repeatable backend reload-proof command and verified that a completed ran-pr General Item job survives full server restart in shared History, shared Job Detail, and ZIP download availability",
     "Added a repeatable backend concurrency-test command and verified that simultaneous ran-pr jobs use distinct isolated workspaces and distinct retained output paths",
     "Added a repeatable backend invalid-input/safe-error acceptance command and verified both create-time RAN input rejection and live sanitized worker-failure visibility",
-    "Captured fresh MW regression signoff by rerunning the focused legacy MW backend and frontend verification commands against the current branch state"
+    "Captured fresh MW regression signoff by rerunning the focused legacy MW backend and frontend verification commands against the current branch state",
+    "Completed a branch-level changed-file scope review and verified the diff remains limited to aligned backend/frontend/docs/submodule work with no generated artifact paths or unrelated feature changes"
   ],
-  "next_action": "Capture changed-file review.",
+  "next_action": "Complete the final report, confirm submodule pin/final hygiene gates, then prepare publish steps.",
   "blockers": [],
   "checkpoint_commits": [
     {
@@ -165,7 +166,6 @@
   ],
   "remaining_acceptance_gates": [
     "RAN submodule pinned at required tag and SHA",
-    "Changed-file scope reviewed",
     "No generated/secret files staged",
     "Final report exists",
     "Worktree clean after final checkpoint"
@@ -200,7 +200,8 @@
     "superpowers:executing-plans for the first Phase 4 history persistence/reload verification slice",
     "superpowers:executing-plans for the first Phase 4 workspace isolation/concurrency verification slice",
     "superpowers:executing-plans for the first Phase 4 invalid-input and safe-error acceptance verification slice",
-    "superpowers:verification-before-completion for the focused MW regression signoff command pass"
+    "superpowers:verification-before-completion for the focused MW regression signoff command pass",
+    "superpowers:executing-plans for the branch-level changed-file scope review slice"
   ],
   "artifacts": {
     "state_markdown": "docs/ran-pr-worker-integration/autonomous-run-state.md",
@@ -211,5 +212,5 @@
     "prototype_ux_contract": "docs/ran-pr-worker-integration/prototype-ux-contract.md",
     "worker_skill_contract_adr": "docs/ran-pr-worker-integration/worker-skill-contract-adr.md"
   },
-  "last_updated_utc": "2026-06-26T13:46:05Z"
+  "last_updated_utc": "2026-06-26T14:05:00Z"
 }
