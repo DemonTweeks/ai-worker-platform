@@ -477,3 +477,17 @@ The branch now spans backend runtime, frontend UI, verification commands, submod
 ### Impact
 
 The changed-file scope gate now has explicit evidence. The remaining work is narrowed to final-report completion, submodule-pin/final hygiene confirmation, and publish preparation.
+
+## 2026-06-26 - Final Report Becomes A Live Delivery Summary Before Publish
+
+### Decision
+
+Write `final-report.md` as an in-progress delivery summary before the final publish steps instead of leaving it as an empty placeholder until the very last turn.
+
+### Why
+
+By this stage the branch already has substantial verified evidence and only a few delivery gates remain. Converting the placeholder report now reduces the risk of losing the high-signal summary, makes the remaining completion prerequisites explicit, and satisfies the mission requirement that the final report exist before completion without pretending the mission is already done.
+
+### Impact
+
+The remaining bounded work is now narrowed to final submodule-pin and worktree-hygiene confirmation plus fetch/rebase/rerun/push/Draft PR completion.
