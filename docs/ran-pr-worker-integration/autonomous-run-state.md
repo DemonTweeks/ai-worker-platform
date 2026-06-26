@@ -81,4 +81,4 @@ Continue Task 5 by extending worker awareness into History and Job Detail with w
 
 - The user explicitly directed work to remain in `C:\dev\ai-worker-platform-ran-pr` on `feature/ran-pr-worker-integration`, so no additional worktree was created.
 - The `COMPLETED` marker is intentionally absent until all acceptance gates pass.
-- Latest checkpoint commit: `acadb79` (`docs: record cancellation signaling checkpoint`).
+- Latest checkpoint commit: `12404ce` (`feat: add ran home launch flow`).

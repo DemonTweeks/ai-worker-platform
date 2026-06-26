@@ -130,6 +130,10 @@
     {
       "commit": "acadb79622c394596fd09adbeacf439dc88ee869",
       "message": "docs: record cancellation signaling checkpoint"
+    },
+    {
+      "commit": "12404ce6c39ba31ee78bf3761f9ff4480b09a8b1",
+      "message": "feat: add ran home launch flow"
     }
   ],
   "remaining_acceptance_gates": [
@@ -182,5 +186,5 @@
     "prototype_ux_contract": "docs/ran-pr-worker-integration/prototype-ux-contract.md",
     "worker_skill_contract_adr": "docs/ran-pr-worker-integration/worker-skill-contract-adr.md"
   },
-  "last_updated_utc": "2026-06-26T08:45:30Z"
+  "last_updated_utc": "2026-06-26T08:47:00Z"
 }
