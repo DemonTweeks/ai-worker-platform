@@ -351,3 +351,17 @@ The new live cancellation integration test proved that the queue layer was publi
 ### Impact
 
 Subscribed clients can still see cancellation requested immediately through `workerState.cancellationRequested` and heartbeat updates, while the first `JOB_CANCELLED` event now means the job is actually terminal and any partial-result ZIP is ready.
+
+## 2026-06-26 - Task 5 Home-View Scope And Project Source
+
+### Decision
+
+Start Task 5 with a single worker-aware home-view slice that adds RAN BOM/EPMS uploads, run-mode handling, and workbook-backed General Item selection, supported by a small backend `ran-projects` route instead of duplicating workbook parsing logic in the frontend.
+
+### Why
+
+The backend already owns validated project derivation through `ranProjectCatalogService`, and the UX contract requires dynamic General Item projects without arbitrary user strings. Reusing that backend source keeps the frontend thin, preserves validated project names, and lets the first frontend slice stay focused on launch-input branching while preserving the existing MW workbench as the default path.
+
+### Impact
+
+The home route can now launch both MW and RAN jobs through the platform workbench using worker-aware payloads and validated project choices. The next frontend continuation can move beyond launch inputs into history badges/filters and job-detail audit rendering without reopening the launch contract.

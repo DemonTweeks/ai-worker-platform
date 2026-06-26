@@ -296,3 +296,40 @@
 - Ran `npm.cmd --prefix backend run test:ran-live-runtime` successfully after the cancellation-event fix.
 - Ran `npm.cmd --prefix backend run test:queue-registry` successfully after the queue-layer change.
 - Ran `git diff --check`; only CRLF conversion warnings were reported, with no diff hygiene errors.
+
+## 2026-06-26 - Task 5 Home-View RAN Launch Evidence
+
+- Added workbook-backed project listing at `GET /api/jobs/ran-projects` through `backend/src/routes/jobRoutes.js`, backed by `listRanProjects()` from the existing RAN catalog service.
+- Extended `backend/scripts/ran-job-route-test.js` with route coverage proving:
+  - `/api/jobs/ran-projects` responds successfully
+  - the payload contains a `projects` array
+  - workbook-derived General Item options such as `Project Thanos` are exposed
+- Verified the RED phase for the new backend route by running `npm.cmd --prefix backend run test:ran-routes` before implementation and observing the expected failure:
+  - `ran project list should load`
+  - actual HTTP status `404`
+  - expected HTTP status `200`
+- Updated `frontend/src/api/jobApi.js` so the frontend can:
+  - send worker-aware job-create payloads directly
+  - prevalidate RAN uploads with `uploadKind`
+  - fetch workbook-backed General Item projects with `listRanProjects()`
+- Generalized `frontend/src/components/UploadPanel.vue` with configurable labels, hints, accept lists, and validate-button text so the same platform component can power MW, BOM, and EPMS validation flows.
+- Updated `frontend/src/views/HomeView.vue` so the home workbench now supports:
+  - explicit worker selection between `mw-pr` and `ran-pr`
+  - RAN BOM and EPMS upload/validation panels
+  - RAN run-mode switching between `standard-pr` and `general-item`
+  - workbook-backed General Item project selection
+  - worker-specific create payloads while preserving the existing MW create flow as default
+- Extended `frontend/src/views/__tests__/HomeView.spec.js` with focused frontend coverage for:
+  - loading workbook-backed RAN projects and creating a `general-item` RAN job with dual prevalidated uploads
+  - blocking `general-item` creation until both RAN uploads validate and a project is selected
+  - preserving the existing successful MW create flow
+- Verified the RED phase for the frontend slice by running `npm.cmd run test:unit -- HomeView` before implementation and observing the expected failures:
+  - `wrapper.vm.handleWorkerChange is not a function`
+  - create-disabled wording still reflected the MW-only upload flow
+- Ran `npm.cmd --prefix backend run test:ran-routes` successfully after the new route/UI support changes.
+- Ran `npm.cmd run test:unit -- HomeView` successfully in `frontend/`.
+- Ran the full project-native frontend verification command `npm.cmd test` in `frontend/` successfully, including:
+  - `npm run test:unit`
+  - `npm run build`
+  - `npm run smoke`
+- Ran `git diff --check`; only CRLF conversion warnings were reported, with no diff hygiene errors.

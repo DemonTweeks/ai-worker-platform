@@ -41,10 +41,11 @@
 - Added a RAN worker runtime service plus registry wiring so queued `ran-pr` jobs now publish shared lifecycle phases, stage progress, cancellation results, and packaged completion outputs.
 - Added live route/runtime coverage for queued `ran-pr` execution so terminal Job Detail polling, websocket lifecycle events, and ZIP download readiness are now verified together.
 - Added live cancellation parity coverage for running `ran-pr` jobs so cancellation requests, terminal `JOB_CANCELLED` events, partial-result ZIP availability, and detail state now stay aligned.
+- Added the first worker-aware frontend RAN launch slice on the home workbench, including BOM/EPMS validation, run-mode switching, workbook-backed General Item selection, and worker-aware create payloads.
 
 ## Next Action
 
-Begin Task 5 by implementing the worker-aware frontend RAN UI, starting with home-view worker selection, BOM/EPMS uploads, run-mode handling, and validated General Item project selection.
+Continue Task 5 by extending worker awareness into History and Job Detail with worker badges/filters plus RAN audit metadata rendering.
 
 ## Blockers
 
@@ -74,9 +75,10 @@ Begin Task 5 by implementing the worker-aware frontend RAN UI, starting with hom
 - `superpowers:executing-plans` for Task 4 live route/runtime RAN coverage
 - `superpowers:test-driven-development` for Task 4 terminal-status ordering and ZIP-ready live detail behavior
 - `superpowers:test-driven-development` for Task 4 running-cancellation event semantics and partial-result detail parity
+- `superpowers:test-driven-development` for Task 5 home-view worker selection, RAN upload validation, and workbook-backed project selection
 
 ## Notes
 
 - The user explicitly directed work to remain in `C:\dev\ai-worker-platform-ran-pr` on `feature/ran-pr-worker-integration`, so no additional worktree was created.
 - The `COMPLETED` marker is intentionally absent until all acceptance gates pass.
-- Latest checkpoint commit: `776521e` (`test: harden ran cancellation signaling`).
+- Latest checkpoint commit: `acadb79` (`docs: record cancellation signaling checkpoint`).

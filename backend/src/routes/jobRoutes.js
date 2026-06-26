@@ -2,6 +2,7 @@ const express = require('express');
 const { upload } = require('../middleware/uploadMiddleware');
 const prevalidationService = require('../services/prevalidationService');
 const jobService = require('../services/jobService');
+const { listRanProjects } = require('../workers/ranProjectCatalogService');
 
 const router = express.Router();
 
@@ -24,6 +25,12 @@ router.post('/', asyncHandler(async (req, res) => {
 router.get('/', asyncHandler(async (req, res) => {
   const result = await jobService.listJobs(req.query);
   res.json(result);
+}));
+
+router.get('/ran-projects', asyncHandler(async (_req, res) => {
+  res.json({
+    projects: listRanProjects()
+  });
 }));
 
 router.get('/:jobId', asyncHandler(async (req, res) => {

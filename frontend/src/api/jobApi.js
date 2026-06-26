@@ -15,22 +15,25 @@ export const getHealth = async () => {
   return response.data;
 };
 
-export const prevalidateUpload = async (file) => {
+export const prevalidateUpload = async (file, uploadKind = null) => {
   const formData = new FormData();
   formData.append('file', file);
+  if (uploadKind) {
+    formData.append('uploadKind', uploadKind);
+  }
   const response = await api.post('/api/jobs/prevalidate', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   });
   return response.data;
 };
 
-export const createJob = async ({ prevalidatedFileId, generationScope, siteCodes, prScope }) => {
-  const response = await api.post('/api/jobs', {
-    prevalidatedFileId,
-    prScope,
-    generationScope,
-    siteCodes
-  });
+export const createJob = async (payload) => {
+  const response = await api.post('/api/jobs', payload);
+  return response.data;
+};
+
+export const listRanProjects = async () => {
+  const response = await api.get('/api/jobs/ran-projects');
   return response.data;
 };
 

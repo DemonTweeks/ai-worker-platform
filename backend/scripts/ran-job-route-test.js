@@ -88,6 +88,11 @@ const cleanupArtifacts = async () => {
 };
 
 const testRanRoutes = async (baseUrl) => {
+  const projects = await request(baseUrl, '/api/jobs/ran-projects');
+  assert.strictEqual(projects.response.status, 200, 'ran project list should load');
+  assert(Array.isArray(projects.body.projects), 'ran project list should return a projects array');
+  assert(projects.body.projects.includes('Project Thanos'), 'ran project list should expose workbook-backed General Item projects');
+
   const invalidBom = await uploadBuffer(
     baseUrl,
     '/api/jobs/prevalidate',
