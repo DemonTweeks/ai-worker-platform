@@ -39,9 +39,10 @@
     "Added worker-aware backend create/list/detail payloads with explicit worker identity and audit metadata while preserving MW as the default-compatible create flow",
     "Added the first backend RAN create path with upload-kind-aware prevalidation, tracked BOM/EPMS job inputs, validated run-mode selection, and direct backend coverage",
     "Added route-level backend coverage for ran-pr prevalidation and create flows, and hardened ran-bom prevalidation so unreadable Excel payloads are rejected before job creation",
-    "Added a RAN worker runtime service plus registry wiring so queued ran-pr jobs now publish shared lifecycle phases, stage progress, cancellation results, and packaged completion outputs"
+    "Added a RAN worker runtime service plus registry wiring so queued ran-pr jobs now publish shared lifecycle phases, stage progress, cancellation results, and packaged completion outputs",
+    "Added live route/runtime coverage for queued ran-pr execution so terminal Job Detail polling, websocket lifecycle events, and ZIP download readiness are now verified together"
   ],
-  "next_action": "Continue Task 4 by adding route/integration coverage for live ran-pr execution state, including terminal status, websocket-visible phase progress, and ZIP-ready completion behavior.",
+  "next_action": "Continue Task 4 by extending backend integration coverage to cancellation/detail parity and then move into frontend worker-aware RAN UI work once the remaining backend runtime/detail seams are stable.",
   "blockers": [],
   "checkpoint_commits": [
     {
@@ -107,6 +108,10 @@
     {
       "commit": "03e7865acfad4dd752410ca8f83ea61218662f94",
       "message": "feat: add ran worker lifecycle runtime"
+    },
+    {
+      "commit": "ef0b3b849d60161fc710ba98164524f6abacf53c",
+      "message": "docs: record ran lifecycle checkpoint"
     }
   ],
   "remaining_acceptance_gates": [
@@ -144,7 +149,9 @@
     "superpowers:subagent-driven-development evaluated for this continuation; kept in-session because the RAN create-flow slice was tightly coupled",
     "superpowers:executing-plans for Task 4 first backend RAN create-path work",
     "superpowers:test-driven-development for Task 4 route-level RAN coverage and ran-bom prevalidation hardening",
-    "superpowers:test-driven-development for Task 4 RAN runtime lifecycle, progress, and cancellation wrapper"
+    "superpowers:test-driven-development for Task 4 RAN runtime lifecycle, progress, and cancellation wrapper",
+    "superpowers:executing-plans for Task 4 live route/runtime RAN coverage",
+    "superpowers:test-driven-development for Task 4 terminal-status ordering and ZIP-ready live detail behavior"
   ],
   "artifacts": {
     "state_markdown": "docs/ran-pr-worker-integration/autonomous-run-state.md",
@@ -155,5 +162,5 @@
     "prototype_ux_contract": "docs/ran-pr-worker-integration/prototype-ux-contract.md",
     "worker_skill_contract_adr": "docs/ran-pr-worker-integration/worker-skill-contract-adr.md"
   },
-  "last_updated_utc": "2026-06-25T16:33:41Z"
+  "last_updated_utc": "2026-06-26T08:29:00Z"
 }

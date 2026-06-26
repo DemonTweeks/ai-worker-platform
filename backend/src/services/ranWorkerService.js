@@ -134,12 +134,12 @@ const runRanWorkerJob = async (jobId) => {
         statusOverride: finalStatus
       });
 
+      await generateReportsAndPackage(jobId);
       await setJobStatus(jobId, finalStatus, {
         cancelledAt: new Date(),
         finalWorkerSummary,
         ...summary
       });
-      await generateReportsAndPackage(jobId);
       workerStateService.setCancelled(jobId);
       await publishJobEvent(jobId, JOB_EVENTS.JOB_CANCELLED, {
         phase: 'CANCELLED',
@@ -162,13 +162,13 @@ const runRanWorkerJob = async (jobId) => {
       statusOverride: finalStatus
     });
 
+    await generateReportsAndPackage(jobId);
     await setJobStatus(jobId, finalStatus, {
       completedAt: new Date(),
       finalWorkerSummary,
       error: undefined,
       ...summary
     });
-    await generateReportsAndPackage(jobId);
     workerStateService.setComplete(jobId, 'RAN PR worker job completed.');
     await publishJobEvent(jobId, JOB_EVENTS.JOB_COMPLETED, {
       phase: 'COMPLETED',

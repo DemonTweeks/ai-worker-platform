@@ -39,10 +39,11 @@
 - Added the first backend RAN create path with upload-kind-aware prevalidation, tracked BOM/EPMS job inputs, validated run-mode selection, and direct backend coverage.
 - Added route-level backend coverage for `ran-pr` prevalidation and create flows, and hardened `ran-bom` prevalidation so unreadable Excel payloads are rejected before job creation.
 - Added a RAN worker runtime service plus registry wiring so queued `ran-pr` jobs now publish shared lifecycle phases, stage progress, cancellation results, and packaged completion outputs.
+- Added live route/runtime coverage for queued `ran-pr` execution so terminal Job Detail polling, websocket lifecycle events, and ZIP download readiness are now verified together.
 
 ## Next Action
 
-Continue Task 4 by adding route/integration coverage for live `ran-pr` execution state, including terminal status, websocket-visible phase progress, and ZIP-ready completion behavior.
+Continue Task 4 by extending backend integration coverage to cancellation/detail parity and then move into frontend worker-aware RAN UI work once the remaining backend runtime/detail seams are stable.
 
 ## Blockers
 
@@ -69,9 +70,11 @@ Continue Task 4 by adding route/integration coverage for live `ran-pr` execution
 - `superpowers:executing-plans` for Task 4 first backend RAN create-path work
 - `superpowers:test-driven-development` for Task 4 route-level RAN coverage and `ran-bom` prevalidation hardening
 - `superpowers:test-driven-development` for Task 4 RAN runtime lifecycle, progress, and cancellation wrapper
+- `superpowers:executing-plans` for Task 4 live route/runtime RAN coverage
+- `superpowers:test-driven-development` for Task 4 terminal-status ordering and ZIP-ready live detail behavior
 
 ## Notes
 
 - The user explicitly directed work to remain in `C:\dev\ai-worker-platform-ran-pr` on `feature/ran-pr-worker-integration`, so no additional worktree was created.
 - The `COMPLETED` marker is intentionally absent until all acceptance gates pass.
-- Latest checkpoint commit: `03e7865` (`feat: add ran worker lifecycle runtime`).
+- Latest checkpoint commit: `ef0b3b8` (`docs: record ran lifecycle checkpoint`).

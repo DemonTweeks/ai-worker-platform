@@ -323,3 +323,17 @@ The raw RAN adapter can execute the engine and ingest approved outputs, but it d
 ### Impact
 
 Queued `ran-pr` jobs now have a platform runtime seam for lifecycle status, stage progress, cancellation results, and packaged completion outputs. The next continuation should exercise that runtime through higher-level route or integration coverage so Job Detail and websocket consumers are proven end-to-end against a live RAN execution path.
+
+## 2026-06-26 - Task 4 Terminal Status Ordering For Live RAN Detail
+
+### Decision
+
+Delay the durable terminal status update for successful and cancelled-with-partial-result `ran-pr` jobs until after report generation and ZIP packaging complete.
+
+### Why
+
+The new live route/runtime integration test proved that `ranWorkerService` could mark a job `completed` before `generateReportsAndPackage(...)` finished. That let HTTP detail polling observe a terminal job whose `zip_package` record was not yet available, even though websocket completion was only emitted after packaging. Terminal detail should represent a ZIP-ready completed job, not an intermediate packaging window.
+
+### Impact
+
+`ran-pr` job detail now stays in a non-terminal lifecycle status until summary/ZIP artifacts are ready, keeping route polling, websocket completion, and download availability aligned for consumers such as Job Detail.

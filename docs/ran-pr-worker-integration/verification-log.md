@@ -254,3 +254,24 @@
 - Ran `npm.cmd --prefix backend run test:queue-registry` successfully after updating the registry harness for the runtime wrapper.
 - Ran `npm.cmd --prefix backend run test:ran-adapter` successfully to confirm the direct engine adapter coverage still passes.
 - Ran `git diff --check`; only CRLF conversion warnings were reported, with no diff hygiene errors.
+
+## 2026-06-26 - Task 4 Live RAN Runtime Route Coverage Evidence
+
+- Added `backend/scripts/ran-live-runtime-test.js` as a focused live route/runtime integration script covering:
+  - successful `ran-bom` and `ran-epms` prevalidation with the pinned sample workbooks
+  - live `ran-pr` job creation through `POST /api/jobs`
+  - websocket subscription and receipt of lifecycle events during execution
+  - terminal detail polling that proves `zip_package` is available as soon as the job becomes terminal
+  - final detail exposure of the generated `summary` artifact
+  - successful ZIP download for the completed job
+- Updated `backend/package.json` so `npm.cmd --prefix backend test` now includes `npm run test:ran-live-runtime`.
+- Verified the RED phase by running `node backend/scripts/ran-live-runtime-test.js` before the runtime fix and observing the expected failure:
+  - `terminal ran-pr detail should already expose an available zip package`
+- Tightened the websocket helper in the new integration script so subscription acknowledgement waits specifically for the `SUBSCRIBED` frame instead of racing with `JOB_EVENT` traffic.
+- Updated `backend/src/services/ranWorkerService.js` so successful and cancelled-with-partial-result RAN jobs only become terminal after `generateReportsAndPackage(...)` completes, keeping durable job detail aligned with ZIP-ready output availability.
+- Ran `node --check backend/scripts/ran-live-runtime-test.js` successfully.
+- Ran `node --check backend/src/services/ranWorkerService.js` successfully.
+- Verified `backend/package.json` parses successfully as JSON.
+- Ran `npm.cmd --prefix backend run test:ran-live-runtime` successfully.
+- Ran `npm.cmd --prefix backend run test:ran-worker-service` successfully after the status-ordering change.
+- Ran `git diff --check`; only CRLF conversion warnings were reported, with no diff hygiene errors.
