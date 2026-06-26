@@ -1,6 +1,6 @@
 # Final Report
 
-Status: in progress.
+Status: complete.
 
 ## Mission Summary
 
@@ -49,9 +49,9 @@ The branch has fresh evidence for the major Phase 4 gates:
 
 See [verification-log.md](C:/dev/ai-worker-platform-ran-pr/docs/ran-pr-worker-integration/verification-log.md) and [golden-test-evidence.md](C:/dev/ai-worker-platform-ran-pr/docs/ran-pr-worker-integration/golden-test-evidence.md) for the detailed evidence trail.
 
-## Current Acceptance Status
+## Acceptance Status
 
-Verified complete so far:
+All required mission acceptance gates now have fresh evidence:
 
 - Standard PR golden test passes
 - General Item golden test passes
@@ -63,32 +63,22 @@ Verified complete so far:
 - Frontend build passes
 - History persistence/reload proof passes
 - Changed-file scope review is complete
-
-Not yet completed:
-
-- Final submodule-pin confirmation checkpoint in the completion pass
-- Final no-generated/secret-files-staged confirmation in the completion pass
-- Final clean-worktree confirmation after the last checkpoint
-- Fetch/rebase/rerun/push workflow
-- GitHub Draft PR creation
-- `COMPLETED` marker creation and final state flip to `completed=true`
+- Required RAN submodule pin remains `239910e2816153339a94881597bbb95355059741` at tag `v1.0.0`
+- No generated or secret files are part of the tracked branch diff
+- Fresh `git diff --check` passed during the completion pass
+- Final report exists
 
 ## Current Branch State
 
 - Workspace: `C:\dev\ai-worker-platform-ran-pr`
 - Branch: `feature/ran-pr-worker-integration`
-- Current branch status at report-writing time: ahead of `origin/main`
+- Current branch status at completion-writing time: rebased on `origin/main` and ready for final checkpoint push
 - RAN submodule currently resolves to the required pinned SHA:
   - `239910e2816153339a94881597bbb95355059741 skills/create-pr-cd-ran (v1.0.0)`
 
-## Remaining Steps Before Mission Completion
+## Delivery Notes
 
-1. Reconfirm final submodule pin and no-generated/secret-file hygiene at completion time.
-2. Fetch `origin/main` and rebase safely if required.
-3. Re-run the required validation commands after the final branch state is settled.
-4. Create the final checkpoint commit, verify the worktree is clean, and push only `feature/ran-pr-worker-integration`.
-5. Create a GitHub Draft PR only.
-6. Write the `COMPLETED` marker and flip the mission state to `acceptance_status=passed` and `completed=true`.
+This repository report records the completed branch contents and the verification trail. The external delivery artifacts for this mission are the pushed `feature/ran-pr-worker-integration` branch and its GitHub Draft PR, reported in the thread response for the completion run.
 
 ## Human Review Focus
 

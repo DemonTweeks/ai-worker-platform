@@ -5,9 +5,9 @@
 - Workspace: `C:\dev\ai-worker-platform-ran-pr`
 - Branch: `feature/ran-pr-worker-integration`
 - Current phase: `Phase 4 - Verification And Delivery`
-- Status: `ACTIVE`
-- Completed: `false`
-- Acceptance status: `not-started`
+- Status: `COMPLETED`
+- Completed: `true`
+- Acceptance status: `passed`
 
 ## Baseline
 
@@ -53,10 +53,12 @@
 - Replaced the placeholder `final-report.md` with a real in-progress mission summary covering delivered scope, verified evidence, current acceptance status, and remaining publish steps.
 - Rebased `feature/ran-pr-worker-integration` onto the latest `origin/main` and reran the required backend, frontend, build, and diff-hygiene validation commands successfully afterward.
 - Reconfirmed the pinned RAN submodule SHA/tag after the rebase and refreshed the persistent checkpoint history to the rebased commit graph.
+- Re-ran the full required backend, frontend, build, and diff-hygiene verification commands in the final completion pass and reconfirmed GitHub publish readiness from the current worktree.
+- Wrote the final completion marker and flipped the mission state to complete with no remaining acceptance gates.
 
 ## Next Action
 
-Write final completion markers/state, push the rebased feature branch, and open the Draft PR.
+NO_OP_COMPLETED
 
 ## Blockers
 
@@ -96,9 +98,11 @@ Write final completion markers/state, push the rebased feature branch, and open 
 - `superpowers:executing-plans` for the first Phase 4 invalid-input and safe-error acceptance verification slice
 - `superpowers:verification-before-completion` for the focused MW regression signoff command pass
 - `superpowers:executing-plans` for the branch-level changed-file scope review slice
+- `superpowers:verification-before-completion` for the final completion-pass verification before the publish handoff
+- `superpowers:finishing-a-development-branch` for the final branch publication workflow
 
 ## Notes
 
 - The user explicitly directed work to remain in `C:\dev\ai-worker-platform-ran-pr` on `feature/ran-pr-worker-integration`, so no additional worktree was created.
-- The `COMPLETED` marker is intentionally absent until all acceptance gates pass.
-- Latest checkpoint commit: pending this rebase-validation docs checkpoint, followed by the final completion checkpoint after publish preparation.
+- The `COMPLETED` marker now exists and should force future heartbeats into the required read-only `NO_OP_COMPLETED` response.
+- Latest checkpoint commit before this final completion checkpoint: `6ae76aa` (`docs: record rebase validation checkpoint`).

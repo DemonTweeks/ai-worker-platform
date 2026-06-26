@@ -505,3 +505,17 @@ The successful rebase preserved the work but changed every feature-branch commit
 ### Impact
 
 The mission logs now record the rebase outcome, the rerun validation evidence, and the current rebased checkpoint list before the final completion, push, and Draft PR steps.
+
+## 2026-06-26 - Completion Marker Follows Fresh Final Verification
+
+### Decision
+
+Write the final completion marker and mission-state flip only after rerunning the required validation commands and reconfirming GitHub publish readiness from the current worktree.
+
+### Why
+
+The master prompt treats completion as a proof obligation, not a bookkeeping shortcut. The branch already had earlier validation evidence, but the final completion checkpoint needed fresh command results and external publish readiness checks in the same completion pass.
+
+### Impact
+
+The final checkpoint commit will represent a state that is both internally complete and externally ready for the required push plus Draft PR creation.
