@@ -121,6 +121,10 @@
     {
       "commit": "411c0ee774f919fd5940009f3499298963c3fbaa",
       "message": "docs: record live runtime checkpoint"
+    },
+    {
+      "commit": "776521e0b8db174d8d8412e2c80a23662109f08f",
+      "message": "test: harden ran cancellation signaling"
     }
   ],
   "remaining_acceptance_gates": [
@@ -172,5 +176,5 @@
     "prototype_ux_contract": "docs/ran-pr-worker-integration/prototype-ux-contract.md",
     "worker_skill_contract_adr": "docs/ran-pr-worker-integration/worker-skill-contract-adr.md"
   },
-  "last_updated_utc": "2026-06-26T08:36:30Z"
+  "last_updated_utc": "2026-06-26T08:38:00Z"
 }

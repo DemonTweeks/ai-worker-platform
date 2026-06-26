@@ -79,4 +79,4 @@ Begin Task 5 by implementing the worker-aware frontend RAN UI, starting with hom
 
 - The user explicitly directed work to remain in `C:\dev\ai-worker-platform-ran-pr` on `feature/ran-pr-worker-integration`, so no additional worktree was created.
 - The `COMPLETED` marker is intentionally absent until all acceptance gates pass.
-- Latest checkpoint commit: `411c0ee` (`docs: record live runtime checkpoint`).
+- Latest checkpoint commit: `776521e` (`test: harden ran cancellation signaling`).
