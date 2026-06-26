@@ -1,7 +1,7 @@
 const config = require('../config/env');
 const workerStateService = require('../services/workerStateService');
 const { Job } = require('../models');
-const { JOB_EVENTS, publishJobEvent } = require('../websocket/eventPublisher');
+const { JOB_EVENTS, publishHeartbeat, publishJobEvent } = require('../websocket/eventPublisher');
 const { getWorkerAdapter } = require('../workers/workerRegistry');
 const { WORKER_IDS } = require('../workers/workerTypes');
 
@@ -92,9 +92,7 @@ const cancelQueuedJob = async (jobId) => {
 
   if (activeJobIds.has(jobId)) {
     workerStateService.requestCancellation(jobId);
-    await publishJobEvent(jobId, JOB_EVENTS.JOB_CANCELLED, {
-      message: 'Cancellation requested.'
-    });
+    await publishHeartbeat(jobId);
     return { cancelled: false, running: true };
   }
 

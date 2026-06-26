@@ -16,6 +16,7 @@ const setCachedModule = (modulePath, exports) => {
 };
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+let mockRunMode = 'complete';
 
 const actualOutputCollector = require('../src/services/outputCollector');
 setCachedModule(path.join(repoRoot, 'src/services/outputCollector.js'), {
@@ -57,6 +58,24 @@ setCachedModule(path.join(repoRoot, 'src/workers/adapters/ranPrAdapter.js'), {
           total: stages.length
         });
       }
+
+      if (mockRunMode === 'cancel' && index === 0) {
+        let cancellationRequested = false;
+        const waitStarted = Date.now();
+
+        while (!cancellationRequested && (Date.now() - waitStarted) < 5000) {
+          await delay(25);
+          cancellationRequested = typeof options.isCancellationRequested === 'function'
+            ? options.isCancellationRequested()
+            : false;
+        }
+
+        if (!cancellationRequested) {
+          throw new Error('Cancellation test expected a running cancellation request.');
+        }
+
+        break;
+      }
     }
 
     if (options.onOutputsCollecting) {
@@ -84,8 +103,10 @@ setCachedModule(path.join(repoRoot, 'src/workers/adapters/ranPrAdapter.js'), {
       runMode: 'standard-pr',
       selectedProject: null,
       pipelineResult: {
-        cancelled: false,
-        stageResults: stages.map((stage) => ({ stage }))
+        cancelled: mockRunMode === 'cancel',
+        stageResults: mockRunMode === 'cancel'
+          ? [{ stage: stages[0], cancelled: true }]
+          : stages.map((stage) => ({ stage }))
       },
       outputCollection: {
         outputFileCount: 1
@@ -173,6 +194,21 @@ const waitForJobTerminal = async (baseUrl, jobId, timeoutMs = 15000) => {
   throw new Error(`Timed out waiting for ${jobId} to reach terminal status.`);
 };
 
+const waitForJobDetail = async (baseUrl, jobId, predicate, timeoutMs = 15000) => {
+  const started = Date.now();
+
+  while (Date.now() - started < timeoutMs) {
+    const result = await request(baseUrl, `/api/jobs/${encodeURIComponent(jobId)}`);
+    assert.strictEqual(result.response.status, 200, 'job detail should remain available');
+    if (predicate(result.body)) {
+      return result.body;
+    }
+    await delay(50);
+  }
+
+  throw new Error(`Timed out waiting for ${jobId} detail predicate.`);
+};
+
 const waitForJobEvent = (ws, targetEvent) => new Promise((resolve, reject) => {
   const seenEvents = [];
   const timeout = setTimeout(() => reject(new Error(`Timed out waiting for ${targetEvent}. Saw: ${seenEvents.join(', ')}`)), 15000);
@@ -189,6 +225,26 @@ const waitForJobEvent = (ws, targetEvent) => new Promise((resolve, reject) => {
       ws.off('message', listener);
       resolve(seenEvents);
     }
+  };
+
+  ws.on('message', listener);
+});
+
+const waitForJobEventMessage = (ws, targetEvent) => new Promise((resolve, reject) => {
+  const timeout = setTimeout(() => {
+    ws.off('message', listener);
+    reject(new Error(`Timed out waiting for ${targetEvent}.`));
+  }, 15000);
+
+  const listener = (data) => {
+    const message = JSON.parse(data.toString());
+    if (message.type !== 'JOB_EVENT' || message.event !== targetEvent) {
+      return;
+    }
+
+    clearTimeout(timeout);
+    ws.off('message', listener);
+    resolve(message);
   };
 
   ws.on('message', listener);
@@ -234,6 +290,7 @@ const terminateWs = (ws) => {
 };
 
 const testRanLiveRuntime = async ({ baseUrl, wsUrl }) => {
+  mockRunMode = 'complete';
   const bomPrevalidation = await uploadFile(baseUrl, '/api/jobs/prevalidate', sampleBomPath, {
     uploadKind: 'ran-bom'
   });
@@ -289,6 +346,82 @@ const testRanLiveRuntime = async ({ baseUrl, wsUrl }) => {
   }
 };
 
+const testRanLiveCancellation = async ({ baseUrl, wsUrl }) => {
+  mockRunMode = 'cancel';
+  const bomPrevalidation = await uploadFile(baseUrl, '/api/jobs/prevalidate', sampleBomPath, {
+    uploadKind: 'ran-bom'
+  });
+  assert.strictEqual(bomPrevalidation.response.status, 200, 'sample ran BOM should prevalidate for cancellation');
+
+  const epmsPrevalidation = await uploadFile(baseUrl, '/api/jobs/prevalidate', sampleEpmsPath, {
+    uploadKind: 'ran-epms'
+  });
+  assert.strictEqual(epmsPrevalidation.response.status, 200, 'sample ran EPMS should prevalidate for cancellation');
+
+  const ws = new WebSocket(wsUrl);
+
+  try {
+    await waitForWsOpen(ws);
+
+    const created = await postJson(baseUrl, '/api/jobs', {
+      workerId: 'ran-pr',
+      bomPrevalidatedFileId: bomPrevalidation.body.prevalidatedFileId,
+      epmsPrevalidatedFileId: epmsPrevalidation.body.prevalidatedFileId,
+      runMode: 'standard-pr'
+    });
+    assert.strictEqual(created.response.status, 201, 'cancellable ran-pr job should be created');
+    const jobId = created.body.job.jobId;
+    createdJobIds.add(jobId);
+
+    const subscribed = await wsExchange(ws, { action: 'subscribe', jobId }, (message) => message.type === 'SUBSCRIBED');
+    assert.strictEqual(subscribed.type, 'SUBSCRIBED', 'websocket should subscribe to the cancellable ran-pr job');
+
+    await waitForJobDetail(baseUrl, jobId, (detail) => detail.job.status === 'generating');
+
+    const cancelledEventPromise = waitForJobEventMessage(ws, 'JOB_CANCELLED');
+    const cancelResponse = await postJson(baseUrl, `/api/jobs/${encodeURIComponent(jobId)}/cancel`, {});
+    assert.strictEqual(cancelResponse.response.status, 200, 'running ran-pr job should accept cancellation');
+    assert(
+      cancelResponse.body.message.includes('Cancellation requested'),
+      'running ran-pr cancellation should acknowledge the request'
+    );
+
+    const cancellationRequestedDetail = await waitForJobDetail(
+      baseUrl,
+      jobId,
+      (detail) => Boolean(detail.workerState && detail.workerState.cancellationRequested)
+    );
+    assert.strictEqual(
+      cancellationRequestedDetail.workerState.cancellationRequested,
+      true,
+      'worker state should reflect a requested cancellation before terminal state'
+    );
+
+    const cancelledEvent = await cancelledEventPromise;
+    assert.strictEqual(
+      cancelledEvent.status,
+      'cancelled_with_partial_result',
+      'JOB_CANCELLED should only be emitted once the ran-pr job reaches terminal partial-result cancellation'
+    );
+    assert.strictEqual(cancelledEvent.phase, 'CANCELLED', 'JOB_CANCELLED should surface the terminal cancellation phase');
+
+    const terminalDetail = await waitForJobTerminal(baseUrl, jobId);
+    assert.strictEqual(terminalDetail.job.status, 'cancelled_with_partial_result');
+    assert(
+      terminalDetail.outputs.some((file) => file.fileType === 'zip_package' && file.available),
+      'cancelled ran-pr detail should expose an available zip package when partial outputs exist'
+    );
+
+    const zipResponse = await fetch(`${baseUrl}/api/jobs/${encodeURIComponent(jobId)}/download-zip`);
+    assert(zipResponse.ok, 'cancelled ran-pr partial-result job should support zip download');
+    const zipBuffer = Buffer.from(await zipResponse.arrayBuffer());
+    assert(zipBuffer.subarray(0, 2).equals(Buffer.from('PK')), 'cancelled ran-pr zip download should have a ZIP signature');
+  } finally {
+    mockRunMode = 'complete';
+    terminateWs(ws);
+  }
+};
+
 const main = async () => {
   let serverInfo = null;
 
@@ -298,6 +431,7 @@ const main = async () => {
     await storageService.ensureBaseStorage();
     serverInfo = await createServer();
     await testRanLiveRuntime(serverInfo);
+    await testRanLiveCancellation(serverInfo);
     console.log('--- RAN Live Runtime Tests Passed! ---');
   } finally {
     if (serverInfo) {

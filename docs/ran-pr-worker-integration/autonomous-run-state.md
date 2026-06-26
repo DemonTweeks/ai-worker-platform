@@ -40,10 +40,11 @@
 - Added route-level backend coverage for `ran-pr` prevalidation and create flows, and hardened `ran-bom` prevalidation so unreadable Excel payloads are rejected before job creation.
 - Added a RAN worker runtime service plus registry wiring so queued `ran-pr` jobs now publish shared lifecycle phases, stage progress, cancellation results, and packaged completion outputs.
 - Added live route/runtime coverage for queued `ran-pr` execution so terminal Job Detail polling, websocket lifecycle events, and ZIP download readiness are now verified together.
+- Added live cancellation parity coverage for running `ran-pr` jobs so cancellation requests, terminal `JOB_CANCELLED` events, partial-result ZIP availability, and detail state now stay aligned.
 
 ## Next Action
 
-Continue Task 4 by extending backend integration coverage to cancellation/detail parity and then move into frontend worker-aware RAN UI work once the remaining backend runtime/detail seams are stable.
+Begin Task 5 by implementing the worker-aware frontend RAN UI, starting with home-view worker selection, BOM/EPMS uploads, run-mode handling, and validated General Item project selection.
 
 ## Blockers
 
@@ -72,9 +73,10 @@ Continue Task 4 by extending backend integration coverage to cancellation/detail
 - `superpowers:test-driven-development` for Task 4 RAN runtime lifecycle, progress, and cancellation wrapper
 - `superpowers:executing-plans` for Task 4 live route/runtime RAN coverage
 - `superpowers:test-driven-development` for Task 4 terminal-status ordering and ZIP-ready live detail behavior
+- `superpowers:test-driven-development` for Task 4 running-cancellation event semantics and partial-result detail parity
 
 ## Notes
 
 - The user explicitly directed work to remain in `C:\dev\ai-worker-platform-ran-pr` on `feature/ran-pr-worker-integration`, so no additional worktree was created.
 - The `COMPLETED` marker is intentionally absent until all acceptance gates pass.
-- Latest checkpoint commit: `b333924` (`test: cover live ran runtime packaging`).
+- Latest checkpoint commit: `411c0ee` (`docs: record live runtime checkpoint`).

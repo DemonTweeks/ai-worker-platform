@@ -337,3 +337,17 @@ The new live route/runtime integration test proved that `ranWorkerService` could
 ### Impact
 
 `ran-pr` job detail now stays in a non-terminal lifecycle status until summary/ZIP artifacts are ready, keeping route polling, websocket completion, and download availability aligned for consumers such as Job Detail.
+
+## 2026-06-26 - Task 4 Running Cancellation Event Semantics
+
+### Decision
+
+Do not emit `JOB_CANCELLED` from the queue layer when a running job merely receives a cancellation request; instead, refresh subscribed clients via heartbeat state and reserve `JOB_CANCELLED` for the real terminal cancellation path.
+
+### Why
+
+The new live cancellation integration test proved that the queue layer was publishing `JOB_CANCELLED` while the active `ran-pr` job still had status `generating`. That leaked a terminal-sounding websocket event before the worker had actually stopped or packaged its partial outputs, which breaks the same route/event/detail parity guarantees we just established for completion.
+
+### Impact
+
+Subscribed clients can still see cancellation requested immediately through `workerState.cancellationRequested` and heartbeat updates, while the first `JOB_CANCELLED` event now means the job is actually terminal and any partial-result ZIP is ready.

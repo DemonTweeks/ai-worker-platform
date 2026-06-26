@@ -40,9 +40,10 @@
     "Added the first backend RAN create path with upload-kind-aware prevalidation, tracked BOM/EPMS job inputs, validated run-mode selection, and direct backend coverage",
     "Added route-level backend coverage for ran-pr prevalidation and create flows, and hardened ran-bom prevalidation so unreadable Excel payloads are rejected before job creation",
     "Added a RAN worker runtime service plus registry wiring so queued ran-pr jobs now publish shared lifecycle phases, stage progress, cancellation results, and packaged completion outputs",
-    "Added live route/runtime coverage for queued ran-pr execution so terminal Job Detail polling, websocket lifecycle events, and ZIP download readiness are now verified together"
+    "Added live route/runtime coverage for queued ran-pr execution so terminal Job Detail polling, websocket lifecycle events, and ZIP download readiness are now verified together",
+    "Added live cancellation parity coverage for running ran-pr jobs so cancellation requests, terminal JOB_CANCELLED events, partial-result ZIP availability, and detail state now stay aligned"
   ],
-  "next_action": "Continue Task 4 by extending backend integration coverage to cancellation/detail parity and then move into frontend worker-aware RAN UI work once the remaining backend runtime/detail seams are stable.",
+  "next_action": "Begin Task 5 by implementing the worker-aware frontend RAN UI, starting with home-view worker selection, BOM/EPMS uploads, run-mode handling, and validated General Item project selection.",
   "blockers": [],
   "checkpoint_commits": [
     {
@@ -116,6 +117,10 @@
     {
       "commit": "b333924dec698f8729517b1b4e23b234a2ef5cea",
       "message": "test: cover live ran runtime packaging"
+    },
+    {
+      "commit": "411c0ee774f919fd5940009f3499298963c3fbaa",
+      "message": "docs: record live runtime checkpoint"
     }
   ],
   "remaining_acceptance_gates": [
@@ -155,7 +160,8 @@
     "superpowers:test-driven-development for Task 4 route-level RAN coverage and ran-bom prevalidation hardening",
     "superpowers:test-driven-development for Task 4 RAN runtime lifecycle, progress, and cancellation wrapper",
     "superpowers:executing-plans for Task 4 live route/runtime RAN coverage",
-    "superpowers:test-driven-development for Task 4 terminal-status ordering and ZIP-ready live detail behavior"
+    "superpowers:test-driven-development for Task 4 terminal-status ordering and ZIP-ready live detail behavior",
+    "superpowers:test-driven-development for Task 4 running-cancellation event semantics and partial-result detail parity"
   ],
   "artifacts": {
     "state_markdown": "docs/ran-pr-worker-integration/autonomous-run-state.md",
@@ -166,5 +172,5 @@
     "prototype_ux_contract": "docs/ran-pr-worker-integration/prototype-ux-contract.md",
     "worker_skill_contract_adr": "docs/ran-pr-worker-integration/worker-skill-contract-adr.md"
   },
-  "last_updated_utc": "2026-06-26T08:31:30Z"
+  "last_updated_utc": "2026-06-26T08:36:30Z"
 }

@@ -275,3 +275,24 @@
 - Ran `npm.cmd --prefix backend run test:ran-live-runtime` successfully.
 - Ran `npm.cmd --prefix backend run test:ran-worker-service` successfully after the status-ordering change.
 - Ran `git diff --check`; only CRLF conversion warnings were reported, with no diff hygiene errors.
+
+## 2026-06-26 - Task 4 Live RAN Cancellation Parity Evidence
+
+- Extended `backend/scripts/ran-live-runtime-test.js` with a live cancellation scenario covering:
+  - cancellation of an actively generating `ran-pr` job through `POST /api/jobs/:jobId/cancel`
+  - pre-terminal detail visibility of `workerState.cancellationRequested`
+  - websocket verification that the first `JOB_CANCELLED` event represents terminal cancellation, not merely a request
+  - partial-result cancellation detail parity, including available `zip_package` output and successful ZIP download
+- Verified the RED phase by running `npm.cmd --prefix backend run test:ran-live-runtime` before the queue fix and observing the expected failure:
+  - `JOB_CANCELLED should only be emitted once the ran-pr job reaches terminal partial-result cancellation`
+  - actual websocket status `generating`
+  - expected websocket status `cancelled_with_partial_result`
+- Updated `backend/src/queue/jobQueue.js` so active-job cancellation requests now:
+  - set `workerState.cancellationRequested`
+  - publish an immediate heartbeat refresh for subscribed clients
+  - defer `JOB_CANCELLED` emission to the actual worker terminal-cancellation path
+- Ran `node --check backend/scripts/ran-live-runtime-test.js` successfully.
+- Ran `node --check backend/src/queue/jobQueue.js` successfully.
+- Ran `npm.cmd --prefix backend run test:ran-live-runtime` successfully after the cancellation-event fix.
+- Ran `npm.cmd --prefix backend run test:queue-registry` successfully after the queue-layer change.
+- Ran `git diff --check`; only CRLF conversion warnings were reported, with no diff hygiene errors.
