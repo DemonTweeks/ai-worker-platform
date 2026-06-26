@@ -18,6 +18,7 @@
     "test:queue-registry": "node scripts/queue-registry-test.js",
     "test:ran-adapter": "node scripts/ran-adapter-test.js",
     "test:ran-golden": "node scripts/ran-golden-test.js",
+    "test:ran-history-reload": "node scripts/ran-history-reload-test.js",
     "test": "npm run smoke && npm run test:preflight && npm run test:integration && node scripts/error-visibility-test.js && npm run test:ran-adapter && npm run test:ran-routes && npm run test:ran-live-runtime && npm run test:ran-worker-service && npm run test:queue-registry && npm run test:job-service-workers"
   },
   "dependencies": {
