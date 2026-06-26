@@ -379,3 +379,17 @@ The mission requires unified platform history and Job Detail, and the backend al
 ### Impact
 
 History can now be filtered by worker and shows which worker produced each job, while Job Detail exposes the RAN audit metadata needed for traceability. The next continuation can leave the launch/history/detail UI path in place and move into Phase 4 verification work such as golden checks, regression coverage, and persistence proof.
+
+## 2026-06-26 - Phase 4 Validation Depends On The Existing MW Fixture Submodule
+
+### Decision
+
+Initialize the existing `skills/create-pr-cd` submodule in this workspace before treating backend full-suite validation results as authoritative Phase 4 evidence.
+
+### Why
+
+The backend integration script still uses the legacy MW sample workbook at `skills/create-pr-cd/Info/input/site_pr_po_view.xlsx` to exercise the preserved MW flow. In this workspace the gitlink existed but the submodule was uninitialized, so the first backend suite failure was an environment precondition issue rather than a RAN regression. Initializing the submodule restores the already-tracked fixture source without changing any pinned contents or business logic.
+
+### Impact
+
+Phase 4 backend validation can now be trusted in this workspace, and the next bounded verification step can move on to the golden/business-result checks instead of spending more time on suite bootstrapping.

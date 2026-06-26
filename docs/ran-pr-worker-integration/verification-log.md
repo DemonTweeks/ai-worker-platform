@@ -360,3 +360,30 @@
   - `npm run test:unit`
   - `npm run build`
   - `npm run smoke`
+
+## 2026-06-26 - Phase 4 Full-Suite Validation Evidence
+
+- Began the first Phase 4 verification slice by running the project-native validation commands from the current `feature/ran-pr-worker-integration` branch state.
+- The first `npm.cmd --prefix backend test` run failed before any RAN-specific assertions because `backend/scripts/integration-test.js` depends on the legacy MW sample fixture at `skills/create-pr-cd/Info/input/site_pr_po_view.xlsx`, and the existing `skills/create-pr-cd` submodule was still uninitialized in this workspace.
+- Verified the root cause with:
+  - `git submodule status --recursive`, which showed `-32f1da236a62042989ea63dce30ca95c4b3006ea skills/create-pr-cd`
+  - direct filesystem inspection showing `skills/create-pr-cd/Info/` was absent until initialization
+- Restored the required existing MW fixture source without modifying submodule contents by running:
+  - `git -C C:\dev\ai-worker-platform-ran-pr submodule update --init -- skills/create-pr-cd`
+- Re-ran `npm.cmd --prefix backend test` successfully after submodule initialization. That command now proves all backend project-native checks pass together, including:
+  - `npm run smoke`
+  - `npm run test:preflight`
+  - `npm run test:integration`
+  - `node scripts/error-visibility-test.js`
+  - `npm run test:ran-adapter`
+  - `npm run test:ran-routes`
+  - `npm run test:ran-live-runtime`
+  - `npm run test:ran-worker-service`
+  - `npm run test:queue-registry`
+  - `npm run test:job-service-workers`
+- Re-ran `npm.cmd --prefix frontend test` successfully from the current branch state, covering:
+  - `npm run test:unit`
+  - `npm run build`
+  - `npm run smoke`
+- Ran `npm.cmd --prefix frontend run build` successfully as the explicit standalone frontend build command required by the mission.
+- Ran `git diff --check` successfully with no diff hygiene errors or warnings.
