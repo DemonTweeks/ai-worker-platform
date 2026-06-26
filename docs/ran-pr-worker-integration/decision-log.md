@@ -393,3 +393,17 @@ The backend integration script still uses the legacy MW sample workbook at `skil
 ### Impact
 
 Phase 4 backend validation can now be trusted in this workspace, and the next bounded verification step can move on to the golden/business-result checks instead of spending more time on suite bootstrapping.
+
+## 2026-06-26 - Golden Comparison Uses The Pinned Swap/Modernize Sample Project
+
+### Decision
+
+Use the workbook-backed project `CD consolidation 2023 (Swap/ Modernize)` for the first General Item golden comparison, and compare the platform-generated ECC workbooks against the pinned upstream sample ECC workbooks by logical row content rather than Excel binaries.
+
+### Why
+
+The upstream sample output bundle already records that project in `skills/create-pr-cd-ran/output/job_info.json`, and the mission explicitly requires logical business-result verification instead of binary workbook comparison. Matching sheet names, headers, row counts, quantities, General Item presence, and the full logical row set gives stronger evidence than file hashes while still honoring the mission constraint.
+
+### Impact
+
+The branch now has a repeatable golden-test command that proves the real platform execution path reproduces both the Standard PR and General Item sample business outputs. The next bounded verification step can move to persistence/history reload and workspace-isolation coverage.

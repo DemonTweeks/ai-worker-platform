@@ -44,10 +44,11 @@
 - Added the first worker-aware frontend RAN launch slice on the home workbench, including BOM/EPMS validation, run-mode switching, workbook-backed General Item selection, and worker-aware create payloads.
 - Added worker-aware History and Job Detail rendering for `ran-pr`, including worker filters, worker badges/labels, run-mode/project visibility, and engine audit metadata.
 - Ran the full backend and frontend project-native validation commands, including a clean standalone frontend build and `git diff --check`, after initializing the existing MW fixture submodule required by backend integration coverage.
+- Added a repeatable backend golden-test command and verified that live `ran-pr` Standard PR and General Item runs match the pinned upstream ECC workbooks by logical business content.
 
 ## Next Action
 
-Run the first RAN golden/business-result checks for Standard PR and General Item, then capture persistence/history reload proof.
+Capture persistence/history reload proof, then verify workspace isolation/concurrency and invalid-input safe-error acceptance checks.
 
 ## Blockers
 
@@ -81,9 +82,10 @@ Run the first RAN golden/business-result checks for Standard PR and General Item
 - `superpowers:test-driven-development` for Task 5 History filters, worker-aware job cards, and RAN Job Detail audit metadata
 - `superpowers:executing-plans` for the first Phase 4 full-suite validation slice
 - `superpowers:systematic-debugging` to diagnose the initial backend suite failure to an uninitialized existing MW fixture submodule before rerunning validation
+- `superpowers:executing-plans` for the first Phase 4 golden/business-result verification slice
 
 ## Notes
 
 - The user explicitly directed work to remain in `C:\dev\ai-worker-platform-ran-pr` on `feature/ran-pr-worker-integration`, so no additional worktree was created.
 - The `COMPLETED` marker is intentionally absent until all acceptance gates pass.
-- Latest checkpoint commit: `c3f842b` (`feat: add ran history and detail metadata`).
+- Latest checkpoint commit: `69423ad` (`test: add ran golden verification`).

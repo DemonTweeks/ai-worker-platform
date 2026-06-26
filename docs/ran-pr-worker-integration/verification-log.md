@@ -387,3 +387,30 @@
   - `npm run smoke`
 - Ran `npm.cmd --prefix frontend run build` successfully as the explicit standalone frontend build command required by the mission.
 - Ran `git diff --check` successfully with no diff hygiene errors or warnings.
+
+## 2026-06-26 - Phase 4 First Golden Business-Result Evidence
+
+- Added `backend/scripts/ran-golden-test.js` plus the package entrypoint `npm.cmd --prefix backend run test:ran-golden` so the branch now has a repeatable end-to-end RAN golden verification command.
+- Ran `npm.cmd --prefix backend run test:ran-golden` successfully against the real platform route/queue/runtime path using the pinned upstream sample inputs:
+  - `skills/create-pr-cd-ran/input/BOM.xlsx`
+  - `skills/create-pr-cd-ran/input/EPMS.xlsx`
+- Verified the Standard PR golden path by creating a live `ran-pr` `standard-pr` job and comparing the platform-retained `ECC_PR_Output.xlsx` workbook logically against the pinned upstream reference workbook:
+  - sheet names matched: `ECC_PR`
+  - header row matched exactly
+  - row count matched exactly: `52786`
+  - unique `PBOM Code*` values matched exactly: `67`
+  - summed `Quantity*` matched exactly: `66678`
+  - General Item rows matched exactly: `0`
+  - first and last data rows matched exactly
+  - the full logical row set matched exactly
+- Verified the General Item golden path by creating a live `ran-pr` `general-item` job for the workbook-backed project `CD consolidation 2023 (Swap/ Modernize)` and comparing the platform-retained `ECC_PR_Output_With_GeneralItems.xlsx` workbook logically against the pinned upstream reference workbook:
+  - sheet names matched: `ECC_PR`
+  - header row matched exactly
+  - row count matched exactly: `105390`
+  - unique `PBOM Code*` values matched exactly: `126`
+  - summed `Quantity*` matched exactly: `119282`
+  - rows whose `Remarks` include `General` matched exactly: `52604`
+  - first and last data rows matched exactly
+  - the full logical row set matched exactly
+- Verified both golden runs also produced platform-owned `Summary.json` and ZIP outputs before workbook comparison.
+- Wrote the structured summary to `docs/ran-pr-worker-integration/golden-test-evidence.md`.
