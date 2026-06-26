@@ -47,9 +47,10 @@
     "Ran the full backend and frontend project-native validation commands, including a clean standalone frontend build and git diff --check, after initializing the existing MW fixture submodule required by backend integration coverage",
     "Added a repeatable backend golden-test command and verified that live ran-pr Standard PR and General Item runs match the pinned upstream ECC workbooks by logical business content",
     "Added a repeatable backend reload-proof command and verified that a completed ran-pr General Item job survives full server restart in shared History, shared Job Detail, and ZIP download availability",
-    "Added a repeatable backend concurrency-test command and verified that simultaneous ran-pr jobs use distinct isolated workspaces and distinct retained output paths"
+    "Added a repeatable backend concurrency-test command and verified that simultaneous ran-pr jobs use distinct isolated workspaces and distinct retained output paths",
+    "Added a repeatable backend invalid-input/safe-error acceptance command and verified both create-time RAN input rejection and live sanitized worker-failure visibility"
   ],
-  "next_action": "Verify invalid-input safe-error acceptance checks, then capture MW regression signoff and changed-file review.",
+  "next_action": "Capture MW regression signoff and changed-file review.",
   "blockers": [],
   "checkpoint_commits": [
     {
@@ -155,11 +156,14 @@
     {
       "commit": "33fc8fc35bb415c585baa3d6972aef4f9553e95a",
       "message": "test: add ran concurrency verification"
+    },
+    {
+      "commit": "324cba46ece5fa694079de51d72822568ea6ad05",
+      "message": "test: add ran invalid-input safe-error verification"
     }
   ],
   "remaining_acceptance_gates": [
     "RAN submodule pinned at required tag and SHA",
-    "Invalid input safe-error test passes",
     "MW regression passes",
     "Changed-file scope reviewed",
     "No generated/secret files staged",
@@ -194,7 +198,8 @@
     "superpowers:systematic-debugging to diagnose the initial backend suite failure to an uninitialized existing MW fixture submodule before rerunning validation",
     "superpowers:executing-plans for the first Phase 4 golden/business-result verification slice",
     "superpowers:executing-plans for the first Phase 4 history persistence/reload verification slice",
-    "superpowers:executing-plans for the first Phase 4 workspace isolation/concurrency verification slice"
+    "superpowers:executing-plans for the first Phase 4 workspace isolation/concurrency verification slice",
+    "superpowers:executing-plans for the first Phase 4 invalid-input and safe-error acceptance verification slice"
   ],
   "artifacts": {
     "state_markdown": "docs/ran-pr-worker-integration/autonomous-run-state.md",
@@ -205,5 +210,5 @@
     "prototype_ux_contract": "docs/ran-pr-worker-integration/prototype-ux-contract.md",
     "worker_skill_contract_adr": "docs/ran-pr-worker-integration/worker-skill-contract-adr.md"
   },
-  "last_updated_utc": "2026-06-26T09:30:48Z"
+  "last_updated_utc": "2026-06-26T09:37:51Z"
 }

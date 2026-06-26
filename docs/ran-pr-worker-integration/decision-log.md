@@ -435,3 +435,17 @@ Single-job staging checks prove the workspace-preparation service copies the exp
 ### Impact
 
 The branch now has stronger acceptance evidence for the workspace-isolation gate. The next bounded verification step can focus on invalid-input safe-error acceptance behavior, then finish MW regression signoff and changed-file review before publish preparation.
+
+## 2026-06-26 - Invalid Input Acceptance Separates Create-Time Rejection From Worker-Time Safe Failure
+
+### Decision
+
+Prove the invalid-input acceptance gate with two complementary live checks: create-time rejection for unsupported RAN run configuration, and a worker-time safe failure using a malformed but readable BOM workbook.
+
+### Why
+
+Some invalid inputs should never reach the queue, such as unsupported `runMode` values or arbitrary General Item project strings. Other malformed inputs can legitimately pass lightweight upload checks and only fail once the real RAN Python stages inspect workbook structure. Using both paths proves the platform rejects unsafe user selections early while still shaping runtime failures into sanitized shared History and Job Detail output when deeper worker validation fails.
+
+### Impact
+
+The invalid-input safe-error gate now has a repeatable route/queue/runtime acceptance command. The next bounded verification step can focus on MW regression signoff and changed-file review before final delivery preparation.

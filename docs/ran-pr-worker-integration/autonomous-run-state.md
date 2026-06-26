@@ -47,10 +47,11 @@
 - Added a repeatable backend golden-test command and verified that live `ran-pr` Standard PR and General Item runs match the pinned upstream ECC workbooks by logical business content.
 - Added a repeatable backend reload-proof command and verified that a completed `ran-pr` General Item job survives full server restart in shared History, shared Job Detail, and ZIP download availability.
 - Added a repeatable backend concurrency-test command and verified that simultaneous `ran-pr` jobs use distinct isolated workspaces and distinct retained output paths.
+- Added a repeatable backend invalid-input/safe-error acceptance command and verified both create-time RAN input rejection and live sanitized worker-failure visibility.
 
 ## Next Action
 
-Verify invalid-input safe-error acceptance checks, then capture MW regression signoff and changed-file review.
+Capture MW regression signoff and changed-file review.
 
 ## Blockers
 
@@ -87,9 +88,10 @@ Verify invalid-input safe-error acceptance checks, then capture MW regression si
 - `superpowers:executing-plans` for the first Phase 4 golden/business-result verification slice
 - `superpowers:executing-plans` for the first Phase 4 history persistence/reload verification slice
 - `superpowers:executing-plans` for the first Phase 4 workspace isolation/concurrency verification slice
+- `superpowers:executing-plans` for the first Phase 4 invalid-input and safe-error acceptance verification slice
 
 ## Notes
 
 - The user explicitly directed work to remain in `C:\dev\ai-worker-platform-ran-pr` on `feature/ran-pr-worker-integration`, so no additional worktree was created.
 - The `COMPLETED` marker is intentionally absent until all acceptance gates pass.
-- Latest checkpoint commit: `33fc8fc` (`test: add ran concurrency verification`).
+- Latest checkpoint commit: `324cba4` (`test: add ran invalid-input safe-error verification`).

@@ -453,3 +453,22 @@
 - Verified both jobs completed successfully through the shared platform lifecycle and retained `Summary.json` plus ZIP outputs.
 - Verified the retained ZIP/output storage paths were distinct across the two jobs, proving no cross-job output mixing.
 - Verified the script cleaned its temporary jobs, tracked files, platform storage folders, and per-job RAN workspaces after the proof completed.
+
+## 2026-06-26 - Phase 4 Invalid Input And Safe Error Evidence
+
+- Added `backend/scripts/ran-invalid-safe-error-test.js` plus the package entrypoint `npm.cmd --prefix backend run test:ran-invalid-safe-errors` so the branch now has a repeatable acceptance command for invalid input rejection and live safe-failure shaping.
+- Ran `npm.cmd --prefix backend run test:ran-invalid-safe-errors` successfully against the real platform route/queue/runtime path.
+- Verified invalid create-input rejection without queueing a job:
+  - `general-item` creation with a non-workbook project string returns HTTP `400`
+  - the API response code is `VALIDATION_ERROR`
+  - the API response message is `Selected RAN General Item project is invalid.`
+  - unsupported `runMode` values such as `bom-comparison` return HTTP `400`
+  - the API response message is `RAN run mode must be standard-pr or general-item.`
+- Verified live safe-failure shaping by prevalidating a malformed but readable BOM workbook, pairing it with the pinned sample EPMS workbook, and creating a real `ran-pr` `standard-pr` job:
+  - prevalidation allowed the malformed BOM to reach the worker layer, proving the failure check exercises runtime behavior rather than upload rejection
+  - the live job failed in `simple_normalize.py`
+  - shared Job Detail reported `RAN PR worker process failed (simple_normalize.py).`
+  - failure diagnosis exposed only the sanitized stage basename `simple_normalize.py`
+  - failure diagnosis omitted raw `job.error`, `stdout`, and `stderr`
+  - technical details retained actionable traceback context while redacting absolute repo, workspace, and storage paths
+  - shared History preserved the same sanitized failure summary for the failed job
