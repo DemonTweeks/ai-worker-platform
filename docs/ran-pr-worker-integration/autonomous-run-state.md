@@ -48,10 +48,11 @@
 - Added a repeatable backend reload-proof command and verified that a completed `ran-pr` General Item job survives full server restart in shared History, shared Job Detail, and ZIP download availability.
 - Added a repeatable backend concurrency-test command and verified that simultaneous `ran-pr` jobs use distinct isolated workspaces and distinct retained output paths.
 - Added a repeatable backend invalid-input/safe-error acceptance command and verified both create-time RAN input rejection and live sanitized worker-failure visibility.
+- Captured fresh MW regression signoff by rerunning the focused legacy MW backend and frontend verification commands against the current branch state.
 
 ## Next Action
 
-Capture MW regression signoff and changed-file review.
+Capture changed-file review.
 
 ## Blockers
 
@@ -89,9 +90,10 @@ Capture MW regression signoff and changed-file review.
 - `superpowers:executing-plans` for the first Phase 4 history persistence/reload verification slice
 - `superpowers:executing-plans` for the first Phase 4 workspace isolation/concurrency verification slice
 - `superpowers:executing-plans` for the first Phase 4 invalid-input and safe-error acceptance verification slice
+- `superpowers:verification-before-completion` for the focused MW regression signoff command pass
 
 ## Notes
 
 - The user explicitly directed work to remain in `C:\dev\ai-worker-platform-ran-pr` on `feature/ran-pr-worker-integration`, so no additional worktree was created.
 - The `COMPLETED` marker is intentionally absent until all acceptance gates pass.
-- Latest checkpoint commit: `324cba4` (`test: add ran invalid-input safe-error verification`).
+- Latest checkpoint commit: pending docs checkpoint for the MW regression signoff slice.

@@ -469,6 +469,38 @@
   - the live job failed in `simple_normalize.py`
   - shared Job Detail reported `RAN PR worker process failed (simple_normalize.py).`
   - failure diagnosis exposed only the sanitized stage basename `simple_normalize.py`
-  - failure diagnosis omitted raw `job.error`, `stdout`, and `stderr`
-  - technical details retained actionable traceback context while redacting absolute repo, workspace, and storage paths
-  - shared History preserved the same sanitized failure summary for the failed job
+- failure diagnosis omitted raw `job.error`, `stdout`, and `stderr`
+- technical details retained actionable traceback context while redacting absolute repo, workspace, and storage paths
+- shared History preserved the same sanitized failure summary for the failed job
+
+## 2026-06-26 - Phase 4 MW Regression Signoff Evidence
+
+- Re-ran focused MW regression commands from the current branch state:
+  - `npm.cmd --prefix backend run smoke`
+  - `npm.cmd --prefix backend run test:preflight`
+  - `npm.cmd --prefix backend run test:integration`
+  - `npm.cmd run test:unit -- HomeView` from `frontend/`
+- Verified `npm.cmd --prefix backend run smoke` passed and still covers core MW platform invariants, including:
+  - shared app/config/service loading
+  - MW job-id generation and site-code parsing
+  - path/file safety utilities
+  - zero-output policy behavior
+  - queued-job summary behavior staying free of obsolete placeholder text
+  - completed-job final summary generation
+- Verified `npm.cmd --prefix backend run test:preflight` passed and still proves MW worker preflight behavior, including:
+  - explicit Python resolution precedence
+  - missing dependency shaping
+  - invalid configured interpreter shaping
+  - blocking MW business execution when preflight fails
+- Verified `npm.cmd --prefix backend run test:integration` passed and still exercises live MW behavior through the preserved platform routes and worker flow:
+  - successful MW `TSS` job creation from `/api/jobs/prevalidate` and `/api/jobs`
+  - successful MW `TI` job creation
+  - queueing, terminal completion, Job Detail polling, and ZIP download
+  - warnings/review-required handling for explained zero-output and duplicate scenarios
+  - admin/API regression checks
+  - websocket/job-event regression checks
+  - MW failure-classification hardening scenarios
+- Verified the integration result payload reported:
+  - `tssStatus: completed_with_warning`
+  - `tiResult: completed_with_warning`
+- Verified `npm.cmd run test:unit -- HomeView` passed and still preserves the existing MW home-launch flow alongside the RAN additions.

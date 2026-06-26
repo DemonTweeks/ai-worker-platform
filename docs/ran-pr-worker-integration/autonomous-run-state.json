@@ -48,9 +48,10 @@
     "Added a repeatable backend golden-test command and verified that live ran-pr Standard PR and General Item runs match the pinned upstream ECC workbooks by logical business content",
     "Added a repeatable backend reload-proof command and verified that a completed ran-pr General Item job survives full server restart in shared History, shared Job Detail, and ZIP download availability",
     "Added a repeatable backend concurrency-test command and verified that simultaneous ran-pr jobs use distinct isolated workspaces and distinct retained output paths",
-    "Added a repeatable backend invalid-input/safe-error acceptance command and verified both create-time RAN input rejection and live sanitized worker-failure visibility"
+    "Added a repeatable backend invalid-input/safe-error acceptance command and verified both create-time RAN input rejection and live sanitized worker-failure visibility",
+    "Captured fresh MW regression signoff by rerunning the focused legacy MW backend and frontend verification commands against the current branch state"
   ],
-  "next_action": "Capture MW regression signoff and changed-file review.",
+  "next_action": "Capture changed-file review.",
   "blockers": [],
   "checkpoint_commits": [
     {
@@ -164,7 +165,6 @@
   ],
   "remaining_acceptance_gates": [
     "RAN submodule pinned at required tag and SHA",
-    "MW regression passes",
     "Changed-file scope reviewed",
     "No generated/secret files staged",
     "Final report exists",
@@ -199,7 +199,8 @@
     "superpowers:executing-plans for the first Phase 4 golden/business-result verification slice",
     "superpowers:executing-plans for the first Phase 4 history persistence/reload verification slice",
     "superpowers:executing-plans for the first Phase 4 workspace isolation/concurrency verification slice",
-    "superpowers:executing-plans for the first Phase 4 invalid-input and safe-error acceptance verification slice"
+    "superpowers:executing-plans for the first Phase 4 invalid-input and safe-error acceptance verification slice",
+    "superpowers:verification-before-completion for the focused MW regression signoff command pass"
   ],
   "artifacts": {
     "state_markdown": "docs/ran-pr-worker-integration/autonomous-run-state.md",
@@ -210,5 +211,5 @@
     "prototype_ux_contract": "docs/ran-pr-worker-integration/prototype-ux-contract.md",
     "worker_skill_contract_adr": "docs/ran-pr-worker-integration/worker-skill-contract-adr.md"
   },
-  "last_updated_utc": "2026-06-26T09:37:51Z"
+  "last_updated_utc": "2026-06-26T13:46:05Z"
 }

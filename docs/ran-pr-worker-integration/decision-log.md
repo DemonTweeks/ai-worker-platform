@@ -449,3 +449,17 @@ Some invalid inputs should never reach the queue, such as unsupported `runMode` 
 ### Impact
 
 The invalid-input safe-error gate now has a repeatable route/queue/runtime acceptance command. The next bounded verification step can focus on MW regression signoff and changed-file review before final delivery preparation.
+
+## 2026-06-26 - MW Regression Signoff Uses Focused Legacy MW Verification Instead Of Repeating The Entire Combined Suite
+
+### Decision
+
+Use a focused MW-only verification set for the regression signoff gate instead of rerunning every RAN-specific acceptance command again.
+
+### Why
+
+The remaining question for this gate is whether the worker-registry and shared UI changes preserved the existing MW behavior. The strongest direct evidence is the existing MW-focused command set: backend smoke, backend preflight, backend integration, and the frontend `HomeView` unit slice that explicitly preserves the default MW launch flow. Repeating RAN-specific golden or concurrency checks would add cost without materially improving proof for this gate.
+
+### Impact
+
+The MW regression gate now has fresh direct evidence, and the remaining bounded work is narrowed to changed-file scope review and final delivery preparation.
