@@ -1,7 +1,7 @@
 <template>
   <section class="panel detail-header">
     <div>
-      <p class="eyebrow">Job Detail</p>
+      <p class="eyebrow">{{ workerEyebrow }}</p>
       <h1>{{ job.jobId }}</h1>
     </div>
     <div class="badge-row">
@@ -23,6 +23,12 @@ export default {
   },
   props: {
     job: { type: Object, required: true }
+  },
+  computed: {
+    workerEyebrow() {
+      const displayName = this.job.workerDisplayName || this.job.workerType || 'PR Worker';
+      return this.job.workerId ? `${displayName} • ${this.job.workerId}` : displayName;
+    }
   }
 };
 </script>

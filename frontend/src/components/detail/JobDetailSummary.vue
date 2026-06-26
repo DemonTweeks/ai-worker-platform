@@ -3,8 +3,13 @@
     <h2>Job Summary</h2>
     <div class="detail-grid">
       <span><small>Status</small><strong>{{ statusLabel(job.status) }}</strong></span>
-      <span><small>Worker</small><strong>{{ job.workerType || 'pr-worker' }}</strong></span>
-      <span><small>PR Scope</small><strong>{{ job.prScope || 'TSS' }}</strong></span>
+      <span><small>Worker</small><strong>{{ job.workerDisplayName || job.workerType || 'pr-worker' }}</strong></span>
+      <span><small>Worker ID</small><strong>{{ job.workerId || 'mw-pr' }}</strong></span>
+      <span><small>PR Scope</small><strong>{{ job.prScope || 'N/A' }}</strong></span>
+      <span><small>Run Mode</small><strong>{{ job.runMode || 'N/A' }}</strong></span>
+      <span><small>Project</small><strong>{{ job.selectedProject || 'N/A' }}</strong></span>
+      <span><small>Engine Version</small><strong>{{ job.engineVersion || 'N/A' }}</strong></span>
+      <span><small>Engine Commit</small><strong>{{ job.engineCommit || 'N/A' }}</strong></span>
       <span><small>Generation</small><strong>{{ generationScopeLabel(job.generationScope) }}</strong></span>
       <span><small>Requested</small><strong>{{ job.requestedSiteCount || 0 }}</strong></span>
       <span><small>Matched</small><strong>{{ job.matchedSiteCount || 0 }}</strong></span>
