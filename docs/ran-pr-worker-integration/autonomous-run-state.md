@@ -77,4 +77,4 @@ Continue Task 4 by extending backend integration coverage to cancellation/detail
 
 - The user explicitly directed work to remain in `C:\dev\ai-worker-platform-ran-pr` on `feature/ran-pr-worker-integration`, so no additional worktree was created.
 - The `COMPLETED` marker is intentionally absent until all acceptance gates pass.
-- Latest checkpoint commit: `ef0b3b8` (`docs: record ran lifecycle checkpoint`).
+- Latest checkpoint commit: `b333924` (`test: cover live ran runtime packaging`).

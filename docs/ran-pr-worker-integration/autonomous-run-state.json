@@ -112,6 +112,10 @@
     {
       "commit": "ef0b3b849d60161fc710ba98164524f6abacf53c",
       "message": "docs: record ran lifecycle checkpoint"
+    },
+    {
+      "commit": "b333924dec698f8729517b1b4e23b234a2ef5cea",
+      "message": "test: cover live ran runtime packaging"
     }
   ],
   "remaining_acceptance_gates": [
@@ -162,5 +166,5 @@
     "prototype_ux_contract": "docs/ran-pr-worker-integration/prototype-ux-contract.md",
     "worker_skill_contract_adr": "docs/ran-pr-worker-integration/worker-skill-contract-adr.md"
   },
-  "last_updated_utc": "2026-06-26T08:29:00Z"
+  "last_updated_utc": "2026-06-26T08:31:30Z"
 }
