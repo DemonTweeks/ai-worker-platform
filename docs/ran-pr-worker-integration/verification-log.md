@@ -582,3 +582,25 @@
 - Reconfirmed the pinned RAN submodule in the completion pass with `git submodule status --recursive`:
   - `239910e2816153339a94881597bbb95355059741 skills/create-pr-cd-ran (v1.0.0)`
 - Confirmed the tracked worktree was clean before writing the completion files with `git status --short --branch`.
+
+## 2026-06-29 - UAT Prevalidation Banner Fix Evidence
+
+- Added focused frontend regression coverage in `frontend/src/views/__tests__/HomeView.spec.js` for:
+  - MW expected validation `400` payloads populating `prevalidation` without setting the transient banner
+  - RAN BOM and RAN EPMS expected validation `400` payloads populating their respective inline results without setting the transient banner
+  - network/unexpected prevalidation failures still surfacing a generic safe banner
+- Verified the red/green cycle by running `npm.cmd run test:unit -- src/views/__tests__/HomeView.spec.js` in `frontend/`:
+  - RED: both expected-validation `400` assertions failed because `errorMessage` still became `Request failed with status code 400`
+  - GREEN: all `HomeView` tests passed after the prevalidation-specific suppression guard was added
+- Re-ran the required frontend verification commands successfully:
+  - `npm.cmd --prefix frontend test`
+  - `npm.cmd --prefix frontend run build`
+  - `git diff --check`
+- Verified the large RAN BOM prevalidation path still succeeds beyond the old 10-second client timeout window:
+  - direct backend request against `POST /api/jobs/prevalidate` with `skills/create-pr-cd-ran/input/BOM.xlsx` returned HTTP `200` in `10374ms`
+  - browser validation against the updated frontend completed successfully in `11841ms` with no `timeout of 10000ms exceeded` banner
+- Verified browser behavior on the updated frontend at `http://localhost:3001`:
+  - invalid RAN BOM: inline `Prevalidation failed` details rendered, including `Workbook can be opened: Failed` and `I cannot start the task yet. Workbook must be a valid .xlsx file.`, with no generic `400` banner
+  - invalid RAN EPMS: inline `Prevalidation failed` details rendered, including `Row count is within limit: Failed` and `I cannot start the task yet. Site code column could not be detected.`, with no generic `400` banner
+  - invalid MW upload: inline `Prevalidation failed` details rendered, including `Row count is within limit: Failed` and `I cannot start the task yet. Site code column could not be detected.`, with no generic `400` banner
+  - simulated aborted prevalidation request: transient alert showed `Network Error`, proving genuine unexpected request failures still surface a generic safe banner

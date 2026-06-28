@@ -787,8 +787,10 @@ export default {
       try {
         this.prevalidation = await prevalidateUpload(file);
       } catch (error) {
-        this.prevalidation = error.response && error.response.data ? error.response.data : null;
-        this.errorMessage = getErrorMessage(error);
+        this.prevalidation = this.getSafePrevalidationPayload(error);
+        if (!this.isExpectedPrevalidationFailure(error)) {
+          this.errorMessage = getErrorMessage(error);
+        }
       } finally {
         this.prevalidating = false;
       }
@@ -815,13 +817,15 @@ export default {
           this.ranEpmsPrevalidation = result;
         }
       } catch (error) {
-        const fallback = error.response && error.response.data ? error.response.data : null;
+        const fallback = this.getSafePrevalidationPayload(error);
         if (isBom) {
           this.ranBomPrevalidation = fallback;
         } else {
           this.ranEpmsPrevalidation = fallback;
         }
-        this.errorMessage = getErrorMessage(error);
+        if (!this.isExpectedPrevalidationFailure(error)) {
+          this.errorMessage = getErrorMessage(error);
+        }
       } finally {
         if (isBom) {
           this.ranBomPrevalidating = false;
@@ -836,6 +840,26 @@ export default {
         .map((item) => item.trim().toUpperCase())
         .filter(Boolean)
         .filter((item, index, items) => items.indexOf(item) === index);
+    },
+    isSafePrevalidationPayload(payload) {
+      return Boolean(
+        payload &&
+        typeof payload === 'object' &&
+        typeof payload.passed === 'boolean' &&
+        (!Object.prototype.hasOwnProperty.call(payload, 'checklist') || Array.isArray(payload.checklist))
+      );
+    },
+    getSafePrevalidationPayload(error) {
+      const payload = error && error.response ? error.response.data : null;
+      return this.isSafePrevalidationPayload(payload) ? payload : null;
+    },
+    isExpectedPrevalidationFailure(error) {
+      return Boolean(
+        error &&
+        error.response &&
+        error.response.status === 400 &&
+        this.isSafePrevalidationPayload(error.response.data)
+      );
     },
     hasValue(value) {
       return value !== undefined && value !== null && value !== '';
