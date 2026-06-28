@@ -1,5 +1,7 @@
 import api from '../api';
 
+const PREVALIDATION_TIMEOUT_MS = 120000;
+
 const unwrapError = (error) => {
   if (error.response && error.response.data && error.response.data.error) {
     return error.response.data.error.message;
@@ -22,7 +24,8 @@ export const prevalidateUpload = async (file, uploadKind = null) => {
     formData.append('uploadKind', uploadKind);
   }
   const response = await api.post('/api/jobs/prevalidate', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: PREVALIDATION_TIMEOUT_MS
   });
   return response.data;
 };
