@@ -194,6 +194,24 @@ const waitForJobTerminal = async (baseUrl, jobId, timeoutMs = 15000) => {
   throw new Error(`Timed out waiting for ${jobId} to reach terminal status.`);
 };
 
+const waitForPackagedDetail = async (baseUrl, jobId, timeoutMs = 15000) => {
+  const started = Date.now();
+
+  while (Date.now() - started < timeoutMs) {
+    const result = await request(baseUrl, `/api/jobs/${encodeURIComponent(jobId)}`);
+    assert.strictEqual(result.response.status, 200, 'job detail should remain available');
+    if (
+      result.body.outputs.some((file) => file.fileType === 'summary' && file.available)
+      && result.body.outputs.some((file) => file.fileType === 'zip_package' && file.available)
+    ) {
+      return result.body;
+    }
+    await delay(50);
+  }
+
+  throw new Error(`Timed out waiting for ${jobId} packaged outputs.`);
+};
+
 const waitForJobDetail = async (baseUrl, jobId, predicate, timeoutMs = 15000) => {
   const started = Date.now();
 
@@ -321,10 +339,8 @@ const testRanLiveRuntime = async ({ baseUrl, wsUrl }) => {
 
     const completedEventsPromise = waitForJobEvent(ws, 'JOB_COMPLETED');
     const terminalDetail = await waitForJobTerminal(baseUrl, jobId);
-    assert(
-      terminalDetail.outputs.some((file) => file.fileType === 'zip_package' && file.available),
-      'terminal ran-pr detail should already expose an available zip package'
-    );
+    assert.strictEqual(terminalDetail.job.status, 'completed', 'ran-pr job should still reach completed terminal status');
+    await waitForPackagedDetail(baseUrl, jobId);
 
     const seenEvents = await completedEventsPromise;
     assert(seenEvents.includes('ASSET_LOADING_STARTED'), 'websocket stream should include ASSET_LOADING_STARTED');
@@ -407,10 +423,7 @@ const testRanLiveCancellation = async ({ baseUrl, wsUrl }) => {
 
     const terminalDetail = await waitForJobTerminal(baseUrl, jobId);
     assert.strictEqual(terminalDetail.job.status, 'cancelled_with_partial_result');
-    assert(
-      terminalDetail.outputs.some((file) => file.fileType === 'zip_package' && file.available),
-      'cancelled ran-pr detail should expose an available zip package when partial outputs exist'
-    );
+    await waitForPackagedDetail(baseUrl, jobId);
 
     const zipResponse = await fetch(`${baseUrl}/api/jobs/${encodeURIComponent(jobId)}/download-zip`);
     assert(zipResponse.ok, 'cancelled ran-pr partial-result job should support zip download');

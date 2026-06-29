@@ -149,6 +149,16 @@ const verifyReloadedHistoryAndDetail = async (baseUrl, { jobId }) => {
     'reloaded job detail should expose the ZIP package as available'
   );
 
+  const summaryFile = await JobFile.findOne({ jobId, fileType: 'summary' }).lean();
+  assert(summaryFile, 'summary file record should persist for completed RAN jobs');
+  const summaryPath = path.join(storageService.getStorageRoot(), summaryFile.filePath);
+  const summaryJson = JSON.parse(await fs.promises.readFile(summaryPath, 'utf8'));
+  assert.strictEqual(
+    summaryJson.status,
+    detail.body.job.status,
+    'Summary.json should reflect the final persisted terminal status'
+  );
+
   const zipResponse = await fetch(`${baseUrl}/api/jobs/${encodeURIComponent(jobId)}/download-zip`);
   assert(zipResponse.ok, 'reloaded ZIP download should succeed');
   const zipBuffer = Buffer.from(await zipResponse.arrayBuffer());

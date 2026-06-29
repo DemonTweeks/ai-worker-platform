@@ -52,13 +52,6 @@ const uploadFile = async (baseUrl, route, filePath, extraFields = {}) => {
   return uploadBuffer(baseUrl, route, buffer, path.basename(filePath), extraFields);
 };
 
-const createWorkbookBuffer = (rows) => {
-  const workbook = xlsx.utils.book_new();
-  const sheet = xlsx.utils.aoa_to_sheet(rows);
-  xlsx.utils.book_append_sheet(workbook, sheet, 'Sheet1');
-  return xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
-};
-
 const createServer = async () => {
   const server = http.createServer(app);
   initWebSocketServer(server);
@@ -168,59 +161,31 @@ const testInvalidCreateInputs = async (baseUrl) => {
   );
 };
 
-const testLiveSafeFailure = async (baseUrl) => {
-  const malformedBomPrevalidation = await uploadBuffer(
-    baseUrl,
-    '/api/jobs/prevalidate',
-    createWorkbookBuffer([
-      ['not', 'a', 'real', 'bom'],
-      ['1', '2', '3', '4']
-    ]),
-    'bad-bom.xlsx',
-    { uploadKind: 'ran-bom' }
+const testWrongReadableBomRejectedPrevalidation = async (baseUrl) => {
+  const wrongBomPrevalidation = await uploadFile(baseUrl, '/api/jobs/prevalidate', sampleEpmsPath, {
+    uploadKind: 'ran-bom'
+  });
+  assert.strictEqual(
+    wrongBomPrevalidation.response.status,
+    400,
+    'EPMS-shaped workbook uploaded in the ran-bom slot must be rejected before job creation'
   );
-  assert.strictEqual(malformedBomPrevalidation.response.status, 200, 'readable malformed BOM should still pass prevalidation');
-
-  const epmsPrevalidation = await uploadFile(baseUrl, '/api/jobs/prevalidate', sampleEpmsPath, {
-    uploadKind: 'ran-epms'
-  });
-  assert.strictEqual(epmsPrevalidation.response.status, 200, 'sample ran EPMS should prevalidate for the live failure test');
-
-  const created = await postJson(baseUrl, '/api/jobs', {
-    workerId: 'ran-pr',
-    bomPrevalidatedFileId: malformedBomPrevalidation.body.prevalidatedFileId,
-    epmsPrevalidatedFileId: epmsPrevalidation.body.prevalidatedFileId,
-    runMode: 'standard-pr'
-  });
-
-  assert.strictEqual(created.response.status, 201, 'malformed-but-readable BOM should still reach live worker execution');
-  const jobId = created.body.job.jobId;
-  createdJobIds.add(jobId);
-
-  const detail = await waitForTerminalDetail(baseUrl, jobId);
-  assert.strictEqual(detail.job.status, 'failed', 'live malformed BOM should fail during worker execution');
-  assert.strictEqual(detail.job.failureSummary, 'RAN PR worker process failed (simple_normalize.py).');
-  assert.strictEqual(detail.job.error, undefined, 'safe failure detail should not expose raw job.error');
-  assert.strictEqual(detail.job.stdout, undefined, 'safe failure detail should not expose stdout');
-  assert.strictEqual(detail.job.stderr, undefined, 'safe failure detail should not expose stderr');
-
-  const diagnosis = detail.job.failureDiagnosis;
-  assert.strictEqual(diagnosis.category, 'WORKER_PROCESS_FAILED');
-  assert.strictEqual(diagnosis.stage, 'simple_normalize.py');
-  assert.strictEqual(diagnosis.exitCode, 1);
-  assert.strictEqual(diagnosis.summary.includes('src/simple_normalize.py'), false);
-  assert.strictEqual(diagnosis.summary.includes('simple_normalize.py'), true);
-  assert.strictEqual(diagnosis.technicalDetails.includes('[redacted]'), true, 'technical details should show path redaction evidence');
-  assert.strictEqual(diagnosis.technicalDetails.includes(repoRoot), false, 'technical details must not leak the repo root');
-  assert.strictEqual(diagnosis.technicalDetails.includes(repoRoot.replace(/\\/g, '/')), false, 'technical details must not leak POSIX-style repo paths');
-  assert.strictEqual(diagnosis.technicalDetails.includes('storage\\ran-workspaces'), false, 'technical details must not leak workspace storage paths');
-  assert.strictEqual(diagnosis.technicalDetails.includes('storage/jobs'), false, 'technical details must not leak job storage paths');
-
-  const history = await request(baseUrl, `/api/jobs?workerId=ran-pr&limit=20&page=1&search=${encodeURIComponent(jobId)}`);
-  assert.strictEqual(history.response.status, 200, 'ran history should remain available after failure');
-  const historyItem = history.body.items.find((item) => item.jobId === jobId);
-  assert(historyItem, 'failed ran job should appear in shared history');
-  assert.strictEqual(historyItem.failureSummary, 'RAN PR worker process failed (simple_normalize.py).');
+  assert.strictEqual(wrongBomPrevalidation.body.passed, false, 'wrong ran-bom workbook should fail structured prevalidation');
+  assert.strictEqual(
+    typeof wrongBomPrevalidation.body.prevalidatedFileId,
+    'undefined',
+    'failed ran-bom prevalidation must not issue a prevalidated file id'
+  );
+  assert(
+    Array.isArray(wrongBomPrevalidation.body.checklist)
+      && wrongBomPrevalidation.body.checklist.some((item) => item.key === 'ran_bom_structure' && item.passed === false),
+    'wrong ran-bom workbook should surface a specific failed semantic checklist item'
+  );
+  assert.strictEqual(
+    wrongBomPrevalidation.body.workerExplanation.includes('RAN BOM'),
+    true,
+    'wrong ran-bom workbook should return a safe worker explanation'
+  );
 };
 
 const main = async () => {
@@ -233,7 +198,7 @@ const main = async () => {
     serverInfo = await createServer();
 
     await testInvalidCreateInputs(serverInfo.baseUrl);
-    await testLiveSafeFailure(serverInfo.baseUrl);
+    await testWrongReadableBomRejectedPrevalidation(serverInfo.baseUrl);
 
     console.log('--- RAN Invalid Input And Safe Error Tests Passed! ---');
   } finally {

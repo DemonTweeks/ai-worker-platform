@@ -163,6 +163,8 @@ const getFailureSummary = (job) => {
       return `PR worker process failed (${details.scope}).`;
     }
     return 'PR worker process failed.';
+  } else if (code === 'RAN_INVALID_ECC_OUTPUT' || code === 'RAN_ZERO_VALID_ECC_OUTPUT') {
+    return 'RAN PR worker produced no valid ECC output.';
   }
   return 'PR Worker execution failed.';
 };
@@ -186,7 +188,7 @@ const getFailureDiagnosis = (job) => {
   const ranStage = sanitizeRanStageName(details.stage);
   const isRanJob = job.workerId === WORKER_IDS.RAN_PR;
 
-  const allowedCategories = ['PREFLIGHT_FAILED', 'WORKER_TIMEOUT', 'WORKER_PROCESS_FAILED'];
+  const allowedCategories = ['PREFLIGHT_FAILED', 'WORKER_TIMEOUT', 'WORKER_PROCESS_FAILED', 'RAN_INVALID_ECC_OUTPUT', 'RAN_ZERO_VALID_ECC_OUTPUT'];
   const category = allowedCategories.includes(code) ? code : 'WORKER_ERROR';
 
   let title = 'PR Worker execution failed';
@@ -245,6 +247,9 @@ const getFailureDiagnosis = (job) => {
     if (Number.isInteger(details.exitCode)) {
       exitCode = details.exitCode;
     }
+  } else if (category === 'RAN_INVALID_ECC_OUTPUT' || category === 'RAN_ZERO_VALID_ECC_OUTPUT') {
+    title = 'RAN ECC output invalid';
+    summary = 'The RAN PR worker completed its pipeline, but it did not produce any valid ECC workbook output for delivery.';
   }
 
   return {

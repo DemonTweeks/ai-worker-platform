@@ -174,7 +174,7 @@ const buildArchiveEntries = (jobFiles) => jobFiles.map((file) => {
   };
 });
 
-const generateReportsAndPackage = async (jobId) => {
+const generateReportsAndPackage = async (jobId, options = {}) => {
   await JobFile.deleteMany({ jobId, fileType: { $in: ['review_required_report', 'warning_report', 'summary', 'zip_package'] } });
 
   const [warningReport, reviewReport, summaryFile] = await Promise.all([
@@ -197,10 +197,12 @@ const generateReportsAndPackage = async (jobId) => {
     ] }
   }).sort({ fileType: 1, createdAt: 1 });
 
-  const zipFile = await createZipPackage({
-    jobId,
-    outputFiles: buildArchiveEntries(packageFiles)
-  });
+  const zipFile = options.includeZip === false
+    ? null
+    : await createZipPackage({
+      jobId,
+      outputFiles: buildArchiveEntries(packageFiles)
+    });
 
   return {
     warningReport,

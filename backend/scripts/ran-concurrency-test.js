@@ -22,6 +22,10 @@ const sampleEpmsPath = path.join(ranSkillRoot, 'input', 'EPMS.xlsx');
 const generalItemProject = 'CD consolidation 2023 (Swap/ Modernize)';
 const terminalStatuses = new Set(['completed', 'completed_with_warning', 'failed', 'cancelled', 'cancelled_with_partial_result']);
 const createdJobIds = new Set();
+const submoduleRootsToProtect = [
+  path.join(ranSkillRoot, 'input'),
+  path.join(ranSkillRoot, 'output')
+];
 
 const request = async (baseUrl, route, options = {}) => {
   const response = await fetch(`${baseUrl}${route}`, options);
@@ -48,6 +52,50 @@ const postJson = (baseUrl, route, body) => request(baseUrl, route, {
 });
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const snapshotDirectory = async (rootPath) => {
+  const result = {};
+
+  const walk = async (currentPath) => {
+    const entries = await fs.promises.readdir(currentPath, { withFileTypes: true });
+    for (const entry of entries) {
+      const absolutePath = path.join(currentPath, entry.name);
+      if (entry.isDirectory()) {
+        await walk(absolutePath);
+        continue;
+      }
+
+      const stats = await fs.promises.stat(absolutePath);
+      const relativePath = path.relative(rootPath, absolutePath).replace(/\\/g, '/');
+      result[relativePath] = {
+        size: stats.size,
+        mtimeMs: stats.mtimeMs
+      };
+    }
+  };
+
+  await walk(rootPath);
+  return result;
+};
+
+const snapshotProtectedSubmoduleRoots = async () => {
+  const snapshots = {};
+  for (const rootPath of submoduleRootsToProtect) {
+    snapshots[rootPath] = await snapshotDirectory(rootPath);
+  }
+  return snapshots;
+};
+
+const assertProtectedSubmoduleRootsUnchanged = async (beforeSnapshot) => {
+  for (const rootPath of submoduleRootsToProtect) {
+    const afterSnapshot = await snapshotDirectory(rootPath);
+    assert.deepStrictEqual(
+      afterSnapshot,
+      beforeSnapshot[rootPath],
+      `pinned RAN submodule path ${rootPath} must remain unchanged during runtime execution`
+    );
+  }
+};
 
 const createServer = async () => {
   const server = http.createServer(app);
@@ -89,6 +137,19 @@ const waitForJobTerminal = async (baseUrl, jobId, timeoutMs = 300000) => waitFor
   `Timed out waiting for ${jobId} to reach a terminal state.`
 );
 
+const waitForPackagedDetail = async (baseUrl, jobId, timeoutMs = 300000) => waitForCondition(
+  async () => {
+    const result = await request(baseUrl, `/api/jobs/${encodeURIComponent(jobId)}`);
+    assert.strictEqual(result.response.status, 200, `job detail should remain available for ${jobId}`);
+    return result.body.outputs.some((file) => file.fileType === 'summary' && file.available)
+      && result.body.outputs.some((file) => file.fileType === 'zip_package' && file.available)
+      ? result.body
+      : null;
+  },
+  timeoutMs,
+  `Timed out waiting for ${jobId} packaged outputs.`
+);
+
 const createRanJob = async ({ baseUrl, runMode, selectedProject }) => {
   const bomPrevalidation = await uploadFile(baseUrl, '/api/jobs/prevalidate', sampleBomPath, {
     uploadKind: 'ran-bom'
@@ -122,9 +183,15 @@ const verifyWorkspaceRoots = async (jobIds) => {
   assert.notStrictEqual(workspaceRoots[0], workspaceRoots[1], 'concurrent jobs must use distinct workspace roots');
 
   await waitForCondition(
-    async () => workspaceRoots.every((workspaceRoot) => fs.existsSync(workspaceRoot)),
+    async () => workspaceRoots.every((workspaceRoot) => (
+      fs.existsSync(workspaceRoot)
+      && fs.existsSync(path.join(workspaceRoot, 'src', 'simple_normalize.py'))
+      && fs.existsSync(path.join(workspaceRoot, 'config', 'MainConfig.xlsx'))
+      && fs.existsSync(path.join(workspaceRoot, 'input', 'BOM.xlsx'))
+      && fs.existsSync(path.join(workspaceRoot, 'input', 'EPMS.xlsx'))
+    )),
     30000,
-    'Timed out waiting for concurrent RAN workspace roots to exist.'
+    'Timed out waiting for concurrent RAN workspace roots and staged assets to exist.'
   );
 
   for (const [index, workspaceRoot] of workspaceRoots.entries()) {
@@ -194,12 +261,14 @@ const cleanupArtifacts = async () => {
 
 const main = async () => {
   let serverInfo = null;
+  let protectedSubmoduleSnapshot = null;
 
   try {
     const connection = await checkFirebaseConnection();
     assert(connection.connected, 'Firebase RTDB should be reachable for concurrency verification');
     await storageService.ensureBaseStorage();
     await storageService.ensureRanWorkspaceBase();
+    protectedSubmoduleSnapshot = await snapshotProtectedSubmoduleRoots();
 
     serverInfo = await createServer();
     const standardJob = await createRanJob({
@@ -218,7 +287,10 @@ const main = async () => {
     await verifyConcurrentQueueState(serverInfo.baseUrl, jobIds);
 
     const terminalDetails = await Promise.all(jobIds.map((jobId) => waitForJobTerminal(serverInfo.baseUrl, jobId)));
-    await verifyRetainedOutputs(terminalDetails);
+    assert(terminalDetails.every((detail) => detail.job.status === 'completed'), 'concurrent jobs should still reach completed terminal states');
+    const packagedDetails = await Promise.all(jobIds.map((jobId) => waitForPackagedDetail(serverInfo.baseUrl, jobId)));
+    await verifyRetainedOutputs(packagedDetails);
+    await assertProtectedSubmoduleRootsUnchanged(protectedSubmoduleSnapshot);
 
     console.log(JSON.stringify({
       ok: true,
@@ -232,7 +304,8 @@ const main = async () => {
         'distinct-workspace-roots',
         'concurrent-active-ran-jobs',
         'isolated-staged-inputs',
-        'distinct-retained-output-paths'
+        'distinct-retained-output-paths',
+        'submodule-input-output-unchanged'
       ]
     }, null, 2));
   } finally {

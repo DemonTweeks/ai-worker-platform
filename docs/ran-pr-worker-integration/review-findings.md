@@ -32,9 +32,11 @@
 - Final status:
   - resolved on `feature/ran-pr-worker-integration` and pushed to Draft PR `#17`
 
-## 2026-06-29 - OPEN - MERGE BLOCKER - False-success RAN completion for persisted UAT job `PR-20260629-005`
+## 2026-06-29 - RESOLVED - False-success RAN completion for persisted UAT job `PR-20260629-005`
 
-- Status: **open — merge blocker for Draft PR #17**.
+- Status:
+  - was an open merge blocker for Draft PR `#17`
+  - resolved on `feature/ran-pr-worker-integration` after the backend validation, RAN acceptance, and frontend regression suites passed
 - Confirmed Firebase-backed evidence:
   - persisted `jobs/PR-20260629-005` reached terminal status `completed`
   - persisted job metadata recorded `workerId: ran-pr`, `runMode: general-item`, `outputFileCount: 2`, `reviewRequiredCount: 0`, and `warningCount: 0`
@@ -50,12 +52,15 @@
   - `backend/src/workers/adapters/ranPrAdapter.js` and `backend/src/workers/ranOutputIngestionService.js` treat the presence of `ECC_PR_Output.xlsx` and `ECC_PR_Output_With_GeneralItems.xlsx` as success evidence and ingest them without validating that the workbooks contain meaningful RAN ECC data
   - `backend/src/services/ranWorkerService.js` reduces the final RAN summary to `outputFileCount` only and passes that to `backend/src/services/zeroOutputPolicyService.js`
   - `backend/src/services/zeroOutputPolicyService.js` marks the job `completed` as soon as `outputFileCount > 0`, so two placeholder workbooks are enough to bypass the zero-output guard even when warnings, review-required records, and usable ECC rows are all absent
-- Required fix:
-  - add BOM-specific semantic validation before queueing the RAN job, or fail the job in the earliest RAN worker validation stage when the BOM workbook shape does not match the expected BOM contract
-  - add post-export validation that inspects the generated RAN ECC workbooks for required sheets and non-placeholder data before counting them toward `outputFileCount` or packaging them as successful outputs
-  - if the pipeline produces placeholder files only, persist a non-success terminal state plus an explanatory warning/review/failure record instead of `completed`
-  - write `Summary.json` after the final terminal status is persisted, or explicitly pass the resolved terminal status into summary generation so the persisted summary cannot lag behind the real job state
-- Regression requirements:
-  - a persisted RAN job created from a readable-but-wrong BOM workbook must not end in `completed` with `outputFileCount > 0` unless the tracked ECC workbooks contain valid usable output
-  - automated coverage must assert the stored job status, stored `outputFileCount`, stored warning/review counts, stored ZIP entries, and stored workbook-shape evidence for this failure mode
-  - automated coverage must also assert that `Summary.json` reflects the final persisted terminal status
+- Implemented fix:
+  - added BOM-specific semantic validation derived from the pinned RAN engine contract so EPMS-shaped or otherwise wrong-but-readable workbooks are rejected before job creation
+  - added centralized RAN ECC workbook validation so placeholder outputs such as one-sheet `A1` workbooks are not counted, tracked, or packaged as approved ECC output
+  - changed RAN finalization so zero valid ECC output becomes a safe failed terminal result (`RAN_INVALID_ECC_OUTPUT` / `RAN_ZERO_VALID_ECC_OUTPUT`) with no successful ZIP package
+  - changed summary/package ordering so the persisted job terminal status is written before `Summary.json` is generated
+  - strengthened runtime-isolation acceptance coverage so the pinned RAN submodule `input/` and `output/` trees are proven unchanged after live RAN execution
+- Resolution evidence:
+  - wrong-but-readable `ran-bom` prevalidation now fails safely before job creation
+  - simulated placeholder-only ECC output now ends `failed`, records zero valid output files, and exposes no successful ZIP download
+  - valid RAN Standard PR and General Item golden flows still complete and still match the pinned upstream ECC workbook outputs
+  - stored `Summary.json` now matches the final persisted terminal job status in the history reload path
+  - live concurrency coverage confirmed isolated runtime workspaces and unchanged pinned submodule input/output folders

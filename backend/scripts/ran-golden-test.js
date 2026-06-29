@@ -85,6 +85,26 @@ const waitForJobTerminal = async (baseUrl, jobId, timeoutMs = 300000) => {
   throw new Error(`Timed out waiting for ${jobId} to reach a terminal state.`);
 };
 
+const waitForPackagedDetail = async (baseUrl, jobId, timeoutMs = 300000) => {
+  const started = Date.now();
+
+  while (Date.now() - started < timeoutMs) {
+    const result = await request(baseUrl, `/api/jobs/${encodeURIComponent(jobId)}`);
+    assert.strictEqual(result.response.status, 200, `job detail should load for ${jobId}`);
+
+    if (
+      result.body.outputs.some((file) => file.fileType === 'summary' && file.available)
+      && result.body.outputs.some((file) => file.fileType === 'zip_package' && file.available)
+    ) {
+      return result.body;
+    }
+
+    await delay(1000);
+  }
+
+  throw new Error(`Timed out waiting for ${jobId} to expose packaged outputs.`);
+};
+
 const readLogicalWorkbook = (filePath) => {
   const workbook = xlsx.readFile(filePath, { cellDates: false, raw: false });
   const firstSheet = workbook.SheetNames[0];
@@ -166,17 +186,9 @@ const runGoldenJob = async ({ baseUrl, runMode, selectedProject }) => {
 
   const jobId = created.body.job.jobId;
   createdJobIds.add(jobId);
-  const detail = await waitForJobTerminal(baseUrl, jobId);
-
-  assert.strictEqual(detail.job.status, 'completed', `${runMode} job should complete successfully`);
-  assert(
-    detail.outputs.some((file) => file.fileType === 'zip_package' && file.available),
-    `${runMode} job should expose an available zip package`
-  );
-  assert(
-    detail.outputs.some((file) => file.fileType === 'summary' && file.available),
-    `${runMode} job should expose Summary.json`
-  );
+  const terminalDetail = await waitForJobTerminal(baseUrl, jobId);
+  assert.strictEqual(terminalDetail.job.status, 'completed', `${runMode} job should complete successfully`);
+  const detail = await waitForPackagedDetail(baseUrl, jobId);
 
   return {
     jobId,

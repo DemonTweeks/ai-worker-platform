@@ -72,9 +72,9 @@ const runTests = async () => {
     });
 
     setCachedModule(path.join(repoRoot, 'src/services/outputCollector.js'), {
-      generateReportsAndPackage: async (jobId) => {
-        reportCalls.push(jobId);
-        return { zipFile: { jobId } };
+      generateReportsAndPackage: async (jobId, options = {}) => {
+        reportCalls.push({ jobId, options });
+        return { zipFile: options.includeZip === false ? null : { jobId } };
       }
     });
 
@@ -153,6 +153,7 @@ const runTests = async () => {
     assert.strictEqual(currentJobState.outputFileCount, 2);
     assert.strictEqual(currentJobState.finalWorkerSummary, 'RAN worker completed with 2 output file(s).');
     assert.strictEqual(reportCalls.length, 1, 'successful runs should generate reports and packages');
+    assert.strictEqual(reportCalls[0].options.includeZip, true, 'successful runs should explicitly allow zip packaging');
     assert.strictEqual(savedSummaries.length, 1, 'successful runs should persist a final summary');
     assert(metadataUpdates.some((update) => update.status === 'loading_assets'), 'job should enter loading_assets status');
     assert(metadataUpdates.some((update) => update.status === 'generating'), 'job should enter generating status');
@@ -218,9 +219,73 @@ const runTests = async () => {
     assert.strictEqual(cancelledSummary.status, 'cancelled_with_partial_result');
     assert.strictEqual(currentJobState.status, 'cancelled_with_partial_result');
     assert.strictEqual(reportCalls.length, 1, 'cancelled runs with partial results should still package outputs');
+    assert.strictEqual(reportCalls[0].options.includeZip, true, 'partial-result cancellation should still allow zip packaging');
     assert.strictEqual(savedSummaries.length, 1, 'cancelled runs should still persist a final summary');
     assert(publishedEvents.some((entry) => entry.event === 'JOB_CANCELLED'), 'cancelled runs should publish JOB_CANCELLED');
     assert.strictEqual(workerStateService.getState(currentJobState.jobId).phase, 'CANCELLED');
+
+    metadataUpdates.length = 0;
+    publishedEvents.length = 0;
+    reportCalls.length = 0;
+    savedSummaries.length = 0;
+    currentJobState.status = 'queued';
+    currentJobState.outputFileCount = 0;
+    currentJobState.finalWorkerSummary = '';
+    currentJobState.error = null;
+
+    setCachedModule(path.join(repoRoot, 'src/workers/adapters/ranPrAdapter.js'), {
+      run: async (_jobId, options = {}) => {
+        if (options.onWorkspacePreparing) {
+          await options.onWorkspacePreparing('Preparing isolated RAN workspace.');
+        }
+        if (options.onOutputsCollecting) {
+          await options.onOutputsCollecting('Collecting approved RAN outputs.');
+        }
+        if (options.onOutputsCollected) {
+          await options.onOutputsCollected('Approved RAN outputs collected.');
+        }
+
+        return {
+          workerId: 'ran-pr',
+          runMode: 'standard-pr',
+          selectedProject: null,
+          pipelineResult: {
+            cancelled: false,
+            stageResults: [{ stage: 'src/simple_ecc_export.py' }]
+          },
+          outputCollection: {
+            outputFileCount: 0,
+            validOutputFileCount: 0,
+            invalidOutputFileCount: 2,
+            failure: {
+              code: 'RAN_INVALID_ECC_OUTPUT',
+              message: 'RAN PR worker produced no valid ECC output files.',
+              details: {
+                fileTypes: [
+                  'ran_ecc_output',
+                  'ran_ecc_output_with_general_items'
+                ]
+              }
+            }
+          }
+        };
+      }
+    });
+
+    delete require.cache[require.resolve('../src/services/ranWorkerService')];
+    const invalidOutputService = require('../src/services/ranWorkerService');
+    workerStateService.createState(currentJobState.jobId);
+
+    const invalidOutputSummary = await invalidOutputService.runRanWorkerJob(currentJobState.jobId);
+    assert.strictEqual(invalidOutputSummary.status, 'failed');
+    assert.strictEqual(currentJobState.status, 'failed');
+    assert.strictEqual(currentJobState.outputFileCount, 0, 'invalid ECC outputs must not count as successful output files');
+    assert.strictEqual(currentJobState.error.code, 'RAN_INVALID_ECC_OUTPUT');
+    assert.strictEqual(reportCalls.length, 1, 'invalid ECC outputs should still generate a final summary artifact');
+    assert.strictEqual(reportCalls[0].options.includeZip, false, 'invalid ECC outputs must not allow successful zip packaging');
+    assert.strictEqual(savedSummaries.length, 1, 'invalid ECC outputs should persist a final failure summary');
+    assert(publishedEvents.some((entry) => entry.event === 'JOB_FAILED'), 'invalid ECC outputs should publish JOB_FAILED');
+    assert.strictEqual(workerStateService.getState(currentJobState.jobId).phase, 'FAILED');
 
     console.log('--- RAN Worker Service Tests Passed! ---');
   } finally {

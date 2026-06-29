@@ -5,6 +5,7 @@ const xlsx = require('xlsx');
 const config = require('../config/env');
 const storageService = require('./storageService');
 const { inspectIepmsWorkbookBuffer } = require('./iepmsParser');
+const { validateRanBomWorkbookBuffer } = require('../workers/ranBomValidationService');
 const {
   assertPathInsideRoot,
   sanitizeFileName,
@@ -238,6 +239,31 @@ const validateUpload = async (file, options = {}) => {
         error.message || 'Workbook contents could not be read.'
       ));
       failedMessages.push(error.message || 'Workbook contents could not be read.');
+
+      return {
+        passed: false,
+        uploadKind: uploadConfig.uploadKind,
+        originalFileName: originalName,
+        fileSize: file ? file.size : 0,
+        checklist,
+        workerExplanation: buildWorkerExplanation(false, uploadConfig, failedMessages)
+      };
+    }
+  }
+
+  if (uploadConfig.uploadKind === UPLOAD_KINDS.RAN_BOM) {
+    const bomValidation = await validateRanBomWorkbookBuffer(file.buffer);
+    checklist.push(buildChecklistItem(
+      'ran_bom_structure',
+      'Workbook matches the required RAN BOM structure',
+      bomValidation.valid,
+      bomValidation.valid
+        ? 'Workbook matches the required RAN BOM structure.'
+        : 'Workbook does not match the required RAN BOM structure.'
+    ));
+
+    if (!bomValidation.valid) {
+      failedMessages.push('Please upload the required RAN BOM workbook structure.');
 
       return {
         passed: false,

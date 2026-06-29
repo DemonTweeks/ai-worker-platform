@@ -41,6 +41,32 @@ const buildRanSummary = ({ outputFileCount = 0, reviewRequiredCount = 0, warning
   warningCount
 });
 
+const finalizeFailedOutputValidation = async (jobId, safeError, summary) => {
+  await setJobStatus(jobId, 'failed', {
+    completedAt: new Date(),
+    error: safeError,
+    ...summary
+  });
+
+  const finalWorkerSummary = await saveFinalSummary({ jobId, summary });
+  await setJobStatus(jobId, 'failed', { finalWorkerSummary });
+  await generateReportsAndPackage(jobId, { includeZip: false });
+  workerStateService.setError(jobId, safeError);
+  await publishJobEvent(jobId, JOB_EVENTS.JOB_FAILED, {
+    phase: 'FAILED',
+    status: 'failed',
+    message: safeError.message,
+    summary
+  });
+
+  return {
+    status: 'failed',
+    summary,
+    error: safeError,
+    finalWorkerSummary
+  };
+};
+
 const failJob = async (jobId, error) => {
   const safeError = {
     code: error.code || 'WORKER_ERROR',
@@ -126,20 +152,19 @@ const runRanWorkerJob = async (jobId) => {
       outputFileCount: result.outputCollection.outputFileCount
     });
 
+    if (result.outputCollection.failure) {
+      return finalizeFailedOutputValidation(jobId, result.outputCollection.failure, summary);
+    }
+
     if (result.pipelineResult.cancelled) {
       const finalStatus = summary.outputFileCount > 0 ? 'cancelled_with_partial_result' : 'cancelled';
-      const finalWorkerSummary = await saveFinalSummary({
-        jobId,
-        summary,
-        statusOverride: finalStatus
-      });
-
-      await generateReportsAndPackage(jobId);
       await setJobStatus(jobId, finalStatus, {
         cancelledAt: new Date(),
-        finalWorkerSummary,
         ...summary
       });
+      const finalWorkerSummary = await saveFinalSummary({ jobId, summary });
+      await setJobStatus(jobId, finalStatus, { finalWorkerSummary });
+      await generateReportsAndPackage(jobId, { includeZip: summary.outputFileCount > 0 });
       workerStateService.setCancelled(jobId);
       await publishJobEvent(jobId, JOB_EVENTS.JOB_CANCELLED, {
         phase: 'CANCELLED',
@@ -156,19 +181,14 @@ const runRanWorkerJob = async (jobId) => {
     }
 
     const finalStatus = determineFinalStatus(summary);
-    const finalWorkerSummary = await saveFinalSummary({
-      jobId,
-      summary,
-      statusOverride: finalStatus
-    });
-
-    await generateReportsAndPackage(jobId);
     await setJobStatus(jobId, finalStatus, {
       completedAt: new Date(),
-      finalWorkerSummary,
       error: undefined,
       ...summary
     });
+    const finalWorkerSummary = await saveFinalSummary({ jobId, summary });
+    await setJobStatus(jobId, finalStatus, { finalWorkerSummary });
+    await generateReportsAndPackage(jobId, { includeZip: true });
     workerStateService.setComplete(jobId, 'RAN PR worker job completed.');
     await publishJobEvent(jobId, JOB_EVENTS.JOB_COMPLETED, {
       phase: 'COMPLETED',
