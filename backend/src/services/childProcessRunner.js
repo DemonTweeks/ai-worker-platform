@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
-const { spawn } = require('child_process');
+const childProcess = require('child_process');
+const { spawn } = childProcess;
 const config = require('../config/env');
 const storageService = require('./storageService');
 const { assertPathInsideRoot } = require('../utils/pathUtils');
@@ -31,6 +32,26 @@ const getPythonExecutable = () => {
 
 const hasPathSeparator = (value) => /[\\/]/.test(String(value || ''));
 
+const resolveBareExecutableFromPath = (command) => {
+  const locator = process.platform === 'win32' ? 'where.exe' : 'which';
+
+  try {
+    const output = childProcess.execFileSync(locator, [command], {
+      stdio: ['ignore', 'pipe', 'ignore'],
+      encoding: 'utf8'
+    });
+
+    const resolved = String(output || '')
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .find((line) => path.isAbsolute(line) && fs.existsSync(line));
+
+    return resolved || null;
+  } catch (error) {
+    return null;
+  }
+};
+
 const buildPythonResolutionError = () => {
   const error = new Error('A resolvable Python interpreter path is required for the RAN worker.');
   error.code = 'PYTHON_EXECUTABLE_NOT_RESOLVED';
@@ -51,13 +72,18 @@ const resolveExplicitPythonExecutable = (pythonExecutable) => {
     return buildPythonResolutionError();
   }
 
-  if (!hasPathSeparator(configured)) {
+  if (hasPathSeparator(configured)) {
+    const resolvedPath = assertPathInsideRoot(REPO_ROOT, path.resolve(REPO_ROOT, configured));
+    if (fs.existsSync(resolvedPath)) {
+      return resolvedPath;
+    }
+
     return buildPythonResolutionError();
   }
 
-  const resolvedPath = assertPathInsideRoot(REPO_ROOT, path.resolve(REPO_ROOT, configured));
-  if (fs.existsSync(resolvedPath)) {
-    return resolvedPath;
+  const pathResolvedExecutable = resolveBareExecutableFromPath(configured);
+  if (pathResolvedExecutable) {
+    return pathResolvedExecutable;
   }
 
   return buildPythonResolutionError();
