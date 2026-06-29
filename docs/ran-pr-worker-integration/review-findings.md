@@ -32,29 +32,30 @@
 - Final status:
   - resolved on `feature/ran-pr-worker-integration` and pushed to Draft PR `#17`
 
-## 2026-06-29 - UAT Blocker: Wrong RAN BOM Can Complete With No ECC Output
+## 2026-06-29 - OPEN - MERGE BLOCKER - False-success RAN completion for persisted UAT job `PR-20260629-005`
 
 - Status: **open — merge blocker for Draft PR #17**.
-- UAT evidence:
-  - Job `PR-20260629-005` was created through the RAN PR Worker using a wrong workbook in the BOM upload slot.
-  - The upload passed current BOM prevalidation, the job completed, and a ZIP download was offered even though no usable RAN ECC output was produced.
-  - The downloaded package therefore represented a false successful result. It may contain platform-generated metadata such as `Summary.json`, but it must not be presented as a successful RAN PR deliverable when it contains zero approved RAN ECC output files.
-- Confirmed control gap:
-  - RAN BOM prevalidation currently verifies only that the workbook container can be opened; it does not validate the required RAN BOM workbook structure, required sheets, or required headers.
-  - RAN job finalization currently builds its summary with `matchedSiteCount: 0`. This bypasses the shared zero-output protection that would otherwise reject unexplained zero ECC outputs.
-  - The platform then generates summary/package artifacts even when `ran_ecc_output` and `ran_ecc_output_with_general_items` counts are both zero.
-- Required fix decision:
-  1. Add backend RAN BOM schema prevalidation that rejects a readable but wrong workbook before job creation. Validation must use the pinned engine's actual required BOM structure, not only extension/signature/readability.
-  2. Add a final execution guard: when a RAN run reaches output collection with zero approved RAN ECC output files, mark the job `failed` with a safe allow-listed failure category such as `RAN_ZERO_ECC_OUTPUT`, unless an explicitly supported and user-visible RAN business exception explains the zero-output state.
-  3. Do not generate or expose a successful ZIP download for a failed zero-ECC RAN job. Retain only safe failure diagnosis and audit metadata according to the platform error policy.
-  4. Keep generic file/readability validation, but do not rely on it as RAN BOM correctness validation.
-- Required regression coverage:
-  - wrong-but-readable workbook submitted as RAN BOM is rejected during prevalidation with safe inline validation details;
-  - a simulated RAN pipeline with zero approved ECC output fails rather than completing;
-  - failed zero-output RAN job has no successful ZIP package;
-  - valid Standard PR and General Item golden cases still complete with tracked ECC output and ZIP;
-  - MW zero-output behavior remains unchanged.
-- Human verification after fix:
-  - repeat the `PR-20260629-005` wrong-BOM scenario;
-  - confirm job creation is blocked at prevalidation, or, if a later engine-level failure is required, confirm terminal job status is `failed` with safe explanation and no successful download;
-  - confirm valid RAN BOM still completes and its ZIP contains the expected ECC output.
+- Confirmed Firebase-backed evidence:
+  - persisted `jobs/PR-20260629-005` reached terminal status `completed`
+  - persisted job metadata recorded `workerId: ran-pr`, `runMode: general-item`, `outputFileCount: 2`, `reviewRequiredCount: 0`, and `warningCount: 0`
+  - persisted `job_files/PR-20260629-005` contains both RAN output records (`ran_ecc_output` and `ran_ecc_output_with_general_items`) plus a `zip_package`
+  - persisted `zip_package` metadata records a 9,288-byte ZIP containing only the two tracked RAN ECC workbooks and `Summary.json`
+  - persisted warning and review-required collections for this job are empty
+  - persisted summary metadata exists, but `Summary.json` was written while the job status was still `exporting` rather than after the terminal status update
+- Confirmed false-success behavior:
+  - the tracked BOM and EPMS input records persisted as the same workbook metadata shape rather than two distinct workbook types, which is consistent with the reported wrong-but-readable workbook being accepted into the BOM slot
+  - both persisted RAN ECC output workbooks exist, but each resolves to a one-sheet workbook with only the `A1` cell range, so the job completed and offered a ZIP even though no usable RAN ECC result was produced
+- Root cause:
+  - `backend/src/services/prevalidationService.js` accepts RAN BOM uploads after extension, size, safe-name, and workbook-readability checks only; it does not verify BOM-specific structure or reject an EPMS-shaped workbook that happens to be readable
+  - `backend/src/workers/adapters/ranPrAdapter.js` and `backend/src/workers/ranOutputIngestionService.js` treat the presence of `ECC_PR_Output.xlsx` and `ECC_PR_Output_With_GeneralItems.xlsx` as success evidence and ingest them without validating that the workbooks contain meaningful RAN ECC data
+  - `backend/src/services/ranWorkerService.js` reduces the final RAN summary to `outputFileCount` only and passes that to `backend/src/services/zeroOutputPolicyService.js`
+  - `backend/src/services/zeroOutputPolicyService.js` marks the job `completed` as soon as `outputFileCount > 0`, so two placeholder workbooks are enough to bypass the zero-output guard even when warnings, review-required records, and usable ECC rows are all absent
+- Required fix:
+  - add BOM-specific semantic validation before queueing the RAN job, or fail the job in the earliest RAN worker validation stage when the BOM workbook shape does not match the expected BOM contract
+  - add post-export validation that inspects the generated RAN ECC workbooks for required sheets and non-placeholder data before counting them toward `outputFileCount` or packaging them as successful outputs
+  - if the pipeline produces placeholder files only, persist a non-success terminal state plus an explanatory warning/review/failure record instead of `completed`
+  - write `Summary.json` after the final terminal status is persisted, or explicitly pass the resolved terminal status into summary generation so the persisted summary cannot lag behind the real job state
+- Regression requirements:
+  - a persisted RAN job created from a readable-but-wrong BOM workbook must not end in `completed` with `outputFileCount > 0` unless the tracked ECC workbooks contain valid usable output
+  - automated coverage must assert the stored job status, stored `outputFileCount`, stored warning/review counts, stored ZIP entries, and stored workbook-shape evidence for this failure mode
+  - automated coverage must also assert that `Summary.json` reflects the final persisted terminal status
