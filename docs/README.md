@@ -36,6 +36,7 @@ The following areas are retained because they record how earlier work was perfor
 - `ran-pr-worker-integration/` — completed autonomous integration evidence, verification logs and review records
 - `reference-website-analysis/` — design research reference
 - `mvp-acceptance-report.md`, `ai_worker_platform_mvp_task_list.md`, `create_pr_cd_webapp_technical_design.md`, `ai_worker_platform_adr.md` — early MVP design and acceptance history
+- `AI_Worker_Platform_Technical_Architecture_and_Business_Logic_Reference_v0.1.docx` — legacy Office snapshot; use the current Markdown operating baseline instead
 - `prompts/result/` — historical implementation output records
 
 When historical documentation conflicts with a current document, follow the current document and the code in `main`.
