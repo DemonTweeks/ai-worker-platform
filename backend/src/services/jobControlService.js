@@ -33,6 +33,8 @@ const CANCELLATION_REASON_LABELS = {
   other: 'Other'
 };
 
+const submissionScopeReservations = new Set();
+
 const normalizeWorkerId = (workerId) => {
   const normalized = String(workerId || WORKER_IDS.MW_PR).trim();
   return normalized || WORKER_IDS.MW_PR;
@@ -129,6 +131,16 @@ const findActiveScopedJob = async ({ workerId, submissionScopeId }) => {
   return Array.isArray(jobs) && jobs.length > 0 ? jobs[0] : null;
 };
 
+const buildScopeReservationKey = ({ workerId, submissionScopeId }) => {
+  const normalizedScopeId = normalizeSubmissionScopeId(submissionScopeId);
+
+  if (!normalizedScopeId) {
+    return '';
+  }
+
+  return `${normalizeWorkerId(workerId)}::${normalizedScopeId}`;
+};
+
 const assertNoActiveScopedJob = async ({ workerId, submissionScopeId }) => {
   const activeJob = await findActiveScopedJob({ workerId, submissionScopeId });
 
@@ -148,6 +160,34 @@ const assertNoActiveScopedJob = async ({ workerId, submissionScopeId }) => {
   );
 };
 
+const withSubmissionScopeReservation = async ({ workerId, submissionScopeId }, operation) => {
+  const reservationKey = buildScopeReservationKey({ workerId, submissionScopeId });
+
+  if (!reservationKey) {
+    return operation();
+  }
+
+  if (submissionScopeReservations.has(reservationKey)) {
+    throw createApiError(
+      409,
+      'ACTIVE_JOB_EXISTS',
+      'An active job already exists for this worker in the current browser session. Wait for it to finish or stop it before submitting again.',
+      {
+        workerId: normalizeWorkerId(workerId),
+        status: 'reserving'
+      }
+    );
+  }
+
+  submissionScopeReservations.add(reservationKey);
+
+  try {
+    return await operation();
+  } finally {
+    submissionScopeReservations.delete(reservationKey);
+  }
+};
+
 module.exports = {
   ACTIVE_JOB_STATUSES,
   CANCELLATION_REASON_LABELS,
@@ -156,10 +196,12 @@ module.exports = {
   assertNoActiveScopedJob,
   appendStatusEvent,
   buildCancellationMetadata,
+  buildScopeReservationKey,
   findActiveScopedJob,
   isActiveJobStatus,
   isTerminalJobStatus,
   normalizeCancellationReason,
   normalizeSubmissionScopeId,
-  normalizeWorkerId
+  normalizeWorkerId,
+  withSubmissionScopeReservation
 };

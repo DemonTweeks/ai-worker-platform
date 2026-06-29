@@ -17,6 +17,7 @@
     "test:ran-live-runtime": "node scripts/ran-live-runtime-test.js",
     "test:ran-placeholder-runtime": "node scripts/ran-placeholder-runtime-test.js",
     "test:queue-registry": "node scripts/queue-registry-test.js",
+    "test:job-control-concurrency": "node scripts/job-control-concurrency-test.js",
     "test:job-prevalidate-guard": "node scripts/job-prevalidate-guard-test.js",
     "test:ran-adapter": "node scripts/ran-adapter-test.js",
     "test:ran-output-validation": "node scripts/ran-output-validation-test.js",
@@ -24,7 +25,7 @@
     "test:ran-history-reload": "node scripts/ran-history-reload-test.js",
     "test:ran-concurrency": "node scripts/ran-concurrency-test.js",
     "test:ran-invalid-safe-errors": "node scripts/ran-invalid-safe-error-test.js",
-    "test": "npm run smoke && npm run test:preflight && npm run test:integration && node scripts/error-visibility-test.js && npm run test:ran-adapter && npm run test:ran-routes && npm run test:ran-live-runtime && npm run test:ran-worker-service && npm run test:queue-registry && npm run test:job-prevalidate-guard && npm run test:job-service-workers"
+    "test": "npm run smoke && npm run test:preflight && npm run test:integration && node scripts/error-visibility-test.js && npm run test:ran-adapter && npm run test:ran-routes && npm run test:ran-live-runtime && npm run test:ran-worker-service && npm run test:queue-registry && npm run test:job-control-concurrency && npm run test:job-prevalidate-guard && npm run test:job-service-workers"
   },
   "dependencies": {
     "archiver": "^7.0.1",

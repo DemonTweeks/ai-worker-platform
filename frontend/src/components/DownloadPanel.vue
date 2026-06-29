@@ -10,10 +10,11 @@
         class="download-button"
         :href="downloadUrl"
       >
-        Download ZIP
+        {{ downloadLabel }}
       </a>
-      <p v-else class="muted">{{ unavailableMessage }}</p>
-      <p v-if="!canDownload && jobReady" class="muted">{{ jobReadyMessage }}</p>
+      <p v-if="deliveryWarningMessage" class="muted">{{ deliveryWarningMessage }}</p>
+      <p v-else-if="!canDownload" class="muted">{{ unavailableMessage }}</p>
+      <p v-if="!canDownload && jobReady && !isCancelledResult" class="muted">{{ jobReadyMessage }}</p>
     </div>
   </section>
 </template>
@@ -34,6 +35,12 @@ export default {
     canDownload() {
       return this.detail && this.detail.outputs && this.detail.outputs.some((file) => file.fileType === 'zip_package' && file.available);
     },
+    isCancelledResult() {
+      return this.detail && this.detail.job && ['cancelled', 'cancelled_with_partial_result'].includes(this.detail.job.status);
+    },
+    isPartialCancelledResult() {
+      return this.detail && this.detail.job && this.detail.job.status === 'cancelled_with_partial_result';
+    },
     jobReady() {
       return this.detail && this.detail.job && ['completed', 'completed_with_warning', 'failed', 'cancelled', 'cancelled_with_partial_result'].includes(this.detail.job.status);
     },
@@ -47,6 +54,18 @@ export default {
       if (zip && zip.expired) return 'ZIP has expired based on retention policy.';
       if (zip && (zip.deletedAt || zip.cleanupReason)) return 'ZIP is unavailable after retention cleanup.';
       return 'ZIP is not available yet.';
+    },
+    deliveryWarningMessage() {
+      if (this.isPartialCancelledResult) {
+        return 'Partial package only. This is not a completed delivery.';
+      }
+      if (this.isCancelledResult) {
+        return 'This job was cancelled and is not a completed delivery.';
+      }
+      return '';
+    },
+    downloadLabel() {
+      return this.isPartialCancelledResult ? 'Download Partial ZIP' : 'Download ZIP';
     },
     downloadUrl() {
       return this.jobId ? getZipDownloadUrl(this.jobId) : '#';

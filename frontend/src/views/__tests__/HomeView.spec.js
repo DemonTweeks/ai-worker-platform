@@ -374,6 +374,32 @@ describe('HomeView worker notifications', () => {
     expect(wrapper.vm.currentStatus).toBe('cancelling');
   });
 
+  it('shows cancelled partial results with warning tone and partial download labeling', async () => {
+    const wrapper = mountView();
+    await wrapper.setData({
+      currentJobId: 'JOB-PARTIAL-1',
+      currentStatus: 'cancelled_with_partial_result',
+      jobDetail: {
+        job: {
+          jobId: 'JOB-PARTIAL-1',
+          status: 'cancelled_with_partial_result',
+          outputFileCount: 1,
+          warningCount: 0,
+          reviewRequiredCount: 0,
+          matchedSiteCount: 0
+        },
+        outputs: [
+          { fileType: 'zip_package', available: true }
+        ]
+      }
+    });
+
+    expect(wrapper.vm.resultTone).not.toBe('success');
+    expect(wrapper.vm.resultCompletionMessage.toLowerCase()).toContain('cancel');
+    expect(wrapper.text()).toContain('Download Partial ZIP');
+    expect(wrapper.text().toLowerCase()).toContain('not a completed delivery');
+  });
+
   it('stores MW prevalidation failure details without showing a generic banner for expected validation 400 responses', async () => {
     prevalidateUpload.mockRejectedValueOnce({
       response: {

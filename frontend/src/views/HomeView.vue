@@ -299,10 +299,11 @@
               class="download-button"
               :href="downloadUrl"
             >
-              Download ZIP
+              {{ downloadButtonLabel }}
             </a>
+            <p v-if="deliveryWarningMessage" class="cockpit-note">{{ deliveryWarningMessage }}</p>
             <p v-else class="cockpit-note">{{ downloadUnavailableMessage }}</p>
-            <p v-if="jobReady && !canDownload" class="cockpit-note">Output delivery is complete for this Job.</p>
+            <p v-if="jobReady && !canDownload && !isCancelledResult" class="cockpit-note">Output delivery is complete for this Job.</p>
           </div>
         </section>
       </section>
@@ -547,6 +548,12 @@ export default {
     canDownload() {
       return this.jobDetail && this.jobDetail.outputs && this.jobDetail.outputs.some((file) => file.fileType === 'zip_package' && file.available);
     },
+    isCancelledResult() {
+      return this.jobDetail && this.jobDetail.job && ['cancelled', 'cancelled_with_partial_result'].includes(this.jobDetail.job.status);
+    },
+    isPartialCancelledResult() {
+      return this.jobDetail && this.jobDetail.job && this.jobDetail.job.status === 'cancelled_with_partial_result';
+    },
     jobReady() {
       return this.jobDetail && this.jobDetail.job && ['completed', 'completed_with_warning', 'failed', 'cancelled', 'cancelled_with_partial_result'].includes(this.jobDetail.job.status);
     },
@@ -560,6 +567,18 @@ export default {
     },
     downloadUrl() {
       return this.currentJobId ? getZipDownloadUrl(this.currentJobId) : '#';
+    },
+    downloadButtonLabel() {
+      return this.isPartialCancelledResult ? 'Download Partial ZIP' : 'Download ZIP';
+    },
+    deliveryWarningMessage() {
+      if (this.isPartialCancelledResult) {
+        return 'Partial package only. This is not a completed delivery.';
+      }
+      if (this.isCancelledResult) {
+        return 'This job was cancelled and is not a completed delivery.';
+      }
+      return '';
     },
     downloadProgressPercent() {
       if (this.jobReady) return 100;
@@ -598,6 +617,12 @@ export default {
       if (job.status === 'failed') {
         return job.error && job.error.message ? job.error.message : 'Job failed before outputs were generated.';
       }
+      if (job.status === 'cancelled') {
+        return 'Job cancelled by user before a completed delivery was produced.';
+      }
+      if (job.status === 'cancelled_with_partial_result') {
+        return 'Job cancelled by user after partial output was preserved. Review the package as partial only.';
+      }
 
       const outputs = this.hasValue(job.outputFileCount)
         ? job.outputFileCount
@@ -621,6 +646,7 @@ export default {
     resultTone() {
       const job = this.jobDetail && this.jobDetail.job ? this.jobDetail.job : {};
       if (job.status === 'failed') return 'danger';
+      if (job.status === 'cancelled' || job.status === 'cancelled_with_partial_result') return 'warning';
       if (job.status === 'completed_with_warning') return 'warning';
       if (job.matchedSiteCount > 0 && job.outputFileCount === 0) return 'warning';
       return 'success';

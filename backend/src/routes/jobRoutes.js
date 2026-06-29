@@ -14,8 +14,6 @@ const asyncHandler = (handler) => (req, res, next) => (
 const getRequestedBy = (req) => (
   req.adminUser?.username
   || req.user?.username
-  || req.headers['x-user-name']
-  || req.headers['x-forwarded-user']
   || null
 );
 
