@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import HomeView from '../HomeView.vue';
-import { createJob, getHealth } from '../../api/jobApi';
+import { createJob, getHealth, listRanProjects, prevalidateUpload } from '../../api/jobApi';
 import { scheduleNotificationDismiss } from '../../utils/workerNotificationUtils';
 
 vi.mock('../../api/jobApi', () => ({
@@ -10,6 +10,7 @@ vi.mock('../../api/jobApi', () => ({
   getHealth: vi.fn(async () => ({ status: 'ok' })),
   getJobDetail: vi.fn(),
   getZipDownloadUrl: vi.fn(() => '/download.zip'),
+  listRanProjects: vi.fn(async () => []),
   prevalidateUpload: vi.fn()
 }));
 
@@ -32,6 +33,13 @@ const flushPromises = async () => {
   await Promise.resolve();
 };
 const timeoutMessage = 'Request timed out. The job may still be running. Please check History.';
+const safeValidationFailure = {
+  passed: false,
+  checklist: [
+    { label: 'Workbook can be opened', passed: false }
+  ],
+  workerExplanation: 'I cannot start the task yet. Workbook must be a valid .xlsx file.'
+};
 
 const mountView = () => mount(HomeView, {
   stubs: {
@@ -186,5 +194,153 @@ describe('HomeView worker notifications', () => {
     expect(wrapper.vm.errorMessage).toBe('');
     expect(connectSpy).toHaveBeenCalledWith('JOB-123');
     expect(getHealth).toHaveBeenCalledTimes(1);
+  });
+
+  it('loads workbook-backed ran projects and creates a general-item ran job with dual uploads', async () => {
+    listRanProjects.mockResolvedValueOnce({
+      projects: ['Project Thanos', 'MSQos_2025']
+    });
+    createJob.mockResolvedValueOnce({
+      job: {
+        jobId: 'RAN-123',
+        workerId: 'ran-pr',
+        runMode: 'general-item',
+        selectedProject: 'Project Thanos',
+        status: 'queued',
+        phase: 'queued'
+      }
+    });
+
+    const wrapper = mountView();
+    await wrapper.vm.handleWorkerChange('ran-pr');
+    await flushPromises();
+
+    await wrapper.setData({
+      selectedWorkerId: 'ran-pr',
+      ranRunMode: 'general-item',
+      ranSelectedProject: 'Project Thanos',
+      ranBomFile: { name: 'BOM.xlsx' },
+      ranEpmsFile: { name: 'EPMS.xlsx' },
+      ranBomPrevalidation: {
+        passed: true,
+        prevalidatedFileId: 'bom-1'
+      },
+      ranEpmsPrevalidation: {
+        passed: true,
+        prevalidatedFileId: 'epms-1'
+      }
+    });
+
+    await wrapper.vm.createWorkerJob();
+    await flushPromises();
+
+    expect(listRanProjects).toHaveBeenCalledTimes(1);
+    expect(createJob).toHaveBeenCalledWith({
+      workerId: 'ran-pr',
+      bomPrevalidatedFileId: 'bom-1',
+      epmsPrevalidatedFileId: 'epms-1',
+      runMode: 'general-item',
+      selectedProject: 'Project Thanos'
+    });
+    expect(wrapper.vm.currentJobId).toBe('RAN-123');
+    expect(connectSpy).toHaveBeenCalledWith('RAN-123');
+  });
+
+  it('requires both ran uploads and a project before enabling general-item ran creation', async () => {
+    const wrapper = mountView();
+    await wrapper.setData({
+      selectedWorkerId: 'ran-pr',
+      ranRunMode: 'general-item',
+      ranBomFile: { name: 'BOM.xlsx' },
+      ranEpmsFile: { name: 'EPMS.xlsx' },
+      ranBomPrevalidation: {
+        passed: true,
+        prevalidatedFileId: 'bom-1'
+      },
+      ranEpmsPrevalidation: null,
+      ranSelectedProject: ''
+    });
+
+    expect(wrapper.vm.canCreateJob).toBe(false);
+    expect(wrapper.vm.createDisabledReason).toContain('Validate both BOM and EPMS');
+
+    await wrapper.setData({
+      ranEpmsPrevalidation: {
+        passed: true,
+        prevalidatedFileId: 'epms-1'
+      }
+    });
+
+    expect(wrapper.vm.canCreateJob).toBe(false);
+    expect(wrapper.vm.createDisabledReason).toContain('Select a validated General Item project');
+  });
+
+  it('stores MW prevalidation failure details without showing a generic banner for expected validation 400 responses', async () => {
+    prevalidateUpload.mockRejectedValueOnce({
+      response: {
+        status: 400,
+        data: safeValidationFailure
+      },
+      message: 'Request failed with status code 400'
+    });
+
+    const wrapper = mountView();
+    const file = new File(['bad'], 'invalid.xls', { type: 'application/vnd.ms-excel' });
+
+    await wrapper.vm.prevalidate(file);
+    await flushPromises();
+
+    expect(wrapper.vm.prevalidation).toEqual(safeValidationFailure);
+    expect(wrapper.vm.errorMessage).toBe('');
+    expect(wrapper.text()).not.toContain('Request failed with status code 400');
+  });
+
+  it('stores RAN BOM and EPMS prevalidation failure details without showing a generic banner for expected validation 400 responses', async () => {
+    prevalidateUpload
+      .mockRejectedValueOnce({
+        response: {
+          status: 400,
+          data: safeValidationFailure
+        },
+        message: 'Request failed with status code 400'
+      })
+      .mockRejectedValueOnce({
+        response: {
+          status: 400,
+          data: safeValidationFailure
+        },
+        message: 'Request failed with status code 400'
+      });
+
+    const wrapper = mountView();
+    const bomFile = new File(['bad-bom'], 'invalid-bom.xlsx', {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
+    const epmsFile = new File(['bad-epms'], 'invalid-epms.xlsx', {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
+
+    await wrapper.vm.prevalidateRanUpload('bom', bomFile);
+    await wrapper.vm.prevalidateRanUpload('epms', epmsFile);
+    await flushPromises();
+
+    expect(wrapper.vm.ranBomPrevalidation).toEqual(safeValidationFailure);
+    expect(wrapper.vm.ranEpmsPrevalidation).toEqual(safeValidationFailure);
+    expect(wrapper.vm.errorMessage).toBe('');
+    expect(wrapper.text()).not.toContain('Request failed with status code 400');
+  });
+
+  it('still shows a safe generic banner for network or unexpected prevalidation failures', async () => {
+    prevalidateUpload.mockRejectedValueOnce(new Error('Network Error'));
+
+    const wrapper = mountView();
+    const file = new File(['bad'], 'invalid.xls', { type: 'application/vnd.ms-excel' });
+
+    await wrapper.vm.prevalidate(file);
+    await flushPromises();
+
+    expect(wrapper.vm.prevalidation).toBe(null);
+    expect(wrapper.vm.errorMessage).toBe('Network Error');
+    expect(wrapper.text()).toContain('Network Error');
   });
 });

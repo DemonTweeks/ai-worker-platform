@@ -11,13 +11,13 @@
         <p class="workbench-kicker">ZTE AI Worker</p>
         <h2>Turn site exports into PR-ready worker jobs.</h2>
         <p class="workbench-subtitle">
-          Upload, validate, scope, and launch TSS or TI generation from one polished operational workbench.
+          Launch MW or RAN PR worker jobs from one operational workbench with validated inputs and live output tracking.
         </p>
 
         <div class="workbench-chip-row" aria-label="Workflow status">
-          <span class="workbench-chip">Upload</span>
+          <span class="workbench-chip">{{ activeWorkerLabel }}</span>
           <span class="workbench-chip">Validate</span>
-          <span class="workbench-chip">{{ generationScopeLabel }}</span>
+          <span class="workbench-chip">{{ activeModeLabel }}</span>
           <span class="workbench-chip">{{ healthLabel }}</span>
         </div>
 
@@ -37,59 +37,155 @@
         </div>
 
         <div class="workbench-main-grid">
-          <UploadPanel
-            class="cockpit-card upload-card workbench-upload-card"
-            :result="prevalidation"
-            :loading="prevalidating"
-            :disable-action="creating"
-            @file-selected="onFileSelected"
-            @prevalidate="prevalidate"
-          />
+          <div v-if="!isRanWorker" class="workbench-upload-stack">
+            <UploadPanel
+              class="cockpit-card upload-card workbench-upload-card"
+              :result="prevalidation"
+              :loading="prevalidating"
+              :disable-action="creating"
+              @file-selected="onFileSelected"
+              @prevalidate="prevalidate"
+            />
+          </div>
+          <div v-else class="workbench-upload-stack">
+            <UploadPanel
+              class="cockpit-card upload-card workbench-upload-card"
+              title="BOM Upload"
+              input-id="ran-bom-file"
+              input-label="BOM workbook"
+              input-hint="Upload the source BOM workbook required for the RAN PR worker."
+              validate-label="Validate BOM"
+              accept=".xlsx,.xls"
+              :result="ranBomPrevalidation"
+              :loading="ranBomPrevalidating"
+              :disable-action="creating"
+              @file-selected="onRanFileSelected('bom', $event)"
+              @prevalidate="prevalidateRanUpload('bom', $event)"
+            />
+            <UploadPanel
+              class="cockpit-card upload-card workbench-upload-card"
+              title="EPMS Upload"
+              input-id="ran-epms-file"
+              input-label="EPMS workbook"
+              input-hint="Upload the EPMS workbook required for RAN matching and General Item logic."
+              validate-label="Validate EPMS"
+              accept=".xlsx,.xls"
+              :result="ranEpmsPrevalidation"
+              :loading="ranEpmsPrevalidating"
+              :disable-action="creating"
+              @file-selected="onRanFileSelected('epms', $event)"
+              @prevalidate="prevalidateRanUpload('epms', $event)"
+            />
+          </div>
 
           <section class="panel cockpit-card workbench-config-card">
             <div class="cockpit-card-heading">
-              <span>Job Scope</span>
-              <small>{{ generationScopeLabel }}</small>
+              <span>Launch Configuration</span>
+              <small>{{ activeModeLabel }}</small>
             </div>
 
             <div class="workbench-config-grid">
               <div class="cockpit-field-group">
-                <span class="field-label">Site mode</span>
+                <span class="field-label">Worker</span>
                 <div class="segmented compact-segmented">
                   <button
                     type="button"
-                    :class="{ active: generationScope === 'site_code' }"
-                    @click="generationScope = 'site_code'"
+                    :class="{ active: selectedWorkerId === 'mw-pr' }"
+                    @click="handleWorkerChange('mw-pr')"
                   >
-                    Single site
+                    MW PR Worker
                   </button>
                   <button
                     type="button"
-                    :class="{ active: generationScope === 'all_sites' }"
-                    @click="generationScope = 'all_sites'"
+                    :class="{ active: selectedWorkerId === 'ran-pr' }"
+                    @click="handleWorkerChange('ran-pr')"
                   >
-                    All sites
+                    RAN PR Worker
                   </button>
                 </div>
               </div>
 
-              <div class="cockpit-field-group">
-                <span class="field-label">Task Type</span>
-                <div class="segmented compact-segmented">
-                  <button
-                    v-for="option in workerOptions"
-                    :key="option"
-                    type="button"
-                    :class="{ active: prScope === option }"
-                    @click="prScope = option"
-                  >
-                    {{ option }}
-                  </button>
+              <template v-if="!isRanWorker">
+                <div class="cockpit-field-group">
+                  <span class="field-label">Site mode</span>
+                  <div class="segmented compact-segmented">
+                    <button
+                      type="button"
+                      :class="{ active: generationScope === 'site_code' }"
+                      @click="generationScope = 'site_code'"
+                    >
+                      Single site
+                    </button>
+                    <button
+                      type="button"
+                      :class="{ active: generationScope === 'all_sites' }"
+                      @click="generationScope = 'all_sites'"
+                    >
+                      All sites
+                    </button>
+                  </div>
                 </div>
-              </div>
+
+                <div class="cockpit-field-group">
+                  <span class="field-label">Task Type</span>
+                  <div class="segmented compact-segmented">
+                    <button
+                      v-for="option in prScopeOptions"
+                      :key="option"
+                      type="button"
+                      :class="{ active: prScope === option }"
+                      @click="prScope = option"
+                    >
+                      {{ option }}
+                    </button>
+                  </div>
+                </div>
+              </template>
+
+              <template v-else>
+                <div class="cockpit-field-group">
+                  <span class="field-label">Run mode</span>
+                  <div class="segmented compact-segmented">
+                    <button
+                      type="button"
+                      :class="{ active: ranRunMode === 'standard-pr' }"
+                      @click="ranRunMode = 'standard-pr'"
+                    >
+                      Standard PR
+                    </button>
+                    <button
+                      type="button"
+                      :class="{ active: ranRunMode === 'general-item' }"
+                      @click="ranRunMode = 'general-item'"
+                    >
+                      General Item
+                    </button>
+                  </div>
+                </div>
+
+                <div class="cockpit-field-group">
+                  <span class="field-label">General Item project</span>
+                  <select
+                    class="cockpit-sites-input"
+                    :disabled="ranRunMode !== 'general-item' || ranProjectLoading"
+                    :value="ranSelectedProject"
+                    @change="ranSelectedProject = $event.target.value"
+                  >
+                    <option value="">{{ ranProjectLoading ? 'Loading projects...' : 'Select a validated project' }}</option>
+                    <option
+                      v-for="project in ranProjects"
+                      :key="project"
+                      :value="project"
+                    >
+                      {{ project }}
+                    </option>
+                  </select>
+                  <p v-if="ranProjectLoadError" class="cockpit-note">{{ ranProjectLoadError }}</p>
+                </div>
+              </template>
             </div>
 
-            <div class="cockpit-field-group workbench-sites-field">
+            <div v-if="!isRanWorker" class="cockpit-field-group workbench-sites-field">
               <div class="cockpit-card-heading">
                 <span>Sites</span>
                 <small>{{ siteCodeCount }} site(s)</small>
@@ -105,6 +201,9 @@
               <div v-else class="cockpit-empty-card">
                 All sites mode is selected.
               </div>
+            </div>
+            <div v-else class="cockpit-empty-card">
+              {{ ranRunMode === 'general-item' ? 'Select a workbook-backed General Item project after both uploads validate.' : 'Standard PR runs non-interactively after BOM and EPMS validation.' }}
             </div>
 
             <div class="workbench-create-row">
@@ -224,7 +323,7 @@ import UploadPanel from '../components/UploadPanel.vue';
 import ErrorBanner from '../components/ErrorBanner.vue';
 import LoadingButton from '../components/LoadingButton.vue';
 import JobWebSocketClient from '../services/websocketClient';
-import { createJob, getErrorMessage, getHealth, getJobDetail, getZipDownloadUrl, prevalidateUpload } from '../api/jobApi';
+import { createJob, getErrorMessage, getHealth, getJobDetail, getZipDownloadUrl, listRanProjects, prevalidateUpload } from '../api/jobApi';
 import { askJob } from '../api/reAskApi';
 import { displayMessage, isTerminalStatus } from '../utils/statusUtils';
 import {
@@ -246,11 +345,24 @@ export default {
       selectedFile: null,
       prevalidation: null,
       prevalidating: false,
+      selectedWorkerId: 'mw-pr',
       creating: false,
       asking: false,
       prScope: 'TSS',
+      prScopeOptions: ['TSS', 'TI'],
       generationScope: 'site_code',
       siteCodesText: '',
+      ranRunMode: 'standard-pr',
+      ranSelectedProject: '',
+      ranProjects: [],
+      ranProjectLoading: false,
+      ranProjectLoadError: '',
+      ranBomFile: null,
+      ranEpmsFile: null,
+      ranBomPrevalidation: null,
+      ranEpmsPrevalidation: null,
+      ranBomPrevalidating: false,
+      ranEpmsPrevalidating: false,
       currentJobId: '',
       currentPrScope: 'TSS',
       currentStatus: '',
@@ -271,12 +383,24 @@ export default {
       commandText: '',
       commandNotice: '',
       consoleAutoStick: true,
-      workerOptions: ['TSS', 'TI'],
       transientErrorTimer: null,
       chatMessageSequence: 0
     };
   },
   computed: {
+    isRanWorker() {
+      return this.selectedWorkerId === 'ran-pr';
+    },
+    activeWorkerLabel() {
+      return this.isRanWorker ? 'RAN PR Worker' : 'MW PR Worker';
+    },
+    activeModeLabel() {
+      if (this.isRanWorker) {
+        return this.ranRunMode === 'general-item' ? 'General Item' : 'Standard PR';
+      }
+
+      return this.generationScopeLabel;
+    },
     healthLabel() {
       if (this.health && this.health.status === 'ok') return '🟢Healthy';
       if (this.health && this.health.status === 'degraded') return '🟡Degraded';
@@ -285,12 +409,32 @@ export default {
       return '🔵Checking';
     },
     canCreateJob() {
-      if (!this.prevalidation || !this.prevalidation.passed || this.creating) return false;
+      if (this.creating) return false;
+
+      if (this.isRanWorker) {
+        if (!this.ranBomFile || !this.ranEpmsFile) return false;
+        if (!this.ranBomPrevalidation || !this.ranBomPrevalidation.passed) return false;
+        if (!this.ranEpmsPrevalidation || !this.ranEpmsPrevalidation.passed) return false;
+        if (this.ranRunMode === 'general-item' && !this.ranSelectedProject) return false;
+        return true;
+      }
+
+      if (!this.prevalidation || !this.prevalidation.passed) return false;
       if (this.generationScope === 'site_code' && this.parseSiteCodes().length === 0) return false;
       if (!this.selectedFile) return false;
       return true;
     },
     createDisabledReason() {
+      if (this.isRanWorker) {
+        if (!this.ranBomFile || !this.ranEpmsFile) return 'Upload both BOM and EPMS workbooks to start.';
+        if (this.ranBomPrevalidating || this.ranEpmsPrevalidating) return 'RAN upload validation is in progress.';
+        if (!this.ranBomPrevalidation || !this.ranEpmsPrevalidation) return 'Validate both BOM and EPMS workbooks before creating a Job.';
+        if (!this.ranBomPrevalidation.passed || !this.ranEpmsPrevalidation.passed) return 'Validation failed; resolve the RAN upload issues before creating a Job.';
+        if (this.ranRunMode === 'general-item' && !this.ranSelectedProject) return 'Select a validated General Item project before creating a Job.';
+        if (this.creating) return 'Submitting job request.';
+        return '';
+      }
+
       if (!this.selectedFile) return 'Upload a source file to start.';
       if (this.prevalidating) return 'Prevalidation is in progress.';
       if (!this.prevalidation) return 'Run validation before creating a Job.';
@@ -449,7 +593,7 @@ export default {
           id: 'job-created',
           label: 'Job',
           title: `Job ${this.currentJobId}`,
-          body: `Status ${this.currentStatus || 'created'} with ${this.generationScopeLabel.toLowerCase()} mode and ${this.currentPrScope || this.prScope} worker scope.`,
+          body: `Status ${this.currentStatus || 'created'} with ${this.activeWorkerLabel} in ${this.activeModeLabel} mode.`,
           tone: 'info',
           time: this.updatedAt
         });
@@ -559,6 +703,56 @@ export default {
     }
   },
   methods: {
+    resetJobSession() {
+      this.currentJobId = '';
+      localStorage.removeItem('currentJobId');
+      this.currentStatus = '';
+      this.currentProgress = null;
+      this.jobDetail = null;
+      this.events = [];
+      this.currentPrScope = 'TSS';
+      this.errorMessage = '';
+      this.commandNotice = '';
+      this.reAskAnswer = null;
+      this.chatMessages = [];
+      this.currentPhase = '';
+    },
+    async handleWorkerChange(workerId) {
+      if (this.selectedWorkerId === workerId) {
+        if (workerId === 'ran-pr' && this.ranProjects.length === 0) {
+          await this.loadRanProjects();
+        }
+        return;
+      }
+
+      this.selectedWorkerId = workerId;
+      this.dismissErrorMessage();
+      this.resetJobSession();
+
+      if (workerId === 'mw-pr') {
+        this.selectedFile = null;
+        this.prevalidation = null;
+        return;
+      }
+
+      this.ranSelectedProject = '';
+      if (this.ranProjects.length === 0) {
+        await this.loadRanProjects();
+      }
+    },
+    async loadRanProjects() {
+      this.ranProjectLoading = true;
+      this.ranProjectLoadError = '';
+      try {
+        const result = await listRanProjects();
+        this.ranProjects = Array.isArray(result.projects) ? result.projects : [];
+      } catch (error) {
+        this.ranProjects = [];
+        this.ranProjectLoadError = getErrorMessage(error);
+      } finally {
+        this.ranProjectLoading = false;
+      }
+    },
     async checkHealth() {
       try {
         this.health = await getHealth();
@@ -571,17 +765,17 @@ export default {
     onFileSelected(file) {
       this.selectedFile = file;
       this.prevalidation = null;
-      this.currentJobId = '';
-      localStorage.removeItem('currentJobId');
-      this.currentStatus = '';
-      this.currentProgress = null;
-      this.jobDetail = null;
-      this.events = [];
-      this.currentPrScope = 'TSS';
-      this.errorMessage = '';
-      this.commandNotice = '';
-      this.reAskAnswer = null;
-      this.chatMessages = [];
+      this.resetJobSession();
+    },
+    onRanFileSelected(kind, file) {
+      if (kind === 'bom') {
+        this.ranBomFile = file;
+        this.ranBomPrevalidation = null;
+      } else {
+        this.ranEpmsFile = file;
+        this.ranEpmsPrevalidation = null;
+      }
+      this.resetJobSession();
     },
     async prevalidate(file) {
       if (!file) {
@@ -593,10 +787,51 @@ export default {
       try {
         this.prevalidation = await prevalidateUpload(file);
       } catch (error) {
-        this.prevalidation = error.response && error.response.data ? error.response.data : null;
-        this.errorMessage = getErrorMessage(error);
+        this.prevalidation = this.getSafePrevalidationPayload(error);
+        if (!this.isExpectedPrevalidationFailure(error)) {
+          this.errorMessage = getErrorMessage(error);
+        }
       } finally {
         this.prevalidating = false;
+      }
+    },
+    async prevalidateRanUpload(kind, file) {
+      if (!file) {
+        this.errorMessage = `Select a ${kind === 'bom' ? 'BOM' : 'EPMS'} file first.`;
+        return;
+      }
+
+      const isBom = kind === 'bom';
+      if (isBom) {
+        this.ranBomPrevalidating = true;
+      } else {
+        this.ranEpmsPrevalidating = true;
+      }
+      this.errorMessage = '';
+
+      try {
+        const result = await prevalidateUpload(file, isBom ? 'ran-bom' : 'ran-epms');
+        if (isBom) {
+          this.ranBomPrevalidation = result;
+        } else {
+          this.ranEpmsPrevalidation = result;
+        }
+      } catch (error) {
+        const fallback = this.getSafePrevalidationPayload(error);
+        if (isBom) {
+          this.ranBomPrevalidation = fallback;
+        } else {
+          this.ranEpmsPrevalidation = fallback;
+        }
+        if (!this.isExpectedPrevalidationFailure(error)) {
+          this.errorMessage = getErrorMessage(error);
+        }
+      } finally {
+        if (isBom) {
+          this.ranBomPrevalidating = false;
+        } else {
+          this.ranEpmsPrevalidating = false;
+        }
       }
     },
     parseSiteCodes() {
@@ -605,6 +840,26 @@ export default {
         .map((item) => item.trim().toUpperCase())
         .filter(Boolean)
         .filter((item, index, items) => items.indexOf(item) === index);
+    },
+    isSafePrevalidationPayload(payload) {
+      return Boolean(
+        payload &&
+        typeof payload === 'object' &&
+        typeof payload.passed === 'boolean' &&
+        (!Object.prototype.hasOwnProperty.call(payload, 'checklist') || Array.isArray(payload.checklist))
+      );
+    },
+    getSafePrevalidationPayload(error) {
+      const payload = error && error.response ? error.response.data : null;
+      return this.isSafePrevalidationPayload(payload) ? payload : null;
+    },
+    isExpectedPrevalidationFailure(error) {
+      return Boolean(
+        error &&
+        error.response &&
+        error.response.status === 400 &&
+        this.isSafePrevalidationPayload(error.response.data)
+      );
     },
     hasValue(value) {
       return value !== undefined && value !== null && value !== '';
@@ -623,15 +878,24 @@ export default {
       this.reAskAnswer = null;
       this.chatMessages = [];
       try {
-        const result = await createJob({
-          prevalidatedFileId: this.prevalidation.prevalidatedFileId,
-          prScope: this.prScope,
-          generationScope: this.generationScope,
-          siteCodes: this.generationScope === 'site_code' ? this.parseSiteCodes() : []
-        });
+        const payload = this.isRanWorker
+          ? {
+              workerId: 'ran-pr',
+              bomPrevalidatedFileId: this.ranBomPrevalidation.prevalidatedFileId,
+              epmsPrevalidatedFileId: this.ranEpmsPrevalidation.prevalidatedFileId,
+              runMode: this.ranRunMode,
+              selectedProject: this.ranRunMode === 'general-item' ? this.ranSelectedProject : undefined
+            }
+          : {
+              prevalidatedFileId: this.prevalidation.prevalidatedFileId,
+              prScope: this.prScope,
+              generationScope: this.generationScope,
+              siteCodes: this.generationScope === 'site_code' ? this.parseSiteCodes() : []
+            };
+        const result = await createJob(payload);
         this.currentJobId = result.job.jobId;
         localStorage.setItem('currentJobId', result.job.jobId);
-        this.currentPrScope = result.job.prScope || this.prScope;
+        this.currentPrScope = result.job.prScope || (this.isRanWorker ? 'RAN' : this.prScope);
         this.currentStatus = result.job.status;
         this.currentPhase = result.job.phase || '';
         this.consoleAutoStick = true;

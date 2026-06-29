@@ -53,6 +53,9 @@ const runTests = async () => {
   const originalExistsSync = fs.existsSync;
   const originalPlatform = process.platform;
   const originalRunCommand = childProcessRunner.runCommand;
+  const childProcess = require('child_process');
+  const originalExecFileSync = childProcess.execFileSync;
+  const repoRoot = path.resolve(__dirname, '../..');
 
   const originalJobFindOne = Job.findOne;
   const originalJobFileFindOne = JobFile.findOne;
@@ -64,6 +67,7 @@ const runTests = async () => {
     fs.existsSync = originalExistsSync;
     Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
     childProcessRunner.runCommand = originalRunCommand;
+    childProcess.execFileSync = originalExecFileSync;
 
     Job.findOne = originalJobFindOne;
     JobFile.findOne = originalJobFileFindOne;
@@ -190,8 +194,54 @@ const runTests = async () => {
       assert.strictEqual(error.details.recommendedCommand, '"/nonexistent/path/to/python" -m pip install -r requirements-worker.txt');
     }
 
-    // Test 9: Failed preflight blocks business execution
-    console.log('Scenario 9: Failed preflight blocks business execution');
+    // Test 9: PATH-resolved default Python is allowed for RAN execution
+    console.log('Scenario 9: PATH-resolved default Python is allowed');
+    resetMocks();
+    Object.defineProperty(process, 'platform', { value: 'linux', configurable: true });
+    fs.existsSync = (targetPath) => targetPath === '/usr/bin/python3';
+    childProcess.execFileSync = (command, args) => {
+      assert.strictEqual(command, 'which');
+      assert.deepStrictEqual(args, ['python3']);
+      return '/usr/bin/python3\n';
+    };
+    resolved = childProcessRunner.getExplicitPythonExecutable();
+    assert.strictEqual(resolved, '/usr/bin/python3', 'Should resolve the default python3 candidate through PATH lookup');
+
+    // Test 10: Absolute interpreter paths are allowed as explicit executables
+    console.log('Scenario 10: Absolute interpreter paths are allowed');
+    resetMocks();
+    process.env.PYTHON_EXECUTABLE = '/usr/bin/python';
+    fs.existsSync = (targetPath) => targetPath === '/usr/bin/python';
+    resolved = childProcessRunner.getExplicitPythonExecutable();
+    assert.strictEqual(resolved, '/usr/bin/python', 'Should accept an existing absolute interpreter path');
+
+    // Test 11: Repository-relative interpreter paths are allowed when the file exists
+    console.log('Scenario 11: Repository-relative interpreter paths are allowed');
+    resetMocks();
+    process.env.PYTHON_EXECUTABLE = '.venv/bin/python';
+    const expectedRelativePython = path.join(repoRoot, '.venv', 'bin', 'python');
+    fs.existsSync = (targetPath) => path.resolve(targetPath) === expectedRelativePython;
+    resolved = childProcessRunner.getExplicitPythonExecutable();
+    assert.strictEqual(resolved, expectedRelativePython, 'Should resolve repo-relative interpreters under the repository root');
+
+    // Test 12: Unresolved Python command is rejected for RAN worker execution
+    console.log('Scenario 12: Unresolved Python command is rejected');
+    resetMocks();
+    process.env.PYTHON_EXECUTABLE = 'python3';
+    Object.defineProperty(process, 'platform', { value: 'linux', configurable: true });
+    fs.existsSync = () => false;
+    childProcess.execFileSync = () => {
+      throw new Error('which failed');
+    };
+    try {
+      childProcessRunner.getExplicitPythonExecutable();
+      assert.fail('Unresolved Python commands should be rejected');
+    } catch (error) {
+      assert.strictEqual(error.code, 'PYTHON_EXECUTABLE_NOT_RESOLVED');
+    }
+
+    // Test 13: Failed preflight blocks business execution
+    console.log('Scenario 13: Failed preflight blocks business execution');
     resetMocks();
 
     let runCreatePrCdCalled = false;

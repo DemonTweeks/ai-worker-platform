@@ -1,0 +1,267 @@
+{
+  "mission": "ran-pr-worker-integration",
+  "master_prompt": "C:\\dev\\codex-prompts\\ran-pr-worker-integration-master-automation-prompt.md",
+  "workspace": "C:\\dev\\ai-worker-platform-ran-pr",
+  "branch": "feature/ran-pr-worker-integration",
+  "baseline": {
+    "base_branch": "origin/main",
+    "expected_commit": "a2d51d5",
+    "head_commit": "a2d51d528fa49e5e56bd239cc37e89d3585ff7ad",
+    "merge_base_with_origin_main": "a2d51d528fa49e5e56bd239cc37e89d3585ff7ad",
+    "matches_expected_baseline": true
+  },
+  "engine": {
+    "repository": "ammarofficial11/create-pr-cd-ran",
+    "tag": "v1.0.0",
+    "commit": "239910e2816153339a94881597bbb95355059741"
+  },
+  "current_phase": "Phase 4 - Verification And Delivery",
+  "current_status": "COMPLETED",
+  "completed": true,
+  "acceptance_status": "passed",
+  "completed_work": [
+    "Read the authoritative master prompt fresh",
+    "Confirmed requested workspace and branch",
+    "Verified HEAD equals origin/main merge-base and expected baseline commit",
+    "Created autonomous /goal for the integration mission",
+    "Created hourly heartbeat automation in this thread",
+    "Inspected and documented the current MW execution, persistence/history, websocket, cancellation, download, ZIP, cleanup, and safe-error flow",
+    "Inspected the pinned upstream RAN engine pipeline, workbook config sources, sample inputs/outputs, and dynamic General Item project-selection source",
+    "Documented the prototype platform UX contract and worker-skill ADR constraints for MW/RAN coexistence",
+    "Replaced the lightweight mission outline with a concrete implementation plan covering engine compatibility, registry integration, frontend integration, and verification",
+    "Added the pinned RAN submodule plus worker manifest/registry/config scaffolding for Task 1",
+    "Added the workbook-derived RAN project catalog and isolated workspace staging services for Task 2",
+    "Added the Task 3 execution foundation: explicit Python stage runner, initial RAN adapter skeleton, worker registry adapter wiring, and job/file metadata support",
+    "Added platform-owned RAN ECC output ingestion so approved upstream workbooks are copied into job storage, tracked in JobFile, and included in summary/package accounting",
+    "Added worker-aware safe RAN failure shaping plus backend error-visibility coverage for sanitized stage-based summaries and diagnosis",
+    "Added direct backend coverage for successful and cooperatively cancelled RAN adapter runs, and wired that coverage into the backend test script",
+    "Added the MW adapter plus registry-backed queue dispatch resolution, with direct backend coverage for worker selection by workerId",
+    "Added worker-aware backend create/list/detail payloads with explicit worker identity and audit metadata while preserving MW as the default-compatible create flow",
+    "Added the first backend RAN create path with upload-kind-aware prevalidation, tracked BOM/EPMS job inputs, validated run-mode selection, and direct backend coverage",
+    "Added route-level backend coverage for ran-pr prevalidation and create flows, and hardened ran-bom prevalidation so unreadable Excel payloads are rejected before job creation",
+    "Added a RAN worker runtime service plus registry wiring so queued ran-pr jobs now publish shared lifecycle phases, stage progress, cancellation results, and packaged completion outputs",
+    "Added live route/runtime coverage for queued ran-pr execution so terminal Job Detail polling, websocket lifecycle events, and ZIP download readiness are now verified together",
+    "Added live cancellation parity coverage for running ran-pr jobs so cancellation requests, terminal JOB_CANCELLED events, partial-result ZIP availability, and detail state now stay aligned",
+    "Added the first worker-aware frontend RAN launch slice on the home workbench, including BOM/EPMS validation, run-mode switching, workbook-backed General Item selection, and worker-aware create payloads",
+    "Added worker-aware History and Job Detail rendering for ran-pr, including worker filters, worker badges/labels, run-mode/project visibility, and engine audit metadata",
+    "Ran the full backend and frontend project-native validation commands, including a clean standalone frontend build and git diff --check, after initializing the existing MW fixture submodule required by backend integration coverage",
+    "Added a repeatable backend golden-test command and verified that live ran-pr Standard PR and General Item runs match the pinned upstream ECC workbooks by logical business content",
+    "Added a repeatable backend reload-proof command and verified that a completed ran-pr General Item job survives full server restart in shared History, shared Job Detail, and ZIP download availability",
+    "Added a repeatable backend concurrency-test command and verified that simultaneous ran-pr jobs use distinct isolated workspaces and distinct retained output paths",
+    "Added a repeatable backend invalid-input/safe-error acceptance command and verified both create-time RAN input rejection and live sanitized worker-failure visibility",
+    "Captured fresh MW regression signoff by rerunning the focused legacy MW backend and frontend verification commands against the current branch state",
+    "Completed a branch-level changed-file scope review and verified the diff remains limited to aligned backend/frontend/docs/submodule work with no generated artifact paths or unrelated feature changes",
+    "Replaced the placeholder final-report with a real in-progress mission summary covering delivered scope, verified evidence, current acceptance status, and remaining publish steps",
+    "Rebased feature/ran-pr-worker-integration onto the latest origin/main and reran the required backend, frontend, build, and diff-hygiene validation commands successfully afterward",
+    "Reconfirmed the pinned RAN submodule SHA/tag after the rebase and refreshed the persistent checkpoint history to the rebased commit graph",
+    "Re-ran the full required backend, frontend, build, and diff-hygiene verification commands in the final completion pass and reconfirmed GitHub publish readiness from the current worktree",
+    "Wrote the final completion marker and flipped the mission state to complete with no remaining acceptance gates"
+  ],
+  "next_action": "NO_OP_COMPLETED",
+  "blockers": [],
+  "checkpoint_commits": [
+    {
+      "commit": "216419a41371270a1fdb52b0293eb6f648dcf7b7",
+      "message": "chore: initialize ran integration mission state"
+    },
+    {
+      "commit": "db016e478989bdfccb17ed641b4efcd6c4351abb",
+      "message": "docs: capture mw flow discovery for ran integration"
+    },
+    {
+      "commit": "796e289ad92fbae7f11e6abbe0d14386a42827db",
+      "message": "docs: capture ran engine discovery baseline"
+    },
+    {
+      "commit": "6d78019d7dc8732f52b9c7b4ce904c63de8d0e7e",
+      "message": "docs: define ran ux contract and worker adr"
+    },
+    {
+      "commit": "c4d80800d2673c97d572824f278d0e754a56d4f4",
+      "message": "docs: expand ran integration implementation plan"
+    },
+    {
+      "commit": "1f85f5557b325056d854950ea7c72221dafa25ce",
+      "message": "feat: add ran worker manifests and submodule pin"
+    },
+    {
+      "commit": "c1252860c1e8c9f576c2e3b762af40f51fdc38d7",
+      "message": "feat: add ran project catalog and workspace staging"
+    },
+    {
+      "commit": "91445d541cf7a3bacdc8d8b81659284d11872165",
+      "message": "feat: add ran adapter execution foundation"
+    },
+    {
+      "commit": "9211b334b62e7ba4f329d5c63536ae2efaca7f3d",
+      "message": "feat: ingest ran outputs into platform storage"
+    },
+    {
+      "commit": "2ed53dc2735a70cfe1526c5b696f4df034e2924e",
+      "message": "feat: harden ran failure visibility"
+    },
+    {
+      "commit": "48acb9ab35f408d863b456847a5de63793efbb2c",
+      "message": "test: cover ran adapter execution paths"
+    },
+    {
+      "commit": "5f3d40502704cfb36b0bf111a737738a835c442d",
+      "message": "feat: route queued jobs through worker registry"
+    },
+    {
+      "commit": "ddca807350ae6e32ababff2c4eaeb7b21de8c319",
+      "message": "feat: expose worker-aware job payloads"
+    },
+    {
+      "commit": "75589a198f24332cfb969812b69b50b0a390a038",
+      "message": "feat: add ran job creation path"
+    },
+    {
+      "commit": "5305fe54c7ec38a9f5bb2dd35be7ace7d3c7f48d",
+      "message": "test: cover ran route creation flow"
+    },
+    {
+      "commit": "f4f6d0f2d9ac2bebfeedfd290c0e5cbeaf6bf9d3",
+      "message": "docs: record ran route coverage checkpoint"
+    },
+    {
+      "commit": "3e3bf4899743f0c586d312c0ababe701da64af54",
+      "message": "feat: add ran worker lifecycle runtime"
+    },
+    {
+      "commit": "8825df7fe72da69fbe0abf1c61428499abdbefa8",
+      "message": "docs: record ran lifecycle checkpoint"
+    },
+    {
+      "commit": "71ab773b1a2bd82bac82690562a70ea4a7be2b5d",
+      "message": "test: cover live ran runtime packaging"
+    },
+    {
+      "commit": "daeba9767991002588929c2a422783ea82b6f3f0",
+      "message": "docs: record live runtime checkpoint"
+    },
+    {
+      "commit": "40f399a8b6d4548d399191531ae67e1321a54fb7",
+      "message": "test: harden ran cancellation signaling"
+    },
+    {
+      "commit": "8f41ae9214af7116a36b4bbbddeabda709216904",
+      "message": "docs: record cancellation signaling checkpoint"
+    },
+    {
+      "commit": "5edb64fc615051786900b056424931ad82c4598a",
+      "message": "feat: add ran home launch flow"
+    },
+    {
+      "commit": "565f2327ad2ae21f0bc860900a6fd09d751a12bd",
+      "message": "docs: record ran home flow checkpoint"
+    },
+    {
+      "commit": "dfd37130ed68fc66e22aa5e8d1456224912086ae",
+      "message": "feat: add ran history and detail metadata"
+    },
+    {
+      "commit": "80f5b427ba19d18c1e3ce073568c25511d278762",
+      "message": "docs: record ran history detail checkpoint"
+    },
+    {
+      "commit": "58e51c6ee02c553d30b425e127396bb64fde8909",
+      "message": "docs: record full-suite validation checkpoint"
+    },
+    {
+      "commit": "2dfbcf360e564419f6f159da91358c38947f5017",
+      "message": "test: add ran golden verification"
+    },
+    {
+      "commit": "400993ebd20419862dd4d434feaa35c1abd27a4c",
+      "message": "docs: record ran golden verification checkpoint"
+    },
+    {
+      "commit": "2936a1267017b9ab15875f65b8bbcc2da16689d5",
+      "message": "test: add ran history reload verification"
+    },
+    {
+      "commit": "a47b34db5e33547fb8f04f80ef602a9b097a3c9a",
+      "message": "docs: record ran history reload checkpoint"
+    },
+    {
+      "commit": "1741db61794fed9ed7c33d18b4882b08e1ce8fb3",
+      "message": "test: add ran concurrency verification"
+    },
+    {
+      "commit": "e784d2ce499adb6bb191de8251166d6304fcf833",
+      "message": "docs: record ran concurrency checkpoint"
+    },
+    {
+      "commit": "ff9e5936c9f9916d18e8d4fa9915d940d392eb0f",
+      "message": "test: add ran invalid-input safe-error verification"
+    },
+    {
+      "commit": "c231684bc7e4da800d231f1bd9b933f6af1e4f75",
+      "message": "docs: record ran invalid-input checkpoint"
+    },
+    {
+      "commit": "5c9f079338761cbc20b3afdc4499b48542e57e07",
+      "message": "docs: record mw regression checkpoint"
+    },
+    {
+      "commit": "588b187cf7b5795300db1687cf8cff5c492fd770",
+      "message": "docs: record changed-file review checkpoint"
+    },
+    {
+      "commit": "cdd955bcc260eb2e3aa3f314ec8ad104903ebb7f",
+      "message": "docs: record final report checkpoint"
+    },
+    {
+      "commit": "6ae76aa81fe5fba7d4f25f1e365d13a583fcf873",
+      "message": "docs: record rebase validation checkpoint"
+    }
+  ],
+  "remaining_acceptance_gates": [],
+  "methodology": [
+    "superpowers:using-superpowers",
+    "superpowers:using-git-worktrees (user-directed workspace in place; no new worktree created)",
+    "master prompt bounded-step execution discipline",
+    "codebase discovery of the active MW backend and frontend flow",
+    "read-only inspection of pinned upstream RAN source",
+    "superpowers:writing-plans with the mission-state location override",
+    "superpowers:executing-plans for Task 1 foundation work",
+    "superpowers:executing-plans for Task 2 catalog and staging work",
+    "superpowers:executing-plans for Task 3 execution-foundation work",
+    "superpowers:executing-plans for Task 3 output-ingestion work",
+    "superpowers:executing-plans for Task 3 safe-failure and coverage work",
+    "superpowers:executing-plans for Task 3 direct adapter-coverage work",
+    "superpowers:executing-plans for Task 4 registry-dispatch transition work",
+    "superpowers:executing-plans for Task 4 worker-aware backend payload work",
+    "superpowers:subagent-driven-development evaluated for this continuation; kept in-session because the RAN create-flow slice was tightly coupled",
+    "superpowers:executing-plans for Task 4 first backend RAN create-path work",
+    "superpowers:test-driven-development for Task 4 route-level RAN coverage and ran-bom prevalidation hardening",
+    "superpowers:test-driven-development for Task 4 RAN runtime lifecycle, progress, and cancellation wrapper",
+    "superpowers:executing-plans for Task 4 live route/runtime RAN coverage",
+    "superpowers:test-driven-development for Task 4 terminal-status ordering and ZIP-ready live detail behavior",
+    "superpowers:test-driven-development for Task 4 running-cancellation event semantics and partial-result detail parity",
+    "superpowers:test-driven-development for Task 5 home-view worker selection, RAN upload validation, and workbook-backed project selection",
+    "superpowers:test-driven-development for Task 5 History filters, worker-aware job cards, and RAN Job Detail audit metadata",
+    "superpowers:executing-plans for the first Phase 4 full-suite validation slice",
+    "superpowers:systematic-debugging to diagnose the initial backend suite failure to an uninitialized existing MW fixture submodule before rerunning validation",
+    "superpowers:executing-plans for the first Phase 4 golden/business-result verification slice",
+    "superpowers:executing-plans for the first Phase 4 history persistence/reload verification slice",
+    "superpowers:executing-plans for the first Phase 4 workspace isolation/concurrency verification slice",
+    "superpowers:executing-plans for the first Phase 4 invalid-input and safe-error acceptance verification slice",
+    "superpowers:verification-before-completion for the focused MW regression signoff command pass",
+    "superpowers:executing-plans for the branch-level changed-file scope review slice",
+    "superpowers:verification-before-completion for post-rebase validation evidence before final publish",
+    "superpowers:verification-before-completion for the final completion-pass verification before the publish handoff",
+    "superpowers:finishing-a-development-branch for the final branch publication workflow"
+  ],
+  "artifacts": {
+    "state_markdown": "docs/ran-pr-worker-integration/autonomous-run-state.md",
+    "execution_plan": "docs/ran-pr-worker-integration/execution-plan.md",
+    "decision_log": "docs/ran-pr-worker-integration/decision-log.md",
+    "verification_log": "docs/ran-pr-worker-integration/verification-log.md",
+    "final_report": "docs/ran-pr-worker-integration/final-report.md",
+    "prototype_ux_contract": "docs/ran-pr-worker-integration/prototype-ux-contract.md",
+    "worker_skill_contract_adr": "docs/ran-pr-worker-integration/worker-skill-contract-adr.md"
+  },
+  "last_updated_utc": "2026-06-26T15:04:50Z"
+}

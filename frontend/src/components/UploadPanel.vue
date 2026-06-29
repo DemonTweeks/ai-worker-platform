@@ -1,17 +1,17 @@
 <template>
   <section class="panel">
     <div class="panel-heading">
-      <h2 class="upload-validate">Upload & Validate</h2>
+      <h2 class="upload-validate">{{ title }}</h2>
     </div>
 
     <div v-if="!fileName">
-      <label class="field-label" for="iepms-file">Source file (iEPMS export)</label>
-      <p class="field-hint">Accepted file types: .xlsx, .xls, .csv. Maximum recommended size: 25 MB.</p>
+      <label class="field-label" :for="inputId">{{ inputLabel }}</label>
+      <p class="field-hint">{{ inputHint }}</p>
       <input
-        id="iepms-file"
+        :id="inputId"
         class="upload-input"
         type="file"
-        accept=".xlsx,.xls,.csv"
+        :accept="accept"
         :disabled="loading || disableAction"
         @change="onFileChange"
       />
@@ -25,7 +25,7 @@
     <p v-else class="muted">Upload is not started. Select a valid file to begin.</p>
 
     <LoadingButton
-      label="Validate File"
+      :label="validateLabel"
       loading-text="Validating..."
       :loading="loading"
       :disabled="!file || disableAction"
@@ -55,7 +55,13 @@ export default {
   props: {
     result: { type: Object, default: null },
     loading: { type: Boolean, default: false },
-    disableAction: { type: Boolean, default: false }
+    disableAction: { type: Boolean, default: false },
+    title: { type: String, default: 'Upload & Validate' },
+    inputId: { type: String, default: 'iepms-file' },
+    inputLabel: { type: String, default: 'Source file (iEPMS export)' },
+    inputHint: { type: String, default: 'Accepted file types: .xlsx, .xls, .csv. Maximum recommended size: 25 MB.' },
+    validateLabel: { type: String, default: 'Validate File' },
+    accept: { type: String, default: '.xlsx,.xls,.csv' }
   },
   data() {
     return {

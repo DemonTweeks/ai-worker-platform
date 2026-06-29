@@ -17,6 +17,14 @@
         </select>
       </label>
       <label>
+        <span class="field-label">Worker</span>
+        <select :value="value.workerId || ''" @change="update('workerId', $event.target.value)">
+          <option value="">All workers</option>
+          <option value="mw-pr">MW PR Worker</option>
+          <option value="ran-pr">RAN PR Worker</option>
+        </select>
+      </label>
+      <label>
         <span class="field-label">PR Scope</span>
         <select :value="value.prScope" @change="update('prScope', $event.target.value)">
           <option value="">All scopes</option>

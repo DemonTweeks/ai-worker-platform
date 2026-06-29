@@ -12,6 +12,7 @@ const storageService = require('./storageService');
 const WARNING_REPORT_FILE = 'Error_Warning_Report.xlsx';
 const REVIEW_REPORT_FILE = 'Review_Required_Report.xlsx';
 const SUMMARY_FILE = 'Summary.json';
+const ECC_OUTPUT_FILE_TYPES = ['ecc_output', 'ran_ecc_output', 'ran_ecc_output_with_general_items'];
 
 const setColumns = (worksheet, columns) => {
   worksheet.columns = columns;
@@ -154,7 +155,7 @@ const generateReviewRequiredReport = async (jobId) => {
 const buildSummaryData = async (jobId) => {
   const [job, eccFileCount, reviewRequiredCount, warningCount] = await Promise.all([
     Job.findOne({ jobId }).lean(),
-    JobFile.countDocuments({ jobId, fileType: 'ecc_output' }),
+    JobFile.countDocuments({ jobId, fileType: { $in: ECC_OUTPUT_FILE_TYPES } }),
     ReviewRequiredItem.countDocuments({ jobId }),
     WarningItem.countDocuments({ jobId })
   ]);
@@ -195,6 +196,7 @@ const generateSummaryJson = async (jobId) => {
 };
 
 module.exports = {
+  ECC_OUTPUT_FILE_TYPES,
   REVIEW_REPORT_FILE,
   SUMMARY_FILE,
   WARNING_REPORT_FILE,

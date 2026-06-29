@@ -17,6 +17,8 @@ const {
 const OUTPUT_EXTENSIONS = new Set(['.xls', '.xlsx', '.csv', '.json', '.txt']);
 const GENERATED_FILE_TYPES = [
   'ecc_output',
+  'ran_ecc_output',
+  'ran_ecc_output_with_general_items',
   'source_review_required',
   'source_duplicates_skipped',
   'review_required_report',
@@ -146,7 +148,7 @@ const resolveJobFileAbsolutePath = (jobFile) => path.join(storageService.getStor
 const buildArchiveEntries = (jobFiles) => jobFiles.map((file) => {
   let archiveName = path.basename(file.fileName);
 
-  if (file.fileType === 'ecc_output') {
+  if (['ecc_output', 'ran_ecc_output', 'ran_ecc_output_with_general_items'].includes(file.fileType)) {
     archiveName = `ECC_Output/${archiveName}`;
   }
 
@@ -172,7 +174,7 @@ const buildArchiveEntries = (jobFiles) => jobFiles.map((file) => {
   };
 });
 
-const generateReportsAndPackage = async (jobId) => {
+const generateReportsAndPackage = async (jobId, options = {}) => {
   await JobFile.deleteMany({ jobId, fileType: { $in: ['review_required_report', 'warning_report', 'summary', 'zip_package'] } });
 
   const [warningReport, reviewReport, summaryFile] = await Promise.all([
@@ -185,6 +187,8 @@ const generateReportsAndPackage = async (jobId) => {
     jobId,
     fileType: { $in: [
       'ecc_output',
+      'ran_ecc_output',
+      'ran_ecc_output_with_general_items',
       'source_review_required',
       'source_duplicates_skipped',
       'review_required_report',
@@ -193,10 +197,12 @@ const generateReportsAndPackage = async (jobId) => {
     ] }
   }).sort({ fileType: 1, createdAt: 1 });
 
-  const zipFile = await createZipPackage({
-    jobId,
-    outputFiles: buildArchiveEntries(packageFiles)
-  });
+  const zipFile = options.includeZip === false
+    ? null
+    : await createZipPackage({
+      jobId,
+      outputFiles: buildArchiveEntries(packageFiles)
+    });
 
   return {
     warningReport,

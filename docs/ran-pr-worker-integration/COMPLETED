@@ -1,0 +1,6 @@
+completed=true
+acceptance_status=passed
+next_action=NO_OP_COMPLETED
+completed_at_utc=2026-06-26T15:04:50Z
+branch=feature/ran-pr-worker-integration
+last_checkpoint_before_completion=6ae76aa

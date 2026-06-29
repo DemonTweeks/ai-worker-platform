@@ -1,5 +1,6 @@
 const { readFirebase, writeFirebase } = require('../db/firebaseClient');
 const { QueryChain, matchFilter } = require('./compatibility');
+const { RAN_RUN_MODES, WORKER_IDS } = require('../workers/workerTypes');
 
 const JOB_STATUSES = [
   'queued',
@@ -22,6 +23,13 @@ const PR_SCOPES = ['TSS', 'TI'];
 class Job {
   constructor(data) {
     Object.assign(this, data);
+    if (typeof this.workerId === 'undefined' || this.workerId === null) {
+      this.workerId = this.workerType === 'pr-worker' ? WORKER_IDS.MW_PR : null;
+    }
+    if (typeof this.engineVersion === 'undefined') this.engineVersion = null;
+    if (typeof this.engineCommit === 'undefined') this.engineCommit = null;
+    if (typeof this.runMode === 'undefined') this.runMode = null;
+    if (typeof this.selectedProject === 'undefined') this.selectedProject = null;
     if (this.workerType === 'pr-worker') {
       if (typeof this.requestedSiteCount === 'undefined') this.requestedSiteCount = null;
       if (typeof this.matchedSiteCount === 'undefined') this.matchedSiteCount = null;
@@ -59,6 +67,11 @@ class Job {
       createdAt: payload.createdAt || new Date().toISOString(),
       status: payload.status || 'queued',
       workerType: payload.workerType || 'pr-worker',
+      workerId: payload.workerId || (payload.workerType === 'pr-worker' || !payload.workerType ? WORKER_IDS.MW_PR : null),
+      engineVersion: payload.engineVersion || null,
+      engineCommit: payload.engineCommit || null,
+      runMode: payload.runMode || null,
+      selectedProject: payload.selectedProject || null,
       requestedSiteCount: payload.requestedSiteCount || 0,
       matchedSiteCount: payload.matchedSiteCount || 0,
       unmatchedSiteCount: payload.unmatchedSiteCount || 0,
@@ -127,3 +140,4 @@ module.exports = Job;
 module.exports.JOB_STATUSES = JOB_STATUSES;
 module.exports.GENERATION_SCOPES = GENERATION_SCOPES;
 module.exports.PR_SCOPES = PR_SCOPES;
+module.exports.RUN_MODES = Object.values(RAN_RUN_MODES);

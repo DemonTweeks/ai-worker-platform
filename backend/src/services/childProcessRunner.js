@@ -1,34 +1,95 @@
 const fs = require('fs');
 const path = require('path');
-const { spawn } = require('child_process');
+const childProcess = require('child_process');
+const { spawn } = childProcess;
 const config = require('../config/env');
 const storageService = require('./storageService');
 const { assertPathInsideRoot } = require('../utils/pathUtils');
 
 const SCRIPT_RELATIVE_PATH = path.join('scripts', 'generate_tss_pr_ecc.py');
 const SUPPORTED_SCOPES = ['TSS', 'TI'];
+const REPO_ROOT = path.resolve(__dirname, '../../..');
 
 const getPythonExecutable = () => {
   if (process.env.PYTHON_EXECUTABLE) {
     return process.env.PYTHON_EXECUTABLE;
   }
 
-  const repoRoot = path.resolve(__dirname, '../../..');
-
   if (process.platform === 'win32') {
-    const winVenvPython = path.join(repoRoot, '.venv', 'Scripts', 'python.exe');
+    const winVenvPython = path.join(REPO_ROOT, '.venv', 'Scripts', 'python.exe');
     if (fs.existsSync(winVenvPython)) {
       return winVenvPython;
     }
     return 'python';
   } else {
-    const nixVenvPython = path.join(repoRoot, '.venv', 'bin', 'python');
+    const nixVenvPython = path.join(REPO_ROOT, '.venv', 'bin', 'python');
     if (fs.existsSync(nixVenvPython)) {
       return nixVenvPython;
     }
     return 'python3';
   }
 };
+
+const hasPathSeparator = (value) => /[\\/]/.test(String(value || ''));
+
+const resolveBareExecutableFromPath = (command) => {
+  const locator = process.platform === 'win32' ? 'where.exe' : 'which';
+
+  try {
+    const output = childProcess.execFileSync(locator, [command], {
+      stdio: ['ignore', 'pipe', 'ignore'],
+      encoding: 'utf8'
+    });
+
+    const resolved = String(output || '')
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .find((line) => path.isAbsolute(line) && fs.existsSync(line));
+
+    return resolved || null;
+  } catch (error) {
+    return null;
+  }
+};
+
+const buildPythonResolutionError = () => {
+  const error = new Error('A resolvable Python interpreter path is required for the RAN worker.');
+  error.code = 'PYTHON_EXECUTABLE_NOT_RESOLVED';
+  throw error;
+};
+
+const resolveExplicitPythonExecutable = (pythonExecutable) => {
+  const configured = String(pythonExecutable || '').trim();
+
+  if (!configured) {
+    return buildPythonResolutionError();
+  }
+
+  if (path.isAbsolute(configured)) {
+    if (fs.existsSync(configured)) {
+      return configured;
+    }
+    return buildPythonResolutionError();
+  }
+
+  if (hasPathSeparator(configured)) {
+    const resolvedPath = assertPathInsideRoot(REPO_ROOT, path.resolve(REPO_ROOT, configured));
+    if (fs.existsSync(resolvedPath)) {
+      return resolvedPath;
+    }
+
+    return buildPythonResolutionError();
+  }
+
+  const pathResolvedExecutable = resolveBareExecutableFromPath(configured);
+  if (pathResolvedExecutable) {
+    return pathResolvedExecutable;
+  }
+
+  return buildPythonResolutionError();
+};
+
+const getExplicitPythonExecutable = () => resolveExplicitPythonExecutable(getPythonExecutable());
 
 const runPreflight = async () => {
   const pythonPath = getPythonExecutable();
@@ -129,7 +190,36 @@ const buildCommand = ({
   };
 };
 
-const runCommand = ({ command, args, cwd, timeoutMs, isCancellationRequested }) => new Promise((resolve) => {
+const runPythonStage = ({
+  pythonExecutable,
+  scriptPath,
+  scriptArgs = [],
+  cwd,
+  env = {},
+  timeoutMs,
+  isCancellationRequested
+}) => {
+  if (!pythonExecutable || typeof pythonExecutable !== 'string') {
+    throw new Error('pythonExecutable is required.');
+  }
+
+  if (!scriptPath || typeof scriptPath !== 'string') {
+    throw new Error('scriptPath is required.');
+  }
+
+  const resolvedPythonExecutable = resolveExplicitPythonExecutable(pythonExecutable);
+
+  return module.exports.runCommand({
+    command: resolvedPythonExecutable,
+    args: [scriptPath, ...scriptArgs],
+    cwd,
+    timeoutMs,
+    isCancellationRequested,
+    env
+  });
+};
+
+const runCommand = ({ command, args, cwd, timeoutMs, isCancellationRequested, env = {} }) => new Promise((resolve) => {
   let stdout = '';
   let stderr = '';
   let timedOut = false;
@@ -142,6 +232,7 @@ const runCommand = ({ command, args, cwd, timeoutMs, isCancellationRequested }) 
     windowsHide: true,
     env: {
       ...process.env,
+      ...env,
       PYTHONUTF8: '1',
       PYTHONIOENCODING: 'utf-8'
     }
@@ -302,8 +393,11 @@ const runCreatePrCd = async ({
 module.exports = {
   SUPPORTED_SCOPES,
   buildCommand,
+  getExplicitPythonExecutable,
   getCreatePrCdRoot,
+  resolveExplicitPythonExecutable,
   runCommand,
+  runPythonStage,
   runCreatePrCd,
   getPythonExecutable,
   runPreflight

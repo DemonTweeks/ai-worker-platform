@@ -71,6 +71,7 @@ import { getErrorMessage, listJobs } from '../api/jobApi';
 const defaultFilters = () => ({
   search: '',
   status: '',
+  workerId: '',
   prScope: '',
   dateFrom: '',
   dateTo: '',
@@ -127,7 +128,7 @@ export default {
         workerType: 'pr-worker'
       };
 
-      ['search', 'status', 'prScope', 'dateFrom', 'dateTo'].forEach((key) => {
+      ['search', 'status', 'workerId', 'prScope', 'dateFrom', 'dateTo'].forEach((key) => {
         if (this.filters[key]) query[key] = this.filters[key];
       });
 

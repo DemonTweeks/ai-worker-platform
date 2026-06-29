@@ -1,0 +1,108 @@
+# RAN PR Worker Integration Autonomous State
+
+- Mission: `ran-pr-worker-integration`
+- Master prompt: `C:\dev\codex-prompts\ran-pr-worker-integration-master-automation-prompt.md`
+- Workspace: `C:\dev\ai-worker-platform-ran-pr`
+- Branch: `feature/ran-pr-worker-integration`
+- Current phase: `Phase 4 - Verification And Delivery`
+- Status: `COMPLETED`
+- Completed: `true`
+- Acceptance status: `passed`
+
+## Baseline
+
+- `HEAD`: `a2d51d528fa49e5e56bd239cc37e89d3585ff7ad`
+- `origin/main`: `a2d51d528fa49e5e56bd239cc37e89d3585ff7ad`
+- Merge-base with `origin/main`: `a2d51d528fa49e5e56bd239cc37e89d3585ff7ad`
+- Expected baseline commit `a2d51d5`: matched
+
+## Completed Work
+
+- Read the master prompt fresh before taking action.
+- Confirmed the active workspace and branch match the mission requirements.
+- Verified the repository is still at the expected baseline commit.
+- Created the long-running `/goal` mission controller.
+- Created the hourly heartbeat automation `ran-pr-worker-integration-hourly-follow-up`.
+- Initialized the persistent state bundle under `docs/ran-pr-worker-integration/`.
+- Documented the current MW execution, persistence/history, websocket, cancellation, output packaging, download, cleanup, and safe-error flow from the live codebase.
+- Inspected the pinned upstream RAN engine pipeline, workbook config sources, sample input/output assets, and dynamic General Item project-selection source.
+- Documented the prototype platform UX contract and worker-skill ADR constraints for MW/RAN coexistence.
+- Replaced the lightweight mission outline with a concrete implementation plan covering engine compatibility, registry integration, frontend integration, and verification.
+- Added the pinned RAN submodule plus worker manifest/registry/config scaffolding for Task 1.
+- Added the workbook-derived RAN project catalog and isolated workspace staging services for Task 2.
+- Added the Task 3 execution foundation: explicit Python stage runner, initial RAN adapter skeleton, worker registry adapter wiring, and job/file metadata support.
+- Added platform-owned RAN ECC output ingestion so approved upstream workbooks are copied into job storage, tracked in `JobFile`, and included in summary/package accounting.
+- Added worker-aware safe RAN failure shaping plus backend error-visibility coverage for sanitized stage-based summaries and diagnosis.
+- Added direct backend coverage for successful and cooperatively cancelled RAN adapter runs, and wired that coverage into the backend test script.
+- Added the MW adapter plus registry-backed queue dispatch resolution, with direct backend coverage for worker selection by `workerId`.
+- Added worker-aware backend create/list/detail payloads with explicit worker identity and audit metadata while preserving MW as the default-compatible create flow.
+- Added the first backend RAN create path with upload-kind-aware prevalidation, tracked BOM/EPMS job inputs, validated run-mode selection, and direct backend coverage.
+- Added route-level backend coverage for `ran-pr` prevalidation and create flows, and hardened `ran-bom` prevalidation so unreadable Excel payloads are rejected before job creation.
+- Added a RAN worker runtime service plus registry wiring so queued `ran-pr` jobs now publish shared lifecycle phases, stage progress, cancellation results, and packaged completion outputs.
+- Added live route/runtime coverage for queued `ran-pr` execution so terminal Job Detail polling, websocket lifecycle events, and ZIP download readiness are now verified together.
+- Added live cancellation parity coverage for running `ran-pr` jobs so cancellation requests, terminal `JOB_CANCELLED` events, partial-result ZIP availability, and detail state now stay aligned.
+- Added the first worker-aware frontend RAN launch slice on the home workbench, including BOM/EPMS validation, run-mode switching, workbook-backed General Item selection, and worker-aware create payloads.
+- Added worker-aware History and Job Detail rendering for `ran-pr`, including worker filters, worker badges/labels, run-mode/project visibility, and engine audit metadata.
+- Ran the full backend and frontend project-native validation commands, including a clean standalone frontend build and `git diff --check`, after initializing the existing MW fixture submodule required by backend integration coverage.
+- Added a repeatable backend golden-test command and verified that live `ran-pr` Standard PR and General Item runs match the pinned upstream ECC workbooks by logical business content.
+- Added a repeatable backend reload-proof command and verified that a completed `ran-pr` General Item job survives full server restart in shared History, shared Job Detail, and ZIP download availability.
+- Added a repeatable backend concurrency-test command and verified that simultaneous `ran-pr` jobs use distinct isolated workspaces and distinct retained output paths.
+- Added a repeatable backend invalid-input/safe-error acceptance command and verified both create-time RAN input rejection and live sanitized worker-failure visibility.
+- Captured fresh MW regression signoff by rerunning the focused legacy MW backend and frontend verification commands against the current branch state.
+- Completed a branch-level changed-file scope review and verified the diff remains limited to aligned backend/frontend/docs/submodule work with no generated artifact paths or unrelated feature changes.
+- Replaced the placeholder `final-report.md` with a real in-progress mission summary covering delivered scope, verified evidence, current acceptance status, and remaining publish steps.
+- Rebased `feature/ran-pr-worker-integration` onto the latest `origin/main` and reran the required backend, frontend, build, and diff-hygiene validation commands successfully afterward.
+- Reconfirmed the pinned RAN submodule SHA/tag after the rebase and refreshed the persistent checkpoint history to the rebased commit graph.
+- Re-ran the full required backend, frontend, build, and diff-hygiene verification commands in the final completion pass and reconfirmed GitHub publish readiness from the current worktree.
+- Wrote the final completion marker and flipped the mission state to complete with no remaining acceptance gates.
+
+## Next Action
+
+NO_OP_COMPLETED
+
+## Blockers
+
+- None.
+
+## Methodology Applied
+
+- `superpowers:using-superpowers`
+- `superpowers:using-git-worktrees`
+- Master prompt bounded-step execution discipline
+- Source inspection of the active backend/frontend implementation
+- Read-only inspection of the pinned upstream RAN repository
+- Internal design checkpoint using the brainstorming methodology with the mission-level autonomy override recorded in the decision log
+- `superpowers:writing-plans` with the master-prompt state-directory override
+- `superpowers:executing-plans` for Task 1 implementation
+- `superpowers:executing-plans` for Task 2 implementation
+- `superpowers:executing-plans` for Task 3 execution-foundation work
+- `superpowers:executing-plans` for Task 3 output-ingestion work
+- `superpowers:executing-plans` for Task 3 safe-failure and coverage work
+- `superpowers:executing-plans` for Task 3 direct adapter-coverage work
+- `superpowers:executing-plans` for Task 4 registry-dispatch transition work
+- `superpowers:executing-plans` for Task 4 worker-aware backend payload work
+- `superpowers:subagent-driven-development` evaluated for this continuation; kept in-session because the RAN create-flow slice was tightly coupled
+- `superpowers:executing-plans` for Task 4 first backend RAN create-path work
+- `superpowers:test-driven-development` for Task 4 route-level RAN coverage and `ran-bom` prevalidation hardening
+- `superpowers:test-driven-development` for Task 4 RAN runtime lifecycle, progress, and cancellation wrapper
+- `superpowers:executing-plans` for Task 4 live route/runtime RAN coverage
+- `superpowers:test-driven-development` for Task 4 terminal-status ordering and ZIP-ready live detail behavior
+- `superpowers:test-driven-development` for Task 4 running-cancellation event semantics and partial-result detail parity
+- `superpowers:test-driven-development` for Task 5 home-view worker selection, RAN upload validation, and workbook-backed project selection
+- `superpowers:test-driven-development` for Task 5 History filters, worker-aware job cards, and RAN Job Detail audit metadata
+- `superpowers:executing-plans` for the first Phase 4 full-suite validation slice
+- `superpowers:systematic-debugging` to diagnose the initial backend suite failure to an uninitialized existing MW fixture submodule before rerunning validation
+- `superpowers:executing-plans` for the first Phase 4 golden/business-result verification slice
+- `superpowers:executing-plans` for the first Phase 4 history persistence/reload verification slice
+- `superpowers:executing-plans` for the first Phase 4 workspace isolation/concurrency verification slice
+- `superpowers:executing-plans` for the first Phase 4 invalid-input and safe-error acceptance verification slice
+- `superpowers:verification-before-completion` for the focused MW regression signoff command pass
+- `superpowers:executing-plans` for the branch-level changed-file scope review slice
+- `superpowers:verification-before-completion` for the final completion-pass verification before the publish handoff
+- `superpowers:finishing-a-development-branch` for the final branch publication workflow
+
+## Notes
+
+- The user explicitly directed work to remain in `C:\dev\ai-worker-platform-ran-pr` on `feature/ran-pr-worker-integration`, so no additional worktree was created.
+- The `COMPLETED` marker now exists and should force future heartbeats into the required read-only `NO_OP_COMPLETED` response.
+- Latest checkpoint commit before this final completion checkpoint: `6ae76aa` (`docs: record rebase validation checkpoint`).

@@ -47,4 +47,34 @@ describe('JobHistoryCard.vue Component', () => {
     expect(text).toContain('Dependency missing: pandas');
     expect(text).not.toContain('Execution crashed at step 4.');
   });
+
+  it('renders worker-aware metadata for ran jobs', () => {
+    const job = {
+      jobId: 'PR-RAN-003',
+      status: 'completed',
+      workerType: 'pr-worker',
+      workerId: 'ran-pr',
+      workerDisplayName: 'RAN PR Worker',
+      runMode: 'general-item',
+      selectedProject: 'Project Thanos',
+      generationScope: 'all_sites',
+      outputFileCount: 1,
+      finalWorkerSummary: 'RAN general-item job completed.',
+      createdAt: new Date().toISOString()
+    };
+
+    const wrapper = mount(JobHistoryCard, {
+      propsData: { job },
+      stubs: {
+        routerLink: true,
+        JobStatusBadge: true,
+        JobScopeBadge: true
+      }
+    });
+
+    const text = wrapper.text();
+    expect(text).toContain('RAN PR Worker');
+    expect(text).toContain('general-item');
+    expect(text).toContain('Project Thanos');
+  });
 });

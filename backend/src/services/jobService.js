@@ -8,7 +8,7 @@ const {
   WarningItem
 } = require('../models');
 const storageService = require('./storageService');
-const { consumePrevalidatedUpload } = require('./prevalidationService');
+const { consumePrevalidatedUpload, UPLOAD_KINDS } = require('./prevalidationService');
 const { parseSiteCodes } = require('./siteCodeParser');
 const workerStateService = require('./workerStateService');
 const jobQueue = require('../queue/jobQueue');
@@ -16,6 +16,10 @@ const { answerReAsk } = require('../llm/reAskService');
 const { generateUniqueJobId } = require('../utils/jobIdGenerator');
 const { assertPathInsideRoot, toStorageRelativePath } = require('../utils/pathUtils');
 const { createApiError } = require('../utils/apiError');
+const { sanitizeRanStageName } = require('../workers/ranFailureService');
+const { validateRanRunConfiguration } = require('../workers/ranProjectCatalogService');
+const { WORKER_IDS } = require('../workers/workerTypes');
+const { getWorkerManifest } = require('../workers/workerRegistry');
 
 const CANCELLABLE_BEFORE_WORKER_STATUSES = ['queued'];
 const RUNNING_STATUSES = [
@@ -34,14 +38,48 @@ const TERMINAL_STATUSES = [
   'cancelled_with_partial_result'
 ];
 const PR_SCOPES = ['TSS', 'TI'];
+const INPUT_FILE_TYPES = new Set(['uploaded_export', 'ran_bom_upload', 'ran_epms_upload']);
 
 const normalizeSiteCodes = (siteCodes = []) => parseSiteCodes(siteCodes).siteCodes;
 
 const normalizePrScope = (prScope) => String(prScope || 'TSS').trim().toUpperCase();
+const normalizeWorkerId = (workerId) => String(workerId || WORKER_IDS.MW_PR).trim();
 
 const addRetentionDays = () => (
   new Date(Date.now() + config.limits.fileRetentionDays * 24 * 60 * 60 * 1000)
 );
+
+const getWorkerPresentation = (job = {}) => {
+  const workerId = job.workerId || WORKER_IDS.MW_PR;
+
+  try {
+    const manifest = getWorkerManifest(workerId);
+    return {
+      workerId,
+      workerDisplayName: manifest.displayName,
+      engineVersion: job.engineVersion || manifest.engineVersion || null,
+      engineCommit: job.engineCommit || manifest.engineCommit || null
+    };
+  } catch (error) {
+    return {
+      workerId,
+      workerDisplayName: workerId,
+      engineVersion: job.engineVersion || null,
+      engineCommit: job.engineCommit || null
+    };
+  }
+};
+
+const isRanWorker = (workerId) => workerId === WORKER_IDS.RAN_PR;
+const getDisplayPrScope = (job = {}) => (
+  isRanWorker(job.workerId) ? (job.prScope || null) : (job.prScope || 'TSS')
+);
+
+const assertUploadKind = (upload, expectedKind, label) => {
+  if (!upload || upload.uploadKind !== expectedKind) {
+    throw createApiError(400, 'VALIDATION_ERROR', `${label} prevalidated file is invalid or expired.`);
+  }
+};
 
 const redactTechnicalDetails = (text) => {
   if (!text || typeof text !== 'string') return '';
@@ -92,6 +130,8 @@ const getFailureSummary = (job) => {
 
   const code = error.code;
   const details = error.details || {};
+  const ranStage = sanitizeRanStageName(details.stage);
+  const isRanJob = job.workerId === WORKER_IDS.RAN_PR;
 
   if (code === 'PREFLIGHT_FAILED') {
     const allowedPkgs = ['pandas', 'openpyxl'];
@@ -104,15 +144,27 @@ const getFailureSummary = (job) => {
     }
     return 'PR worker dependency check failed.';
   } else if (code === 'WORKER_TIMEOUT') {
+    if (isRanJob) {
+      return ranStage
+        ? `RAN PR worker execution timed out (${ranStage}).`
+        : 'RAN PR worker execution timed out.';
+    }
     if (details.scope === 'TSS' || details.scope === 'TI') {
       return `PR worker execution timed out (${details.scope}).`;
     }
     return 'PR worker execution timed out.';
   } else if (code === 'WORKER_PROCESS_FAILED') {
+    if (isRanJob) {
+      return ranStage
+        ? `RAN PR worker process failed (${ranStage}).`
+        : 'RAN PR worker process failed.';
+    }
     if (details.scope === 'TSS' || details.scope === 'TI') {
       return `PR worker process failed (${details.scope}).`;
     }
     return 'PR worker process failed.';
+  } else if (code === 'RAN_INVALID_ECC_OUTPUT' || code === 'RAN_ZERO_VALID_ECC_OUTPUT') {
+    return 'RAN PR worker produced no valid ECC output.';
   }
   return 'PR Worker execution failed.';
 };
@@ -123,16 +175,20 @@ const getFailureDiagnosis = (job) => {
   if (!error) {
     return {
       category: 'WORKER_ERROR',
-      title: 'PR Worker execution failed',
-      summary: 'An unexpected error occurred during the PR worker execution process.',
+      title: job.workerId === WORKER_IDS.RAN_PR ? 'RAN PR Worker execution failed' : 'PR Worker execution failed',
+      summary: job.workerId === WORKER_IDS.RAN_PR
+        ? 'An unexpected error occurred during the RAN PR worker execution process.'
+        : 'An unexpected error occurred during the PR worker execution process.',
       technicalDetails: ''
     };
   }
 
   const code = error.code || 'WORKER_ERROR';
   const details = error.details || {};
+  const ranStage = sanitizeRanStageName(details.stage);
+  const isRanJob = job.workerId === WORKER_IDS.RAN_PR;
 
-  const allowedCategories = ['PREFLIGHT_FAILED', 'WORKER_TIMEOUT', 'WORKER_PROCESS_FAILED'];
+  const allowedCategories = ['PREFLIGHT_FAILED', 'WORKER_TIMEOUT', 'WORKER_PROCESS_FAILED', 'RAN_INVALID_ECC_OUTPUT', 'RAN_ZERO_VALID_ECC_OUTPUT'];
   const category = allowedCategories.includes(code) ? code : 'WORKER_ERROR';
 
   let title = 'PR Worker execution failed';
@@ -167,22 +223,33 @@ const getFailureDiagnosis = (job) => {
     }
   } else if (category === 'WORKER_TIMEOUT') {
     title = 'Worker timeout';
-    summary = 'PR worker execution exceeded the maximum allowed time limit.';
+    summary = isRanJob
+      ? `RAN PR worker execution exceeded the maximum allowed time limit${ranStage ? ` while running ${ranStage}` : ''}.`
+      : 'PR worker execution exceeded the maximum allowed time limit.';
 
-    if (details.scope === 'TSS' || details.scope === 'TI') {
+    if (isRanJob && ranStage) {
+      scope = undefined;
+    } else if (details.scope === 'TSS' || details.scope === 'TI') {
       scope = details.scope;
     }
   } else if (category === 'WORKER_PROCESS_FAILED') {
     title = 'Worker process failed';
-    summary = 'PR worker child process exited with an error status during execution.';
+    summary = isRanJob
+      ? `RAN PR worker stage failed${ranStage ? ` while running ${ranStage}` : ''}.`
+      : 'PR worker child process exited with an error status during execution.';
 
-    if (details.scope === 'TSS' || details.scope === 'TI') {
+    if (isRanJob && ranStage) {
+      scope = undefined;
+    } else if (details.scope === 'TSS' || details.scope === 'TI') {
       scope = details.scope;
     }
 
     if (Number.isInteger(details.exitCode)) {
       exitCode = details.exitCode;
     }
+  } else if (category === 'RAN_INVALID_ECC_OUTPUT' || category === 'RAN_ZERO_VALID_ECC_OUTPUT') {
+    title = 'RAN ECC output invalid';
+    summary = 'The RAN PR worker completed its pipeline, but it did not produce any valid ECC workbook output for delivery.';
   }
 
   return {
@@ -193,19 +260,23 @@ const getFailureDiagnosis = (job) => {
     pythonExecutable,
     recommendedCommand,
     scope,
+    ...(ranStage ? { stage: ranStage } : {}),
     exitCode,
     technicalDetails
   };
 };
 
 const serializeJobSummary = (job) => ({
+  ...getWorkerPresentation(job),
   jobId: job.jobId,
   workerType: job.workerType,
   status: job.status,
   createdAt: job.createdAt,
   completedAt: job.completedAt,
   generationScope: job.generationScope,
-  prScope: job.prScope || 'TSS',
+  prScope: getDisplayPrScope(job),
+  runMode: job.runMode || null,
+  selectedProject: job.selectedProject || null,
   requestedSiteCount: job.requestedSiteCount,
   matchedSiteCount: job.matchedSiteCount,
   unmatchedSiteCount: job.unmatchedSiteCount,
@@ -226,7 +297,14 @@ const assertJobExists = async (jobId) => {
   return job;
 };
 
-const createJob = async ({ prevalidatedFileId, generationScope, siteCodes, prScope }) => {
+const createMwJob = async ({
+  prevalidatedFileId,
+  generationScope,
+  siteCodes,
+  prScope,
+  workerManifest,
+  normalizedWorkerId
+}) => {
   if (!prevalidatedFileId) {
     throw createApiError(400, 'VALIDATION_ERROR', 'prevalidatedFileId is required.');
   }
@@ -252,6 +330,9 @@ const createJob = async ({ prevalidatedFileId, generationScope, siteCodes, prSco
   }
 
   const upload = await consumePrevalidatedUpload(prevalidatedFileId);
+  if (upload.uploadKind && upload.uploadKind !== UPLOAD_KINDS.MW_EXPORT) {
+    throw createApiError(400, 'VALIDATION_ERROR', 'prevalidatedFileId must reference an iEPMS export upload.');
+  }
   const jobId = await generateUniqueJobId();
   await storageService.createJobFolders(jobId);
 
@@ -265,6 +346,7 @@ const createJob = async ({ prevalidatedFileId, generationScope, siteCodes, prSco
     requestPath,
     Buffer.from(JSON.stringify({
       jobId,
+      workerId: normalizedWorkerId,
       prScope: normalizedPrScope,
       generationScope,
       siteCodes: normalizedSiteCodes,
@@ -274,6 +356,9 @@ const createJob = async ({ prevalidatedFileId, generationScope, siteCodes, prSco
 
   const job = await Job.create({
     jobId,
+    workerId: normalizedWorkerId,
+    engineVersion: workerManifest.engineVersion,
+    engineCommit: workerManifest.engineCommit,
     workerType: 'pr-worker',
     status: 'queued',
     prScope: normalizedPrScope,
@@ -307,8 +392,168 @@ const createJob = async ({ prevalidatedFileId, generationScope, siteCodes, prSco
   };
 };
 
+const createRanJob = async ({
+  bomPrevalidatedFileId,
+  epmsPrevalidatedFileId,
+  runMode,
+  selectedProject,
+  workerManifest,
+  normalizedWorkerId
+}) => {
+  if (!bomPrevalidatedFileId) {
+    throw createApiError(400, 'VALIDATION_ERROR', 'bomPrevalidatedFileId is required for RAN PR Worker jobs.');
+  }
+
+  if (!epmsPrevalidatedFileId) {
+    throw createApiError(400, 'VALIDATION_ERROR', 'epmsPrevalidatedFileId is required for RAN PR Worker jobs.');
+  }
+
+  let normalizedRunConfiguration;
+  try {
+    normalizedRunConfiguration = validateRanRunConfiguration({ runMode, selectedProject });
+  } catch (error) {
+    throw createApiError(400, 'VALIDATION_ERROR', error.message);
+  }
+
+  const [bomUpload, epmsUpload] = await Promise.all([
+    consumePrevalidatedUpload(bomPrevalidatedFileId),
+    consumePrevalidatedUpload(epmsPrevalidatedFileId)
+  ]);
+  assertUploadKind(bomUpload, UPLOAD_KINDS.RAN_BOM, 'BOM');
+  assertUploadKind(epmsUpload, UPLOAD_KINDS.RAN_EPMS, 'EPMS');
+
+  const jobId = await generateUniqueJobId();
+  await storageService.createJobFolders(jobId);
+
+  const retentionUntil = addRetentionDays();
+  const bomInputPath = storageService.resolveJobInputPath(jobId, bomUpload.originalFileName);
+  const epmsInputPath = storageService.resolveJobInputPath(jobId, epmsUpload.originalFileName);
+
+  await Promise.all([
+    fs.promises.copyFile(bomUpload.absolutePath, bomInputPath),
+    fs.promises.copyFile(epmsUpload.absolutePath, epmsInputPath)
+  ]);
+  await Promise.all([
+    storageService.deleteFileSafe(bomUpload.absolutePath),
+    storageService.deleteFileSafe(epmsUpload.absolutePath)
+  ]);
+
+  const [bomMetadata, epmsMetadata] = await Promise.all([
+    storageService.buildFileMetadata(bomInputPath),
+    storageService.buildFileMetadata(epmsInputPath)
+  ]);
+  const requestPath = storageService.resolveJobTempPath(jobId, 'job-request.json');
+  await storageService.saveBufferToFile(
+    requestPath,
+    Buffer.from(JSON.stringify({
+      jobId,
+      workerId: normalizedWorkerId,
+      runMode: normalizedRunConfiguration.runMode,
+      selectedProject: normalizedRunConfiguration.selectedProject,
+      createdAt: new Date().toISOString(),
+      inputs: {
+        bomFileName: bomUpload.originalFileName,
+        epmsFileName: epmsUpload.originalFileName
+      }
+    }, null, 2))
+  );
+
+  const job = await Job.create({
+    jobId,
+    workerId: normalizedWorkerId,
+    engineVersion: workerManifest.engineVersion,
+    engineCommit: workerManifest.engineCommit,
+    workerType: 'pr-worker',
+    status: 'queued',
+    generationScope: 'all_sites',
+    prScope: null,
+    runMode: normalizedRunConfiguration.runMode,
+    selectedProject: normalizedRunConfiguration.selectedProject,
+    requestedSiteCount: 0,
+    fileRetentionUntil: retentionUntil
+  });
+
+  const jobFiles = await JobFile.insertMany([
+    {
+      jobId,
+      fileType: 'ran_bom_upload',
+      fileName: bomUpload.originalFileName,
+      filePath: bomMetadata.filePath,
+      fileSize: bomMetadata.fileSize,
+      retentionUntil
+    },
+    {
+      jobId,
+      fileType: 'ran_epms_upload',
+      fileName: epmsUpload.originalFileName,
+      filePath: epmsMetadata.filePath,
+      fileSize: epmsMetadata.fileSize,
+      retentionUntil
+    }
+  ]);
+  const queueState = await jobQueue.enqueueJob(jobId);
+
+  return {
+    job: serializeJobSummary(job),
+    jobFiles: jobFiles.map((file) => ({
+      id: file._id.toString(),
+      fileType: file.fileType,
+      fileName: file.fileName,
+      fileSize: file.fileSize,
+      retentionUntil: file.retentionUntil
+    })),
+    queue: queueState,
+    message: 'RAN job record and tracked BOM/EPMS inputs were prepared and queued for PR Worker execution.'
+  };
+};
+
+const createJob = async ({
+  prevalidatedFileId,
+  generationScope,
+  siteCodes,
+  prScope,
+  workerId,
+  bomPrevalidatedFileId,
+  epmsPrevalidatedFileId,
+  runMode,
+  selectedProject
+}) => {
+  const normalizedWorkerId = normalizeWorkerId(workerId);
+  let workerManifest;
+
+  try {
+    workerManifest = getWorkerManifest(normalizedWorkerId);
+  } catch (error) {
+    throw createApiError(400, 'VALIDATION_ERROR', `workerId must be one of ${Object.values(WORKER_IDS).join(' or ')}.`);
+  }
+
+  if (normalizedWorkerId === WORKER_IDS.MW_PR) {
+    return createMwJob({
+      prevalidatedFileId,
+      generationScope,
+      siteCodes,
+      prScope,
+      workerManifest,
+      normalizedWorkerId
+    });
+  }
+
+  return createRanJob({
+    bomPrevalidatedFileId,
+    epmsPrevalidatedFileId,
+    runMode,
+    selectedProject,
+    workerManifest,
+    normalizedWorkerId
+  });
+};
+
 const buildListFilter = async (query) => {
   const filter = {};
+
+  if (query.workerId) {
+    filter.workerId = normalizeWorkerId(query.workerId);
+  }
 
   if (query.workerType) {
     filter.workerType = query.workerType;
@@ -425,15 +670,14 @@ const getJobDetail = async (jobId) => {
       ...serializeJobSummary(job),
       startedAt: job.startedAt,
       cancelledAt: job.cancelledAt,
-      prScope: job.prScope || 'TSS',
+      prScope: getDisplayPrScope(job),
       assetVersions: job.assetVersions || {},
-      engineVersion: job.engineVersion,
       fileRetentionUntil: job.fileRetentionUntil,
       failureDiagnosis: getFailureDiagnosis(job)
     },
     workerState: workerStateService.getState(jobId),
     finalWorkerSummary: job.finalWorkerSummary,
-    outputs: filesWithAvailability.filter((file) => file.fileType !== 'uploaded_export'),
+    outputs: filesWithAvailability.filter((file) => !INPUT_FILE_TYPES.has(file.fileType)),
     files: filesWithAvailability,
     reviewRequiredItems,
     warnings,

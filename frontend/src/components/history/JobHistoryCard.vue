@@ -2,7 +2,7 @@
   <article class="job-card">
     <div class="job-card-header">
       <div>
-        <p class="eyebrow">{{ job.workerType || 'PR Worker' }}</p>
+        <p class="eyebrow">{{ workerEyebrow }}</p>
         <h2>{{ job.jobId }}</h2>
       </div>
       <div class="badge-row">
@@ -12,6 +12,9 @@
     </div>
 
     <div class="job-card-grid">
+      <span><strong>{{ workerLabel }}</strong><small>Worker</small></span>
+      <span><strong>{{ runModeLabel }}</strong><small>Run Mode</small></span>
+      <span><strong>{{ selectedProjectLabel }}</strong><small>Project</small></span>
       <span><strong>{{ generationScopeLabel(job.generationScope) }}</strong><small>Generation</small></span>
       <span><strong>{{ job.requestedSiteCount || 0 }}</strong><small>Requested</small></span>
       <span><strong>{{ job.matchedSiteCount || 0 }}</strong><small>Matched</small></span>
@@ -62,6 +65,18 @@ export default {
     job: { type: Object, required: true }
   },
   computed: {
+    workerLabel() {
+      return this.job.workerDisplayName || this.job.workerId || this.job.workerType || 'PR Worker';
+    },
+    workerEyebrow() {
+      return this.job.workerId ? `${this.workerLabel} • ${this.job.workerId}` : (this.job.workerType || 'PR Worker');
+    },
+    runModeLabel() {
+      return this.job.runMode || 'N/A';
+    },
+    selectedProjectLabel() {
+      return this.job.selectedProject || 'N/A';
+    },
     zipUrl() {
       return getZipDownloadUrl(this.job.jobId);
     },
