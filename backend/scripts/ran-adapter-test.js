@@ -1,6 +1,7 @@
-const assert = require('assert');
-const fs = require('fs');
-const path = require('path');
+  const assert = require('assert');
+  const fs = require('fs');
+  const path = require('path');
+  const config = require('../src/config/env');
 
 const repoRoot = path.resolve(__dirname, '..');
 const originalExistsSync = fs.existsSync;
@@ -137,6 +138,11 @@ const runTests = async () => {
   assert.strictEqual(stageCalls.length, 4, 'all four RAN stages should run');
   assert.strictEqual(stageCalls[0].command, undefined, 'runPythonStage should receive pythonExecutable field, not command');
   assert.strictEqual(stageCalls[0].pythonExecutable, 'C:/Python311/python.exe');
+  assert.strictEqual(
+    stageCalls[0].timeoutMs,
+    config.limits.jobTimeoutMinutes * 60 * 1000,
+    'RAN stages should default to the configured job timeout when no explicit timeout is provided'
+  );
   assert.strictEqual(stageCalls[2].scriptArgs.join(' '), '--selected-project Project Thanos');
   assert.strictEqual(stageCalls[2].env.SELECTED_PROJECT, 'Project Thanos');
   assert.strictEqual(stageCalls[0].cwd, 'C:/mock-ran-workspaces/RAN-JOB-001');
@@ -178,6 +184,11 @@ const runTests = async () => {
   assert.strictEqual(cancelledResult.pipelineResult.cancelled, true, 'cancelled child stage should surface as cancelled');
   assert.strictEqual(cancelledResult.pipelineResult.stageResults.length, 1, 'cancelled stage run should stop after the first stage result');
   assert.strictEqual(cancellationStageCalls.length, 1, 'cooperative cancellation should stop further stage launches');
+  assert.strictEqual(
+    cancellationStageCalls[0].timeoutMs,
+    config.limits.jobTimeoutMinutes * 60 * 1000,
+    'cancelled RAN stages should still inherit the default timeout'
+  );
   assert.strictEqual(cancelledResult.outputCollection.outputFileCount, 2, 'cancelled run still returns platform-owned ingested outputs when present');
 
   console.log('--- RAN Adapter Direct Coverage Tests Passed! ---');

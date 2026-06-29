@@ -250,6 +250,68 @@ const runTests = async () => {
           runMode: 'standard-pr',
           selectedProject: null,
           pipelineResult: {
+            cancelled: true,
+            stageResults: [{ stage: 'src/simple_ecc_export.py', cancelled: true }]
+          },
+          outputCollection: {
+            outputFileCount: 0,
+            validOutputFileCount: 0,
+            invalidOutputFileCount: 2,
+            failure: {
+              code: 'RAN_INVALID_ECC_OUTPUT',
+              message: 'RAN PR worker produced no valid ECC output files.',
+              details: {
+                fileTypes: [
+                  'ran_ecc_output',
+                  'ran_ecc_output_with_general_items'
+                ]
+              }
+            }
+          }
+        };
+      }
+    });
+
+    delete require.cache[require.resolve('../src/services/ranWorkerService')];
+    const cancelledZeroOutputService = require('../src/services/ranWorkerService');
+    workerStateService.createState(currentJobState.jobId);
+
+    const cancelledZeroOutputSummary = await cancelledZeroOutputService.runRanWorkerJob(currentJobState.jobId);
+    assert.strictEqual(cancelledZeroOutputSummary.status, 'cancelled');
+    assert.strictEqual(currentJobState.status, 'cancelled');
+    assert.strictEqual(reportCalls.length, 1, 'cancelled zero-output runs should still generate final reports');
+    assert.strictEqual(reportCalls[0].options.includeZip, false, 'cancelled zero-output runs must not allow zip packaging');
+    assert.strictEqual(savedSummaries.length, 1, 'cancelled zero-output runs should persist a final summary');
+    assert.strictEqual(currentJobState.error, null, 'cancelled zero-output runs should not persist a failure error');
+    assert(publishedEvents.some((entry) => entry.event === 'JOB_CANCELLED'), 'cancelled zero-output runs should publish JOB_CANCELLED');
+    assert.strictEqual(workerStateService.getState(currentJobState.jobId).phase, 'CANCELLED');
+
+    metadataUpdates.length = 0;
+    publishedEvents.length = 0;
+    reportCalls.length = 0;
+    savedSummaries.length = 0;
+    currentJobState.status = 'queued';
+    currentJobState.outputFileCount = 0;
+    currentJobState.finalWorkerSummary = '';
+    currentJobState.error = null;
+
+    setCachedModule(path.join(repoRoot, 'src/workers/adapters/ranPrAdapter.js'), {
+      run: async (_jobId, options = {}) => {
+        if (options.onWorkspacePreparing) {
+          await options.onWorkspacePreparing('Preparing isolated RAN workspace.');
+        }
+        if (options.onOutputsCollecting) {
+          await options.onOutputsCollecting('Collecting approved RAN outputs.');
+        }
+        if (options.onOutputsCollected) {
+          await options.onOutputsCollected('Approved RAN outputs collected.');
+        }
+
+        return {
+          workerId: 'ran-pr',
+          runMode: 'standard-pr',
+          selectedProject: null,
+          pipelineResult: {
             cancelled: false,
             stageResults: [{ stage: 'src/simple_ecc_export.py' }]
           },

@@ -152,10 +152,6 @@ const runRanWorkerJob = async (jobId) => {
       outputFileCount: result.outputCollection.outputFileCount
     });
 
-    if (result.outputCollection.failure) {
-      return finalizeFailedOutputValidation(jobId, result.outputCollection.failure, summary);
-    }
-
     if (result.pipelineResult.cancelled) {
       const finalStatus = summary.outputFileCount > 0 ? 'cancelled_with_partial_result' : 'cancelled';
       await setJobStatus(jobId, finalStatus, {
@@ -178,6 +174,10 @@ const runRanWorkerJob = async (jobId) => {
         summary,
         result
       };
+    }
+
+    if (result.outputCollection.failure) {
+      return finalizeFailedOutputValidation(jobId, result.outputCollection.failure, summary);
     }
 
     const finalStatus = determineFinalStatus(summary);

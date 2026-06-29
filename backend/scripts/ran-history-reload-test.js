@@ -8,6 +8,7 @@ process.env.LLM_ENABLED = 'false';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'qa-integration-jwt-secret';
 process.env.ADMIN_DEFAULT_USERNAME = process.env.ADMIN_DEFAULT_USERNAME || 'qa-admin';
 process.env.ADMIN_DEFAULT_PASSWORD = process.env.ADMIN_DEFAULT_PASSWORD || 'qa-admin-password';
+require('./helpers/ensure-ran-python').resolvePythonExecutable();
 
 const app = require('../src/app');
 const { checkFirebaseConnection } = require('../src/db/firebase');

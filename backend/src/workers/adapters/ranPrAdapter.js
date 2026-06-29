@@ -11,6 +11,7 @@ const { prepareRanWorkspace } = require('../ranWorkspaceService');
 const { WORKER_IDS } = require('../workerTypes');
 const { assertPathInsideRoot } = require('../../utils/pathUtils');
 const sanitizeStageLabel = (relativeScriptPath) => path.basename(relativeScriptPath || '');
+const config = require('../../config/env');
 
 const RAN_PIPELINE_STAGES = [
   'src/simple_normalize.py',
@@ -23,6 +24,12 @@ const RAN_INPUT_FILE_TYPES = {
   BOM: 'ran_bom_upload',
   EPMS: 'ran_epms_upload'
 };
+
+const getDefaultStageTimeoutMs = () => config.limits.jobTimeoutMinutes * 60 * 1000;
+
+const normalizeStageTimeoutMs = (timeoutMs) => (
+  Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : getDefaultStageTimeoutMs()
+);
 
 const assertJobExists = async (jobId) => {
   const job = await Job.findOne({ jobId });
@@ -106,6 +113,7 @@ const runPipelineStages = async ({
   const pythonExecutable = getExplicitPythonExecutable();
   const stageResults = [];
   const env = buildPipelineEnv({ runMode, selectedProject });
+  const effectiveTimeoutMs = normalizeStageTimeoutMs(timeoutMs);
 
   for (const relativeScriptPath of RAN_PIPELINE_STAGES) {
     if (isCancellationRequested && isCancellationRequested()) {
@@ -129,7 +137,7 @@ const runPipelineStages = async ({
       scriptPath: relativeScriptPath,
       cwd: workspaceRoot,
       env,
-      timeoutMs,
+      timeoutMs: effectiveTimeoutMs,
       scriptArgs: selectedProject && relativeScriptPath.endsWith('simple_pr_generator.py')
         ? ['--selected-project', selectedProject]
         : [],
@@ -246,5 +254,6 @@ module.exports = {
   persistJobMetadata,
   run,
   sanitizeStageLabel,
-  runPipelineStages
+  runPipelineStages,
+  normalizeStageTimeoutMs
 };
