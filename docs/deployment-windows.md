@@ -1,296 +1,254 @@
-# Windows Deployment Guide
+# Windows Local Development and Controlled Deployment Guide
 
-This guide deploys the AI Worker Platform MVP on a Windows 11 Pro internal machine using Docker Desktop and Docker Compose.
+**Status:** Current operating guide  
+**Baseline:** `main` at and after `29cbd382c92222b4f555d1926f106e1c66837404`
 
-## 1. Prerequisites
+## 1. Scope
 
-- Windows 11 Pro with virtualization enabled.
-- Docker Desktop installed and running.
-- Git installed.
-- Network access to the internal MaaS/Qwen endpoint if `LLM_ENABLED=true`.
-- Access to a valid MaaS/Qwen API key if LLM wording and Re-Ask should use the real provider.
+This guide covers the supported Windows developer setup for both MW PR Worker and RAN PR Worker.
 
-## 2. Clone the Repository
+The recommended baseline is **local Node services plus one repository-root Python virtual environment**. Docker Compose remains available for controlled internal deployment, but it must be UAT-validated for the exact worker modes, persistence configuration and network environment before operational use.
+
+## 2. Prerequisites
+
+- Windows 11 or equivalent Windows development host
+- Git
+- Node.js 20 or later
+- Python 3
+- access to the repository and both submodules
+- optional internal LLM endpoint and credentials only when LLM features are enabled
+
+## 3. Clone and Initialize Worker Engines
+
+New clone:
 
 ```powershell
-git clone https://github.com/DemonTweeks/ai-worker-platform.git
+git clone --recurse-submodules https://github.com/DemonTweeks/ai-worker-platform.git
 cd ai-worker-platform
+git submodule update --init --recursive
 ```
 
-## 3. Configure Environment
+Existing clone:
 
-Create a local `.env` file from the safe sample:
+```powershell
+git fetch origin --prune
+git switch main
+git pull --ff-only origin main
+git submodule sync --recursive
+git submodule update --init --recursive
+git status --short
+git submodule status
+```
+
+Confirm both engine folders exist:
+
+```text
+skills/create-pr-cd
+skills/create-pr-cd-ran
+```
+
+The RAN submodule must resolve to `239910e2816153339a94881597bbb95355059741` for the approved v1.0.0 baseline.
+
+## 4. Local Environment Configuration
+
+Create local-only configuration files:
 
 ```powershell
 Copy-Item .env.example .env
+@"
+VITE_API_BASE_URL=http://127.0.0.1:8000
+VITE_WS_URL=ws://127.0.0.1:8000/ws
+"@ | Set-Content frontend\.env.local
 ```
 
-Edit `.env` locally. Do not commit `.env`.
+Do not commit `.env`, `frontend/.env.local`, runtime storage, generated workbooks, ZIP files, Firebase exports or worker workspaces.
 
-Required values to review:
+Review at minimum:
 
-- `PORT`
-- `BACKEND_HOST_PORT`
-- `FRONTEND_HOST_PORT`
-- `MONGO_URI`
-- `STORAGE_ROOT`
-- `CREATE_PR_CD_ROOT`
-- `LLM_ENABLED`
-- `LLM_PROVIDER`
-- `LLM_BASE_URL`
-- `LLM_API_KEY`
-- `LLM_MODEL`
-- `LLM_TIMEOUT_MS`
-- `LLM_MAX_RETRIES`
-- `MAX_UPLOAD_SIZE_MB`
-- `MAX_ROW_COUNT`
-- `MAX_SITE_CODES`
-- `MAX_CONCURRENT_JOBS`
-- `JOB_TIMEOUT_MINUTES`
-- `FILE_RETENTION_DAYS`
-- `MAX_OUTPUT_FILES`
-- `WS_HEARTBEAT_INTERVAL_MS`
-- `WS_MAX_PAYLOAD_BYTES`
-- `ADMIN_DEFAULT_USERNAME`
-- `ADMIN_DEFAULT_PASSWORD`
-- `JWT_SECRET`
-- `JWT_EXPIRES_IN`
-
-For Docker Compose, `MONGO_URI`, `STORAGE_ROOT`, and `CREATE_PR_CD_ROOT` are set inside `docker-compose.yml` so containers use Docker networking and mounted paths. Keep the sample values useful for local non-Docker development.
-
-LLM notes:
-
-- Put the real MaaS/Qwen API key only in local `.env`.
-- Never commit `.env`.
-- If `LLM_ENABLED=false`, the backend uses deterministic fallback wording.
-- The frontend never receives the LLM API key.
-
-## 4. Start the Stack
-
-Build and start all services:
-
-```powershell
-docker compose up -d --build
+```text
+FIREBASE_DB_URL
+FIREBASE_DB_MOCK
+STORAGE_ROOT
+CREATE_PR_CD_ROOT
+PYTHON_EXECUTABLE
+MAX_CONCURRENT_JOBS
+JOB_TIMEOUT_MINUTES
+MAX_OUTPUT_FILES
+FILE_RETENTION_DAYS
+ADMIN_DEFAULT_USERNAME
+ADMIN_DEFAULT_PASSWORD
+JWT_SECRET
+LLM_ENABLED and LLM_* values when used
 ```
 
-Services:
+Use strong non-default values for admin credentials and `JWT_SECRET` on any shared machine.
 
-- `frontend` on `http://localhost:3000` by default.
-- `backend` on `http://localhost:8000` by default.
-- `mongodb` on the internal Docker network only.
+## 5. Deterministic Python Runtime
 
-Use `FRONTEND_HOST_PORT` and `BACKEND_HOST_PORT` in `.env` to change host ports.
-
-## 5. Verify Deployment
-
-Check containers:
+Create one repository-root virtual environment and use it for platform worker execution:
 
 ```powershell
+py -3 -m venv .venv
+$python = (Resolve-Path .\.venv\Scripts\python.exe).Path
+& $python -m pip install --upgrade pip
+& $python -m pip install -r requirements-worker.txt
+& $python -m pip install -r skills\create-pr-cd\requirements.txt
+Add-Content .env ('PYTHON_EXECUTABLE="' + $python + '"')
+```
+
+The application resolves Python in this order:
+
+1. `PYTHON_EXECUTABLE`, when it resolves safely.
+2. repository-root `.venv`.
+3. a safely resolved `python` or `python3` PATH fallback.
+
+The process runner uses `shell: false`. Do not rely on an unresolved bare executable command. A quoted Windows interpreter path with spaces is supported in `.env`.
+
+## 6. Install and Run the Platform
+
+```powershell
+npm.cmd --prefix backend ci
+npm.cmd --prefix frontend ci
+
+npm.cmd --prefix backend run dev
+npm.cmd --prefix frontend run dev
+```
+
+Open:
+
+```text
+Frontend: http://localhost:3000
+Backend health: http://localhost:8000/health
+```
+
+## 7. Local Verification
+
+Baseline automated checks:
+
+```powershell
+npm.cmd --prefix backend test
+npm.cmd --prefix frontend test
+npm.cmd --prefix frontend run build
+npm.cmd --prefix backend run test:preflight
+git diff --check
+```
+
+RAN-sensitive checks after changes to RAN behavior, shared lifecycle services, runtime resolution, cancellation or outputs:
+
+```powershell
+npm.cmd --prefix backend run test:ran-output-validation
+npm.cmd --prefix backend run test:ran-placeholder-runtime
+npm.cmd --prefix backend run test:ran-golden
+npm.cmd --prefix backend run test:ran-history-reload
+npm.cmd --prefix backend run test:ran-concurrency
+npm.cmd --prefix backend run test:ran-invalid-safe-errors
+npm.cmd --prefix backend run test:ran-worker-service
+npm.cmd --prefix backend run test:ran-routes
+```
+
+Run Firebase-backed tests that share a test backend serially.
+
+## 8. Manual Worker UAT
+
+### MW smoke
+
+- create and complete an existing MW TI smoke run using the approved test scope
+- verify progress, Job Detail, output downloads and ZIP
+
+### RAN Standard PR
+
+- upload a valid RAN BOM and EPMS workbook
+- select Standard PR
+- verify successful completion and usable ECC ZIP output
+
+### RAN General Item PR
+
+- upload valid RAN BOM and EPMS workbooks
+- select General Item mode and a catalog-provided project only
+- verify General Item output and ZIP
+
+### RAN invalid-input safeguard
+
+- upload EPMS workbook into BOM slot
+- confirm it is blocked before queueing with a safe RAN BOM structure failure
+- confirm no completed job, placeholder ECC workbook or successful ZIP is created
+
+## 9. Docker Compose: Controlled Internal Deployment Only
+
+The repository includes `docker-compose.yml` with `mongodb`, `backend` and `frontend` services. The backend image installs Python 3, `pandas` and `openpyxl`, and mounts `./skills` read-only.
+
+```powershell
+docker compose config
+docker compose build
+docker compose up -d
 docker compose ps
 ```
 
-Check backend health:
+Do not treat Compose startup alone as production approval. Before using it operationally, validate on the target host:
+
+- both MW and RAN workers can run with the mounted submodules
+- RAN workspaces are isolated and writable under platform storage
+- Python resolution and required packages are correct inside the backend container
+- Firebase/job history behavior matches the intended persistence configuration
+- ZIP/download and WebSocket behavior work through the actual frontend route
+- credentials and `.env` are protected
+
+### Important persistence note
+
+The current platform job/history model is Firebase-backed. Docker Compose still provisions a MongoDB service as legacy deployment infrastructure. Do not assume the MongoDB volume is the authoritative job-history backup without verifying the active persistence configuration in the deployed code and environment.
+
+## 10. Update Procedure
+
+For a controlled upgrade:
 
 ```powershell
-Invoke-RestMethod http://localhost:8000/health | ConvertTo-Json -Depth 10
+git fetch origin --prune
+git switch main
+git pull --ff-only origin main
+git submodule sync --recursive
+git submodule update --init --recursive
+npm.cmd --prefix backend ci
+npm.cmd --prefix frontend ci
 ```
 
-Open the frontend:
+Then run the verification relevant to the changed scope before restarting services.
 
-```text
-http://localhost:3000
-```
+Never update the RAN submodule pointer independently of an approved platform compatibility change.
 
-For internal LAN access, use the Windows host IP:
+## 11. Troubleshooting
 
-```text
-http://10.x.x.x:3000
-```
+### Missing Python dependency
 
-Admin portal:
+- verify `PYTHON_EXECUTABLE` points to the intended interpreter
+- run the preflight test
+- install `requirements-worker.txt` into that interpreter
+- install MW engine requirements when MW execution requires them
 
-```text
-http://localhost:3000/admin/login
-```
+### RAN job cannot start
 
-Smoke checks:
+- verify `skills/create-pr-cd-ran` exists and is pinned to the approved SHA
+- run `git submodule update --init --recursive`
+- verify BOM/EPMS files were placed in the correct fields
+- run the RAN prevalidation and output-validation regression commands
 
-- Normal user portal loads.
-- `/health` shows backend, MongoDB, storage, queue, WebSocket, cleanup, and LLM status.
-- Admin login succeeds with configured admin credentials.
-- Upload/prevalidation accepts a valid iEPMS Excel file.
-- WebSocket progress connects when a job is running.
+### RAN output is rejected
 
-## 6. Volumes and Runtime Data
+This is an intentional safety control when ECC files are empty, header-only, placeholder-shaped or lack meaningful rows. Check the safe failure diagnosis and inputs; do not manually mark the job as completed.
 
-Docker Compose creates persistent volumes:
+### Job cancelled but shows failure
 
-- `mongo-data` for MongoDB.
-- `storage` for uploaded files, generated outputs, reports, ZIP files, and admin assets.
+Cancellation precedence is regression-sensitive. Re-run the cancellation-related RAN tests before changing lifecycle code.
 
-The PR Worker skill is mounted read-only from:
+### Frontend cannot reach backend
 
-```text
-./skills
-```
+- verify `VITE_API_BASE_URL` and `VITE_WS_URL` in `frontend/.env.local`
+- verify backend health at `http://localhost:8000/health`
+- confirm the frontend build/dev server was restarted after environment changes
 
-The backend reads the skill from:
+## 12. Security and Cleanup Rules
 
-```text
-/app/skills/create-pr-cd
-```
-
-The backend writes runtime files under:
-
-```text
-/app/storage
-```
-
-## 7. Backup
-
-Back up before upgrades or machine maintenance.
-
-MongoDB dump:
-
-```powershell
-docker compose exec mongodb mongodump --archive=/tmp/ai-worker-platform.archive
-docker compose cp mongodb:/tmp/ai-worker-platform.archive .\backup\ai-worker-platform.archive
-```
-
-Storage volume archive:
-
-```powershell
-docker run --rm -v ai-worker-platform_storage:/data -v ${PWD}\backup:/backup alpine tar czf /backup/storage.tgz -C /data .
-```
-
-Also keep a copy of:
-
-- `.env` from the deployment machine.
-- Any admin-uploaded source asset files if separately managed.
-- The Git commit hash used for deployment.
-
-Do not publish backups publicly. They may contain input Excel files, generated outputs, and operational metadata.
-
-## 8. Restore Overview
-
-Stop the stack:
-
-```powershell
-docker compose down
-```
-
-Restore storage:
-
-```powershell
-docker run --rm -v ai-worker-platform_storage:/data -v ${PWD}\backup:/backup alpine sh -c "rm -rf /data/* && tar xzf /backup/storage.tgz -C /data"
-```
-
-Restore MongoDB:
-
-```powershell
-docker compose up -d mongodb
-docker compose cp .\backup\ai-worker-platform.archive mongodb:/tmp/ai-worker-platform.archive
-docker compose exec mongodb mongorestore --archive=/tmp/ai-worker-platform.archive --drop
-```
-
-Start the full stack:
-
-```powershell
-docker compose up -d
-```
-
-## 9. Stop, Restart, and Update
-
-Stop containers without removing volumes:
-
-```powershell
-docker compose stop
-```
-
-Restart:
-
-```powershell
-docker compose restart
-```
-
-Stop and remove containers while keeping named volumes:
-
-```powershell
-docker compose down
-```
-
-Update deployment:
-
-```powershell
-git pull
-docker compose up -d --build
-```
-
-## 10. Troubleshooting
-
-Backend cannot connect to MongoDB:
-
-- Check `docker compose ps`.
-- Check backend logs with `docker compose logs backend`.
-- Confirm Compose sets `MONGO_URI=mongodb://mongodb:27017/ai-worker-platform`.
-
-Storage not writable:
-
-- Check `/health` storage status.
-- Confirm the `storage` volume is mounted to `/app/storage`.
-- Check Docker Desktop file/volume permissions.
-
-create-pr-cd not found:
-
-- Confirm `./skills/create-pr-cd/scripts/generate_tss_pr_ecc.py` exists.
-- Confirm backend has `CREATE_PR_CD_ROOT=/app/skills/create-pr-cd`.
-- Check backend logs for path validation errors.
-
-Python dependency missing:
-
-- Rebuild backend with `docker compose build backend`.
-- Backend image installs Python 3, pandas, and openpyxl for the existing PR Worker script.
-
-Frontend cannot reach backend:
-
-- Open `http://localhost:3000/health`; nginx proxies it to the backend.
-- Confirm backend is healthy.
-- Check frontend container logs.
-
-WebSocket connection failed:
-
-- Confirm `/ws` is proxied by nginx.
-- Check backend WebSocket status in `/health`.
-- Check browser network tools for failed `ws://.../ws` connection.
-
-LLM configured but degraded:
-
-- Confirm `LLM_ENABLED`, `LLM_BASE_URL`, `LLM_MODEL`, and `LLM_API_KEY` in local `.env`.
-- Confirm the Windows host can reach the internal MaaS/Qwen endpoint.
-- Do not paste API keys into logs, screenshots, or tickets.
-
-Admin login issue:
-
-- Confirm `ADMIN_DEFAULT_USERNAME`, `ADMIN_DEFAULT_PASSWORD`, and `JWT_SECRET` are configured.
-- Check backend logs for sanitized auth errors.
-- Rotate `JWT_SECRET` if credentials may have leaked.
-
-## 11. Security Notes
-
-- Keep the deployment on the internal network.
-- Do not expose MongoDB publicly.
-- Do not expose frontend/backend ports to the internet without firewall and security review.
-- Use a strong `JWT_SECRET`.
-- Change `ADMIN_DEFAULT_PASSWORD` before use.
-- Protect `.env` and backups.
-- Do not put API keys in frontend files.
-- Rotate credentials when operators change.
-
-## 12. Known Limitations
-
-- This is a local single-machine MVP deployment.
-- It is not high availability.
-- It is not a cloud production architecture.
-- MongoDB is deployed without authentication for the internal MVP Docker network.
-- Cleanup service is manual/testable; no automatic cleanup scheduler is enabled.
-- Frontend environment values are build-time values, but the Docker image is configured to use nginx same-origin proxying by default.
+- Never commit `.env`, `.env.local`, API keys, passwords, tokens or Firebase exports.
+- Keep generated Excel output, ZIP files and `storage/ran-workspaces/` untracked.
+- Do not expose backend or frontend directly to the internet without network, authentication and reverse-proxy review.
+- Rotate `JWT_SECRET`, admin passwords and any leaked key immediately.
+- Keep the RAN engine submodule read-only at runtime.
