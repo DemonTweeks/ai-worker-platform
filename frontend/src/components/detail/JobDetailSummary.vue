@@ -21,6 +21,8 @@
       <span><small>Started</small><strong>{{ formatDateTime(job.startedAt) }}</strong></span>
       <span><small>Completed</small><strong>{{ formatDateTime(job.completedAt) }}</strong></span>
       <span><small>Cancelled</small><strong>{{ formatDateTime(job.cancelledAt) }}</strong></span>
+      <span v-if="job.cancellation"><small>Cancelled By</small><strong>{{ job.cancellation.requestedBy || 'User' }}</strong></span>
+      <span v-if="job.cancellation"><small>Reason</small><strong>{{ job.cancellation.reasonText || job.cancellation.reasonLabel }}</strong></span>
     </div>
     <p v-if="zeroOutputNotice" class="completion-message" :class="zeroOutputTone">{{ zeroOutputNotice }}</p>
     <p v-if="job.error && job.error.message" class="error-text">{{ job.error.message }}</p>

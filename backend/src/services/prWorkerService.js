@@ -12,6 +12,7 @@ const { determineFinalStatus, getNoEccExplanation } = require('./zeroOutputPolic
 const { buildAndSaveSummary } = require('./summaryBuilder');
 const { saveFinalSummary } = require('./finalSummaryService');
 const { JOB_EVENTS, publishJobEvent } = require('../websocket/eventPublisher');
+const { RUNNING_JOB_STATUSES, appendStatusEvent } = require('./jobControlService');
 
 const statusByPhase = {
   VALIDATION_STARTED: 'validating',
@@ -21,7 +22,21 @@ const statusByPhase = {
 };
 
 const setJobStatus = async (jobId, status, extra = {}) => {
-  await Job.updateOne({ jobId }, { $set: { status, ...extra } });
+  const currentJob = await Job.findOne({ jobId });
+
+  if (!currentJob) {
+    return null;
+  }
+
+  let resolvedStatus = status;
+  if (['cancelled', 'cancelled_with_partial_result'].includes(currentJob.status)) {
+    resolvedStatus = currentJob.status;
+  } else if (currentJob.status === 'cancelling' && RUNNING_JOB_STATUSES.includes(status)) {
+    resolvedStatus = 'cancelling';
+  }
+
+  await Job.updateOne({ jobId }, { $set: { status: resolvedStatus, ...extra } });
+  return resolvedStatus;
 };
 
 const failJob = async (jobId, error) => {
@@ -133,8 +148,58 @@ const setPhaseAndStatus = async (jobId, phase, message) => {
   });
 };
 
+const buildCancellationSummary = async (jobId, filteringResult = null, outputCollection = null) => {
+  if (filteringResult && outputCollection) {
+    return buildAndSaveSummary({ jobId, filteringResult, outputCollection });
+  }
+
+  const job = await Job.findOne({ jobId });
+  return {
+    requestedSiteCount: job ? job.requestedSiteCount || 0 : 0,
+    matchedSiteCount: job ? job.matchedSiteCount || 0 : 0,
+    unmatchedSiteCount: job ? job.unmatchedSiteCount || 0 : 0,
+    outputFileCount: outputCollection ? outputCollection.outputFileCount || 0 : 0,
+    reviewRequiredCount: job ? job.reviewRequiredCount || 0 : 0,
+    warningCount: job ? job.warningCount || 0 : 0
+  };
+};
+
+const finalizeCancelledJob = async (jobId, summary, { includeZip, message }) => {
+  const finalStatus = summary.outputFileCount > 0 ? 'cancelled_with_partial_result' : 'cancelled';
+  const cancelledAt = new Date();
+  const existingJob = await Job.findOne({ jobId });
+
+  await setJobStatus(jobId, finalStatus, {
+    cancelledAt,
+    completedAt: cancelledAt,
+    cancellation: {
+      ...(existingJob ? existingJob.cancellation : {}),
+      completedAt: cancelledAt.toISOString(),
+      finalStatus
+    },
+    statusEvents: appendStatusEvent(existingJob, 'cancellation_completed', {
+      createdAt: cancelledAt.toISOString(),
+      finalStatus
+    }),
+    ...summary
+  });
+  const finalWorkerSummary = await saveFinalSummary({ jobId, summary, statusOverride: finalStatus });
+  await setJobStatus(jobId, finalStatus, { finalWorkerSummary });
+  await generateReportsAndPackage(jobId, { includeZip });
+  workerStateService.setCancelled(jobId, message);
+  await publishJobEvent(jobId, JOB_EVENTS.JOB_CANCELLED, {
+    phase: 'CANCELLED',
+    status: finalStatus,
+    message,
+    summary
+  });
+
+  return finalStatus;
+};
+
 const runPrWorkerJob = async (jobId) => {
   workerStateService.getOrCreateState(jobId);
+  let filteringResult;
 
   try {
     await setJobStatus(jobId, 'validating', { startedAt: new Date() });
@@ -164,7 +229,7 @@ const runPrWorkerJob = async (jobId) => {
     });
 
     await setPhaseAndStatus(jobId, 'FILTERING_STARTED', 'Filtering requested site rows.');
-    const filteringResult = await filterSites({
+    filteringResult = await filterSites({
       jobId,
       parsedWorkbook,
       generationScope: request.generationScope,
@@ -191,11 +256,11 @@ const runPrWorkerJob = async (jobId) => {
     });
 
     if (workerStateService.isCancellationRequested(jobId)) {
-      await setJobStatus(jobId, 'cancelled', { cancelledAt: new Date() });
-      workerStateService.setCancelled(jobId);
-      await publishJobEvent(jobId, JOB_EVENTS.JOB_CANCELLED, {
-        phase: 'CANCELLED',
-        status: 'cancelled',
+      const cancellationSummary = await buildCancellationSummary(jobId, filteringResult, {
+        outputFileCount: 0
+      });
+      await finalizeCancelledJob(jobId, cancellationSummary, {
+        includeZip: false,
         message: 'Job cancelled.'
       });
       return;
@@ -218,18 +283,9 @@ const runPrWorkerJob = async (jobId) => {
       const partialCollection = await collectOutputs(jobId);
       await ingestTiResultFiles(jobId);
       const partialSummary = await buildAndSaveSummary({ jobId, filteringResult, outputCollection: partialCollection });
-      const partialStatus = partialCollection.outputFileCount > 0 ? 'cancelled_with_partial_result' : 'cancelled';
-      await setJobStatus(jobId, partialStatus, {
-        cancelledAt: new Date()
-      });
-      workerStateService.setCancelled(jobId);
-      await saveFinalSummary({ jobId, summary: partialSummary });
-      await generateReportsAndPackage(jobId);
-      await publishJobEvent(jobId, JOB_EVENTS.JOB_CANCELLED, {
-        phase: 'CANCELLED',
-        status: partialStatus,
-        message: 'Job cancelled.',
-        summary: partialSummary
+      await finalizeCancelledJob(jobId, partialSummary, {
+        includeZip: partialCollection.outputFileCount > 0,
+        message: 'Job cancelled.'
       });
       return;
     }
@@ -273,6 +329,13 @@ const runPrWorkerJob = async (jobId) => {
     });
 
     const summary = await buildAndSaveSummary({ jobId, filteringResult, outputCollection });
+    if (workerStateService.isCancellationRequested(jobId)) {
+      await finalizeCancelledJob(jobId, summary, {
+        includeZip: summary.outputFileCount > 0,
+        message: 'Job cancelled.'
+      });
+      return;
+    }
     const noEccExplanation = getNoEccExplanation(summary);
     const finalStatus = determineFinalStatus(summary);
 
@@ -300,6 +363,15 @@ const runPrWorkerJob = async (jobId) => {
       summary
     });
   } catch (error) {
+    if (workerStateService.isCancellationRequested(jobId)) {
+      const partialCollection = await collectOutputs(jobId).catch(() => ({ outputFileCount: 0 }));
+      const cancellationSummary = await buildCancellationSummary(jobId, filteringResult, partialCollection);
+      await finalizeCancelledJob(jobId, cancellationSummary, {
+        includeZip: (partialCollection.outputFileCount || 0) > 0,
+        message: 'Job cancelled.'
+      });
+      return;
+    }
     await failJob(jobId, error);
   }
 };

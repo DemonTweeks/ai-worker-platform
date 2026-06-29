@@ -11,6 +11,14 @@ const asyncHandler = (handler) => (req, res, next) => (
   Promise.resolve(handler(req, res, next)).catch(next)
 );
 
+const getRequestedBy = (req) => (
+  req.adminUser?.username
+  || req.user?.username
+  || req.headers['x-user-name']
+  || req.headers['x-forwarded-user']
+  || null
+);
+
 router.post('/prevalidate', upload.single('file'), asyncHandler(async (req, res) => {
   await assertNoActiveScopedJob({
     workerId: req.body ? req.body.workerId : undefined,
@@ -44,7 +52,9 @@ router.get('/:jobId', asyncHandler(async (req, res) => {
 }));
 
 router.post('/:jobId/cancel', asyncHandler(async (req, res) => {
-  const result = await jobService.cancelJob(req.params.jobId);
+  const result = await jobService.cancelJob(req.params.jobId, req.body || {}, {
+    requestedBy: getRequestedBy(req)
+  });
   res.json(result);
 }));
 

@@ -30,6 +30,7 @@
       <small>Created: {{ formatDateTime(job.createdAt) }}</small>
       <small v-if="job.completedAt">Completed: {{ formatDateTime(job.completedAt) }}</small>
       <small v-else>Completion: In progress</small>
+      <small v-if="job.cancellation">Cancelled by user: {{ job.cancellation.reasonText || job.cancellation.reasonLabel }}</small>
     </div>
 
     <div class="card-actions">

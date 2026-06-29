@@ -28,7 +28,7 @@
           <strong>Cancelled</strong>
           <span>{{ formatDateTime(job.cancelledAt) }}</span>
         </div>
-        <p>Job cancellation was recorded.</p>
+        <p>Job cancellation was recorded{{ job.cancellation ? `: ${job.cancellation.reasonText || job.cancellation.reasonLabel}.` : '.' }}</p>
       </li>
       <li v-if="liveEvents.length > 0">
         <div class="timeline-title">

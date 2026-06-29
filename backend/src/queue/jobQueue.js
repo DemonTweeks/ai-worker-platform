@@ -74,29 +74,22 @@ const cancelQueuedJob = async (jobId) => {
   if (queuedIndex !== -1) {
     queuedJobIds.splice(queuedIndex, 1);
     knownJobIds.delete(jobId);
-    await Job.updateOne({ jobId }, {
-      $set: {
-        status: 'cancelled',
-        cancelledAt: new Date(),
-        finalWorkerSummary: 'Task cancelled. Any completed partial output files have been preserved where available.'
-      }
-    });
     workerStateService.setCancelled(jobId, 'Queued job cancelled before execution.');
-    await publishJobEvent(jobId, JOB_EVENTS.JOB_CANCELLED, {
-      phase: 'CANCELLED',
-      status: 'cancelled',
-      message: 'Queued job cancelled before execution.'
-    });
-    return { cancelled: true, running: false };
+    return { cancelled: true, running: false, alreadyRequested: false };
   }
 
   if (activeJobIds.has(jobId)) {
+    if (workerStateService.isCancellationRequested(jobId)) {
+      await publishHeartbeat(jobId);
+      return { cancelled: false, running: true, alreadyRequested: true };
+    }
+
     workerStateService.requestCancellation(jobId);
     await publishHeartbeat(jobId);
-    return { cancelled: false, running: true };
+    return { cancelled: false, running: true, alreadyRequested: false };
   }
 
-  return { cancelled: false, running: false };
+  return { cancelled: false, running: false, alreadyRequested: false };
 };
 
 module.exports = {

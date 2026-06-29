@@ -334,6 +334,71 @@ const runTests = async () => {
     assert.strictEqual(detailResult.job.runMode, 'general-item');
     assert.strictEqual(detailResult.job.selectedProject, 'Project Thanos');
 
+    const queuedCancellationJob = {
+      jobId: 'MW-CANCEL-QUEUED',
+      workerId: 'mw-pr',
+      workerType: 'pr-worker',
+      status: 'queued',
+      createdAt: '2026-06-26T00:00:00.000Z',
+      requestedSiteCount: 0,
+      matchedSiteCount: 0,
+      unmatchedSiteCount: 0,
+      outputFileCount: 0,
+      reviewRequiredCount: 0,
+      warningCount: 0,
+      finalWorkerSummary: '',
+      save: async function save() { return this; }
+    };
+    Job.findOne = async ({ jobId }) => (jobId === queuedCancellationJob.jobId ? queuedCancellationJob : null);
+    jobQueue.cancelQueuedJob = async () => ({ cancelled: true, running: false, alreadyRequested: false });
+
+    const queuedCancellationResult = await jobService.cancelJob(queuedCancellationJob.jobId, {
+      reasonCode: 'wrong_inputs',
+      reasonText: 'BOM and EPMS were swapped'
+    }, {
+      requestedBy: 'qa-user'
+    });
+    assert.strictEqual(queuedCancellationResult.job.status, 'cancelled');
+    assert.strictEqual(queuedCancellationJob.cancellation.requestedBy, 'qa-user');
+    assert.strictEqual(queuedCancellationJob.cancellation.reasonCode, 'wrong_inputs');
+    assert.strictEqual(queuedCancellationJob.cancellation.finalStatus, 'cancelled');
+    assert.strictEqual(queuedCancellationJob.statusEvents.length, 2, 'queued cancellation should record requested and completed events once');
+
+    const runningCancellationJob = {
+      jobId: 'RAN-CANCEL-RUNNING',
+      workerId: 'ran-pr',
+      workerType: 'pr-worker',
+      status: 'generating',
+      createdAt: '2026-06-26T00:00:00.000Z',
+      requestedSiteCount: 0,
+      matchedSiteCount: 0,
+      unmatchedSiteCount: 0,
+      outputFileCount: 0,
+      reviewRequiredCount: 0,
+      warningCount: 0,
+      finalWorkerSummary: '',
+      save: async function save() { return this; }
+    };
+    Job.findOne = async ({ jobId }) => (jobId === runningCancellationJob.jobId ? runningCancellationJob : null);
+    jobQueue.cancelQueuedJob = async () => ({ cancelled: false, running: true, alreadyRequested: false });
+
+    const runningCancellationResult = await jobService.cancelJob(runningCancellationJob.jobId, {
+      reasonCode: 'long_running'
+    }, {
+      requestedBy: 'qa-user'
+    });
+    assert.strictEqual(runningCancellationResult.job.status, 'cancelling');
+    assert.strictEqual(runningCancellationJob.status, 'cancelling');
+    assert.strictEqual(runningCancellationJob.statusEvents.length, 1, 'running cancellation should not duplicate completion events before terminal state');
+
+    const repeatedCancellationResult = await jobService.cancelJob(runningCancellationJob.jobId, {
+      reasonCode: 'long_running'
+    }, {
+      requestedBy: 'qa-user'
+    });
+    assert.strictEqual(repeatedCancellationResult.job.status, 'cancelling');
+    assert.strictEqual(runningCancellationJob.statusEvents.length, 1, 'repeated cancellation requests should be idempotent');
+
     console.log('--- Job Service Worker Payload Tests Passed! ---');
   } finally {
     storageService.createJobFolders = originalCreateJobFolders;

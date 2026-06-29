@@ -6,6 +6,7 @@ export const STATUS_LABELS = {
   generating: 'Generating',
   exporting: 'Exporting',
   waiting_for_user_input: 'Waiting for User Input',
+  cancelling: 'Cancelling',
   completed: 'Completed',
   completed_with_warning: 'Completed with Warning',
   failed: 'Failed',
@@ -28,7 +29,8 @@ export const isRunningStatus = (status) => [
   'loading_assets',
   'generating',
   'exporting',
-  'waiting_for_user_input'
+  'waiting_for_user_input',
+  'cancelling'
 ].includes(String(status || '').toLowerCase());
 
 export const statusTone = (status) => {

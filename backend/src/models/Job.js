@@ -10,6 +10,7 @@ const JOB_STATUSES = [
   'generating',
   'exporting',
   'waiting_for_user_input',
+  'cancelling',
   'completed',
   'completed_with_warning',
   'failed',

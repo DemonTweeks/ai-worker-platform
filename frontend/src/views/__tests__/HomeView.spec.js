@@ -1,10 +1,11 @@
 import { mount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import HomeView from '../HomeView.vue';
-import { createJob, getHealth, getJobDetail, listRanProjects, prevalidateUpload } from '../../api/jobApi';
+import { cancelJob, createJob, getHealth, getJobDetail, listRanProjects, prevalidateUpload } from '../../api/jobApi';
 import { scheduleNotificationDismiss } from '../../utils/workerNotificationUtils';
 
 vi.mock('../../api/jobApi', () => ({
+  cancelJob: vi.fn(),
   createJob: vi.fn(),
   getErrorMessage: vi.fn((error) => error.userMessage || error.message || 'Request failed.'),
   getHealth: vi.fn(async () => ({ status: 'ok' })),
@@ -337,6 +338,40 @@ describe('HomeView worker notifications', () => {
     expect(getJobDetail).toHaveBeenCalledWith('JOB-RESTORE-1');
     expect(connectSpy).toHaveBeenCalledWith('JOB-RESTORE-1');
     expect(wrapper.vm.workerFormLocked).toBe(true);
+  });
+
+  it('submits a controlled cancellation reason for the active job', async () => {
+    cancelJob.mockResolvedValueOnce({
+      job: {
+        jobId: 'JOB-CANCEL-1',
+        status: 'cancelling'
+      }
+    });
+    getJobDetail.mockResolvedValueOnce({
+      job: {
+        jobId: 'JOB-CANCEL-1',
+        status: 'cancelling',
+        prScope: 'TSS'
+      },
+      outputs: []
+    });
+
+    const wrapper = mountView();
+    await wrapper.setData({
+      currentJobId: 'JOB-CANCEL-1',
+      currentStatus: 'generating',
+      cancelReasonCode: 'other',
+      cancelReasonText: 'Uploaded the wrong workbook'
+    });
+
+    await wrapper.vm.submitCancellationRequest();
+    await flushPromises();
+
+    expect(cancelJob).toHaveBeenCalledWith('JOB-CANCEL-1', {
+      reasonCode: 'other',
+      reasonText: 'Uploaded the wrong workbook'
+    });
+    expect(wrapper.vm.currentStatus).toBe('cancelling');
   });
 
   it('stores MW prevalidation failure details without showing a generic banner for expected validation 400 responses', async () => {

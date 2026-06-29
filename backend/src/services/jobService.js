@@ -12,6 +12,7 @@ const { consumePrevalidatedUpload, UPLOAD_KINDS } = require('./prevalidationServ
 const { parseSiteCodes } = require('./siteCodeParser');
 const workerStateService = require('./workerStateService');
 const jobQueue = require('../queue/jobQueue');
+const { JOB_EVENTS, publishJobEvent } = require('../websocket/eventPublisher');
 const { answerReAsk } = require('../llm/reAskService');
 const { generateUniqueJobId } = require('../utils/jobIdGenerator');
 const { assertPathInsideRoot, toStorageRelativePath } = require('../utils/pathUtils');
@@ -21,9 +22,13 @@ const { validateRanRunConfiguration } = require('../workers/ranProjectCatalogSer
 const { WORKER_IDS } = require('../workers/workerTypes');
 const { getWorkerManifest } = require('../workers/workerRegistry');
 const {
+  CANCELLATION_REASON_LABELS,
   RUNNING_JOB_STATUSES,
   TERMINAL_JOB_STATUSES,
   assertNoActiveScopedJob,
+  appendStatusEvent,
+  buildCancellationMetadata,
+  normalizeCancellationReason,
   normalizeSubmissionScopeId,
   normalizeWorkerId
 } = require('./jobControlService');
@@ -256,6 +261,23 @@ const getFailureDiagnosis = (job) => {
   };
 };
 
+const serializeCancellation = (job = {}) => {
+  if (!job.cancellation) {
+    return null;
+  }
+
+  return {
+    source: job.cancellation.source || 'user',
+    requestedAt: job.cancellation.requestedAt || null,
+    requestedBy: job.cancellation.requestedBy || null,
+    reasonCode: job.cancellation.reasonCode || 'requested_by_user',
+    reasonLabel: job.cancellation.reasonLabel || CANCELLATION_REASON_LABELS.requested_by_user,
+    reasonText: job.cancellation.reasonText || '',
+    completedAt: job.cancellation.completedAt || null,
+    finalStatus: job.cancellation.finalStatus || null
+  };
+};
+
 const serializeJobSummary = (job) => ({
   ...getWorkerPresentation(job),
   jobId: job.jobId,
@@ -274,6 +296,7 @@ const serializeJobSummary = (job) => ({
   reviewRequiredCount: job.reviewRequiredCount,
   warningCount: job.warningCount,
   finalWorkerSummary: job.finalWorkerSummary,
+  cancellation: serializeCancellation(job),
   failureSummary: getFailureSummary(job)
 });
 
@@ -683,6 +706,7 @@ const getJobDetail = async (jobId) => {
       ...serializeJobSummary(job),
       startedAt: job.startedAt,
       cancelledAt: job.cancelledAt,
+      statusEvents: Array.isArray(job.statusEvents) ? job.statusEvents : [],
       prScope: getDisplayPrScope(job),
       assetVersions: job.assetVersions || {},
       fileRetentionUntil: job.fileRetentionUntil,
@@ -698,16 +722,75 @@ const getJobDetail = async (jobId) => {
   };
 };
 
-const cancelJob = async (jobId) => {
+const resolveRequestedBy = (requestContext = {}) => {
+  const requestedBy = requestContext.requestedBy;
+  return typeof requestedBy === 'string' && requestedBy.trim() ? requestedBy.trim().slice(0, 120) : null;
+};
+
+const cancelJob = async (jobId, cancellationRequest = {}, requestContext = {}) => {
   const job = await assertJobExists(jobId);
+  const requestedBy = resolveRequestedBy(requestContext);
+  const reason = normalizeCancellationReason(cancellationRequest);
+  const requestedAt = new Date().toISOString();
+  const isAlreadyCancelling = ['cancelling', 'cancelled', 'cancelled_with_partial_result'].includes(job.status);
+
+  if (isAlreadyCancelling) {
+    return {
+      job: serializeJobSummary(job),
+      message: job.status === 'cancelling'
+        ? 'Cancellation is already in progress for this job.'
+        : 'Job cancellation has already been recorded.'
+    };
+  }
 
   if (TERMINAL_JOB_STATUSES.includes(job.status)) {
     throw createApiError(409, 'JOB_NOT_CANCELLABLE', `Job is already in terminal status ${job.status}.`);
   }
 
+  job.cancellation = buildCancellationMetadata({
+    job,
+    requestedAt,
+    requestedBy,
+    ...reason
+  });
+  job.statusEvents = appendStatusEvent(job, 'cancellation_requested', {
+    createdAt: requestedAt,
+    requestedBy,
+    reasonCode: reason.reasonCode,
+    reasonLabel: reason.reasonLabel,
+    reasonText: reason.reasonText
+  });
+
   const queueCancelResult = await jobQueue.cancelQueuedJob(jobId);
 
   if (queueCancelResult.cancelled) {
+    const cancelledAt = new Date();
+    job.status = 'cancelled';
+    job.cancelledAt = cancelledAt;
+    job.completedAt = cancelledAt;
+    job.finalWorkerSummary = 'Task cancelled. Any completed partial output files have been preserved where available.';
+    job.cancellation = buildCancellationMetadata({
+      job,
+      requestedAt,
+      requestedBy,
+      completedAt: cancelledAt.toISOString(),
+      finalStatus: 'cancelled',
+      ...reason
+    });
+    job.statusEvents = appendStatusEvent(job, 'cancellation_completed', {
+      createdAt: cancelledAt.toISOString(),
+      requestedBy: job.cancellation.requestedBy,
+      reasonCode: job.cancellation.reasonCode,
+      reasonLabel: job.cancellation.reasonLabel,
+      reasonText: job.cancellation.reasonText,
+      finalStatus: 'cancelled'
+    });
+    await job.save();
+    await publishJobEvent(jobId, JOB_EVENTS.JOB_CANCELLED, {
+      phase: 'CANCELLED',
+      status: 'cancelled',
+      message: 'Queued job cancelled before execution.'
+    });
     const cancelledJob = await Job.findOne({ jobId });
     return {
       job: serializeJobSummary(cancelledJob),
@@ -716,9 +799,18 @@ const cancelJob = async (jobId) => {
   }
 
   if (queueCancelResult.running || RUNNING_JOB_STATUSES.includes(job.status)) {
+    job.status = 'cancelling';
+    await job.save();
+    await publishJobEvent(jobId, JOB_EVENTS.JOB_CANCELLATION_REQUESTED, {
+      phase: 'CANCELLING',
+      status: 'cancelling',
+      message: 'Cancellation requested. The running worker will stop at the next safe checkpoint.'
+    });
     return {
       job: serializeJobSummary(job),
-      message: 'Cancellation requested. The running worker will stop at the next safe checkpoint.'
+      message: queueCancelResult.alreadyRequested
+        ? 'Cancellation is already in progress for this job.'
+        : 'Cancellation requested. The running worker will stop at the next safe checkpoint.'
     };
   }
 

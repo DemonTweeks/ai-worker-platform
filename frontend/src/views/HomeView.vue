@@ -249,6 +249,51 @@
               </div>
             </dl>
             <p v-if="jobReady" class="completion-message" :class="resultTone">{{ resultCompletionMessage }}</p>
+            <div v-if="hasActiveWorkerJob" class="workbench-create-row">
+              <button
+                v-if="!showCancelForm"
+                type="button"
+                class="secondary-link"
+                :disabled="cancellingRequest || currentStatus === 'cancelling'"
+                @click="showCancelForm = true"
+              >
+                {{ currentStatus === 'cancelling' ? 'Stopping...' : 'Stop Job' }}
+              </button>
+              <div v-else class="cockpit-field-group">
+                <label class="field-label" for="cancel-reason">Cancellation reason</label>
+                <select
+                  id="cancel-reason"
+                  class="cockpit-sites-input"
+                  :disabled="cancellingRequest"
+                  :value="cancelReasonCode"
+                  @change="cancelReasonCode = $event.target.value"
+                >
+                  <option value="requested_by_user">Requested by user</option>
+                  <option value="wrong_inputs">Wrong inputs selected</option>
+                  <option value="started_by_mistake">Started by mistake</option>
+                  <option value="long_running">Taking too long</option>
+                  <option value="other">Other</option>
+                </select>
+                <input
+                  v-if="cancelReasonCode === 'other'"
+                  class="cockpit-sites-input"
+                  :disabled="cancellingRequest"
+                  :value="cancelReasonText"
+                  maxlength="160"
+                  placeholder="Optional short note"
+                  @input="cancelReasonText = $event.target.value"
+                />
+                <div class="workbench-action-row">
+                  <button type="button" class="workbench-secondary-link" :disabled="cancellingRequest" @click="submitCancellationRequest">
+                    {{ cancellingRequest ? 'Stopping...' : 'Confirm Stop Job' }}
+                  </button>
+                  <button type="button" class="secondary-link" :disabled="cancellingRequest" @click="resetCancellationForm">
+                    Keep Running
+                  </button>
+                </div>
+              </div>
+              <p class="cockpit-note">This worker form is locked while the active job is queued, running, or cancelling.</p>
+            </div>
             <a
               v-if="canDownload"
               class="download-button"
@@ -323,7 +368,7 @@ import UploadPanel from '../components/UploadPanel.vue';
 import ErrorBanner from '../components/ErrorBanner.vue';
 import LoadingButton from '../components/LoadingButton.vue';
 import JobWebSocketClient from '../services/websocketClient';
-import { createJob, getErrorMessage, getHealth, getJobDetail, getZipDownloadUrl, listRanProjects, prevalidateUpload } from '../api/jobApi';
+import { cancelJob, createJob, getErrorMessage, getHealth, getJobDetail, getZipDownloadUrl, listRanProjects, prevalidateUpload } from '../api/jobApi';
 import { askJob } from '../api/reAskApi';
 import { displayMessage, isTerminalStatus } from '../utils/statusUtils';
 import {
@@ -400,7 +445,11 @@ export default {
       transientErrorTimer: null,
       chatMessageSequence: 0,
       mwSubmissionScopeId: '',
-      ranSubmissionScopeId: ''
+      ranSubmissionScopeId: '',
+      showCancelForm: false,
+      cancellingRequest: false,
+      cancelReasonCode: 'requested_by_user',
+      cancelReasonText: ''
     };
   },
   computed: {
@@ -432,6 +481,9 @@ export default {
     },
     workerFormLocked() {
       return this.creating || this.hasActiveWorkerJob;
+    },
+    cancellationMetadata() {
+      return this.jobDetail && this.jobDetail.job ? this.jobDetail.job.cancellation || null : null;
     },
     canCreateJob() {
       if (this.hasActiveWorkerJob) return false;
@@ -794,6 +846,13 @@ export default {
       this.reAskAnswer = null;
       this.chatMessages = [];
       this.currentPhase = '';
+      this.resetCancellationForm();
+    },
+    resetCancellationForm() {
+      this.showCancelForm = false;
+      this.cancellingRequest = false;
+      this.cancelReasonCode = 'requested_by_user';
+      this.cancelReasonText = '';
     },
     async handleWorkerChange(workerId) {
       if (this.selectedWorkerId === workerId) {
@@ -963,6 +1022,7 @@ export default {
       this.jobDetail = null;
       this.reAskAnswer = null;
       this.chatMessages = [];
+      this.resetCancellationForm();
       try {
         const payload = this.isRanWorker
           ? {
@@ -992,6 +1052,25 @@ export default {
         this.showWorkerNotification(this.getWorkerNotificationMessage(error));
       } finally {
         this.creating = false;
+      }
+    },
+    async submitCancellationRequest() {
+      if (!this.currentJobId || this.cancellingRequest) return;
+
+      this.cancellingRequest = true;
+      this.dismissErrorMessage();
+      try {
+        const result = await cancelJob(this.currentJobId, {
+          reasonCode: this.cancelReasonCode,
+          reasonText: this.cancelReasonCode === 'other' ? this.cancelReasonText : ''
+        });
+        this.currentStatus = result.job.status;
+        this.showCancelForm = false;
+        await this.refreshJobDetail();
+      } catch (error) {
+        this.showWorkerNotification(getErrorMessage(error));
+      } finally {
+        this.cancellingRequest = false;
       }
     },
     async refreshJobDetail() {

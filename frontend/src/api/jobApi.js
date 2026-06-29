@@ -46,6 +46,11 @@ export const listRanProjects = async () => {
   return response.data;
 };
 
+export const cancelJob = async (jobId, payload = {}) => {
+  const response = await api.post(`/api/jobs/${encodeURIComponent(jobId)}/cancel`, payload);
+  return response.data;
+};
+
 export const listJobs = async (params = {}) => {
   const response = await api.get('/api/jobs', { params });
   return response.data;
