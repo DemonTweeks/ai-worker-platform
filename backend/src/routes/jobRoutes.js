@@ -1,6 +1,7 @@
 const express = require('express');
 const { upload } = require('../middleware/uploadMiddleware');
 const prevalidationService = require('../services/prevalidationService');
+const { assertNoActiveScopedJob } = require('../services/jobControlService');
 const jobService = require('../services/jobService');
 const { listRanProjects } = require('../workers/ranProjectCatalogService');
 
@@ -11,6 +12,10 @@ const asyncHandler = (handler) => (req, res, next) => (
 );
 
 router.post('/prevalidate', upload.single('file'), asyncHandler(async (req, res) => {
+  await assertNoActiveScopedJob({
+    workerId: req.body ? req.body.workerId : undefined,
+    submissionScopeId: req.body ? req.body.submissionScopeId : undefined
+  });
   const result = await prevalidationService.validateUpload(req.file, {
     uploadKind: req.body ? req.body.uploadKind : undefined
   });

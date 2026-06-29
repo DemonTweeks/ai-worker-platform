@@ -17,11 +17,17 @@ export const getHealth = async () => {
   return response.data;
 };
 
-export const prevalidateUpload = async (file, uploadKind = null) => {
+export const prevalidateUpload = async (file, uploadKind = null, requestScope = {}) => {
   const formData = new FormData();
   formData.append('file', file);
   if (uploadKind) {
     formData.append('uploadKind', uploadKind);
+  }
+  if (requestScope.workerId) {
+    formData.append('workerId', requestScope.workerId);
+  }
+  if (requestScope.submissionScopeId) {
+    formData.append('submissionScopeId', requestScope.submissionScopeId);
   }
   const response = await api.post('/api/jobs/prevalidate', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },

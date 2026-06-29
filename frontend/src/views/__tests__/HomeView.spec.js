@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import HomeView from '../HomeView.vue';
-import { createJob, getHealth, listRanProjects, prevalidateUpload } from '../../api/jobApi';
+import { createJob, getHealth, getJobDetail, listRanProjects, prevalidateUpload } from '../../api/jobApi';
 import { scheduleNotificationDismiss } from '../../utils/workerNotificationUtils';
 
 vi.mock('../../api/jobApi', () => ({
@@ -64,6 +64,7 @@ describe('HomeView worker notifications', () => {
     vi.useFakeTimers();
     vi.clearAllMocks();
     localStorage.clear();
+    sessionStorage.clear();
   });
 
   afterEach(() => {
@@ -235,13 +236,13 @@ describe('HomeView worker notifications', () => {
     await flushPromises();
 
     expect(listRanProjects).toHaveBeenCalledTimes(1);
-    expect(createJob).toHaveBeenCalledWith({
+    expect(createJob).toHaveBeenCalledWith(expect.objectContaining({
       workerId: 'ran-pr',
       bomPrevalidatedFileId: 'bom-1',
       epmsPrevalidatedFileId: 'epms-1',
       runMode: 'general-item',
       selectedProject: 'Project Thanos'
-    });
+    }));
     expect(wrapper.vm.currentJobId).toBe('RAN-123');
     expect(connectSpy).toHaveBeenCalledWith('RAN-123');
   });
@@ -275,6 +276,69 @@ describe('HomeView worker notifications', () => {
     expect(wrapper.vm.createDisabledReason).toContain('Select a validated General Item project');
   });
 
+  it('disables create and prevalidate while the current worker has an active job', async () => {
+    const wrapper = mountView();
+
+    await wrapper.setData({
+      currentJobId: 'JOB-ACTIVE-1',
+      currentStatus: 'queued',
+      selectedFile: { name: 'sites.xlsx' },
+      prevalidation: {
+        passed: true,
+        prevalidatedFileId: 'file-1'
+      },
+      siteCodesText: 'ABC123'
+    });
+
+    expect(wrapper.vm.canCreateJob).toBe(false);
+    expect(wrapper.vm.workerFormLocked).toBe(true);
+    expect(wrapper.vm.createDisabledReason).toContain('active job already exists');
+  });
+
+  it('re-enables create controls after a terminal websocket status update', async () => {
+    const wrapper = mountView();
+
+    await wrapper.setData({
+      currentJobId: 'JOB-DONE-1',
+      currentStatus: 'queued',
+      selectedFile: { name: 'sites.xlsx' },
+      prevalidation: {
+        passed: true,
+        prevalidatedFileId: 'file-1'
+      },
+      siteCodesText: 'ABC123'
+    });
+
+    wrapper.vm.applyRealtimeMessage({
+      type: 'JOB_EVENT',
+      status: 'completed',
+      timestamp: '2026-06-29T00:00:00.000Z'
+    });
+
+    expect(wrapper.vm.hasActiveWorkerJob).toBe(false);
+    expect(wrapper.vm.canCreateJob).toBe(true);
+  });
+
+  it('restores the active worker job from session storage after refresh', async () => {
+    getJobDetail.mockResolvedValueOnce({
+      job: {
+        jobId: 'JOB-RESTORE-1',
+        status: 'queued',
+        prScope: 'TSS'
+      },
+      outputs: []
+    });
+    sessionStorage.setItem('workerCurrentJobId:mw-pr', 'JOB-RESTORE-1');
+
+    const wrapper = mountView();
+    await flushPromises();
+
+    expect(wrapper.vm.currentJobId).toBe('JOB-RESTORE-1');
+    expect(getJobDetail).toHaveBeenCalledWith('JOB-RESTORE-1');
+    expect(connectSpy).toHaveBeenCalledWith('JOB-RESTORE-1');
+    expect(wrapper.vm.workerFormLocked).toBe(true);
+  });
+
   it('stores MW prevalidation failure details without showing a generic banner for expected validation 400 responses', async () => {
     prevalidateUpload.mockRejectedValueOnce({
       response: {
@@ -293,6 +357,9 @@ describe('HomeView worker notifications', () => {
     expect(wrapper.vm.prevalidation).toEqual(safeValidationFailure);
     expect(wrapper.vm.errorMessage).toBe('');
     expect(wrapper.text()).not.toContain('Request failed with status code 400');
+    expect(prevalidateUpload).toHaveBeenCalledWith(file, null, expect.objectContaining({
+      workerId: 'mw-pr'
+    }));
   });
 
   it('stores RAN BOM and EPMS prevalidation failure details without showing a generic banner for expected validation 400 responses', async () => {
@@ -328,6 +395,12 @@ describe('HomeView worker notifications', () => {
     expect(wrapper.vm.ranEpmsPrevalidation).toEqual(safeValidationFailure);
     expect(wrapper.vm.errorMessage).toBe('');
     expect(wrapper.text()).not.toContain('Request failed with status code 400');
+    expect(prevalidateUpload).toHaveBeenNthCalledWith(1, bomFile, 'ran-bom', expect.objectContaining({
+      workerId: 'ran-pr'
+    }));
+    expect(prevalidateUpload).toHaveBeenNthCalledWith(2, epmsFile, 'ran-epms', expect.objectContaining({
+      workerId: 'ran-pr'
+    }));
   });
 
   it('still shows a safe generic banner for network or unexpected prevalidation failures', async () => {

@@ -1,6 +1,7 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
+const { matchFilter } = require('../src/models/compatibility');
 
 const repoRoot = path.resolve(__dirname, '..');
 const setCachedModule = (modulePath, exports) => {
@@ -113,13 +114,26 @@ const runTests = async () => {
       maxConcurrentJobs: 2
     });
     Job.create = async (payload) => {
-      createdJobs.push(payload);
-      return {
+      const createdJob = {
         ...payload,
         createdAt: '2026-06-26T00:00:00.000Z',
         finalWorkerSummary: payload.finalWorkerSummary || ''
       };
+      createdJobs.push(createdJob);
+      return createdJob;
     };
+    Job.find = (filter = {}) => ({
+      sort: () => ({
+        limit: () => ({
+          lean: async () => createdJobs.filter((job) => matchFilter(job, filter))
+        }),
+        skip: () => ({
+          limit: () => ({
+            lean: async () => createdJobs.filter((job) => matchFilter(job, filter))
+          })
+        })
+      })
+    });
     JobFile.create = async (payload) => {
       createdFiles.push(payload);
       return {
@@ -131,6 +145,7 @@ const runTests = async () => {
     const createResult = await jobService.createJob({
       prevalidatedFileId: 'prevalidated-1',
       workerId: 'mw-pr',
+      submissionScopeId: 'mw-pr-session-1234',
       prScope: 'TSS',
       generationScope: 'site_code',
       siteCodes: ['abc001', 'ABC001']
@@ -145,6 +160,20 @@ const runTests = async () => {
     assert.strictEqual(createdJobs[0].engineCommit, 'platform-current');
     assert(copiedBuffers[0].includes('"workerId": "mw-pr"'));
     assert.strictEqual(createdFiles[0].fileType, 'uploaded_export');
+    assert.strictEqual(createdJobs[0].submissionScopeId, 'mw-pr-session-1234');
+
+    await assert.rejects(
+      () => jobService.createJob({
+        prevalidatedFileId: 'prevalidated-duplicate',
+        workerId: 'mw-pr',
+        submissionScopeId: 'mw-pr-session-1234',
+        prScope: 'TSS',
+        generationScope: 'site_code',
+        siteCodes: ['ABC001']
+      }),
+      (error) => error.statusCode === 409 && error.code === 'ACTIVE_JOB_EXISTS',
+      'duplicate MW submissions in the same session scope should be rejected'
+    );
 
     createdJobs.length = 0;
     createdFiles.length = 0;
@@ -152,6 +181,7 @@ const runTests = async () => {
 
     const ranCreateResult = await jobService.createJob({
       workerId: 'ran-pr',
+      submissionScopeId: 'ran-pr-session-1234',
       bomPrevalidatedFileId: 'ran-bom-1',
       epmsPrevalidatedFileId: 'ran-epms-1',
       runMode: 'general-item',
@@ -176,6 +206,20 @@ const runTests = async () => {
     assert(copiedBuffers[0].includes('"workerId": "ran-pr"'));
     assert(copiedBuffers[0].includes('"runMode": "general-item"'));
     assert(copiedBuffers[0].includes('"selectedProject": "Project Thanos"'));
+    assert.strictEqual(createdJobs[0].submissionScopeId, 'ran-pr-session-1234');
+
+    await assert.rejects(
+      () => jobService.createJob({
+        workerId: 'ran-pr',
+        submissionScopeId: 'ran-pr-session-1234',
+        bomPrevalidatedFileId: 'ran-bom-1',
+        epmsPrevalidatedFileId: 'ran-epms-1',
+        runMode: 'general-item',
+        selectedProject: 'Project Thanos'
+      }),
+      (error) => error.statusCode === 409 && error.code === 'ACTIVE_JOB_EXISTS',
+      'duplicate RAN submissions in the same session scope should be rejected'
+    );
 
     await assert.rejects(
       () => jobService.createJob({

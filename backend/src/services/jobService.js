@@ -20,31 +20,21 @@ const { sanitizeRanStageName } = require('../workers/ranFailureService');
 const { validateRanRunConfiguration } = require('../workers/ranProjectCatalogService');
 const { WORKER_IDS } = require('../workers/workerTypes');
 const { getWorkerManifest } = require('../workers/workerRegistry');
+const {
+  RUNNING_JOB_STATUSES,
+  TERMINAL_JOB_STATUSES,
+  assertNoActiveScopedJob,
+  normalizeSubmissionScopeId,
+  normalizeWorkerId
+} = require('./jobControlService');
 
 const CANCELLABLE_BEFORE_WORKER_STATUSES = ['queued'];
-const RUNNING_STATUSES = [
-  'validating',
-  'filtering_sites',
-  'loading_assets',
-  'generating',
-  'exporting',
-  'waiting_for_user_input'
-];
-const TERMINAL_STATUSES = [
-  'completed',
-  'completed_with_warning',
-  'failed',
-  'cancelled',
-  'cancelled_with_partial_result'
-];
 const PR_SCOPES = ['TSS', 'TI'];
 const INPUT_FILE_TYPES = new Set(['uploaded_export', 'ran_bom_upload', 'ran_epms_upload']);
 
 const normalizeSiteCodes = (siteCodes = []) => parseSiteCodes(siteCodes).siteCodes;
 
 const normalizePrScope = (prScope) => String(prScope || 'TSS').trim().toUpperCase();
-const normalizeWorkerId = (workerId) => String(workerId || WORKER_IDS.MW_PR).trim();
-
 const addRetentionDays = () => (
   new Date(Date.now() + config.limits.fileRetentionDays * 24 * 60 * 60 * 1000)
 );
@@ -302,6 +292,7 @@ const createMwJob = async ({
   generationScope,
   siteCodes,
   prScope,
+  submissionScopeId,
   workerManifest,
   normalizedWorkerId
 }) => {
@@ -320,6 +311,7 @@ const createMwJob = async ({
   }
 
   const normalizedSiteCodes = normalizeSiteCodes(siteCodes);
+  const normalizedSubmissionScopeId = normalizeSubmissionScopeId(submissionScopeId);
 
   if (generationScope === 'site_code' && normalizedSiteCodes.length === 0) {
     throw createApiError(400, 'VALIDATION_ERROR', 'siteCodes must be provided when generationScope is site_code.');
@@ -328,6 +320,11 @@ const createMwJob = async ({
   if (normalizedSiteCodes.length > config.limits.maxSiteCodes) {
     throw createApiError(400, 'SITE_CODE_LIMIT_EXCEEDED', `Site code count exceeds the configured limit of ${config.limits.maxSiteCodes}.`);
   }
+
+  await assertNoActiveScopedJob({
+    workerId: normalizedWorkerId,
+    submissionScopeId: normalizedSubmissionScopeId
+  });
 
   const upload = await consumePrevalidatedUpload(prevalidatedFileId);
   if (upload.uploadKind && upload.uploadKind !== UPLOAD_KINDS.MW_EXPORT) {
@@ -361,6 +358,7 @@ const createMwJob = async ({
     engineCommit: workerManifest.engineCommit,
     workerType: 'pr-worker',
     status: 'queued',
+    submissionScopeId: normalizedSubmissionScopeId,
     prScope: normalizedPrScope,
     generationScope,
     requestedSiteCount: generationScope === 'site_code' ? normalizedSiteCodes.length : 0,
@@ -397,6 +395,7 @@ const createRanJob = async ({
   epmsPrevalidatedFileId,
   runMode,
   selectedProject,
+  submissionScopeId,
   workerManifest,
   normalizedWorkerId
 }) => {
@@ -414,6 +413,12 @@ const createRanJob = async ({
   } catch (error) {
     throw createApiError(400, 'VALIDATION_ERROR', error.message);
   }
+
+  const normalizedSubmissionScopeId = normalizeSubmissionScopeId(submissionScopeId);
+  await assertNoActiveScopedJob({
+    workerId: normalizedWorkerId,
+    submissionScopeId: normalizedSubmissionScopeId
+  });
 
   const [bomUpload, epmsUpload] = await Promise.all([
     consumePrevalidatedUpload(bomPrevalidatedFileId),
@@ -465,6 +470,7 @@ const createRanJob = async ({
     engineCommit: workerManifest.engineCommit,
     workerType: 'pr-worker',
     status: 'queued',
+    submissionScopeId: normalizedSubmissionScopeId,
     generationScope: 'all_sites',
     prScope: null,
     runMode: normalizedRunConfiguration.runMode,
@@ -516,7 +522,8 @@ const createJob = async ({
   bomPrevalidatedFileId,
   epmsPrevalidatedFileId,
   runMode,
-  selectedProject
+  selectedProject,
+  submissionScopeId
 }) => {
   const normalizedWorkerId = normalizeWorkerId(workerId);
   let workerManifest;
@@ -533,6 +540,7 @@ const createJob = async ({
       generationScope,
       siteCodes,
       prScope,
+      submissionScopeId,
       workerManifest,
       normalizedWorkerId
     });
@@ -543,6 +551,7 @@ const createJob = async ({
     epmsPrevalidatedFileId,
     runMode,
     selectedProject,
+    submissionScopeId,
     workerManifest,
     normalizedWorkerId
   });
@@ -557,6 +566,10 @@ const buildListFilter = async (query) => {
 
   if (query.workerType) {
     filter.workerType = query.workerType;
+  }
+
+  if (query.submissionScopeId) {
+    filter.submissionScopeId = normalizeSubmissionScopeId(query.submissionScopeId);
   }
 
   if (query.status) {
@@ -688,7 +701,7 @@ const getJobDetail = async (jobId) => {
 const cancelJob = async (jobId) => {
   const job = await assertJobExists(jobId);
 
-  if (TERMINAL_STATUSES.includes(job.status)) {
+  if (TERMINAL_JOB_STATUSES.includes(job.status)) {
     throw createApiError(409, 'JOB_NOT_CANCELLABLE', `Job is already in terminal status ${job.status}.`);
   }
 
@@ -702,7 +715,7 @@ const cancelJob = async (jobId) => {
     };
   }
 
-  if (queueCancelResult.running || RUNNING_STATUSES.includes(job.status)) {
+  if (queueCancelResult.running || RUNNING_JOB_STATUSES.includes(job.status)) {
     return {
       job: serializeJobSummary(job),
       message: 'Cancellation requested. The running worker will stop at the next safe checkpoint.'

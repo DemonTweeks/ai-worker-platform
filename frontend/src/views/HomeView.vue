@@ -42,7 +42,7 @@
               class="cockpit-card upload-card workbench-upload-card"
               :result="prevalidation"
               :loading="prevalidating"
-              :disable-action="creating"
+              :disable-action="workerFormLocked"
               @file-selected="onFileSelected"
               @prevalidate="prevalidate"
             />
@@ -58,7 +58,7 @@
               accept=".xlsx,.xls"
               :result="ranBomPrevalidation"
               :loading="ranBomPrevalidating"
-              :disable-action="creating"
+              :disable-action="workerFormLocked"
               @file-selected="onRanFileSelected('bom', $event)"
               @prevalidate="prevalidateRanUpload('bom', $event)"
             />
@@ -72,7 +72,7 @@
               accept=".xlsx,.xls"
               :result="ranEpmsPrevalidation"
               :loading="ranEpmsPrevalidating"
-              :disable-action="creating"
+              :disable-action="workerFormLocked"
               @file-selected="onRanFileSelected('epms', $event)"
               @prevalidate="prevalidateRanUpload('epms', $event)"
             />
@@ -333,6 +333,20 @@ import {
   WORKER_TIMEOUT_NOTIFICATION_MESSAGE
 } from '../utils/workerNotificationUtils';
 
+const WORKER_SCOPE_STORAGE_PREFIX = 'workerFormScopeId:';
+const WORKER_JOB_STORAGE_PREFIX = 'workerCurrentJobId:';
+
+const buildWorkerScopeStorageKey = (workerId) => `${WORKER_SCOPE_STORAGE_PREFIX}${workerId}`;
+const buildWorkerJobStorageKey = (workerId) => `${WORKER_JOB_STORAGE_PREFIX}${workerId}`;
+
+const createSessionScopeId = (workerId) => {
+  if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+    return `${workerId}-${window.crypto.randomUUID().replace(/-/g, '')}`;
+  }
+
+  return `${workerId}-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+};
+
 export default {
   name: 'HomeView',
   components: {
@@ -384,7 +398,9 @@ export default {
       commandNotice: '',
       consoleAutoStick: true,
       transientErrorTimer: null,
-      chatMessageSequence: 0
+      chatMessageSequence: 0,
+      mwSubmissionScopeId: '',
+      ranSubmissionScopeId: ''
     };
   },
   computed: {
@@ -408,7 +424,17 @@ export default {
       if (this.healthError) return '⚪Unavailable';
       return '🔵Checking';
     },
+    activeSubmissionScopeId() {
+      return this.isRanWorker ? this.ranSubmissionScopeId : this.mwSubmissionScopeId;
+    },
+    hasActiveWorkerJob() {
+      return Boolean(this.currentJobId) && !isTerminalStatus(this.currentStatus || (this.jobDetail && this.jobDetail.job ? this.jobDetail.job.status : ''));
+    },
+    workerFormLocked() {
+      return this.creating || this.hasActiveWorkerJob;
+    },
     canCreateJob() {
+      if (this.hasActiveWorkerJob) return false;
       if (this.creating) return false;
 
       if (this.isRanWorker) {
@@ -425,6 +451,10 @@ export default {
       return true;
     },
     createDisabledReason() {
+      if (this.hasActiveWorkerJob) {
+        return 'An active job already exists for this worker. Wait for it to finish or stop it first.';
+      }
+
       if (this.isRanWorker) {
         if (!this.ranBomFile || !this.ranEpmsFile) return 'Upload both BOM and EPMS workbooks to start.';
         if (this.ranBomPrevalidating || this.ranEpmsPrevalidating) return 'RAN upload validation is in progress.';
@@ -685,6 +715,7 @@ export default {
     }
   },
   mounted() {
+    this.initializeWorkerScopes();
     this.checkHealth();
     this.wsClient = new JobWebSocketClient({
       onMessage: this.handleWebSocketMessage,
@@ -692,6 +723,7 @@ export default {
         this.connectionStatus = status;
       }
     });
+    this.restoreWorkerSession(this.selectedWorkerId);
     this.$nextTick(() => {
       this.scrollConsoleToBottom(true);
     });
@@ -703,6 +735,52 @@ export default {
     }
   },
   methods: {
+    initializeWorkerScopes() {
+      this.mwSubmissionScopeId = this.getOrCreateWorkerScopeId('mw-pr');
+      this.ranSubmissionScopeId = this.getOrCreateWorkerScopeId('ran-pr');
+    },
+    getOrCreateWorkerScopeId(workerId) {
+      const storageKey = buildWorkerScopeStorageKey(workerId);
+      const existing = sessionStorage.getItem(storageKey);
+
+      if (existing) {
+        return existing;
+      }
+
+      const created = createSessionScopeId(workerId);
+      sessionStorage.setItem(storageKey, created);
+      return created;
+    },
+    getStoredWorkerJobId(workerId) {
+      return sessionStorage.getItem(buildWorkerJobStorageKey(workerId)) || '';
+    },
+    rememberWorkerJobId(workerId, jobId) {
+      this.currentJobId = jobId;
+      sessionStorage.setItem(buildWorkerJobStorageKey(workerId), jobId);
+      localStorage.setItem('currentJobId', jobId);
+    },
+    async restoreWorkerSession(workerId) {
+      const storedJobId = this.getStoredWorkerJobId(workerId);
+
+      if (!storedJobId) {
+        this.resetJobSession();
+        return;
+      }
+
+      this.currentJobId = storedJobId;
+      localStorage.setItem('currentJobId', storedJobId);
+      this.events = [];
+      this.currentProgress = null;
+      this.currentPhase = '';
+      this.currentStatus = '';
+      this.jobDetail = null;
+      this.reAskAnswer = null;
+      this.chatMessages = [];
+      if (this.wsClient) {
+        this.wsClient.connect(storedJobId);
+      }
+      await this.refreshJobDetail();
+    },
     resetJobSession() {
       this.currentJobId = '';
       localStorage.removeItem('currentJobId');
@@ -722,16 +800,17 @@ export default {
         if (workerId === 'ran-pr' && this.ranProjects.length === 0) {
           await this.loadRanProjects();
         }
+        await this.restoreWorkerSession(workerId);
         return;
       }
 
       this.selectedWorkerId = workerId;
       this.dismissErrorMessage();
-      this.resetJobSession();
 
       if (workerId === 'mw-pr') {
         this.selectedFile = null;
         this.prevalidation = null;
+        await this.restoreWorkerSession(workerId);
         return;
       }
 
@@ -739,6 +818,7 @@ export default {
       if (this.ranProjects.length === 0) {
         await this.loadRanProjects();
       }
+      await this.restoreWorkerSession(workerId);
     },
     async loadRanProjects() {
       this.ranProjectLoading = true;
@@ -785,7 +865,10 @@ export default {
       this.prevalidating = true;
       this.errorMessage = '';
       try {
-        this.prevalidation = await prevalidateUpload(file);
+        this.prevalidation = await prevalidateUpload(file, null, {
+          workerId: 'mw-pr',
+          submissionScopeId: this.mwSubmissionScopeId
+        });
       } catch (error) {
         this.prevalidation = this.getSafePrevalidationPayload(error);
         if (!this.isExpectedPrevalidationFailure(error)) {
@@ -810,7 +893,10 @@ export default {
       this.errorMessage = '';
 
       try {
-        const result = await prevalidateUpload(file, isBom ? 'ran-bom' : 'ran-epms');
+        const result = await prevalidateUpload(file, isBom ? 'ran-bom' : 'ran-epms', {
+          workerId: 'ran-pr',
+          submissionScopeId: this.ranSubmissionScopeId
+        });
         if (isBom) {
           this.ranBomPrevalidation = result;
         } else {
@@ -881,20 +967,22 @@ export default {
         const payload = this.isRanWorker
           ? {
               workerId: 'ran-pr',
+              submissionScopeId: this.ranSubmissionScopeId,
               bomPrevalidatedFileId: this.ranBomPrevalidation.prevalidatedFileId,
               epmsPrevalidatedFileId: this.ranEpmsPrevalidation.prevalidatedFileId,
               runMode: this.ranRunMode,
               selectedProject: this.ranRunMode === 'general-item' ? this.ranSelectedProject : undefined
             }
           : {
+              workerId: 'mw-pr',
+              submissionScopeId: this.mwSubmissionScopeId,
               prevalidatedFileId: this.prevalidation.prevalidatedFileId,
               prScope: this.prScope,
               generationScope: this.generationScope,
               siteCodes: this.generationScope === 'site_code' ? this.parseSiteCodes() : []
             };
         const result = await createJob(payload);
-        this.currentJobId = result.job.jobId;
-        localStorage.setItem('currentJobId', result.job.jobId);
+        this.rememberWorkerJobId(this.selectedWorkerId, result.job.jobId);
         this.currentPrScope = result.job.prScope || (this.isRanWorker ? 'RAN' : this.prScope);
         this.currentStatus = result.job.status;
         this.currentPhase = result.job.phase || '';
