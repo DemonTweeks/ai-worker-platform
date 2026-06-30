@@ -2,20 +2,23 @@
   <section class="panel">
     <h2>Re-Ask PR Worker</h2>
     <textarea
-      v-model="question"
+      :value="value"
       rows="4"
       :disabled="!jobId || loading"
       placeholder="Ask for additional context, for example: Why were some sites unmatched?"
+      @input="$emit('input', $event.target.value)"
+      @keydown="handleKeydown"
     />
     <LoadingButton
       label="Ask"
       loading-text="Asking..."
       :loading="loading"
-      :disabled="!jobId || !question.trim()"
+      :disabled="!jobId || !value.trim()"
       @click="submit"
     />
     <div v-if="answer" class="answer-box">
       <div class="answer-meta">{{ answer.answerSource }} · {{ answer.llmStatus }}</div>
+      <p v-if="answer.question" class="question-text">{{ answer.question }}</p>
       <p>{{ answer.answer }}</p>
     </div>
   </section>
@@ -30,17 +33,25 @@ export default {
   props: {
     jobId: { type: String, default: '' },
     loading: { type: Boolean, default: false },
-    answer: { type: Object, default: null }
-  },
-  data() {
-    return {
-      question: ''
-    };
+    answer: { type: Object, default: null },
+    value: { type: String, default: '' }
   },
   methods: {
+    handleKeydown(event) {
+      if (event.key !== 'Enter' || event.shiftKey) {
+        return;
+      }
+
+      event.preventDefault();
+      this.submit();
+    },
     submit() {
-      this.$emit('ask', this.question);
-      this.question = '';
+      const question = this.value.trim();
+      if (!this.jobId || this.loading || !question) {
+        return;
+      }
+
+      this.$emit('submit-question', { question });
     }
   }
 };

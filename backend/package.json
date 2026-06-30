@@ -9,6 +9,7 @@
     "dev": "nodemon src/server.js",
     "health": "node -e \"fetch('http://localhost:8000/health').then(r=>r.json()).then(console.log)\"",
     "smoke": "node scripts/smoke-test.js",
+    "test:llm-provider": "node scripts/llm-provider-test.js",
     "test:preflight": "node scripts/preflight-test.js",
     "test:integration": "node scripts/integration-test.js",
     "test:job-service-workers": "node scripts/job-service-worker-payload-test.js",
@@ -25,7 +26,7 @@
     "test:ran-history-reload": "node scripts/ran-history-reload-test.js",
     "test:ran-concurrency": "node scripts/ran-concurrency-test.js",
     "test:ran-invalid-safe-errors": "node scripts/ran-invalid-safe-error-test.js",
-    "test": "npm run smoke && npm run test:preflight && npm run test:integration && node scripts/error-visibility-test.js && npm run test:ran-adapter && npm run test:ran-routes && npm run test:ran-live-runtime && npm run test:ran-worker-service && npm run test:queue-registry && npm run test:job-control-concurrency && npm run test:job-prevalidate-guard && npm run test:job-service-workers"
+    "test": "npm run smoke && npm run test:llm-provider && npm run test:preflight && npm run test:integration && node scripts/error-visibility-test.js && npm run test:ran-adapter && npm run test:ran-routes && npm run test:ran-live-runtime && npm run test:ran-worker-service && npm run test:queue-registry && npm run test:job-control-concurrency && npm run test:job-prevalidate-guard && npm run test:job-service-workers"
   },
   "dependencies": {
     "archiver": "^7.0.1",

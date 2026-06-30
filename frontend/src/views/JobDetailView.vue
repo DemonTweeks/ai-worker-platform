@@ -35,8 +35,10 @@
       <ReAskPanel
         :job-id="detail.job.jobId"
         :loading="asking"
-        :answer="reAskAnswer"
-        @ask="askQuestion"
+        :value="reAskDraft"
+        :answer="displayedReAskAnswer"
+        @input="updateReAskDraft"
+        @submit-question="handleReAskSubmit"
       />
       <section v-if="subscribedToRealtime" class="panel">
         <h2>Realtime Status</h2>
@@ -90,7 +92,9 @@ export default {
       loading: false,
       asking: false,
       errorMessage: '',
+      reAskDraft: '',
       reAskAnswer: null,
+      lastSubmittedQuestion: '',
       events: [],
       connectionStatus: 'disconnected',
       wsClient: null,
@@ -101,6 +105,16 @@ export default {
     latestMessage() {
       if (this.events.length > 0) return this.events[0].displayText;
       return 'Watching live job state.';
+    },
+    displayedReAskAnswer() {
+      if (!this.reAskAnswer) {
+        return null;
+      }
+
+      return {
+        ...this.reAskAnswer,
+        question: this.lastSubmittedQuestion || this.reAskAnswer.question || ''
+      };
     }
   },
   mounted() {
@@ -163,12 +177,23 @@ export default {
         }
       }
     },
+    updateReAskDraft(value) {
+      this.reAskDraft = value;
+    },
+    handleReAskSubmit(payload) {
+      this.askQuestion(payload && payload.question ? payload.question : '');
+    },
     async askQuestion(question) {
-      if (!this.detail || !this.detail.job || !question.trim()) return;
+      const normalizedQuestion = String(question || '').trim();
+      if (!this.detail || !this.detail.job || !normalizedQuestion || this.asking) return;
+
       this.asking = true;
       this.errorMessage = '';
       try {
-        this.reAskAnswer = await askJob(this.detail.job.jobId, question);
+        const answer = await askJob(this.detail.job.jobId, normalizedQuestion);
+        this.lastSubmittedQuestion = normalizedQuestion;
+        this.reAskAnswer = answer;
+        this.reAskDraft = '';
       } catch (error) {
         this.errorMessage = getErrorMessage(error);
       } finally {

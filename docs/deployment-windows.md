@@ -17,6 +17,7 @@ The recommended baseline is **local Node services plus one repository-root Pytho
 - Python 3
 - access to the repository and both submodules
 - optional internal LLM endpoint and credentials only when LLM features are enabled
+- supported shared LLM providers currently include `qwen` and `agnes` through the same `LLM_*` environment contract
 
 ## 3. Clone and Initialize Worker Engines
 
@@ -82,6 +83,18 @@ LLM_ENABLED and LLM_* values when used
 ```
 
 Use strong non-default values for admin credentials and `JWT_SECRET` on any shared machine.
+
+For shared LLM configuration, set:
+
+```text
+LLM_ENABLED=true
+LLM_PROVIDER=qwen or agnes
+LLM_BASE_URL=<provider base URL>
+LLM_API_KEY=<provider API key>
+LLM_MODEL=<provider model>
+```
+
+Both supported providers use the shared backend abstraction and OpenAI-compatible `POST <base-url>/chat/completions` behavior. If `LLM_BASE_URL` already ends with `/chat/completions`, the backend preserves it safely.
 
 ## 5. Deterministic Python Runtime
 

@@ -1,4 +1,5 @@
 const config = require('../config/env');
+const agnesProvider = require('./providers/agnesProvider');
 const qwenProvider = require('./providers/qwenProvider');
 const { LLM_ERROR_CODES } = require('./llmTypes');
 const {
@@ -9,6 +10,7 @@ const {
 } = require('./llmUtils');
 
 const providers = {
+  agnes: agnesProvider,
   qwen: qwenProvider
 };
 

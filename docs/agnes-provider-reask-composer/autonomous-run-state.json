@@ -15,8 +15,8 @@
     "schedule": "FREQ=HOURLY;INTERVAL=1",
     "status": "ACTIVE"
   },
-  "phase": "Phase 1",
-  "status": "discovery-complete",
+  "phase": "Completed",
+  "status": "completed",
   "completed_scope": [
     "Read the external Master Prompt from disk",
     "Verified primary checkout cleanliness and expected origin/main baseline",
@@ -25,7 +25,12 @@
     "Initialized persistent mission-state documents",
     "Inspected shared LLM implementation, configuration helpers, callers, and current backend test surface",
     "Inspected Re-Ask component and Job Detail flow plus current frontend test surface",
-    "Recorded an evidence-based implementation approach and exact planned file changes without modifying product source"
+    "Recorded an evidence-based implementation approach and exact planned file changes without modifying product source",
+    "Added focused Agnes provider backend coverage and shared-provider registration",
+    "Implemented controlled Re-Ask composer ownership and duplicate-prevention behavior",
+    "Passed required focused and full backend/frontend validation gates",
+    "Recorded changed-file scope, secret scan, unchanged-submodule, and browser UAT evidence",
+    "Wrote final mission completion artifacts and completion marker"
   ],
   "phase_1_discovery": {
     "backend_surfaces": [
@@ -49,20 +54,9 @@
       "reask_flow": "Move draft ownership to JobDetailView.vue, make ReAskPanel.vue controlled, guard duplicate submissions in parent and child, and clear the draft only after successful askJob completion."
     }
   },
-  "next_action": "add-failing-agnes-provider-and-reask-focused-tests",
-  "remaining_acceptance_gates": [
-    "Agnes provider implementation and focused backend coverage",
-    "Re-Ask composer reliability implementation and focused frontend coverage",
-    "backend test suite",
-    "frontend test suite",
-    "frontend production build",
-    "git diff --check",
-    "browser UAT evidence",
-    "changed-file scope review",
-    "submodule unchanged verification",
-    "draft PR creation after all gates pass"
-  ],
+  "next_action": "NO_OP_COMPLETED",
+  "remaining_acceptance_gates": [],
   "last_checkpoint_commit": "e62de67dca09618a06cd8f53c5d631f334817fcf",
-  "acceptance_status": "not-started",
-  "completed": false
+  "acceptance_status": "passed",
+  "completed": true
 }

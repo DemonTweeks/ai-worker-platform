@@ -17,3 +17,8 @@
 - Discovered that `frontend/src/components/ReAskPanel.vue` currently owns and clears the draft locally immediately after emitting `ask`, which directly explains the failure-retention bug.
 - Chose to move Re-Ask draft ownership into `frontend/src/views/JobDetailView.vue` and convert `ReAskPanel.vue` into a controlled child with explicit update and submit events, preserving the current single-answer display instead of introducing chat history.
 - Discovered that there is no existing dedicated `ReAskPanel` or `JobDetailView` test file; planned new focused Vitest coverage following the repository's `HomeView.spec.js` interaction-testing style.
+- Recovered the mission into one new full-mission `/goal` after the earlier stage-scoped goal ended prematurely, per the updated Master Prompt goal-lifecycle invariant.
+- Updated the existing heartbeat automation so future wake-ups resume or recreate the same full mission automatically rather than stopping at a phase boundary.
+- Installed backend and frontend dependencies in the Agnes worktree so new focused tests could execute in the isolated worktree.
+- Initialized tracked submodules in the Agnes worktree with `git submodule update --init --recursive` after backend integration validation first failed due missing baseline fixture content; submodule pointers remained unchanged.
+- Chose a deterministic browser-UAT failure path by submitting an oversized Re-Ask question, which exercises the safe validation path without requiring live Agnes credentials or backend faults.
