@@ -38,3 +38,12 @@ This startup pass completed discovery and planning only. The next autonomous ste
 ## Progress update after implementation step
 
 The narrow select hook and compact styles are now implemented. The next autonomous step should run the full required frontend validation, then perform browser-based UAT focused on long selected values, keyboard behavior, and Job Detail visual safety.
+
+## Progress update after validation and partial UAT
+
+The required local validation commands are now passing. The remaining work is evidence-focused browser UAT under a live state where:
+
+- the RAN project catalog endpoint returns actual workbook-backed projects; and
+- the current browser-tab session has an active job that exposes the Stop Job cancellation form.
+
+Once those conditions are available, the next autonomous step should complete the remaining keyboard and live-selection checks, then move into review, final reporting, push, and Draft PR creation.

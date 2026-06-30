@@ -24,3 +24,10 @@
 - Added `compact-inline-select` only to the two Issue #21 selects in `frontend/src/views/HomeView.vue`.
 - Avoided changing `cockpit-sites-input` globally because that shared class is also used by textareas and other controls outside the mission scope.
 - Kept the change frontend-only and behavior-neutral: no option values, request payloads, worker logic, or cancellation semantics were modified.
+
+### Treated missing live UAT data as an environment constraint, not as proof of completion
+
+- The live `GET /api/jobs/ran-projects` endpoint returned `RAN_PROJECT_WORKBOOK_MISSING`, which matches the UI error shown beside the project selector.
+- Because the project selector remained disabled without workbook-backed data, live long-value and keyboard checks for the real project list could not be fully completed in this pass.
+- No active job existed in the current browser-tab session, so the real Stop Job cancellation selector could not be rendered naturally in the browser during this pass.
+- Recorded these gaps explicitly instead of claiming full UAT completion from indirect evidence alone.

@@ -9,8 +9,8 @@
   "feature_branch": "fix/compact-ui-dropdowns",
   "feature_worktree": "C:\\dev\\ai-worker-platform-dropdowns",
   "baseline_sha": "e2365800ec5a45638bc6d92ba15893b8e23c367d",
-  "current_step": "implemented_compact_dropdown_styles",
-  "next_action": "RUN_FULL_FRONTEND_VALIDATION_AND_UAT",
+  "current_step": "full_validation_and_partial_browser_uat",
+  "next_action": "COMPLETE_BROWSER_UAT_WHEN_REAL_RAN_PROJECT_DATA_AND_CANCEL_FORM_ARE_AVAILABLE",
   "active_goal": "Autonomously complete AI Worker Platform GitHub Issue #21 by verifying PR #22 is merged in origin/main, then executing bounded continuation steps in the fix/compact-ui-dropdowns worktree under the master automation prompt until a single draft PR is ready.",
   "automation": {
     "id": "ai-worker-platform-issue-21-compact-dropdowns-hourly-follow-up",
@@ -82,6 +82,18 @@
         "Added the opt-in compact-inline-select class to the RAN General Item project selector and the cancellation-reason selector in frontend/src/views/HomeView.vue.",
         "Added narrow compact select styling in frontend/src/styles.css without changing the shared cockpit-sites-input behavior for unrelated controls.",
         "Added a focused HomeView regression test to prove the Issue #21 class hook is wired only to the two target selects and verified the full HomeView spec file passes."
+      ]
+    },
+    {
+      "name": "run_full_validation_and_partial_browser_uat",
+      "completed_at": "2026-07-01",
+      "outcome": "partial",
+      "notes": [
+        "Required local frontend validation passed: frontend test, frontend build, frontend smoke, git diff --check, and submodule status review.",
+        "Browser verification confirmed the current worktree frontend and backend load on ports 3000 and 8000 without overlays or console errors.",
+        "Live browser metrics confirmed the RAN General Item selector renders with the compact-inline-select class at compact dimensions and without page-level horizontal overflow.",
+        "MW and RAN Job Detail routes loaded normally in the browser.",
+        "Full browser UAT remains incomplete because the live RAN project catalog endpoint fails with RAN_PROJECT_WORKBOOK_MISSING and no active job was available in the current browser-tab session to expose the real cancellation selector."
       ]
     }
   ],
