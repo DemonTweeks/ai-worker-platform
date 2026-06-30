@@ -9,3 +9,11 @@
 - Found the older RAN worktree at `C:\dev\ai-worker-platform-ran-pr` and left it untouched per mission constraints.
 - Created the heartbeat automation `agnes-provider-reask-composer-hourly-follow-up` for this thread on an hourly cadence.
 - Limited this bounded step to Phase 0 mission-state initialization only; deferred product source inspection and implementation to the next bounded step.
+- Re-read the Master Prompt and persistent mission state at the start of the Phase 1 continuation step.
+- Confirmed Phase 0 is complete, the feature worktree remains on `feature/agnes-provider-reask-composer`, and the overall mission remains incomplete.
+- Discovered that the shared LLM layer already exposes a provider-agnostic contract in `backend/src/config/env.js`, `backend/src/llm/llmClient.js`, and `backend/src/llm/llmUtils.js`; Agnes can be added as a sibling provider without changing the caller entrypoint.
+- Chose to implement Agnes by following the existing `qwenProvider.js` OpenAI-compatible adapter pattern because repository evidence shows it already matches the mission-required `/chat/completions` protocol, timeout flow, result normalization, and redaction behavior.
+- Discovered that backend LLM verification currently relies on script-style coverage, with no focused provider-contract test script; planned a new targeted backend script rather than broad refactoring.
+- Discovered that `frontend/src/components/ReAskPanel.vue` currently owns and clears the draft locally immediately after emitting `ask`, which directly explains the failure-retention bug.
+- Chose to move Re-Ask draft ownership into `frontend/src/views/JobDetailView.vue` and convert `ReAskPanel.vue` into a controlled child with explicit update and submit events, preserving the current single-answer display instead of introducing chat history.
+- Discovered that there is no existing dedicated `ReAskPanel` or `JobDetailView` test file; planned new focused Vitest coverage following the repository's `HomeView.spec.js` interaction-testing style.

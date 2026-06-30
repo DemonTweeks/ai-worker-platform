@@ -15,16 +15,41 @@
     "schedule": "FREQ=HOURLY;INTERVAL=1",
     "status": "ACTIVE"
   },
-  "phase": "Phase 0",
-  "status": "initialized",
+  "phase": "Phase 1",
+  "status": "discovery-complete",
   "completed_scope": [
     "Read the external Master Prompt from disk",
     "Verified primary checkout cleanliness and expected origin/main baseline",
     "Validated existing feature worktree and branch state",
     "Created recurring hourly thread heartbeat",
-    "Initialized persistent mission-state documents"
+    "Initialized persistent mission-state documents",
+    "Inspected shared LLM implementation, configuration helpers, callers, and current backend test surface",
+    "Inspected Re-Ask component and Job Detail flow plus current frontend test surface",
+    "Recorded an evidence-based implementation approach and exact planned file changes without modifying product source"
   ],
-  "next_action": "inspect-llm-and-reask-implementation-surfaces",
+  "phase_1_discovery": {
+    "backend_surfaces": [
+      "backend/src/llm/llmClient.js",
+      "backend/src/llm/providers/qwenProvider.js",
+      "backend/src/llm/llmUtils.js",
+      "backend/src/config/env.js",
+      "backend/src/llm/reAskService.js",
+      "backend/src/services/healthService.js",
+      "backend/scripts/smoke-test.js"
+    ],
+    "frontend_surfaces": [
+      "frontend/src/components/ReAskPanel.vue",
+      "frontend/src/views/JobDetailView.vue",
+      "frontend/src/api/reAskApi.js",
+      "frontend/src/api/jobApi.js",
+      "frontend/src/views/__tests__/HomeView.spec.js"
+    ],
+    "selected_approach": {
+      "agnes_adapter": "Create backend/src/llm/providers/agnesProvider.js as a sibling of qwenProvider.js and register it in the shared provider map without changing caller entrypoints.",
+      "reask_flow": "Move draft ownership to JobDetailView.vue, make ReAskPanel.vue controlled, guard duplicate submissions in parent and child, and clear the draft only after successful askJob completion."
+    }
+  },
+  "next_action": "add-failing-agnes-provider-and-reask-focused-tests",
   "remaining_acceptance_gates": [
     "Agnes provider implementation and focused backend coverage",
     "Re-Ask composer reliability implementation and focused frontend coverage",
@@ -37,7 +62,7 @@
     "submodule unchanged verification",
     "draft PR creation after all gates pass"
   ],
-  "last_checkpoint_commit": null,
+  "last_checkpoint_commit": "e62de67dca09618a06cd8f53c5d631f334817fcf",
   "acceptance_status": "not-started",
   "completed": false
 }
