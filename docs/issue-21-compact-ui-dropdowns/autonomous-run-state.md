@@ -7,7 +7,7 @@
 - Branch: `fix/compact-ui-dropdowns`
 - Worktree: `C:\dev\ai-worker-platform-dropdowns`
 - Goal: complete the compact dropdown UI fix for Issue #21 only
-- Next action: `BLOCKED_LIVE_BROWSER_UAT_ENVIRONMENT`
+- Next action: `BLOCKED_ACTIVE_JOB_UAT_ENVIRONMENT`
 
 ## Precondition
 
@@ -53,4 +53,11 @@ PR #22 was verified on `origin/main` before Issue #21 work began.
 
 - Attempted to create or attach to a real current-session job so the live Stop Job form could be exercised in-browser.
 - Confirmed the browser automation sandbox does not expose `sessionStorage`, `File`, `Blob`, `DataTransfer`, or Vue app handles needed to bind that runtime state from automation alone.
-- The same external blocker remains: the real RAN project selector is disabled by `RAN_PROJECT_WORKBOOK_MISSING`, and the real cancellation selector is unavailable without an active current-session job.
+- The remaining external blocker is that the real cancellation selector is unavailable without an active current-session job.
+
+`recover_ran_catalog_environment_and_reclassify_blocker`
+
+- Classified the reported RAN selector outage as an environment issue caused by an uninitialized submodule checkout rather than a frontend regression.
+- Ran the one allowed recovery command, `git submodule update --init --recursive`, which restored `skills/create-pr-cd-ran` and repopulated its required workbook files.
+- Verified `GET /api/jobs/ran-projects` now returns HTTP `200` with the real project list, so the live RAN selector data path is restored without any source-code changes.
+- The remaining blocked acceptance gate is the real current-session Stop Job cancellation selector, because no cancellable active job is exposed in the active browser-tab session and supported automation still cannot bind one through storage or file APIs.

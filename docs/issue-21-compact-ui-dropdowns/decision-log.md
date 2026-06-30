@@ -38,3 +38,10 @@
 - Tried the remaining realistic paths: reusing historical session ids, creating a current-session job, and driving the visible file input through browser automation.
 - None of those paths were reachable without external-state change because the browser sandbox withholds the storage/file APIs required for session binding, while the live RAN project list is still unavailable due to the missing workbook.
 - Marked the mission state as blocked rather than continuing to repeat the same unsuccessful environment-limited UAT attempts.
+
+### Reclassified the blocker after the bounded environment-recovery pass
+
+- Followed the recovery prompt and treated the reported RAN workbook failure as an environment classification step before changing any source code.
+- Because the submodule checkout was incomplete, used the one explicitly allowed repair command, `git submodule update --init --recursive`, and did not modify the submodule pointer or any backend/frontend source.
+- Verified that `/api/jobs/ran-projects` recovered immediately after initialization, so the prior workbook-missing condition was not a frontend regression and is no longer the controlling blocker.
+- Kept the mission blocked only on the narrower remaining gap: no real cancellable active job is available in the current browser-tab session, and supported automation still cannot bind one through the in-app browser sandbox.

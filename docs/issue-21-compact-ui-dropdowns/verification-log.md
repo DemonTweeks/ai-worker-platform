@@ -106,3 +106,22 @@
   - either restore the real RAN project workbook path used by `/api/jobs/ran-projects`, and/or
   - provide a live current-session active job path that exposes the real Stop Job selector in this browser environment, and/or
   - use a browser environment that exposes the storage/file APIs required for supported session binding.
+
+## 2026-07-01 Environment Recovery Recheck
+
+### Allowed environment repair
+
+- PASS: `git submodule update --init --recursive`
+  - Result: initialized the existing submodules, including `skills/create-pr-cd-ran` at `239910e2816153339a94881597bbb95355059741`.
+- PASS: `Get-ChildItem .\\skills\\create-pr-cd-ran\\config`
+  - Result: confirmed the required workbook `GENERAL ITEM FOR ALL DU PROJECT Overall.xlsx` exists again under the submodule config directory.
+
+### Live RAN catalog recheck
+
+- PASS: `Invoke-WebRequest http://localhost:8000/api/jobs/ran-projects -UseBasicParsing`
+  - Result: HTTP `200` with the real project list; the prior `RAN_PROJECT_WORKBOOK_MISSING` response no longer reproduces.
+
+### Remaining live-UAT blocker
+
+- INCOMPLETE: Real Stop Job cancellation-selector UAT in the active browser-tab session.
+  - Evidence: no cancellable active job is currently exposed in the session, and the in-app browser sandbox still withholds `sessionStorage` and file-construction APIs needed for supported runtime binding from automation alone.
