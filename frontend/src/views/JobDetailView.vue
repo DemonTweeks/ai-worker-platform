@@ -37,6 +37,7 @@
         :loading="asking"
         :value="reAskDraft"
         :answer="displayedReAskAnswer"
+        :error-message="reAskErrorMessage"
         @input="updateReAskDraft"
         @submit-question="handleReAskSubmit"
       />
@@ -92,6 +93,7 @@ export default {
       loading: false,
       asking: false,
       errorMessage: '',
+      reAskErrorMessage: '',
       reAskDraft: '',
       reAskAnswer: null,
       lastSubmittedQuestion: '',
@@ -178,7 +180,14 @@ export default {
       }
     },
     updateReAskDraft(value) {
+      this.clearReAskError();
       this.reAskDraft = value;
+    },
+    clearReAskError() {
+      if (this.reAskErrorMessage && this.errorMessage === this.reAskErrorMessage) {
+        this.errorMessage = '';
+      }
+      this.reAskErrorMessage = '';
     },
     handleReAskSubmit(payload) {
       this.askQuestion(payload && payload.question ? payload.question : '');
@@ -188,14 +197,18 @@ export default {
       if (!this.detail || !this.detail.job || !normalizedQuestion || this.asking) return;
 
       this.asking = true;
+      this.clearReAskError();
       this.errorMessage = '';
       try {
         const answer = await askJob(this.detail.job.jobId, normalizedQuestion);
         this.lastSubmittedQuestion = normalizedQuestion;
         this.reAskAnswer = answer;
+        this.clearReAskError();
         this.reAskDraft = '';
       } catch (error) {
-        this.errorMessage = getErrorMessage(error);
+        const safeErrorMessage = getErrorMessage(error);
+        this.errorMessage = safeErrorMessage;
+        this.reAskErrorMessage = safeErrorMessage;
       } finally {
         this.asking = false;
       }

@@ -54,3 +54,20 @@ Completed the Agnes provider + Re-Ask composer reliability mission in `feature/a
 - Acceptance status: passed
 - Next action: `NO_OP_COMPLETED`
 - Draft PR creation: required immediately after final checkpoint push
+
+## PR #22 UAT Remediation
+
+- Human UAT identified one P1 UX gap after PR #22 opened: Re-Ask failure text was only visible in the top fixed page-level error area.
+- Remediation delivered:
+  - contextual inline Re-Ask error box rendered at the composer interaction point
+  - preserved existing global/page-level safe-error behavior
+  - retained draft on failure
+  - cleared inline error on draft edit
+  - cleared inline error and draft only after successful retry
+- Remediation validation:
+  - focused frontend remediation tests: PASS
+  - `npm.cmd --prefix frontend test`: PASS
+  - `npm.cmd --prefix frontend run build`: PASS
+  - `npm.cmd --prefix backend test`: PASS
+  - `git diff --check`: PASS
+  - focused manual UAT with backend outage, restart, and successful retry: PASS

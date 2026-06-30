@@ -24,3 +24,6 @@
   - Implemented controlled draft retention, success-only clearing, Shift+Enter multiline behavior, and duplicate prevention.
   - Passed backend tests, frontend tests, frontend build, and `git diff --check`.
   - Recorded changed-file scope, sensitive-data scan, unchanged-submodule verification, and browser UAT evidence.
+  - Reopened the mission for scoped PR #22 UAT remediation of missing inline Re-Ask failure feedback beside the composer.
+  - Added contextual inline Re-Ask failure feedback at the composer while preserving the existing global error path.
+  - Passed focused remediation frontend tests, required backend/frontend/build/diff validation, and focused failure-then-retry manual UAT.

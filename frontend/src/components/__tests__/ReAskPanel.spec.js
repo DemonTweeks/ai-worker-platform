@@ -67,4 +67,11 @@ describe('ReAskPanel', () => {
 
     expect(wrapper.emitted('input')).toEqual([['New question']]);
   });
+
+  it('renders an inline safe error message beside the composer when provided', () => {
+    const wrapper = mountPanel({ errorMessage: 'Network Error' });
+
+    expect(wrapper.text()).toContain('Network Error');
+    expect(wrapper.find('[data-testid="reask-inline-error"]').exists()).toBe(true);
+  });
 });

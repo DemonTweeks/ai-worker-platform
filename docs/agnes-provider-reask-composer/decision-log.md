@@ -22,3 +22,8 @@
 - Installed backend and frontend dependencies in the Agnes worktree so new focused tests could execute in the isolated worktree.
 - Initialized tracked submodules in the Agnes worktree with `git submodule update --init --recursive` after backend integration validation first failed due missing baseline fixture content; submodule pointers remained unchanged.
 - Chose a deterministic browser-UAT failure path by submitting an oversized Re-Ask question, which exercises the safe validation path without requiring live Agnes credentials or backend faults.
+- Human UAT on PR #22 reported a P1 UX defect: failed Re-Ask requests retain the draft, but the safe error is visible only in the top fixed page-level error area rather than beside the Re-Ask interaction point.
+- Root cause from current repository state: `JobDetailView.vue` sends failed Re-Ask safe text only into the shared page-level `errorMessage`, while `ReAskPanel.vue` has no scoped inline error prop or render path.
+- Remediation scope is limited to contextual inline Re-Ask failure feedback while preserving the existing global page-level safe-error behavior for Job Detail failures outside the Re-Ask interaction flow.
+- Chose to preserve the current top-level safe-error path for Re-Ask failures and add a second scoped inline error surface via `ReAskPanel.vue`, rather than rerouting all Re-Ask errors away from the page-level error area.
+- Chose to track Re-Ask failure text separately from global Job Detail failures so the inline error can clear on draft edit and successful retry without changing unrelated page-level error handling.

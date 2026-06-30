@@ -30,7 +30,11 @@
     "Implemented controlled Re-Ask composer ownership and duplicate-prevention behavior",
     "Passed required focused and full backend/frontend validation gates",
     "Recorded changed-file scope, secret scan, unchanged-submodule, and browser UAT evidence",
-    "Wrote final mission completion artifacts and completion marker"
+    "Wrote final mission completion artifacts and completion marker",
+    "Reopened the mission for scoped PR #22 UAT remediation of missing inline Re-Ask failure feedback",
+    "Added contextual inline Re-Ask error feedback while preserving global Job Detail safe-error behavior",
+    "Passed required frontend, backend, build, diff, and focused manual remediation UAT gates",
+    "Restored completed mission state after PR #22 remediation validation"
   ],
   "phase_1_discovery": {
     "backend_surfaces": [
@@ -56,7 +60,7 @@
   },
   "next_action": "NO_OP_COMPLETED",
   "remaining_acceptance_gates": [],
-  "last_checkpoint_commit": "e62de67dca09618a06cd8f53c5d631f334817fcf",
+  "last_checkpoint_commit": "b4f9ab4a65fc615374760f4a8491efb094ee9320",
   "acceptance_status": "passed",
   "completed": true
 }

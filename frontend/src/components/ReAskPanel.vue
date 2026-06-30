@@ -16,6 +16,13 @@
       :disabled="!jobId || !value.trim()"
       @click="submit"
     />
+    <div
+      v-if="errorMessage"
+      data-testid="reask-inline-error"
+      class="inline-error-box"
+    >
+      {{ errorMessage }}
+    </div>
     <div v-if="answer" class="answer-box">
       <div class="answer-meta">{{ answer.answerSource }} · {{ answer.llmStatus }}</div>
       <p v-if="answer.question" class="question-text">{{ answer.question }}</p>
@@ -34,6 +41,7 @@ export default {
     jobId: { type: String, default: '' },
     loading: { type: Boolean, default: false },
     answer: { type: Object, default: null },
+    errorMessage: { type: String, default: '' },
     value: { type: String, default: '' }
   },
   methods: {

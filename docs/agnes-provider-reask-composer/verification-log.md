@@ -58,3 +58,51 @@
   - deterministic safe failure path via oversized question returned validation error and retained the 2001-character draft
   - History navigation worked
   - cancelled Job Detail page loaded for `PR-20260630-019`, confirming cancellation-related detail UI remained usable
+
+## 2026-06-30 PR #22 UAT Remediation Reopen
+
+- Human UAT defect:
+  - Functional behavior passed: failed Re-Ask retains the draft
+  - UX behavior failed: safe failure text is rendered only in the page-level fixed/top error area
+  - Impact: users at the bottom Re-Ask composer cannot see the retry guidance without scrolling
+- Confirmed current root cause from code inspection:
+  - `frontend/src/views/JobDetailView.vue` writes Re-Ask failures into the shared `errorMessage`
+  - `frontend/src/components/ReAskPanel.vue` has no inline error prop or scoped error rendering
+- Remediation requirements for this scoped step:
+  - preserve current global Job Detail safe-error behavior
+  - add inline Re-Ask error visibility at the interaction point
+  - clear inline Re-Ask error on draft edit and on successful retry
+  - retain draft on failure and keep composer usable for retry
+
+## 2026-06-30 PR #22 UAT Remediation Verification
+
+- Focused remediation frontend tests:
+  - `npm.cmd exec vitest run src/components/__tests__/ReAskPanel.spec.js src/views/__tests__/JobDetailView.spec.js`
+  - Result: PASS
+  - Covered: inline Re-Ask error rendering, failure draft retention, edit clears inline error, retry success clears inline error and draft, global Job Detail error behavior unchanged for non-Re-Ask failures
+- Required frontend suite:
+  - `npm.cmd --prefix frontend test`
+  - Result: PASS
+- Required frontend production build:
+  - `npm.cmd --prefix frontend run build`
+  - Result: PASS
+- Required backend suite:
+  - `npm.cmd --prefix backend test`
+  - Result: PASS
+  - Note: backend output still includes the existing non-failing ZIP-size warnings and circular-dependency warnings, but exits `0`
+- Diff integrity:
+  - `git diff --check`
+  - Result: PASS
+- Focused manual UAT on local app (`http://127.0.0.1:3000` with backend `http://127.0.0.1:8000`):
+  - Opened completed Job Detail page for `PR-20260630-017`
+  - Filled draft question `Why did this finish cleanly?`
+  - Stopped backend to create deterministic request failure
+  - Submitted Re-Ask request and confirmed:
+    - inline `Network Error` visible at the Re-Ask interaction point without scrolling
+    - existing global page-level `Network Error` remained visible
+    - draft remained `Why did this finish cleanly?`
+  - Restarted backend
+  - Submitted the same preserved draft successfully and confirmed:
+    - inline Re-Ask error cleared
+    - draft cleared only after successful response
+    - answer rendered for the submitted question

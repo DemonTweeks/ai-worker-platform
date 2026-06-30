@@ -99,6 +99,47 @@ describe('JobDetailView', () => {
 
     expect(wrapper.vm.reAskDraft).toBe('Keep me');
     expect(wrapper.vm.errorMessage).toBe('Network Error');
+    expect(wrapper.findComponent({ name: 'ReAskPanel' }).props('errorMessage')).toBe('Network Error');
+  });
+
+  it('clears the inline Re-Ask error when the draft is edited after failure', async () => {
+    askJob.mockRejectedValueOnce(new Error('Network Error'));
+
+    const wrapper = await mountView();
+    await wrapper.setData({
+      reAskDraft: 'Keep me'
+    });
+
+    await wrapper.vm.askQuestion('Keep me');
+    wrapper.vm.updateReAskDraft('Keep me again');
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.findComponent({ name: 'ReAskPanel' }).props('errorMessage')).toBe('');
+  });
+
+  it('clears the inline Re-Ask error and draft only after a successful retry', async () => {
+    askJob
+      .mockRejectedValueOnce(new Error('Network Error'))
+      .mockResolvedValueOnce({
+        answer: 'Recovered',
+        answerSource: 'llm',
+        llmStatus: 'success',
+        question: 'Retry me'
+      });
+
+    const wrapper = await mountView();
+    await wrapper.setData({
+      reAskDraft: 'Retry me'
+    });
+
+    await wrapper.vm.askQuestion('Retry me');
+    expect(wrapper.findComponent({ name: 'ReAskPanel' }).props('errorMessage')).toBe('Network Error');
+    expect(wrapper.vm.reAskDraft).toBe('Retry me');
+
+    await wrapper.vm.askQuestion('Retry me');
+
+    expect(wrapper.findComponent({ name: 'ReAskPanel' }).props('errorMessage')).toBe('');
+    expect(wrapper.vm.reAskDraft).toBe('');
   });
 
   it('prevents duplicate submissions while a request is active', async () => {
@@ -145,5 +186,34 @@ describe('JobDetailView', () => {
 
     expect(wrapper.vm.lastSubmittedQuestion).toBe('What happened?');
     expect(wrapper.findComponent({ name: 'ReAskPanel' }).props('answer').question).toBe('What happened?');
+  });
+
+  it('keeps existing global Job Detail error behavior for non-Re-Ask failures', async () => {
+    getJobDetail.mockReset();
+    getJobDetail.mockRejectedValueOnce(new Error('Top-level load failure'));
+
+    const wrapper = mount(JobDetailView, {
+      propsData: {
+        jobId: 'JOB-DETAIL-1'
+      },
+      stubs: {
+        ErrorBanner: { template: '<div class="error-banner">{{ message }}</div>', props: ['message'] },
+        FinalSummary: true,
+        FailureDiagnosis: true,
+        JobDetailAssetVersions: true,
+        JobDetailFiles: true,
+        JobDetailHeader: true,
+        JobDetailReviewRequired: true,
+        JobDetailSummary: true,
+        JobDetailTimeline: true,
+        JobDetailWarnings: true,
+        routerLink: true
+      }
+    });
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(wrapper.find('.error-banner').text()).toContain('Top-level load failure');
   });
 });
