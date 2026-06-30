@@ -27,3 +27,18 @@
 - Not run yet: `npm.cmd --prefix frontend run build`
 - Not run yet: `git diff --check`
 - Not run yet: manual browser UAT
+
+## 2026-07-01 Focused Implementation Verification
+
+### TDD evidence
+
+- PASS: Added a focused regression test in `frontend/src/views/__tests__/HomeView.spec.js` for the new compact dropdown hook.
+- PASS: The targeted test initially failed before the production change because no `.compact-inline-select` controls existed.
+- PASS: After updating the two target selects and adding the narrow CSS, the targeted test passed.
+
+### Focused verification
+
+- PASS: `npm.cmd run test:unit -- src/views/__tests__/HomeView.spec.js`
+  - Result: `17 passed`
+- PASS: `git diff --check`
+  - Result: exit code `0`; only line-ending warnings were emitted by git on Windows

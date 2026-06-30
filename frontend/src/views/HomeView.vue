@@ -166,7 +166,7 @@
                 <div class="cockpit-field-group">
                   <span class="field-label">General Item project</span>
                   <select
-                    class="cockpit-sites-input"
+                    class="cockpit-sites-input compact-inline-select"
                     :disabled="ranRunMode !== 'general-item' || ranProjectLoading"
                     :value="ranSelectedProject"
                     @change="ranSelectedProject = $event.target.value"
@@ -323,7 +323,7 @@
                 <label class="field-label" for="cancel-reason">Cancellation reason</label>
                 <select
                   id="cancel-reason"
-                  class="cockpit-sites-input"
+                  class="cockpit-sites-input compact-inline-select"
                   :disabled="cancellingRequest"
                   :value="cancelReasonCode"
                   @change="cancelReasonCode = $event.target.value"

@@ -18,3 +18,9 @@
 - The user asked to start and attach the mission, not to finish the feature in one turn.
 - To keep the first autonomous continuation bounded and recoverable, this pass stopped after state initialization, dropdown discovery, and implementation planning.
 - The next step is a focused frontend styling change for the two selectors only.
+
+### Used an opt-in class instead of changing the shared input class
+
+- Added `compact-inline-select` only to the two Issue #21 selects in `frontend/src/views/HomeView.vue`.
+- Avoided changing `cockpit-sites-input` globally because that shared class is also used by textareas and other controls outside the mission scope.
+- Kept the change frontend-only and behavior-neutral: no option values, request payloads, worker logic, or cancellation semantics were modified.
