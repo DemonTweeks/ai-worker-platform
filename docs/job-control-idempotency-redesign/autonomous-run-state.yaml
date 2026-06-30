@@ -38,3 +38,4 @@ planned_phases:
 notes:
   - "Fetched latest remote head before implementation."
   - "Remote head introduced accidental docs/.keep placeholder; remove it from this branch and final PR diff."
+blocker: "Automated validation is complete, but browser UAT evidence and the PR description/comment update are still pending."

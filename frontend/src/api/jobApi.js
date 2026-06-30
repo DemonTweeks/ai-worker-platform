@@ -26,8 +26,8 @@ export const prevalidateUpload = async (file, uploadKind = null, requestScope = 
   if (requestScope.workerId) {
     formData.append('workerId', requestScope.workerId);
   }
-  if (requestScope.submissionScopeId) {
-    formData.append('submissionScopeId', requestScope.submissionScopeId);
+  if (requestScope.browserTabSessionId) {
+    formData.append('browserTabSessionId', requestScope.browserTabSessionId);
   }
   const response = await api.post('/api/jobs/prevalidate', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },

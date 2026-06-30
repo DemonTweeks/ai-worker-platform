@@ -19,6 +19,22 @@ const getQueueState = () => ({
   queuedCount: queuedJobIds.length
 });
 
+const getJobOwnership = (jobId) => {
+  if (queuedJobIds.includes(jobId)) {
+    return 'queued';
+  }
+
+  if (activeJobIds.has(jobId)) {
+    return 'running';
+  }
+
+  if (knownJobIds.has(jobId)) {
+    return 'known';
+  }
+
+  return 'unknown';
+};
+
 const resolveJobAdapter = async (jobId) => {
   const job = await Job.findOne({ jobId });
 
@@ -95,6 +111,7 @@ const cancelQueuedJob = async (jobId) => {
 module.exports = {
   cancelQueuedJob,
   enqueueJob,
+  getJobOwnership,
   getQueueState,
   resolveJobAdapter
 };

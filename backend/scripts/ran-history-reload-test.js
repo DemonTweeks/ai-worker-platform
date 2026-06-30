@@ -23,6 +23,9 @@ const sampleEpmsPath = path.join(ranSkillRoot, 'input', 'EPMS.xlsx');
 const selectedProject = 'CD consolidation 2023 (Swap/ Modernize)';
 const terminalStatuses = new Set(['completed', 'completed_with_warning', 'failed', 'cancelled', 'cancelled_with_partial_result']);
 const createdJobIds = new Set();
+const browserTabSessionId = 'QA-RAN-HISTORY-TAB';
+let idempotencySequence = 0;
+const nextIdempotencyKey = () => `ran-history-${++idempotencySequence}`;
 
 const request = async (baseUrl, route, options = {}) => {
   const response = await fetch(`${baseUrl}${route}`, options);
@@ -96,6 +99,8 @@ const runReloadScenario = async (baseUrl) => {
 
   const created = await postJson(baseUrl, '/api/jobs', {
     workerId: 'ran-pr',
+    browserTabSessionId,
+    idempotencyKey: nextIdempotencyKey(),
     bomPrevalidatedFileId: bomPrevalidation.body.prevalidatedFileId,
     epmsPrevalidatedFileId: epmsPrevalidation.body.prevalidatedFileId,
     runMode: 'general-item',

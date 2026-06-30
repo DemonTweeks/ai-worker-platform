@@ -33,25 +33,51 @@ const CANCELLATION_REASON_LABELS = {
   other: 'Other'
 };
 
-const submissionScopeReservations = new Set();
+const idempotencyReservations = new Map();
 
 const normalizeWorkerId = (workerId) => {
   const normalized = String(workerId || WORKER_IDS.MW_PR).trim();
   return normalized || WORKER_IDS.MW_PR;
 };
 
-const normalizeSubmissionScopeId = (submissionScopeId) => {
-  const normalized = String(submissionScopeId || '').trim();
+const normalizeBrowserTabSessionId = (browserTabSessionId) => {
+  const normalized = String(browserTabSessionId || '').trim();
 
   if (!normalized) {
-    return '';
+    throw createApiError(
+      400,
+      'VALIDATION_ERROR',
+      'browserTabSessionId must be an 8-120 character browser-tab identifier.'
+    );
   }
 
   if (!/^[A-Za-z0-9:_-]{8,120}$/.test(normalized)) {
     throw createApiError(
       400,
       'VALIDATION_ERROR',
-      'submissionScopeId must be an 8-120 character session-scoped identifier.'
+      'browserTabSessionId must be an 8-120 character browser-tab identifier.'
+    );
+  }
+
+  return normalized;
+};
+
+const normalizeIdempotencyKey = (idempotencyKey) => {
+  const normalized = String(idempotencyKey || '').trim();
+
+  if (!normalized) {
+    throw createApiError(
+      400,
+      'VALIDATION_ERROR',
+      'idempotencyKey must be an 8-160 character logical-create identifier.'
+    );
+  }
+
+  if (!/^[A-Za-z0-9:_-]{8,160}$/.test(normalized)) {
+    throw createApiError(
+      400,
+      'VALIDATION_ERROR',
+      'idempotencyKey must be an 8-160 character logical-create identifier.'
     );
   }
 
@@ -115,76 +141,39 @@ const appendStatusEvent = (job = {}, type, payload = {}) => {
   return existingEvents;
 };
 
-const findActiveScopedJob = async ({ workerId, submissionScopeId }) => {
-  const normalizedScopeId = normalizeSubmissionScopeId(submissionScopeId);
-
-  if (!normalizedScopeId) {
-    return null;
-  }
-
+const findJobByIdempotency = async ({ workerId, idempotencyKey }) => {
   const jobs = await Job.find({
     workerId: normalizeWorkerId(workerId),
-    submissionScopeId: normalizedScopeId,
-    status: { $in: ACTIVE_JOB_STATUSES }
+    idempotencyKey: normalizeIdempotencyKey(idempotencyKey)
   }).sort({ createdAt: -1 }).limit(1).lean();
 
   return Array.isArray(jobs) && jobs.length > 0 ? jobs[0] : null;
 };
 
-const buildScopeReservationKey = ({ workerId, submissionScopeId }) => {
-  const normalizedScopeId = normalizeSubmissionScopeId(submissionScopeId);
+const buildIdempotencyReservationKey = ({ workerId, idempotencyKey }) => (
+  `${normalizeWorkerId(workerId)}::${normalizeIdempotencyKey(idempotencyKey)}`
+);
 
-  if (!normalizedScopeId) {
-    return '';
+const withIdempotencyReservation = async ({ workerId, idempotencyKey }, operation) => {
+  const reservationKey = buildIdempotencyReservationKey({ workerId, idempotencyKey });
+  const inFlightReservation = idempotencyReservations.get(reservationKey);
+
+  if (inFlightReservation) {
+    await inFlightReservation.catch(() => {});
+    return withIdempotencyReservation({ workerId, idempotencyKey }, operation);
   }
 
-  return `${normalizeWorkerId(workerId)}::${normalizedScopeId}`;
-};
-
-const assertNoActiveScopedJob = async ({ workerId, submissionScopeId }) => {
-  const activeJob = await findActiveScopedJob({ workerId, submissionScopeId });
-
-  if (!activeJob) {
-    return null;
-  }
-
-  throw createApiError(
-    409,
-    'ACTIVE_JOB_EXISTS',
-    'An active job already exists for this worker in the current browser session. Wait for it to finish or stop it before submitting again.',
-    {
-      jobId: activeJob.jobId,
-      workerId: activeJob.workerId || normalizeWorkerId(workerId),
-      status: activeJob.status
-    }
-  );
-};
-
-const withSubmissionScopeReservation = async ({ workerId, submissionScopeId }, operation) => {
-  const reservationKey = buildScopeReservationKey({ workerId, submissionScopeId });
-
-  if (!reservationKey) {
-    return operation();
-  }
-
-  if (submissionScopeReservations.has(reservationKey)) {
-    throw createApiError(
-      409,
-      'ACTIVE_JOB_EXISTS',
-      'An active job already exists for this worker in the current browser session. Wait for it to finish or stop it before submitting again.',
-      {
-        workerId: normalizeWorkerId(workerId),
-        status: 'reserving'
-      }
-    );
-  }
-
-  submissionScopeReservations.add(reservationKey);
+  let releaseReservation;
+  const reservationPromise = new Promise((resolve) => {
+    releaseReservation = resolve;
+  });
+  idempotencyReservations.set(reservationKey, reservationPromise);
 
   try {
     return await operation();
   } finally {
-    submissionScopeReservations.delete(reservationKey);
+    idempotencyReservations.delete(reservationKey);
+    releaseReservation();
   }
 };
 
@@ -193,15 +182,15 @@ module.exports = {
   CANCELLATION_REASON_LABELS,
   RUNNING_JOB_STATUSES,
   TERMINAL_JOB_STATUSES,
-  assertNoActiveScopedJob,
   appendStatusEvent,
   buildCancellationMetadata,
-  buildScopeReservationKey,
-  findActiveScopedJob,
+  buildIdempotencyReservationKey,
+  findJobByIdempotency,
   isActiveJobStatus,
   isTerminalJobStatus,
+  normalizeBrowserTabSessionId,
   normalizeCancellationReason,
-  normalizeSubmissionScopeId,
+  normalizeIdempotencyKey,
   normalizeWorkerId,
-  withSubmissionScopeReservation
+  withIdempotencyReservation
 };

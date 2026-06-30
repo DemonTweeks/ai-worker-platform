@@ -8,7 +8,7 @@ Correct PR #20 from one-active-job-per-worker/browser-session behavior to idempo
 
 - Keep `MAX_CONCURRENT_JOBS` as the only global capacity control.
 - Duplicate detection must use `workerId + idempotencyKey`.
-- `browserSessionId` is grouping/restoration metadata only.
+- `browserTabSessionId` is grouping/restoration metadata only.
 - Do not merge, deploy, close #13, or close #16.
 - Do not modify worker-engine logic outside queue-control integration needs.
 

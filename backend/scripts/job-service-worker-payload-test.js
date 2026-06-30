@@ -145,7 +145,8 @@ const runTests = async () => {
     const createResult = await jobService.createJob({
       prevalidatedFileId: 'prevalidated-1',
       workerId: 'mw-pr',
-      submissionScopeId: 'mw-pr-session-1234',
+      browserTabSessionId: 'mw-pr-tab-1234',
+      idempotencyKey: 'mw-idem-1234',
       prScope: 'TSS',
       generationScope: 'site_code',
       siteCodes: ['abc001', 'ABC001']
@@ -158,22 +159,23 @@ const runTests = async () => {
     assert.strictEqual(createdJobs[0].workerId, 'mw-pr');
     assert.strictEqual(createdJobs[0].engineVersion, 'platform-current');
     assert.strictEqual(createdJobs[0].engineCommit, 'platform-current');
+    assert.strictEqual(createdJobs[0].browserTabSessionId, 'mw-pr-tab-1234');
+    assert.strictEqual(createdJobs[0].idempotencyKey, 'mw-idem-1234');
     assert(copiedBuffers[0].includes('"workerId": "mw-pr"'));
     assert.strictEqual(createdFiles[0].fileType, 'uploaded_export');
-    assert.strictEqual(createdJobs[0].submissionScopeId, 'mw-pr-session-1234');
+    assert.strictEqual(createdJobs[0].browserTabSessionId, 'mw-pr-tab-1234');
 
-    await assert.rejects(
-      () => jobService.createJob({
+    const duplicateMwResult = await jobService.createJob({
         prevalidatedFileId: 'prevalidated-duplicate',
         workerId: 'mw-pr',
-        submissionScopeId: 'mw-pr-session-1234',
+        browserTabSessionId: 'mw-pr-tab-1234',
+        idempotencyKey: 'mw-idem-1234',
         prScope: 'TSS',
         generationScope: 'site_code',
         siteCodes: ['ABC001']
-      }),
-      (error) => error.statusCode === 409 && error.code === 'ACTIVE_JOB_EXISTS',
-      'duplicate MW submissions in the same session scope should be rejected'
-    );
+      });
+    assert.strictEqual(duplicateMwResult.job.jobId, createResult.job.jobId, 'duplicate MW submissions should replay the existing job');
+    assert.strictEqual(createdJobs.length, 1, 'duplicate MW submissions should not create a second job');
 
     createdJobs.length = 0;
     createdFiles.length = 0;
@@ -181,7 +183,8 @@ const runTests = async () => {
 
     const ranCreateResult = await jobService.createJob({
       workerId: 'ran-pr',
-      submissionScopeId: 'ran-pr-session-1234',
+      browserTabSessionId: 'ran-pr-tab-1234',
+      idempotencyKey: 'ran-idem-1234',
       bomPrevalidatedFileId: 'ran-bom-1',
       epmsPrevalidatedFileId: 'ran-epms-1',
       runMode: 'general-item',
@@ -206,20 +209,20 @@ const runTests = async () => {
     assert(copiedBuffers[0].includes('"workerId": "ran-pr"'));
     assert(copiedBuffers[0].includes('"runMode": "general-item"'));
     assert(copiedBuffers[0].includes('"selectedProject": "Project Thanos"'));
-    assert.strictEqual(createdJobs[0].submissionScopeId, 'ran-pr-session-1234');
+    assert.strictEqual(createdJobs[0].browserTabSessionId, 'ran-pr-tab-1234');
+    assert.strictEqual(createdJobs[0].idempotencyKey, 'ran-idem-1234');
 
-    await assert.rejects(
-      () => jobService.createJob({
+    const duplicateRanResult = await jobService.createJob({
         workerId: 'ran-pr',
-        submissionScopeId: 'ran-pr-session-1234',
+        browserTabSessionId: 'ran-pr-tab-1234',
+        idempotencyKey: 'ran-idem-1234',
         bomPrevalidatedFileId: 'ran-bom-1',
         epmsPrevalidatedFileId: 'ran-epms-1',
         runMode: 'general-item',
         selectedProject: 'Project Thanos'
-      }),
-      (error) => error.statusCode === 409 && error.code === 'ACTIVE_JOB_EXISTS',
-      'duplicate RAN submissions in the same session scope should be rejected'
-    );
+      });
+    assert.strictEqual(duplicateRanResult.job.jobId, ranCreateResult.job.jobId, 'duplicate RAN submissions should replay the existing job');
+    assert.strictEqual(createdJobs.length, 1, 'duplicate RAN submissions should not create a second job');
 
     await assert.rejects(
       () => jobService.createJob({
@@ -250,6 +253,8 @@ const runTests = async () => {
         workerId: 'ran-pr',
         workerType: 'pr-worker',
         status: 'completed',
+        browserTabSessionId: 'ran-pr-tab-1234',
+        idempotencyKey: 'ran-idem-1234',
         createdAt: '2026-06-26T00:00:00.000Z',
         generationScope: 'all_sites',
         prScope: 'TSS',
@@ -270,6 +275,8 @@ const runTests = async () => {
         workerId: 'mw-pr',
         workerType: 'pr-worker',
         status: 'queued',
+        browserTabSessionId: 'mw-pr-tab-1234',
+        idempotencyKey: 'mw-idem-1234',
         createdAt: '2026-06-26T00:00:00.000Z',
         generationScope: 'site_code',
         prScope: 'TI',
@@ -287,19 +294,27 @@ const runTests = async () => {
       sort: () => ({
         skip: () => ({
           limit: () => ({
-            lean: async () => mockJobs.filter((job) => !filter.workerId || job.workerId === filter.workerId)
+            lean: async () => mockJobs.filter((job) => (
+              (!filter.workerId || job.workerId === filter.workerId)
+              && (!filter.browserTabSessionId || job.browserTabSessionId === filter.browserTabSessionId)
+            ))
           })
         })
       })
     });
-    Job.countDocuments = async (filter) => mockJobs.filter((job) => !filter.workerId || job.workerId === filter.workerId).length;
+    Job.countDocuments = async (filter) => mockJobs.filter((job) => (
+      (!filter.workerId || job.workerId === filter.workerId)
+      && (!filter.browserTabSessionId || job.browserTabSessionId === filter.browserTabSessionId)
+    )).length;
 
-    const listResult = await jobService.listJobs({ workerId: 'ran-pr' });
+    const listResult = await jobService.listJobs({ workerId: 'ran-pr', browserTabSessionId: 'ran-pr-tab-1234' });
     assert.strictEqual(listResult.items.length, 1);
     assert.strictEqual(listResult.items[0].workerId, 'ran-pr');
     assert.strictEqual(listResult.items[0].workerDisplayName, 'RAN PR Worker');
     assert.strictEqual(listResult.items[0].runMode, 'general-item');
     assert.strictEqual(listResult.items[0].selectedProject, 'Project Thanos');
+    assert.strictEqual(listResult.items[0].browserTabSessionId, 'ran-pr-tab-1234');
+    assert.strictEqual(listResult.items[0].idempotencyKey, 'ran-idem-1234');
 
     const detailJob = {
       ...mockJobs[0],

@@ -15,6 +15,7 @@ const setCachedModule = (modulePath, exports) => {
 };
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const consumedUploadCounts = new Map();
 
 setCachedModule(path.join(repoRoot, 'src/services/prevalidationService.js'), {
   UPLOAD_KINDS: {
@@ -24,6 +25,7 @@ setCachedModule(path.join(repoRoot, 'src/services/prevalidationService.js'), {
   },
   consumePrevalidatedUpload: async (prevalidatedFileId) => {
     await delay(50);
+    consumedUploadCounts.set(prevalidatedFileId, (consumedUploadCounts.get(prevalidatedFileId) || 0) + 1);
     const uploadMap = {
       'mw-upload-1': { uploadKind: 'mw-export', originalFileName: 'mw.xlsx' },
       'mw-upload-2': { uploadKind: 'mw-export', originalFileName: 'mw.xlsx' },
@@ -98,8 +100,8 @@ const closeServer = async (server) => {
   await new Promise((resolve) => server.close(resolve));
 };
 
-const listScopedJobs = async (workerId, submissionScopeId) => (
-  Job.find({ workerId, submissionScopeId }).lean()
+const listScopedJobs = async (workerId, idempotencyKey) => (
+  Job.find({ workerId, idempotencyKey }).lean()
 );
 
 const runConcurrentCreate = async ({ baseUrl, workerId, payload }) => {
@@ -154,10 +156,11 @@ const runTests = async () => {
 
     serverInfo = await createServer();
 
-    const mwScope = 'mw-pr-session-race';
+    const mwIdempotencyKey = 'mw-idempotency-race';
     const mwPayload = {
       workerId: 'mw-pr',
-      submissionScopeId: mwScope,
+      browserTabSessionId: 'mw-pr-tab-race',
+      idempotencyKey: mwIdempotencyKey,
       prevalidatedFileId: 'mw-upload-1',
       generationScope: 'site_code',
       prScope: 'TSS',
@@ -169,14 +172,17 @@ const runTests = async () => {
       payload: mwPayload
     });
     const mwStatuses = mwResults.map((result) => result.response.status).sort();
-    assert.deepStrictEqual(mwStatuses, [201, 409], 'MW same-scope concurrent creates should allow exactly one success');
-    const mwJobs = await listScopedJobs('mw-pr', mwScope);
-    assert.strictEqual(mwJobs.length, 1, 'MW same-scope concurrent create should persist exactly one job');
+    assert.deepStrictEqual(mwStatuses, [200, 201], 'MW duplicate concurrent creates should create once and replay once');
+    assert.strictEqual(mwResults[0].body.job.jobId, mwResults[1].body.job.jobId, 'MW duplicate concurrent creates should return the same job id');
+    const mwJobs = await listScopedJobs('mw-pr', mwIdempotencyKey);
+    assert.strictEqual(mwJobs.length, 1, 'MW duplicate concurrent create should persist exactly one job');
+    assert.strictEqual(consumedUploadCounts.get('mw-upload-1'), 1, 'MW duplicate concurrent create should consume the upload only once');
 
-    const ranScope = 'ran-pr-session-race';
+    const ranIdempotencyKey = 'ran-idempotency-race';
     const ranPayload = {
       workerId: 'ran-pr',
-      submissionScopeId: ranScope,
+      browserTabSessionId: 'ran-pr-tab-race',
+      idempotencyKey: ranIdempotencyKey,
       bomPrevalidatedFileId: 'ran-bom-1',
       epmsPrevalidatedFileId: 'ran-epms-1',
       runMode: 'general-item',
@@ -188,9 +194,12 @@ const runTests = async () => {
       payload: ranPayload
     });
     const ranStatuses = ranResults.map((result) => result.response.status).sort();
-    assert.deepStrictEqual(ranStatuses, [201, 409], 'RAN same-scope concurrent creates should allow exactly one success');
-    const ranJobs = await listScopedJobs('ran-pr', ranScope);
-    assert.strictEqual(ranJobs.length, 1, 'RAN same-scope concurrent create should persist exactly one job');
+    assert.deepStrictEqual(ranStatuses, [200, 201], 'RAN duplicate concurrent creates should create once and replay once');
+    assert.strictEqual(ranResults[0].body.job.jobId, ranResults[1].body.job.jobId, 'RAN duplicate concurrent creates should return the same job id');
+    const ranJobs = await listScopedJobs('ran-pr', ranIdempotencyKey);
+    assert.strictEqual(ranJobs.length, 1, 'RAN duplicate concurrent create should persist exactly one job');
+    assert.strictEqual(consumedUploadCounts.get('ran-bom-1'), 1, 'RAN duplicate concurrent create should consume the BOM only once');
+    assert.strictEqual(consumedUploadCounts.get('ran-epms-1'), 1, 'RAN duplicate concurrent create should consume the EPMS only once');
 
     const queuedJob = await Job.create({
       jobId: 'PR-CANCEL-SPOOF',

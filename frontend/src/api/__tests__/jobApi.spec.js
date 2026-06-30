@@ -29,7 +29,7 @@ describe('jobApi prevalidateUpload', () => {
 
     await prevalidateUpload(file, 'ran-bom', {
       workerId: 'ran-pr',
-      submissionScopeId: 'ran-pr-session-1234'
+      browserTabSessionId: 'ran-pr-tab-1234'
     });
 
     expect(postMock).toHaveBeenCalledTimes(1);
@@ -38,7 +38,7 @@ describe('jobApi prevalidateUpload', () => {
     expect(formData.get('file')).toBe(file);
     expect(formData.get('uploadKind')).toBe('ran-bom');
     expect(formData.get('workerId')).toBe('ran-pr');
-    expect(formData.get('submissionScopeId')).toBe('ran-pr-session-1234');
+    expect(formData.get('browserTabSessionId')).toBe('ran-pr-tab-1234');
     expect(config).toMatchObject({
       headers: { 'Content-Type': 'multipart/form-data' },
       timeout: 120000

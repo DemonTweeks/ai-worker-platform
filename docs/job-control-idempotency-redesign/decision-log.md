@@ -8,8 +8,12 @@
 - PR #20 review comments are cleared for the prior same-scope reservation model, but the new mission supersedes that model and requires multi-job support from the same browser session.
 - The latest remote branch head introduced only `docs/.keep`; remove it from the branch so it does not remain in the final PR diff.
 
-## Pending design decisions
+## 2026-06-30 - Final redesign decisions
 
-- Final backend reservation shape for `workerId + idempotencyKey`.
-- Safe API shape for current-session job restoration and selected-job switching.
-- Orphaned persisted non-terminal job resolution path after runtime restart.
+- `browserTabSessionId` replaces `submissionScopeId`/`browserSessionId` terminology and is generated once per browser tab, stored in `sessionStorage`, and used only for same-tab active-job grouping and restoration.
+- `idempotencyKey` is the only duplicate boundary, keyed by `workerId + idempotencyKey`.
+- Repeated create requests with the same idempotency key return the same persisted Job safely instead of `409 ACTIVE_JOB_EXISTS`.
+- Global queue concurrency remains controlled only by `MAX_CONCURRENT_JOBS`; unrelated jobs from the same tab or worker continue independently.
+- Prevalidation is never blocked by another active job.
+- The frontend keeps worker forms available while showing a shared Active Jobs workbench for the current `browserTabSessionId`.
+- Cancellation resolves orphaned non-terminal persisted jobs to a safe terminal state when no live runtime ownership remains.

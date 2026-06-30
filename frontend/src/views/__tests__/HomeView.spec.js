@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import HomeView from '../HomeView.vue';
-import { cancelJob, createJob, getHealth, getJobDetail, listRanProjects, prevalidateUpload } from '../../api/jobApi';
+import { cancelJob, createJob, getHealth, getJobDetail, listJobs, listRanProjects, prevalidateUpload } from '../../api/jobApi';
 import { scheduleNotificationDismiss } from '../../utils/workerNotificationUtils';
 
 vi.mock('../../api/jobApi', () => ({
@@ -11,6 +11,7 @@ vi.mock('../../api/jobApi', () => ({
   getHealth: vi.fn(async () => ({ status: 'ok' })),
   getJobDetail: vi.fn(),
   getZipDownloadUrl: vi.fn(() => '/download.zip'),
+  listJobs: vi.fn(async () => ({ items: [], total: 0 })),
   listRanProjects: vi.fn(async () => []),
   prevalidateUpload: vi.fn()
 }));
@@ -281,8 +282,11 @@ describe('HomeView worker notifications', () => {
     const wrapper = mountView();
 
     await wrapper.setData({
-      currentJobId: 'JOB-ACTIVE-1',
-      currentStatus: 'queued',
+      activeSessionJobs: [{
+        jobId: 'JOB-ACTIVE-1',
+        status: 'queued',
+        workerId: 'mw-pr'
+      }],
       selectedFile: { name: 'sites.xlsx' },
       prevalidation: {
         passed: true,
@@ -291,9 +295,8 @@ describe('HomeView worker notifications', () => {
       siteCodesText: 'ABC123'
     });
 
-    expect(wrapper.vm.canCreateJob).toBe(false);
-    expect(wrapper.vm.workerFormLocked).toBe(true);
-    expect(wrapper.vm.createDisabledReason).toContain('active job already exists');
+    expect(wrapper.vm.canCreateJob).toBe(true);
+    expect(wrapper.vm.workerFormLocked).toBe(false);
   });
 
   it('re-enables create controls after a terminal websocket status update', async () => {
@@ -320,7 +323,24 @@ describe('HomeView worker notifications', () => {
     expect(wrapper.vm.canCreateJob).toBe(true);
   });
 
-  it('restores the active worker job from session storage after refresh', async () => {
+  it('restores all active jobs for the current browser tab session after refresh', async () => {
+    listJobs.mockResolvedValueOnce({
+      items: [
+        {
+          jobId: 'JOB-RESTORE-1',
+          status: 'queued',
+          workerId: 'mw-pr',
+          browserTabSessionId: 'tab-restore-1'
+        },
+        {
+          jobId: 'JOB-RESTORE-2',
+          status: 'generating',
+          workerId: 'ran-pr',
+          browserTabSessionId: 'tab-restore-1'
+        }
+      ],
+      total: 2
+    });
     getJobDetail.mockResolvedValueOnce({
       job: {
         jobId: 'JOB-RESTORE-1',
@@ -329,15 +349,20 @@ describe('HomeView worker notifications', () => {
       },
       outputs: []
     });
-    sessionStorage.setItem('workerCurrentJobId:mw-pr', 'JOB-RESTORE-1');
+    sessionStorage.setItem('browserTabSessionId', 'tab-restore-1');
+    sessionStorage.setItem('selectedJobId', 'JOB-RESTORE-1');
 
     const wrapper = mountView();
     await flushPromises();
 
+    expect(listJobs).toHaveBeenCalledWith(expect.objectContaining({
+      browserTabSessionId: 'tab-restore-1'
+    }));
+    expect(wrapper.vm.activeSessionJobs).toHaveLength(2);
     expect(wrapper.vm.currentJobId).toBe('JOB-RESTORE-1');
     expect(getJobDetail).toHaveBeenCalledWith('JOB-RESTORE-1');
     expect(connectSpy).toHaveBeenCalledWith('JOB-RESTORE-1');
-    expect(wrapper.vm.workerFormLocked).toBe(true);
+    expect(wrapper.vm.workerFormLocked).toBe(false);
   });
 
   it('submits a controlled cancellation reason for the active job', async () => {
@@ -357,7 +382,13 @@ describe('HomeView worker notifications', () => {
     });
 
     const wrapper = mountView();
+    await flushPromises();
     await wrapper.setData({
+      activeSessionJobs: [{
+        jobId: 'JOB-CANCEL-1',
+        status: 'generating',
+        workerId: 'mw-pr'
+      }],
       currentJobId: 'JOB-CANCEL-1',
       currentStatus: 'generating',
       cancelReasonCode: 'other',
@@ -376,6 +407,7 @@ describe('HomeView worker notifications', () => {
 
   it('shows cancelled partial results with warning tone and partial download labeling', async () => {
     const wrapper = mountView();
+    await flushPromises();
     await wrapper.setData({
       currentJobId: 'JOB-PARTIAL-1',
       currentStatus: 'cancelled_with_partial_result',

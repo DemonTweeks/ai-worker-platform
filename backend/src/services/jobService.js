@@ -25,13 +25,14 @@ const {
   CANCELLATION_REASON_LABELS,
   RUNNING_JOB_STATUSES,
   TERMINAL_JOB_STATUSES,
-  assertNoActiveScopedJob,
   appendStatusEvent,
   buildCancellationMetadata,
+  findJobByIdempotency,
+  normalizeBrowserTabSessionId,
   normalizeCancellationReason,
-  normalizeSubmissionScopeId,
+  normalizeIdempotencyKey,
   normalizeWorkerId,
-  withSubmissionScopeReservation
+  withIdempotencyReservation
 } = require('./jobControlService');
 
 const CANCELLABLE_BEFORE_WORKER_STATUSES = ['queued'];
@@ -297,9 +298,26 @@ const serializeJobSummary = (job) => ({
   reviewRequiredCount: job.reviewRequiredCount,
   warningCount: job.warningCount,
   finalWorkerSummary: job.finalWorkerSummary,
+  browserTabSessionId: job.browserTabSessionId || null,
+  idempotencyKey: job.idempotencyKey || null,
   cancellation: serializeCancellation(job),
   failureSummary: getFailureSummary(job)
 });
+
+const buildIdempotentReplayResult = async ({ workerId, idempotencyKey }) => {
+  const existingJob = await findJobByIdempotency({ workerId, idempotencyKey });
+
+  if (!existingJob) {
+    return null;
+  }
+
+  return {
+    created: false,
+    job: serializeJobSummary(existingJob),
+    queue: jobQueue.getQueueState(),
+    message: 'Existing job returned for the repeated idempotent create request.'
+  };
+};
 
 const assertJobExists = async (jobId) => {
   const job = await Job.findOne({ jobId });
@@ -316,7 +334,8 @@ const createMwJob = async ({
   generationScope,
   siteCodes,
   prScope,
-  submissionScopeId,
+  browserTabSessionId,
+  idempotencyKey,
   workerManifest,
   normalizedWorkerId
 }) => {
@@ -335,7 +354,8 @@ const createMwJob = async ({
   }
 
   const normalizedSiteCodes = normalizeSiteCodes(siteCodes);
-  const normalizedSubmissionScopeId = normalizeSubmissionScopeId(submissionScopeId);
+  const normalizedBrowserTabSessionId = normalizeBrowserTabSessionId(browserTabSessionId);
+  const normalizedIdempotencyKey = normalizeIdempotencyKey(idempotencyKey);
 
   if (generationScope === 'site_code' && normalizedSiteCodes.length === 0) {
     throw createApiError(400, 'VALIDATION_ERROR', 'siteCodes must be provided when generationScope is site_code.');
@@ -345,17 +365,21 @@ const createMwJob = async ({
     throw createApiError(400, 'SITE_CODE_LIMIT_EXCEEDED', `Site code count exceeds the configured limit of ${config.limits.maxSiteCodes}.`);
   }
 
-  return withSubmissionScopeReservation({
+  return withIdempotencyReservation({
     workerId: normalizedWorkerId,
-    submissionScopeId: normalizedSubmissionScopeId
+    idempotencyKey: normalizedIdempotencyKey
   }, async () => {
     let jobId = null;
 
     try {
-      await assertNoActiveScopedJob({
+      const replayResult = await buildIdempotentReplayResult({
         workerId: normalizedWorkerId,
-        submissionScopeId: normalizedSubmissionScopeId
+        idempotencyKey: normalizedIdempotencyKey
       });
+
+      if (replayResult) {
+        return replayResult;
+      }
 
       const upload = await consumePrevalidatedUpload(prevalidatedFileId);
       if (upload.uploadKind && upload.uploadKind !== UPLOAD_KINDS.MW_EXPORT) {
@@ -375,6 +399,8 @@ const createMwJob = async ({
         Buffer.from(JSON.stringify({
           jobId,
           workerId: normalizedWorkerId,
+          browserTabSessionId: normalizedBrowserTabSessionId,
+          idempotencyKey: normalizedIdempotencyKey,
           prScope: normalizedPrScope,
           generationScope,
           siteCodes: normalizedSiteCodes,
@@ -389,7 +415,8 @@ const createMwJob = async ({
         engineCommit: workerManifest.engineCommit,
         workerType: 'pr-worker',
         status: 'queued',
-        submissionScopeId: normalizedSubmissionScopeId,
+        browserTabSessionId: normalizedBrowserTabSessionId,
+        idempotencyKey: normalizedIdempotencyKey,
         prScope: normalizedPrScope,
         generationScope,
         requestedSiteCount: generationScope === 'site_code' ? normalizedSiteCodes.length : 0,
@@ -407,6 +434,7 @@ const createMwJob = async ({
       const queueState = await jobQueue.enqueueJob(jobId);
 
       return {
+        created: true,
         job: serializeJobSummary(job),
         jobFile: {
           id: jobFile._id.toString(),
@@ -437,7 +465,8 @@ const createRanJob = async ({
   epmsPrevalidatedFileId,
   runMode,
   selectedProject,
-  submissionScopeId,
+  browserTabSessionId,
+  idempotencyKey,
   workerManifest,
   normalizedWorkerId
 }) => {
@@ -456,19 +485,24 @@ const createRanJob = async ({
     throw createApiError(400, 'VALIDATION_ERROR', error.message);
   }
 
-  const normalizedSubmissionScopeId = normalizeSubmissionScopeId(submissionScopeId);
+  const normalizedBrowserTabSessionId = normalizeBrowserTabSessionId(browserTabSessionId);
+  const normalizedIdempotencyKey = normalizeIdempotencyKey(idempotencyKey);
 
-  return withSubmissionScopeReservation({
+  return withIdempotencyReservation({
     workerId: normalizedWorkerId,
-    submissionScopeId: normalizedSubmissionScopeId
+    idempotencyKey: normalizedIdempotencyKey
   }, async () => {
     let jobId = null;
 
     try {
-      await assertNoActiveScopedJob({
+      const replayResult = await buildIdempotentReplayResult({
         workerId: normalizedWorkerId,
-        submissionScopeId: normalizedSubmissionScopeId
+        idempotencyKey: normalizedIdempotencyKey
       });
+
+      if (replayResult) {
+        return replayResult;
+      }
 
       const [bomUpload, epmsUpload] = await Promise.all([
         consumePrevalidatedUpload(bomPrevalidatedFileId),
@@ -503,6 +537,8 @@ const createRanJob = async ({
         Buffer.from(JSON.stringify({
           jobId,
           workerId: normalizedWorkerId,
+          browserTabSessionId: normalizedBrowserTabSessionId,
+          idempotencyKey: normalizedIdempotencyKey,
           runMode: normalizedRunConfiguration.runMode,
           selectedProject: normalizedRunConfiguration.selectedProject,
           createdAt: new Date().toISOString(),
@@ -520,7 +556,8 @@ const createRanJob = async ({
         engineCommit: workerManifest.engineCommit,
         workerType: 'pr-worker',
         status: 'queued',
-        submissionScopeId: normalizedSubmissionScopeId,
+        browserTabSessionId: normalizedBrowserTabSessionId,
+        idempotencyKey: normalizedIdempotencyKey,
         generationScope: 'all_sites',
         prScope: null,
         runMode: normalizedRunConfiguration.runMode,
@@ -550,6 +587,7 @@ const createRanJob = async ({
       const queueState = await jobQueue.enqueueJob(jobId);
 
       return {
+        created: true,
         job: serializeJobSummary(job),
         jobFiles: jobFiles.map((file) => ({
           id: file._id.toString(),
@@ -584,7 +622,8 @@ const createJob = async ({
   epmsPrevalidatedFileId,
   runMode,
   selectedProject,
-  submissionScopeId
+  browserTabSessionId,
+  idempotencyKey
 }) => {
   const normalizedWorkerId = normalizeWorkerId(workerId);
   let workerManifest;
@@ -601,7 +640,8 @@ const createJob = async ({
       generationScope,
       siteCodes,
       prScope,
-      submissionScopeId,
+      browserTabSessionId,
+      idempotencyKey,
       workerManifest,
       normalizedWorkerId
     });
@@ -612,7 +652,8 @@ const createJob = async ({
     epmsPrevalidatedFileId,
     runMode,
     selectedProject,
-    submissionScopeId,
+    browserTabSessionId,
+    idempotencyKey,
     workerManifest,
     normalizedWorkerId
   });
@@ -629,8 +670,12 @@ const buildListFilter = async (query) => {
     filter.workerType = query.workerType;
   }
 
-  if (query.submissionScopeId) {
-    filter.submissionScopeId = normalizeSubmissionScopeId(query.submissionScopeId);
+  if (query.browserTabSessionId) {
+    filter.browserTabSessionId = normalizeBrowserTabSessionId(query.browserTabSessionId);
+  }
+
+  if (query.idempotencyKey) {
+    filter.idempotencyKey = normalizeIdempotencyKey(query.idempotencyKey);
   }
 
   if (query.status) {
@@ -770,19 +815,12 @@ const cancelJob = async (jobId, cancellationRequest = {}, requestContext = {}) =
   const requestedBy = resolveRequestedBy(requestContext);
   const reason = normalizeCancellationReason(cancellationRequest);
   const requestedAt = new Date().toISOString();
-  const isAlreadyCancelling = ['cancelling', 'cancelled', 'cancelled_with_partial_result'].includes(job.status);
-
-  if (isAlreadyCancelling) {
-    return {
-      job: serializeJobSummary(job),
-      message: job.status === 'cancelling'
-        ? 'Cancellation is already in progress for this job.'
-        : 'Job cancellation has already been recorded.'
-    };
-  }
 
   if (TERMINAL_JOB_STATUSES.includes(job.status)) {
-    throw createApiError(409, 'JOB_NOT_CANCELLABLE', `Job is already in terminal status ${job.status}.`);
+    return {
+      job: serializeJobSummary(job),
+      message: 'Job cancellation has already been recorded.'
+    };
   }
 
   job.cancellation = buildCancellationMetadata({
@@ -800,6 +838,7 @@ const cancelJob = async (jobId, cancellationRequest = {}, requestContext = {}) =
   });
 
   const queueCancelResult = await jobQueue.cancelQueuedJob(jobId);
+  const workerState = workerStateService.getState(jobId);
 
   if (queueCancelResult.cancelled) {
     const cancelledAt = new Date();
@@ -836,7 +875,7 @@ const cancelJob = async (jobId, cancellationRequest = {}, requestContext = {}) =
     };
   }
 
-  if (queueCancelResult.running || RUNNING_JOB_STATUSES.includes(job.status)) {
+  if (queueCancelResult.running || (RUNNING_JOB_STATUSES.includes(job.status) && workerState)) {
     job.status = 'cancelling';
     await job.save();
     await publishJobEvent(jobId, JOB_EVENTS.JOB_CANCELLATION_REQUESTED, {
@@ -849,6 +888,51 @@ const cancelJob = async (jobId, cancellationRequest = {}, requestContext = {}) =
       message: queueCancelResult.alreadyRequested
         ? 'Cancellation is already in progress for this job.'
         : 'Cancellation requested. The running worker will stop at the next safe checkpoint.'
+    };
+  }
+
+  if (job.status === 'cancelling' && workerState) {
+    return {
+      job: serializeJobSummary(job),
+      message: 'Cancellation is already in progress for this job.'
+    };
+  }
+
+  if (RUNNING_JOB_STATUSES.includes(job.status) || job.status === 'cancelling') {
+    const cancelledAt = new Date();
+    const finalStatus = (job.outputFileCount || 0) > 0 ? 'cancelled_with_partial_result' : 'cancelled';
+    const orphanResolutionMessage = 'Cancellation completed after runtime ownership was lost; no live worker process was found.';
+
+    job.status = finalStatus;
+    job.cancelledAt = cancelledAt;
+    job.completedAt = cancelledAt;
+    job.finalWorkerSummary = orphanResolutionMessage;
+    job.cancellation = buildCancellationMetadata({
+      job,
+      requestedAt,
+      requestedBy,
+      completedAt: cancelledAt.toISOString(),
+      finalStatus,
+      ...reason
+    });
+    job.statusEvents = appendStatusEvent(job, 'cancellation_completed', {
+      createdAt: cancelledAt.toISOString(),
+      requestedBy: job.cancellation.requestedBy,
+      reasonCode: job.cancellation.reasonCode,
+      reasonLabel: job.cancellation.reasonLabel,
+      reasonText: job.cancellation.reasonText,
+      finalStatus
+    });
+    await job.save();
+    workerStateService.setCancelled(jobId, orphanResolutionMessage);
+    await publishJobEvent(jobId, JOB_EVENTS.JOB_CANCELLED, {
+      phase: 'CANCELLED',
+      status: finalStatus,
+      message: orphanResolutionMessage
+    });
+    return {
+      job: serializeJobSummary(job),
+      message: orphanResolutionMessage
     };
   }
 

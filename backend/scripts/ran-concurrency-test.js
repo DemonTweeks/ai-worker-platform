@@ -27,6 +27,9 @@ const submoduleRootsToProtect = [
   path.join(ranSkillRoot, 'input'),
   path.join(ranSkillRoot, 'output')
 ];
+const browserTabSessionId = 'QA-RAN-CONCURRENCY-TAB';
+let idempotencySequence = 0;
+const nextIdempotencyKey = () => `ran-concurrency-${++idempotencySequence}`;
 
 const request = async (baseUrl, route, options = {}) => {
   const response = await fetch(`${baseUrl}${route}`, options);
@@ -164,6 +167,8 @@ const createRanJob = async ({ baseUrl, runMode, selectedProject }) => {
 
   const created = await postJson(baseUrl, '/api/jobs', {
     workerId: 'ran-pr',
+    browserTabSessionId,
+    idempotencyKey: nextIdempotencyKey(),
     bomPrevalidatedFileId: bomPrevalidation.body.prevalidatedFileId,
     epmsPrevalidatedFileId: epmsPrevalidation.body.prevalidatedFileId,
     runMode,

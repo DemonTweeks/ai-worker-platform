@@ -214,11 +214,71 @@
                 :disabled="!canCreateJob"
                 @click="createWorkerJob"
               />
+              <button
+                v-if="activePendingIdempotencyKey && !creating"
+                type="button"
+                class="secondary-link"
+                @click="beginCreateAnotherJob"
+              >
+                Create Another Job
+              </button>
               <p v-if="createDisabledReason" class="cockpit-note">{{ createDisabledReason }}</p>
+              <p v-else-if="activePendingIdempotencyKey" class="cockpit-note">This Create Job action will reuse the current idempotency key until you change inputs or choose Create Another Job.</p>
               <p v-else class="cockpit-ready">Ready to create Job</p>
             </div>
           </section>
         </div>
+
+        <section class="panel cockpit-card workbench-result-card">
+          <div class="cockpit-card-heading">
+            <span>Active Jobs</span>
+            <small>{{ visibleActiveSessionJobs.length }} active</small>
+          </div>
+          <div v-if="visibleActiveSessionJobs.length === 0" class="cockpit-empty-card">
+            No active jobs are running or queued in this browser tab.
+          </div>
+          <div v-else class="download-compact">
+            <table class="active-jobs-table">
+              <thead>
+                <tr>
+                  <th>Job ID</th>
+                  <th>Worker</th>
+                  <th>Status</th>
+                  <th>Created</th>
+                  <th>View</th>
+                  <th>Stop/Cancel</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="job in visibleActiveSessionJobs"
+                  :key="job.jobId"
+                  :class="{ selected: job.jobId === currentJobId }"
+                >
+                  <td>{{ job.jobId }}</td>
+                  <td>{{ job.workerDisplayName || job.workerId }}</td>
+                  <td>{{ job.status }}</td>
+                  <td>{{ job.createdAt || 'Now' }}</td>
+                  <td>
+                    <button type="button" class="secondary-link" @click="selectActiveJob(job.jobId)">
+                      View
+                    </button>
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      class="secondary-link"
+                      :disabled="!isJobCancellable(job)"
+                      @click="prepareCancellationForJob(job.jobId)"
+                    >
+                      {{ job.status === 'cancelling' ? 'Stopping...' : 'Stop / Cancel' }}
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
 
         <section class="panel cockpit-card workbench-result-card">
           <div class="cockpit-card-heading">
@@ -369,7 +429,7 @@ import UploadPanel from '../components/UploadPanel.vue';
 import ErrorBanner from '../components/ErrorBanner.vue';
 import LoadingButton from '../components/LoadingButton.vue';
 import JobWebSocketClient from '../services/websocketClient';
-import { cancelJob, createJob, getErrorMessage, getHealth, getJobDetail, getZipDownloadUrl, listRanProjects, prevalidateUpload } from '../api/jobApi';
+import { cancelJob, createJob, getErrorMessage, getHealth, getJobDetail, getZipDownloadUrl, listJobs, listRanProjects, prevalidateUpload } from '../api/jobApi';
 import { askJob } from '../api/reAskApi';
 import { displayMessage, isTerminalStatus } from '../utils/statusUtils';
 import {
@@ -379,13 +439,21 @@ import {
   WORKER_TIMEOUT_NOTIFICATION_MESSAGE
 } from '../utils/workerNotificationUtils';
 
-const WORKER_SCOPE_STORAGE_PREFIX = 'workerFormScopeId:';
-const WORKER_JOB_STORAGE_PREFIX = 'workerCurrentJobId:';
+const BROWSER_TAB_SESSION_STORAGE_KEY = 'browserTabSessionId';
+const SELECTED_JOB_STORAGE_KEY = 'selectedJobId';
+const WORKER_IDEMPOTENCY_STORAGE_PREFIX = 'workerCreateIdempotencyKey:';
 
-const buildWorkerScopeStorageKey = (workerId) => `${WORKER_SCOPE_STORAGE_PREFIX}${workerId}`;
-const buildWorkerJobStorageKey = (workerId) => `${WORKER_JOB_STORAGE_PREFIX}${workerId}`;
+const buildWorkerIdempotencyStorageKey = (workerId) => `${WORKER_IDEMPOTENCY_STORAGE_PREFIX}${workerId}`;
 
-const createSessionScopeId = (workerId) => {
+const createBrowserTabSessionId = () => {
+  if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+    return `tab-${window.crypto.randomUUID().replace(/-/g, '')}`;
+  }
+
+  return `tab-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+};
+
+const createIdempotencyKey = (workerId) => {
   if (window.crypto && typeof window.crypto.randomUUID === 'function') {
     return `${workerId}-${window.crypto.randomUUID().replace(/-/g, '')}`;
   }
@@ -423,6 +491,8 @@ export default {
       ranEpmsPrevalidation: null,
       ranBomPrevalidating: false,
       ranEpmsPrevalidating: false,
+      browserTabSessionId: '',
+      activeSessionJobs: [],
       currentJobId: '',
       currentPrScope: 'TSS',
       currentStatus: '',
@@ -445,8 +515,8 @@ export default {
       consoleAutoStick: true,
       transientErrorTimer: null,
       chatMessageSequence: 0,
-      mwSubmissionScopeId: '',
-      ranSubmissionScopeId: '',
+      mwPendingIdempotencyKey: '',
+      ranPendingIdempotencyKey: '',
       showCancelForm: false,
       cancellingRequest: false,
       cancelReasonCode: 'requested_by_user',
@@ -474,20 +544,22 @@ export default {
       if (this.healthError) return '⚪Unavailable';
       return '🔵Checking';
     },
-    activeSubmissionScopeId() {
-      return this.isRanWorker ? this.ranSubmissionScopeId : this.mwSubmissionScopeId;
+    activePendingIdempotencyKey() {
+      return this.isRanWorker ? this.ranPendingIdempotencyKey : this.mwPendingIdempotencyKey;
+    },
+    visibleActiveSessionJobs() {
+      return this.activeSessionJobs.filter((job) => !isTerminalStatus(job.status));
     },
     hasActiveWorkerJob() {
       return Boolean(this.currentJobId) && !isTerminalStatus(this.currentStatus || (this.jobDetail && this.jobDetail.job ? this.jobDetail.job.status : ''));
     },
     workerFormLocked() {
-      return this.creating || this.hasActiveWorkerJob;
+      return this.creating;
     },
     cancellationMetadata() {
       return this.jobDetail && this.jobDetail.job ? this.jobDetail.job.cancellation || null : null;
     },
     canCreateJob() {
-      if (this.hasActiveWorkerJob) return false;
       if (this.creating) return false;
 
       if (this.isRanWorker) {
@@ -504,10 +576,6 @@ export default {
       return true;
     },
     createDisabledReason() {
-      if (this.hasActiveWorkerJob) {
-        return 'An active job already exists for this worker. Wait for it to finish or stop it first.';
-      }
-
       if (this.isRanWorker) {
         if (!this.ranBomFile || !this.ranEpmsFile) return 'Upload both BOM and EPMS workbooks to start.';
         if (this.ranBomPrevalidating || this.ranEpmsPrevalidating) return 'RAN upload validation is in progress.';
@@ -790,10 +858,26 @@ export default {
       this.$nextTick(() => {
         this.scrollConsoleToBottom(false);
       });
+    },
+    generationScope() {
+      this.resetPendingIdempotencyKey('mw-pr');
+    },
+    prScope() {
+      this.resetPendingIdempotencyKey('mw-pr');
+    },
+    siteCodesText() {
+      this.resetPendingIdempotencyKey('mw-pr');
+    },
+    ranRunMode() {
+      this.resetPendingIdempotencyKey('ran-pr');
+    },
+    ranSelectedProject() {
+      this.resetPendingIdempotencyKey('ran-pr');
     }
   },
   mounted() {
-    this.initializeWorkerScopes();
+    this.initializeBrowserTabSessionId();
+    this.initializePendingIdempotencyKeys();
     this.checkHealth();
     this.wsClient = new JobWebSocketClient({
       onMessage: this.handleWebSocketMessage,
@@ -801,7 +885,7 @@ export default {
         this.connectionStatus = status;
       }
     });
-    this.restoreWorkerSession(this.selectedWorkerId);
+    this.restoreActiveJobs();
     this.$nextTick(() => {
       this.scrollConsoleToBottom(true);
     });
@@ -813,40 +897,95 @@ export default {
     }
   },
   methods: {
-    initializeWorkerScopes() {
-      this.mwSubmissionScopeId = this.getOrCreateWorkerScopeId('mw-pr');
-      this.ranSubmissionScopeId = this.getOrCreateWorkerScopeId('ran-pr');
-    },
-    getOrCreateWorkerScopeId(workerId) {
-      const storageKey = buildWorkerScopeStorageKey(workerId);
-      const existing = sessionStorage.getItem(storageKey);
+    initializeBrowserTabSessionId() {
+      const existing = sessionStorage.getItem(BROWSER_TAB_SESSION_STORAGE_KEY);
 
       if (existing) {
-        return existing;
+        this.browserTabSessionId = existing;
+        return;
       }
 
-      const created = createSessionScopeId(workerId);
-      sessionStorage.setItem(storageKey, created);
+      this.browserTabSessionId = createBrowserTabSessionId();
+      sessionStorage.setItem(BROWSER_TAB_SESSION_STORAGE_KEY, this.browserTabSessionId);
+    },
+    initializePendingIdempotencyKeys() {
+      this.mwPendingIdempotencyKey = sessionStorage.getItem(buildWorkerIdempotencyStorageKey('mw-pr')) || '';
+      this.ranPendingIdempotencyKey = sessionStorage.getItem(buildWorkerIdempotencyStorageKey('ran-pr')) || '';
+    },
+    setPendingIdempotencyKey(workerId, idempotencyKey) {
+      const storageKey = buildWorkerIdempotencyStorageKey(workerId);
+      sessionStorage.setItem(storageKey, idempotencyKey);
+
+      if (workerId === 'ran-pr') {
+        this.ranPendingIdempotencyKey = idempotencyKey;
+        return;
+      }
+
+      this.mwPendingIdempotencyKey = idempotencyKey;
+    },
+    ensurePendingIdempotencyKey(workerId) {
+      const currentValue = workerId === 'ran-pr' ? this.ranPendingIdempotencyKey : this.mwPendingIdempotencyKey;
+
+      if (currentValue) {
+        return currentValue;
+      }
+
+      const created = createIdempotencyKey(workerId);
+      this.setPendingIdempotencyKey(workerId, created);
       return created;
     },
-    getStoredWorkerJobId(workerId) {
-      return sessionStorage.getItem(buildWorkerJobStorageKey(workerId)) || '';
+    resetPendingIdempotencyKey(workerId) {
+      const storageKey = buildWorkerIdempotencyStorageKey(workerId);
+      sessionStorage.removeItem(storageKey);
+
+      if (workerId === 'ran-pr') {
+        this.ranPendingIdempotencyKey = '';
+        return;
+      }
+
+      this.mwPendingIdempotencyKey = '';
     },
-    rememberWorkerJobId(workerId, jobId) {
+    getStoredSelectedJobId() {
+      return sessionStorage.getItem(SELECTED_JOB_STORAGE_KEY) || localStorage.getItem('currentJobId') || '';
+    },
+    rememberSelectedJobId(jobId) {
       this.currentJobId = jobId;
-      sessionStorage.setItem(buildWorkerJobStorageKey(workerId), jobId);
+      sessionStorage.setItem(SELECTED_JOB_STORAGE_KEY, jobId);
       localStorage.setItem('currentJobId', jobId);
     },
-    async restoreWorkerSession(workerId) {
-      const storedJobId = this.getStoredWorkerJobId(workerId);
+    normalizeActiveSessionJobs(items = []) {
+      return items
+        .filter((job) => !isTerminalStatus(job.status))
+        .sort((left, right) => new Date(right.createdAt || 0) - new Date(left.createdAt || 0));
+    },
+    async restoreActiveJobs() {
+      try {
+        const result = await listJobs({
+          workerType: 'pr-worker',
+          browserTabSessionId: this.browserTabSessionId,
+          limit: 50
+        });
+        this.activeSessionJobs = this.normalizeActiveSessionJobs(result.items || []);
+      } catch (error) {
+        this.activeSessionJobs = [];
+        this.showWorkerNotification(getErrorMessage(error));
+      }
 
-      if (!storedJobId) {
+      const storedJobId = this.getStoredSelectedJobId();
+      const fallbackJobId = this.visibleActiveSessionJobs.length > 0 ? this.visibleActiveSessionJobs[0].jobId : '';
+      const selectedJobId = this.visibleActiveSessionJobs.some((job) => job.jobId === storedJobId)
+        ? storedJobId
+        : fallbackJobId;
+
+      if (!selectedJobId) {
         this.resetJobSession();
         return;
       }
 
-      this.currentJobId = storedJobId;
-      localStorage.setItem('currentJobId', storedJobId);
+      await this.selectActiveJob(selectedJobId);
+    },
+    async selectActiveJob(jobId) {
+      this.rememberSelectedJobId(jobId);
       this.events = [];
       this.currentProgress = null;
       this.currentPhase = '';
@@ -854,13 +993,35 @@ export default {
       this.jobDetail = null;
       this.reAskAnswer = null;
       this.chatMessages = [];
+      const selectedJob = this.activeSessionJobs.find((job) => job.jobId === jobId);
+      if (selectedJob) {
+        this.currentStatus = selectedJob.status;
+        this.currentPrScope = selectedJob.prScope || this.currentPrScope;
+      }
       if (this.wsClient) {
-        this.wsClient.connect(storedJobId);
+        this.wsClient.connect(jobId);
       }
       await this.refreshJobDetail();
     },
+    upsertActiveSessionJob(job) {
+      if (!job || !job.jobId) {
+        return;
+      }
+
+      const remainingJobs = this.activeSessionJobs.filter((item) => item.jobId !== job.jobId);
+
+      if (!isTerminalStatus(job.status)) {
+        remainingJobs.push(job);
+      }
+
+      this.activeSessionJobs = this.normalizeActiveSessionJobs(remainingJobs);
+    },
+    removeActiveSessionJob(jobId) {
+      this.activeSessionJobs = this.activeSessionJobs.filter((job) => job.jobId !== jobId);
+    },
     resetJobSession() {
       this.currentJobId = '';
+      sessionStorage.removeItem(SELECTED_JOB_STORAGE_KEY);
       localStorage.removeItem('currentJobId');
       this.currentStatus = '';
       this.currentProgress = null;
@@ -880,12 +1041,23 @@ export default {
       this.cancelReasonCode = 'requested_by_user';
       this.cancelReasonText = '';
     },
+    beginCreateAnotherJob() {
+      this.resetPendingIdempotencyKey(this.selectedWorkerId);
+    },
+    isJobCancellable(job) {
+      return Boolean(job) && !isTerminalStatus(job.status);
+    },
+    async prepareCancellationForJob(jobId) {
+      if (this.currentJobId !== jobId) {
+        await this.selectActiveJob(jobId);
+      }
+      this.showCancelForm = true;
+    },
     async handleWorkerChange(workerId) {
       if (this.selectedWorkerId === workerId) {
         if (workerId === 'ran-pr' && this.ranProjects.length === 0) {
           await this.loadRanProjects();
         }
-        await this.restoreWorkerSession(workerId);
         return;
       }
 
@@ -895,7 +1067,6 @@ export default {
       if (workerId === 'mw-pr') {
         this.selectedFile = null;
         this.prevalidation = null;
-        await this.restoreWorkerSession(workerId);
         return;
       }
 
@@ -903,7 +1074,6 @@ export default {
       if (this.ranProjects.length === 0) {
         await this.loadRanProjects();
       }
-      await this.restoreWorkerSession(workerId);
     },
     async loadRanProjects() {
       this.ranProjectLoading = true;
@@ -930,7 +1100,7 @@ export default {
     onFileSelected(file) {
       this.selectedFile = file;
       this.prevalidation = null;
-      this.resetJobSession();
+      this.resetPendingIdempotencyKey('mw-pr');
     },
     onRanFileSelected(kind, file) {
       if (kind === 'bom') {
@@ -940,7 +1110,7 @@ export default {
         this.ranEpmsFile = file;
         this.ranEpmsPrevalidation = null;
       }
-      this.resetJobSession();
+      this.resetPendingIdempotencyKey('ran-pr');
     },
     async prevalidate(file) {
       if (!file) {
@@ -952,7 +1122,7 @@ export default {
       try {
         this.prevalidation = await prevalidateUpload(file, null, {
           workerId: 'mw-pr',
-          submissionScopeId: this.mwSubmissionScopeId
+          browserTabSessionId: this.browserTabSessionId
         });
       } catch (error) {
         this.prevalidation = this.getSafePrevalidationPayload(error);
@@ -980,7 +1150,7 @@ export default {
       try {
         const result = await prevalidateUpload(file, isBom ? 'ran-bom' : 'ran-epms', {
           workerId: 'ran-pr',
-          submissionScopeId: this.ranSubmissionScopeId
+          browserTabSessionId: this.browserTabSessionId
         });
         if (isBom) {
           this.ranBomPrevalidation = result;
@@ -1050,30 +1220,36 @@ export default {
       this.chatMessages = [];
       this.resetCancellationForm();
       try {
+        const workerId = this.isRanWorker ? 'ran-pr' : 'mw-pr';
+        const idempotencyKey = this.ensurePendingIdempotencyKey(workerId);
         const payload = this.isRanWorker
           ? {
-              workerId: 'ran-pr',
-              submissionScopeId: this.ranSubmissionScopeId,
+              workerId,
+              browserTabSessionId: this.browserTabSessionId,
+              idempotencyKey,
               bomPrevalidatedFileId: this.ranBomPrevalidation.prevalidatedFileId,
               epmsPrevalidatedFileId: this.ranEpmsPrevalidation.prevalidatedFileId,
               runMode: this.ranRunMode,
               selectedProject: this.ranRunMode === 'general-item' ? this.ranSelectedProject : undefined
             }
           : {
-              workerId: 'mw-pr',
-              submissionScopeId: this.mwSubmissionScopeId,
+              workerId,
+              browserTabSessionId: this.browserTabSessionId,
+              idempotencyKey,
               prevalidatedFileId: this.prevalidation.prevalidatedFileId,
               prScope: this.prScope,
               generationScope: this.generationScope,
               siteCodes: this.generationScope === 'site_code' ? this.parseSiteCodes() : []
             };
         const result = await createJob(payload);
-        this.rememberWorkerJobId(this.selectedWorkerId, result.job.jobId);
+        this.upsertActiveSessionJob(result.job);
+        this.rememberSelectedJobId(result.job.jobId);
         this.currentPrScope = result.job.prScope || (this.isRanWorker ? 'RAN' : this.prScope);
         this.currentStatus = result.job.status;
         this.currentPhase = result.job.phase || '';
         this.consoleAutoStick = true;
         this.wsClient.connect(this.currentJobId);
+        await this.refreshJobDetail();
       } catch (error) {
         this.showWorkerNotification(this.getWorkerNotificationMessage(error));
       } finally {
@@ -1091,6 +1267,7 @@ export default {
           reasonText: this.cancelReasonCode === 'other' ? this.cancelReasonText : ''
         });
         this.currentStatus = result.job.status;
+        this.upsertActiveSessionJob(result.job);
         this.showCancelForm = false;
         await this.refreshJobDetail();
       } catch (error) {
@@ -1107,6 +1284,10 @@ export default {
           this.currentStatus = this.jobDetail.job.status;
           this.currentPrScope = this.jobDetail.job.prScope || this.currentPrScope;
           this.currentPhase = this.jobDetail.job.phase || '';
+          this.upsertActiveSessionJob(this.jobDetail.job);
+          if (isTerminalStatus(this.jobDetail.job.status)) {
+            this.removeActiveSessionJob(this.jobDetail.job.jobId);
+          }
         }
       } catch (error) {
         this.showWorkerNotification(getErrorMessage(error));
@@ -1150,9 +1331,20 @@ export default {
       };
 
       this.events = [eventItem, ...this.events].slice(0, 50);
+      const existingJob = this.activeSessionJobs.find((job) => job.jobId === this.currentJobId) || {};
+      this.upsertActiveSessionJob({
+        ...existingJob,
+        jobId: this.currentJobId,
+        status: this.currentStatus,
+        workerId: existingJob.workerId || (this.jobDetail && this.jobDetail.job ? this.jobDetail.job.workerId : this.selectedWorkerId),
+        workerDisplayName: existingJob.workerDisplayName || (this.jobDetail && this.jobDetail.job ? this.jobDetail.job.workerDisplayName : this.activeWorkerLabel),
+        createdAt: existingJob.createdAt || this.updatedAt,
+        prScope: existingJob.prScope || this.currentPrScope
+      });
 
       if (isTerminalStatus(message.status)) {
         this.refreshJobDetail();
+        this.restoreActiveJobs();
       }
     },
     async askQuestion(question) {
