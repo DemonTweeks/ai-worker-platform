@@ -1,13 +1,13 @@
 # Issue #21 Autonomous Run State
 
-- Status: `active`
+- Status: `blocked`
 - Completed: `false`
 - Acceptance status: `pending`
 - Baseline: `e2365800ec5a45638bc6d92ba15893b8e23c367d`
 - Branch: `fix/compact-ui-dropdowns`
 - Worktree: `C:\dev\ai-worker-platform-dropdowns`
 - Goal: complete the compact dropdown UI fix for Issue #21 only
-- Next action: `COMPLETE_BROWSER_UAT_WHEN_REAL_RAN_PROJECT_DATA_AND_CANCEL_FORM_ARE_AVAILABLE`
+- Next action: `BLOCKED_LIVE_BROWSER_UAT_ENVIRONMENT`
 
 ## Precondition
 
@@ -48,3 +48,9 @@ PR #22 was verified on `origin/main` before Issue #21 work began.
 - Verified in-browser that the project selector renders with the compact class, `13px` font size, `36px` minimum height behavior, and no page-level horizontal overflow.
 - Verified MW and RAN Job Detail routes load without overlays or console warnings/errors.
 - Could not complete full live UAT for the project-selector long-value path or the real cancellation selector because the RAN project catalog endpoint currently fails with `RAN_PROJECT_WORKBOOK_MISSING` and no active job in the current browser-tab session exposed the Stop Job form.
+
+`attempt_live_job_creation_and_browser_session_binding`
+
+- Attempted to create or attach to a real current-session job so the live Stop Job form could be exercised in-browser.
+- Confirmed the browser automation sandbox does not expose `sessionStorage`, `File`, `Blob`, `DataTransfer`, or Vue app handles needed to bind that runtime state from automation alone.
+- The same external blocker remains: the real RAN project selector is disabled by `RAN_PROJECT_WORKBOOK_MISSING`, and the real cancellation selector is unavailable without an active current-session job.

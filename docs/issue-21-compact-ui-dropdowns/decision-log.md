@@ -31,3 +31,10 @@
 - Because the project selector remained disabled without workbook-backed data, live long-value and keyboard checks for the real project list could not be fully completed in this pass.
 - No active job existed in the current browser-tab session, so the real Stop Job cancellation selector could not be rendered naturally in the browser during this pass.
 - Recorded these gaps explicitly instead of claiming full UAT completion from indirect evidence alone.
+
+### Escalated the goal to blocked after repeated live-UAT environment failures
+
+- Revisited the same live-UAT gap for a third consecutive goal continuation.
+- Tried the remaining realistic paths: reusing historical session ids, creating a current-session job, and driving the visible file input through browser automation.
+- None of those paths were reachable without external-state change because the browser sandbox withholds the storage/file APIs required for session binding, while the live RAN project list is still unavailable due to the missing workbook.
+- Marked the mission state as blocked rather than continuing to repeat the same unsuccessful environment-limited UAT attempts.

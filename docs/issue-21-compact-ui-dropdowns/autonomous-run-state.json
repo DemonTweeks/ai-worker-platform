@@ -2,7 +2,7 @@
   "issue": 21,
   "title": "fix(ui): compact oversized project and cancellation dropdowns",
   "repository": "DemonTweeks/ai-worker-platform",
-  "status": "active",
+  "status": "blocked",
   "completed": false,
   "acceptance_status": "pending",
   "base_branch": "main",
@@ -10,7 +10,7 @@
   "feature_worktree": "C:\\dev\\ai-worker-platform-dropdowns",
   "baseline_sha": "e2365800ec5a45638bc6d92ba15893b8e23c367d",
   "current_step": "full_validation_and_partial_browser_uat",
-  "next_action": "COMPLETE_BROWSER_UAT_WHEN_REAL_RAN_PROJECT_DATA_AND_CANCEL_FORM_ARE_AVAILABLE",
+  "next_action": "BLOCKED_LIVE_BROWSER_UAT_ENVIRONMENT",
   "active_goal": "Autonomously complete AI Worker Platform GitHub Issue #21 by verifying PR #22 is merged in origin/main, then executing bounded continuation steps in the fix/compact-ui-dropdowns worktree under the master automation prompt until a single draft PR is ready.",
   "automation": {
     "id": "ai-worker-platform-issue-21-compact-dropdowns-hourly-follow-up",
@@ -95,8 +95,28 @@
         "MW and RAN Job Detail routes loaded normally in the browser.",
         "Full browser UAT remains incomplete because the live RAN project catalog endpoint fails with RAN_PROJECT_WORKBOOK_MISSING and no active job was available in the current browser-tab session to expose the real cancellation selector."
       ]
+    },
+    {
+      "name": "attempt_live_job_creation_and_browser_session_binding",
+      "completed_at": "2026-07-01",
+      "outcome": "blocked",
+      "notes": [
+        "Attempted to finish live browser UAT by creating or attaching to a current-session active job through the existing UI and APIs.",
+        "The in-app browser page-evaluation sandbox does not expose storage APIs, Vue instance handles, or file-input constructors needed to bind a created job into the current browser session through supported automation alone.",
+        "The live RAN project catalog endpoint still fails with RAN_PROJECT_WORKBOOK_MISSING, so the real project selector remains disabled in the browser.",
+        "No active job exists for the current browser-tab session, so the real Stop Job cancellation selector cannot be rendered naturally without an external-state change."
+      ]
     }
   ],
+  "blocker": {
+    "code": "LIVE_BROWSER_UAT_ENVIRONMENT_UNAVAILABLE",
+    "summary": "The remaining Issue #21 acceptance gates require live browser UAT paths that are not reachable with the current environment state.",
+    "details": [
+      "GET /api/jobs/ran-projects returns RAN_PROJECT_WORKBOOK_MISSING, leaving the real General Item project selector disabled.",
+      "No active job exists for the current browser-tab session, so the real cancellation selector is not rendered.",
+      "The in-app browser sandbox used for UAT does not expose sessionStorage, File/DataTransfer/Blob constructors, or Vue app handles needed to bind a created job into the live page through supported automation."
+    ]
+  },
   "constraints": {
     "allowed_paths": [
       "frontend/",

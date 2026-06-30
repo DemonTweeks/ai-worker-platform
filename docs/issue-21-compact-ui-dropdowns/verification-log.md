@@ -85,3 +85,24 @@
   - Evidence: `curl http://localhost:8000/api/jobs/ran-projects` returned `500` with `RAN_PROJECT_WORKBOOK_MISSING`.
 - INCOMPLETE: Full real-data UAT for the Stop Job cancellation selector.
   - Evidence: no active job was available in the current browser-tab session to expose the cancellation form naturally.
+
+## 2026-07-01 Blocked-UAT Confirmation
+
+### Repeated blocker evidence
+
+- PASS: `curl.exe -s http://localhost:8000/api/jobs?limit=200` confirmed there are no active (`queued`, `generating`, `cancelling`) jobs tied to the browser-tab session ids currently visible in the browser run; available historical jobs are terminal or use unrelated/unknown sessions.
+- PASS: Browser sandbox probes confirmed:
+  - `typeof sessionStorage === "undefined"`
+  - `typeof window.sessionStorage === "undefined"`
+  - `typeof File === "undefined"`
+  - `typeof Blob === "undefined"`
+  - `typeof DataTransfer === "undefined"`
+  - no accessible Vue or `__AWP_HOME_VM__` handles from the page-evaluation sandbox
+- PASS: Visible upload control exists in the DOM, but supported browser automation cannot populate it in this sandbox because the necessary file-construction APIs are unavailable in page scope.
+
+### Conclusion
+
+- BLOCKED: The remaining acceptance gates require an external-state change:
+  - either restore the real RAN project workbook path used by `/api/jobs/ran-projects`, and/or
+  - provide a live current-session active job path that exposes the real Stop Job selector in this browser environment, and/or
+  - use a browser environment that exposes the storage/file APIs required for supported session binding.
