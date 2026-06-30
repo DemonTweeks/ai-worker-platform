@@ -1,13 +1,15 @@
 # Issue #21 Autonomous Run State
 
-- Status: `blocked`
+- Status: `awaiting_external_uat`
+- Mission status: `AWAITING_EXTERNAL_UAT`
+- Code complete: `true`
 - Completed: `false`
-- Acceptance status: `pending`
+- Acceptance status: `pending_external_manual_uat`
 - Baseline: `e2365800ec5a45638bc6d92ba15893b8e23c367d`
 - Branch: `fix/compact-ui-dropdowns`
 - Worktree: `C:\dev\ai-worker-platform-dropdowns`
 - Goal: complete the compact dropdown UI fix for Issue #21 only
-- Next action: `BLOCKED_ACTIVE_JOB_UAT_ENVIRONMENT`
+- Next action: `AWAIT_EXTERNAL_BROWSER_UAT`
 
 ## Precondition
 
@@ -76,3 +78,14 @@ PR #22 was verified on `origin/main` before Issue #21 work began.
 - Confirmed the browser runtime exposes no window, DOM, or Vue hooks matching the HomeView session state, including `__AWP_HOME_VM__`, `__VUE__`, `__VUE_DEVTOOLS_GLOBAL_HOOK__`, `__vueParentComponent`, `__vue_app__`, or any session/job/AWP-related global keys.
 - This leaves no supported path in the current iab-only environment to read or replay the active `browserTabSessionId` required to surface the real Stop Job selector in HomeView.
 - The resumed goal has now hit the same external blocker for three consecutive continuation turns, satisfying the blocked threshold for the active-goal audit.
+
+`convert_blocked_state_to_draft_pr_pending_external_uat`
+
+- Applied the Terminal External UAT Exception and Draft PR Policy after the three-turn IAB limitation threshold was reached.
+- Reconfirmed repository scope from `origin/main`, reran the mandatory frontend validation gates, and confirmed the RAN submodule pointer remains unchanged.
+- Marked the code implementation complete with automated validation passed while leaving live acceptance pending external manual browser UAT.
+- No further automated IAB probing, session-state probing, Vue/global searches, DOM injection, fake API injection, direct persistence mutation, or unsupported environment manipulation is permitted for this mission.
+- Minimum external UAT evidence required before merge:
+  - verify the long-value RAN General Item selector path in a standard browser;
+  - verify the real Stop Job cancellation selector path in a standard browser;
+  - confirm compact layout, keyboard behavior, and normal cancellation flow for both live controls.

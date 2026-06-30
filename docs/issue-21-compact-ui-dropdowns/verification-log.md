@@ -163,3 +163,34 @@
 ### Blocked-threshold conclusion
 
 - BLOCKED: The current iab-only browser environment still cannot reveal or reuse the active HomeView `browserTabSessionId`, and no supported path remains to surface the real Stop Job cancellation selector for live UAT.
+
+## 2026-07-01 Draft PR Closeout Verification
+
+### Repository state and scope
+
+- PASS: `git status --short --branch`
+  - Result: branch is `fix/compact-ui-dropdowns` and ahead of `origin/main` with only Issue #21 frontend files plus mission docs differing from `origin/main`.
+- PASS: `git log -1 --oneline`
+  - Result: blocked-state checkpoint `7258448 docs: record issue 21 blocked threshold` was the starting closeout baseline.
+- PASS: `git diff --name-status origin/main...HEAD`
+  - Result: changed-file scope remains limited to `frontend/` plus `docs/issue-21-compact-ui-dropdowns/`.
+- PASS: `git diff --check origin/main...HEAD`
+  - Result: exit code `0`.
+- PASS: `git submodule status --recursive`
+  - Result: RAN submodule pointer unchanged at `239910e2816153339a94881597bbb95355059741`.
+
+### Mandatory frontend gates rerun
+
+- PASS: `npm.cmd --prefix frontend test`
+  - Result: `10` frontend test files passed, `48` tests passed, production build succeeded inside the test script, and route smoke returned `{"ok":true,...}`.
+- PASS: `npm.cmd --prefix frontend run build`
+  - Result: Vite production build completed successfully.
+- PASS: `git diff --check`
+  - Result: exit code `0`.
+
+### External manual UAT status
+
+- PENDING: Live manual browser UAT remains required before merge.
+  - Evidence: the ChatGPT in-app browser cannot expose the active HomeView tab session or supported browser state needed to render the real Stop Job selector naturally.
+- PASS: Further automated browser probing is no longer permitted under the terminal external UAT exception.
+  - Result: no further IAB probing, session probing, Vue/global handle search, DOM injection, fake API injection, or direct persistence mutation should be attempted for this mission.

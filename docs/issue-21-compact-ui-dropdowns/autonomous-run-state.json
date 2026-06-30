@@ -2,15 +2,17 @@
   "issue": 21,
   "title": "fix(ui): compact oversized project and cancellation dropdowns",
   "repository": "DemonTweeks/ai-worker-platform",
-  "status": "blocked",
+  "status": "awaiting_external_uat",
+  "mission_status": "AWAITING_EXTERNAL_UAT",
+  "code_complete": true,
   "completed": false,
-  "acceptance_status": "pending",
+  "acceptance_status": "pending_external_manual_uat",
   "base_branch": "main",
   "feature_branch": "fix/compact-ui-dropdowns",
   "feature_worktree": "C:\\dev\\ai-worker-platform-dropdowns",
   "baseline_sha": "e2365800ec5a45638bc6d92ba15893b8e23c367d",
-  "current_step": "final_in_app_session_probe_and_blocked_threshold",
-  "next_action": "BLOCKED_ACTIVE_JOB_UAT_ENVIRONMENT",
+  "current_step": "draft_pr_closeout_pending_external_manual_uat",
+  "next_action": "AWAIT_EXTERNAL_BROWSER_UAT",
   "active_goal": "Autonomously complete AI Worker Platform GitHub Issue #21 by verifying PR #22 is merged in origin/main, then executing bounded continuation steps in the fix/compact-ui-dropdowns worktree under the master automation prompt until a single draft PR is ready.",
   "automation": {
     "id": "ai-worker-platform-issue-21-compact-dropdowns-hourly-follow-up",
@@ -139,6 +141,18 @@
         "This leaves no supported path in the current iab-only environment to read or replay the active browserTabSessionId required to surface the real Stop Job selector in HomeView.",
         "The resumed goal has now hit the same external blocker for three consecutive continuation turns, satisfying the blocked threshold for the active-goal audit."
       ]
+    },
+    {
+      "name": "convert_blocked_state_to_draft_pr_pending_external_uat",
+      "completed_at": "2026-07-01",
+      "outcome": "done",
+      "notes": [
+        "Applied the Terminal External UAT Exception and Draft PR Policy after the three-turn IAB limitation threshold was reached.",
+        "Reconfirmed repository scope from origin/main, reran the mandatory frontend validation gates, and confirmed the RAN submodule pointer remains unchanged.",
+        "Marked the code implementation complete with automated validation passed while leaving live acceptance pending external manual browser UAT.",
+        "No further automated IAB probing, session-state probing, Vue/global searches, DOM injection, or unsupported environment manipulation is permitted for this mission.",
+        "The minimum external UAT evidence required before merge is a standard-browser verification of the long-value RAN selector path and the real Stop Job cancellation selector path, including compact layout, keyboard behavior, and normal cancellation flow."
+      ]
     }
   ],
   "blocker": {
@@ -149,6 +163,17 @@
       "No active job exists for the current browser-tab session, so the real cancellation selector is not rendered.",
       "The only available browser backend for this thread is the in-app browser, and its automation surface still does not expose sessionStorage, File/DataTransfer/Blob constructors, or usable Vue app handles needed to bind a created job into the live page through supported automation."
     ]
+  },
+  "external_manual_uat_required": {
+    "required_before_merge": true,
+    "minimum_evidence": [
+      "Open RAN General Item mode in a standard browser session and select a long project value.",
+      "Confirm the RAN selector stays compact and does not overflow or distort layout.",
+      "Open a real cancellable job in the same standard browser session.",
+      "Open Stop Job and select a long cancellation reason.",
+      "Confirm the cancellation selector stays compact, keyboard navigation works, and the cancellation flow remains normal."
+    ],
+    "automated_iab_probe_permitted": false
   },
   "constraints": {
     "allowed_paths": [

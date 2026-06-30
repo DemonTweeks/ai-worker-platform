@@ -58,3 +58,11 @@
 - Per the resumed-goal audit, this was the third consecutive continuation turn blocked on the same external condition: no supported path to expose a real current-session active job in HomeView for cancellation UAT.
 - Ran one final direct probe against the current in-app browser tab and confirmed the page scope does not expose any usable Vue/AWP/session handles to supported automation.
 - Because the mission already has the frontend implementation, passing local validation, real-data RAN selector verification, and normal job-detail rendering, the remaining gap is now purely external-state/browser-surface availability rather than an actionable code defect inside the allowed scope.
+
+### Converted the blocked mission to Draft-PR closeout pending external UAT
+
+- Followed the Master Prompt amendment for the Terminal External UAT Exception and Draft PR Policy rather than repeating unsupported browser probing.
+- Revalidated the branch scope, reran the mandatory frontend gates, and confirmed the eligibility conditions for a Draft PR while external manual UAT is pending.
+- Changed the mission state from blocked probing to `AWAITING_EXTERNAL_UAT` because there is no remaining evidence-based code hypothesis to test inside the allowed scope.
+- Recorded an explicit no-more-probing rule so future continuations do not waste turns on unsupported IAB/session/Vue/global-state experiments.
+- Defined the minimum external UAT evidence before merge as a standard-browser check of the long-value RAN selector path and the real Stop Job cancellation selector path, including compact layout, keyboard behavior, and normal cancellation flow.
