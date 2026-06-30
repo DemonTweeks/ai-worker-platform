@@ -152,3 +152,14 @@
   - Result: the current tab still showed `No active jobs are running or queued in this browser tab.`
 - PASS: Session-binding conclusion from the probe.
   - Result: the current in-app browser tab is not reusing that historical `browserTabSessionId`, so historical session replay does not unlock the cancellation selector in this environment.
+
+## 2026-07-01 Final In-App Session Probe
+
+### Current-tab session-signal probe
+
+- PASS: Re-probed the current in-app browser tab after a fresh Home reload for exposed session-binding hooks.
+  - Result: no supported page-scope handles were present for `__AWP_HOME_VM__`, `__VUE__`, `__VUE_DEVTOOLS_GLOBAL_HOOK__`, `__vueParentComponent`, `__vue_app__`, or any `session|job|awp|vue`-related window/body/root keys.
+
+### Blocked-threshold conclusion
+
+- BLOCKED: The current iab-only browser environment still cannot reveal or reuse the active HomeView `browserTabSessionId`, and no supported path remains to surface the real Stop Job cancellation selector for live UAT.

@@ -52,3 +52,9 @@
 - Recorded the RAN selector long-value and layout path as verified on live data, while keeping keyboard-arrow behavior explicitly unverified because the in-app browser automation surface did not drive the native select reliably enough to prove that requirement either way.
 - Probed the strongest remaining non-invasive session-binding hypothesis by creating a real MW job under the most recent historical `browserTabSessionId` already present in the database, then reloading Home in the current tab.
 - Because that real job never appeared in the current tab's Active Jobs list, treated historical session replay as disproven and kept the remaining blocker focused on unknown current-session binding in an iab-only browser environment.
+
+### Marked the resumed goal blocked after exhausting supported current-tab probes
+
+- Per the resumed-goal audit, this was the third consecutive continuation turn blocked on the same external condition: no supported path to expose a real current-session active job in HomeView for cancellation UAT.
+- Ran one final direct probe against the current in-app browser tab and confirmed the page scope does not expose any usable Vue/AWP/session handles to supported automation.
+- Because the mission already has the frontend implementation, passing local validation, real-data RAN selector verification, and normal job-detail rendering, the remaining gap is now purely external-state/browser-surface availability rather than an actionable code defect inside the allowed scope.

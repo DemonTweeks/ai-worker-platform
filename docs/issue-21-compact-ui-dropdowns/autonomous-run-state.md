@@ -69,3 +69,10 @@ PR #22 was verified on `origin/main` before Issue #21 work began.
 - Native select keyboard-arrow behavior could not be conclusively driven through the in-app browser automation surface, so keyboard navigation for the live RAN selector remains unverified rather than marked regressed.
 - Created one real MW all-sites job against the most recent historical `browserTabSessionId` from the database and reloaded Home; the job did not appear in the current tab's Active Jobs list, which shows the current in-app tab is not reusing that historical session id.
 - The remaining blocker is still current-session job binding for HomeView cancellation UAT, not the RAN selector data path or compact-style implementation.
+
+`final_in_app_session_probe`
+
+- Re-probed the current in-app browser tab after a fresh reload for any authoritative session-binding surface exposed to supported automation.
+- Confirmed the browser runtime exposes no window, DOM, or Vue hooks matching the HomeView session state, including `__AWP_HOME_VM__`, `__VUE__`, `__VUE_DEVTOOLS_GLOBAL_HOOK__`, `__vueParentComponent`, `__vue_app__`, or any session/job/AWP-related global keys.
+- This leaves no supported path in the current iab-only environment to read or replay the active `browserTabSessionId` required to surface the real Stop Job selector in HomeView.
+- The resumed goal has now hit the same external blocker for three consecutive continuation turns, satisfying the blocked threshold for the active-goal audit.
