@@ -1,0 +1,97 @@
+{
+  "issue": 21,
+  "title": "fix(ui): compact oversized project and cancellation dropdowns",
+  "repository": "DemonTweeks/ai-worker-platform",
+  "status": "active",
+  "completed": false,
+  "acceptance_status": "pending",
+  "base_branch": "main",
+  "feature_branch": "fix/compact-ui-dropdowns",
+  "feature_worktree": "C:\\dev\\ai-worker-platform-dropdowns",
+  "baseline_sha": "e2365800ec5a45638bc6d92ba15893b8e23c367d",
+  "current_step": "discovery_and_planning",
+  "next_action": "IMPLEMENT_COMPACT_DROPDOWN_STYLES",
+  "active_goal": "Autonomously complete AI Worker Platform GitHub Issue #21 by verifying PR #22 is merged in origin/main, then executing bounded continuation steps in the fix/compact-ui-dropdowns worktree under the master automation prompt until a single draft PR is ready.",
+  "automation": {
+    "id": "ai-worker-platform-issue-21-compact-dropdowns-hourly-follow-up",
+    "name": "ai-worker-platform-issue-21-compact-dropdowns-hourly-follow-up",
+    "schedule": "FREQ=HOURLY;INTERVAL=1",
+    "kind": "heartbeat"
+  },
+  "precondition": {
+    "pr22_verified_on_origin_main": true,
+    "pr_number": 22,
+    "merge_commit": "e2365800ec5a45638bc6d92ba15893b8e23c367d",
+    "verified_at": "2026-07-01",
+    "evidence": [
+      "git pull --ff-only origin main fast-forwarded local main to e236580",
+      "git log -1 --oneline returned feat(llm): add Agnes provider and reliable Re-Ask composer (#22)",
+      "git log origin/main --oneline --grep=\"Agnes provider\" -20 returned e236580 feat(llm): add Agnes provider and reliable Re-Ask composer (#22)",
+      "gh pr view 22 confirmed state=MERGED, baseRefName=main, mergeCommit=e2365800ec5a45638bc6d92ba15893b8e23c367d, mergedAt=2026-06-30T16:32:39Z"
+    ]
+  },
+  "discovery": {
+    "target_view": "frontend/src/views/HomeView.vue",
+    "project_selector": {
+      "lines": "167-182",
+      "control_class": "cockpit-sites-input",
+      "notes": [
+        "Selector sits beside compact segmented controls in the Launch Configuration card.",
+        "Current shared input class is full-width and does not impose compact select-specific sizing or text truncation."
+      ]
+    },
+    "cancel_reason_selector": {
+      "lines": "323-336",
+      "control_class": "cockpit-sites-input",
+      "notes": [
+        "Selector appears in the Stop Job flow and shares the same input class as the General Item project selector.",
+        "Its selected value needs compact sizing without changing the cancellation payload or option values."
+      ]
+    },
+    "nearby_compact_pattern": {
+      "styles": [
+        "frontend/src/styles.css:1938-1981",
+        "frontend/src/styles.css:1029-1035"
+      ],
+      "notes": [
+        "Nearby workbench controls already use dense spacing through cockpit-field-group and compact-segmented.",
+        "A focused frontend style adjustment is likely sufficient if it preserves width behavior and long-value truncation."
+      ]
+    },
+    "existing_behavior_tests": [
+      "frontend/src/views/__tests__/HomeView.spec.js:202-279",
+      "frontend/src/views/__tests__/HomeView.spec.js:398-430"
+    ]
+  },
+  "bounded_steps": [
+    {
+      "name": "initialize_mission_and_capture_dropdown_discovery",
+      "completed_at": "2026-07-01",
+      "outcome": "done",
+      "notes": [
+        "Created the Issue #21 worktree from verified origin/main on fix/compact-ui-dropdowns.",
+        "Initialized mission state/log files.",
+        "Located both dropdown implementations and documented the first implementation hypothesis without editing frontend behavior yet."
+      ]
+    }
+  ],
+  "constraints": {
+    "allowed_paths": [
+      "frontend/",
+      "docs/issue-21-compact-ui-dropdowns/"
+    ],
+    "blocked_paths_or_topics": [
+      "backend/",
+      "skills/create-pr-cd-ran",
+      "RAN submodule pointer",
+      "MW or RAN business rules",
+      "queue",
+      "cancellation lifecycle semantics",
+      "ZIP/download lifecycle",
+      "Firebase/history contracts",
+      "package manifests",
+      "lockfiles",
+      "Issue #15 timestamp formatting"
+    ]
+  }
+}
