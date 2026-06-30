@@ -838,7 +838,6 @@ const cancelJob = async (jobId, cancellationRequest = {}, requestContext = {}) =
   });
 
   const queueCancelResult = await jobQueue.cancelQueuedJob(jobId);
-  const workerState = workerStateService.getState(jobId);
 
   if (queueCancelResult.cancelled) {
     const cancelledAt = new Date();
@@ -875,7 +874,7 @@ const cancelJob = async (jobId, cancellationRequest = {}, requestContext = {}) =
     };
   }
 
-  if (queueCancelResult.running || (RUNNING_JOB_STATUSES.includes(job.status) && workerState)) {
+  if (queueCancelResult.running) {
     job.status = 'cancelling';
     await job.save();
     await publishJobEvent(jobId, JOB_EVENTS.JOB_CANCELLATION_REQUESTED, {
@@ -888,13 +887,6 @@ const cancelJob = async (jobId, cancellationRequest = {}, requestContext = {}) =
       message: queueCancelResult.alreadyRequested
         ? 'Cancellation is already in progress for this job.'
         : 'Cancellation requested. The running worker will stop at the next safe checkpoint.'
-    };
-  }
-
-  if (job.status === 'cancelling' && workerState) {
-    return {
-      job: serializeJobSummary(job),
-      message: 'Cancellation is already in progress for this job.'
     };
   }
 

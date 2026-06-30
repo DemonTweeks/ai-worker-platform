@@ -17,3 +17,10 @@
 - Prevalidation is never blocked by another active job.
 - The frontend keeps worker forms available while showing a shared Active Jobs workbench for the current `browserTabSessionId`.
 - Cancellation resolves orphaned non-terminal persisted jobs to a safe terminal state when no live runtime ownership remains.
+- Cross-tab active-job aggregation remains explicitly out of scope for PR #20 until authenticated user or workspace identity exists.
+
+## 2026-06-30 - Stale worker-state cancellation follow-up
+
+- The cancellation path must not treat orphaned `workerState` presence as proof that a job is still runtime-owned.
+- Queue ownership is the only authority for whether a persisted non-terminal job should move into `cancelling`; stale `workerState` without queue ownership must resolve through orphan recovery instead.
+- Regression coverage now includes a persisted `generating` job with stale `workerState` and no queue ownership, and the expected terminal outcome is immediate `cancelled` with cancellation-completed audit state.

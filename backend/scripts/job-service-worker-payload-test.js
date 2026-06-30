@@ -10,6 +10,7 @@ const setCachedModule = (modulePath, exports) => {
 
 const storageService = require('../src/services/storageService');
 const jobQueue = require('../src/queue/jobQueue');
+const workerStateService = require('../src/services/workerStateService');
 const { Job, JobFile, ReviewRequiredItem, WarningItem } = require('../src/models');
 
 const runTests = async () => {
@@ -413,6 +414,35 @@ const runTests = async () => {
     });
     assert.strictEqual(repeatedCancellationResult.job.status, 'cancelling');
     assert.strictEqual(runningCancellationJob.statusEvents.length, 1, 'repeated cancellation requests should be idempotent');
+
+    const orphanedRunningJob = {
+      jobId: 'MW-CANCEL-ORPHAN',
+      workerId: 'mw-pr',
+      workerType: 'pr-worker',
+      status: 'generating',
+      outputFileCount: 0,
+      createdAt: '2026-06-26T00:00:00.000Z',
+      requestedSiteCount: 0,
+      matchedSiteCount: 0,
+      unmatchedSiteCount: 0,
+      reviewRequiredCount: 0,
+      warningCount: 0,
+      finalWorkerSummary: '',
+      save: async function save() { return this; }
+    };
+    workerStateService.createState(orphanedRunningJob.jobId, 'GENERATION_STARTED');
+    Job.findOne = async ({ jobId }) => (jobId === orphanedRunningJob.jobId ? orphanedRunningJob : null);
+    jobQueue.cancelQueuedJob = async () => ({ cancelled: false, running: false, alreadyRequested: false });
+
+    const orphanedCancellationResult = await jobService.cancelJob(orphanedRunningJob.jobId, {
+      reasonCode: 'long_running'
+    }, {
+      requestedBy: 'qa-user'
+    });
+    assert.strictEqual(orphanedCancellationResult.job.status, 'cancelled', 'stale workerState must not keep an orphaned runtime job in cancelling');
+    assert.strictEqual(orphanedRunningJob.status, 'cancelled', 'orphaned runtime jobs should resolve to a terminal status immediately');
+    assert.strictEqual(orphanedRunningJob.cancellation.finalStatus, 'cancelled', 'orphaned runtime cancellation should persist the terminal final status');
+    assert.strictEqual(orphanedRunningJob.statusEvents.length, 2, 'orphaned runtime cancellation should record requested and completed events');
 
     console.log('--- Job Service Worker Payload Tests Passed! ---');
   } finally {

@@ -8,7 +8,7 @@ Correct PR #20 from one-active-job-per-worker/browser-session behavior to idempo
 
 - Keep `MAX_CONCURRENT_JOBS` as the only global capacity control.
 - Duplicate detection must use `workerId + idempotencyKey`.
-- `browserTabSessionId` is grouping/restoration metadata only.
+- `browserTabSessionId` is same-tab grouping/restoration metadata only.
 - Do not merge, deploy, close #13, or close #16.
 - Do not modify worker-engine logic outside queue-control integration needs.
 
@@ -27,3 +27,8 @@ Correct PR #20 from one-active-job-per-worker/browser-session behavior to idempo
 - The queue already enforces global concurrency via `MAX_CONCURRENT_JOBS`.
 - The Home view remembers one job per worker and locks the worker form while it is active.
 - Latest remote branch head only added accidental `docs/.keep`, which must be removed.
+
+## Current checkpoint
+
+- The stale worker-state cancellation concern was confirmed and fixed: persisted non-terminal jobs now enter `cancelling` only when queue runtime ownership is present.
+- The next bounded action is browser UAT capture for same-tab active-job restoration and independent cross-tab job creation, followed by a draft PR description/comment refresh.

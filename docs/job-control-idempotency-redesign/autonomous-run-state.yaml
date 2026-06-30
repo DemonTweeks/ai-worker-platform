@@ -5,9 +5,9 @@ pull_request: 20
 draft: true
 completed: false
 started_at: "2026-06-30"
-current_commit: "16873b151a3ec8c6d2d438dfeaa719727913642c"
-previous_local_head: "0137392e6339a45e169e5e1c3547d118aba6051d"
-remote_head: "16873b151a3ec8c6d2d438dfeaa719727913642c"
+current_commit: "c92251dd909ee1e96180d2eb8c62171111cec09d"
+previous_local_head: "16873b151a3ec8c6d2d438dfeaa719727913642c"
+remote_head: "c92251dd909ee1e96180d2eb8c62171111cec09d"
 known_live_uat_failure:
   job_generating: "PR-20260630-003"
   hidden_completed_job: "PR-20260630-002"
@@ -32,10 +32,13 @@ rules:
 planned_phases:
   - "Phase 1: inspect current backend/frontend job-control flow and PR review context."
   - "Phase 2: backend idempotent submission, queue listing, and orphan cancellation recovery."
-  - "Phase 3: frontend multi-job workbench and browser-session restoration."
+  - "Phase 3: frontend multi-job workbench and browser-tab restoration."
   - "Phase 4: replace lock-based tests with idempotency/concurrency/visibility coverage."
   - "Phase 5: run validation suite, browser UAT, and PR handoff updates."
 notes:
   - "Fetched latest remote head before implementation."
   - "Remote head introduced accidental docs/.keep placeholder; remove it from this branch and final PR diff."
+  - "Stale worker-state cancellation concern was confirmed: a non-owned generating job could remain stuck in cancelling when only orphaned workerState existed."
+  - "The fix makes queue runtime ownership authoritative for running cancellation, and the regression suite now covers the stale worker-state orphan case."
+next_action: "Commit and push the stale worker-state cancellation fix, then capture browser UAT evidence and refresh the draft PR description/comment."
 blocker: "Automated validation is complete, but browser UAT evidence and the PR description/comment update are still pending."
