@@ -365,6 +365,36 @@ describe('HomeView worker notifications', () => {
     expect(wrapper.vm.workerFormLocked).toBe(false);
   });
 
+  it('ignores cross-tab current job leftovers and falls back to an active job from the current browser tab session', async () => {
+    listJobs.mockResolvedValueOnce({
+      items: [
+        {
+          jobId: 'JOB-TAB-B-1',
+          status: 'generating',
+          workerId: 'mw-pr',
+          browserTabSessionId: 'tab-restore-2'
+        }
+      ],
+      total: 1
+    });
+    getJobDetail.mockResolvedValueOnce({
+      job: {
+        jobId: 'JOB-TAB-B-1',
+        status: 'generating',
+        prScope: 'TSS'
+      },
+      outputs: []
+    });
+    sessionStorage.setItem('browserTabSessionId', 'tab-restore-2');
+    localStorage.setItem('currentJobId', 'JOB-OTHER-TAB');
+
+    const wrapper = mountView();
+    await flushPromises();
+
+    expect(wrapper.vm.currentJobId).toBe('JOB-TAB-B-1');
+    expect(getJobDetail).toHaveBeenCalledWith('JOB-TAB-B-1');
+  });
+
   it('submits a controlled cancellation reason for the active job', async () => {
     cancelJob.mockResolvedValueOnce({
       job: {

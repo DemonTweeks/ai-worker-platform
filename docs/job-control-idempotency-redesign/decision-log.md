@@ -24,3 +24,9 @@
 - The cancellation path must not treat orphaned `workerState` presence as proof that a job is still runtime-owned.
 - Queue ownership is the only authority for whether a persisted non-terminal job should move into `cancelling`; stale `workerState` without queue ownership must resolve through orphan recovery instead.
 - Regression coverage now includes a persisted `generating` job with stale `workerState` and no queue ownership, and the expected terminal outcome is immediate `cancelled` with cancellation-completed audit state.
+
+## 2026-06-30 - Same-tab selected job persistence
+
+- `selectedJobId` persistence for the live workbench must remain same-tab only, just like `browserTabSessionId`.
+- The frontend must not fall back to cross-tab `localStorage` for the active Status route or selected active job restoration.
+- The app shell now updates the Status link from `sessionStorage` plus an in-tab event, preventing Tab B from inheriting Tab A's selected active job.

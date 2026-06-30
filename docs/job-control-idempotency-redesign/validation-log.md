@@ -33,6 +33,15 @@
 - Updated `backend/src/services/jobService.js` so queue ownership alone determines whether a job enters `cancelling`.
 - Re-ran the regression and direct reproduction after the fix; both now resolve the orphaned job to terminal `cancelled` as intended.
 
+## Browser UAT on 2026-06-30
+
+- Captured two real `browserTabSessionId` values from separate live tabs and used them to seed deterministic active MW jobs for browser verification.
+- Verified same-tab refresh restoration in Tab A: after reload, the workbench restored two active jobs (`PR-UAT-TABA-001`, `PR-UAT-TABA-002`) and kept the Status route on Tab A's selected job.
+- Verified cross-tab isolation in Tab B: after reload, the workbench restored only Tab B's active job (`PR-UAT-TABB-001`) and did not aggregate Tab A's active jobs.
+- Browser UAT exposed one frontend leak: the App Status link still read `currentJobId` from cross-tab `localStorage`, which allowed Tab B to inherit Tab A's selected job route even though active-job filtering was correct.
+- Fixed the selected-job leak by removing the `localStorage` fallback and using `sessionStorage` plus an in-tab `awp:selected-job-changed` event for the app shell Status link.
+- Re-ran `npm.cmd --prefix frontend test` after the fix and reloaded both live tabs; Tab B no longer inherited Tab A's Status route, while same-tab restore still worked.
+
 ## Outstanding blocker
 
-- Browser UAT evidence for the required multi-job workbench flows has not been captured in this run, and the PR description/comment update has not been posted from this session.
+- Draft PR description/comment update has not been posted from this session.

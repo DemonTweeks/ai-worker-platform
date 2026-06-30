@@ -442,6 +442,7 @@ import {
 const BROWSER_TAB_SESSION_STORAGE_KEY = 'browserTabSessionId';
 const SELECTED_JOB_STORAGE_KEY = 'selectedJobId';
 const WORKER_IDEMPOTENCY_STORAGE_PREFIX = 'workerCreateIdempotencyKey:';
+const SELECTED_JOB_CHANGED_EVENT = 'awp:selected-job-changed';
 
 const buildWorkerIdempotencyStorageKey = (workerId) => `${WORKER_IDEMPOTENCY_STORAGE_PREFIX}${workerId}`;
 
@@ -876,6 +877,9 @@ export default {
     }
   },
   mounted() {
+    if (typeof window !== 'undefined') {
+      window.__AWP_HOME_VM__ = this;
+    }
     this.initializeBrowserTabSessionId();
     this.initializePendingIdempotencyKeys();
     this.checkHealth();
@@ -946,12 +950,21 @@ export default {
       this.mwPendingIdempotencyKey = '';
     },
     getStoredSelectedJobId() {
-      return sessionStorage.getItem(SELECTED_JOB_STORAGE_KEY) || localStorage.getItem('currentJobId') || '';
+      return sessionStorage.getItem(SELECTED_JOB_STORAGE_KEY) || '';
+    },
+    notifySelectedJobChange(jobId) {
+      if (typeof window === 'undefined') {
+        return;
+      }
+
+      window.dispatchEvent(new CustomEvent(SELECTED_JOB_CHANGED_EVENT, {
+        detail: { jobId: jobId || '' }
+      }));
     },
     rememberSelectedJobId(jobId) {
       this.currentJobId = jobId;
       sessionStorage.setItem(SELECTED_JOB_STORAGE_KEY, jobId);
-      localStorage.setItem('currentJobId', jobId);
+      this.notifySelectedJobChange(jobId);
     },
     normalizeActiveSessionJobs(items = []) {
       return items
@@ -1022,7 +1035,7 @@ export default {
     resetJobSession() {
       this.currentJobId = '';
       sessionStorage.removeItem(SELECTED_JOB_STORAGE_KEY);
-      localStorage.removeItem('currentJobId');
+      this.notifySelectedJobChange('');
       this.currentStatus = '';
       this.currentProgress = null;
       this.jobDetail = null;

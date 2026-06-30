@@ -5,9 +5,9 @@ pull_request: 20
 draft: true
 completed: false
 started_at: "2026-06-30"
-current_commit: "c92251dd909ee1e96180d2eb8c62171111cec09d"
-previous_local_head: "16873b151a3ec8c6d2d438dfeaa719727913642c"
-remote_head: "c92251dd909ee1e96180d2eb8c62171111cec09d"
+current_commit: "a454c76ad52848113aa72cfbe5d08e365ae8546f"
+previous_local_head: "c92251dd909ee1e96180d2eb8c62171111cec09d"
+remote_head: "a454c76ad52848113aa72cfbe5d08e365ae8546f"
 known_live_uat_failure:
   job_generating: "PR-20260630-003"
   hidden_completed_job: "PR-20260630-002"
@@ -40,5 +40,7 @@ notes:
   - "Remote head introduced accidental docs/.keep placeholder; remove it from this branch and final PR diff."
   - "Stale worker-state cancellation concern was confirmed: a non-owned generating job could remain stuck in cancelling when only orphaned workerState existed."
   - "The fix makes queue runtime ownership authoritative for running cancellation, and the regression suite now covers the stale worker-state orphan case."
-next_action: "Commit and push the stale worker-state cancellation fix, then capture browser UAT evidence and refresh the draft PR description/comment."
-blocker: "Automated validation is complete, but browser UAT evidence and the PR description/comment update are still pending."
+  - "Browser UAT confirmed same-tab active-job restoration and independent cross-tab active-job isolation once active jobs were seeded deterministically by browserTabSessionId."
+  - "Browser UAT also exposed a cross-tab Status-link bleed from localStorage-backed selected job persistence; the frontend now scopes selected-job restore to sessionStorage only."
+next_action: "Commit and push the frontend same-tab selected-job persistence fix, then refresh the draft PR description/comment with UAT evidence."
+blocker: "Draft PR description/comment refresh is still pending from this session."
