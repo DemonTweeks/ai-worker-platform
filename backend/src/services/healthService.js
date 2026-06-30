@@ -13,8 +13,8 @@ const { getLlmStatus, isLlmConfigured, redactSensitive } = require('../llm/llmUt
 
 const LLM_HEALTH_CACHE_MS = 60 * 1000;
 const LLM_HEALTH_MAX_TOKENS = 8;
-const LLM_HEALTH_MIN_TIMEOUT_MS = 10000;
-const LLM_HEALTH_MAX_TIMEOUT_MS = 15000;
+const LLM_HEALTH_TIMEOUT_BUDGET_MS = 8000;
+const LLM_HEALTH_MIN_TIMEOUT_MS = 1000;
 let llmReachabilityCache = null;
 
 const nowIso = () => new Date().toISOString();
@@ -25,12 +25,12 @@ const resolveLlmHealthTimeoutMs = () => {
   const configuredTimeoutMs = Number(config.llm.timeoutMs);
 
   if (!Number.isFinite(configuredTimeoutMs) || configuredTimeoutMs <= 0) {
-    return LLM_HEALTH_MAX_TIMEOUT_MS;
+    return LLM_HEALTH_TIMEOUT_BUDGET_MS;
   }
 
   return Math.max(
     LLM_HEALTH_MIN_TIMEOUT_MS,
-    Math.min(configuredTimeoutMs, LLM_HEALTH_MAX_TIMEOUT_MS)
+    Math.min(configuredTimeoutMs, LLM_HEALTH_TIMEOUT_BUDGET_MS)
   );
 };
 
@@ -176,7 +176,8 @@ const runLlmReachabilityCheck = async () => {
     userPrompt: 'OK?',
     temperature: 0,
     maxTokens: LLM_HEALTH_MAX_TOKENS,
-    timeoutMs: resolveLlmHealthTimeoutMs()
+    timeoutMs: resolveLlmHealthTimeoutMs(),
+    maxRetries: 0
   });
 
   const value = result.ok

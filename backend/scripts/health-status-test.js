@@ -137,6 +137,36 @@ const run = async () => {
       LLM_API_KEY: TEST_AGNES_KEY,
       LLM_MODEL: 'agnes-health-model',
       LLM_TIMEOUT_MS: '30000',
+      LLM_MAX_RETRIES: '1'
+    });
+    stubHealthDependencies();
+
+    let slowAttempts = 0;
+    global.fetch = async (_url, options) => {
+      slowAttempts += 1;
+      await new Promise((_resolve, reject) => {
+        options.signal.addEventListener('abort', () => {
+          const abortError = new Error('Timed out');
+          abortError.name = 'AbortError';
+          reject(abortError);
+        });
+      });
+    };
+
+    const startedAtMs = Date.now();
+    const slowHealth = await loadHealthService().buildHealthResponse();
+    const elapsedMs = Date.now() - startedAtMs;
+    assert.strictEqual(slowHealth.services.llm.status, 'degraded');
+    assert.ok(elapsedMs < 10000, `slow health probes should complete before the frontend 10s timeout budget, got ${elapsedMs}ms`);
+    assert.strictEqual(slowAttempts, 1, 'health probes should not amplify retries when the provider is slow or unavailable');
+
+    withEnv({
+      LLM_ENABLED: 'true',
+      LLM_PROVIDER: 'agnes',
+      LLM_BASE_URL: 'https://agnes.example.test/v1',
+      LLM_API_KEY: TEST_AGNES_KEY,
+      LLM_MODEL: 'agnes-health-model',
+      LLM_TIMEOUT_MS: '30000',
       LLM_MAX_RETRIES: '0'
     });
     stubHealthDependencies();
