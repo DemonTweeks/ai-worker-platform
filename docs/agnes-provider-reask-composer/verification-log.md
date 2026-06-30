@@ -106,3 +106,52 @@
     - inline Re-Ask error cleared
     - draft cleared only after successful response
     - answer rendered for the submitted question
+
+## 2026-06-30 PR #22 Health Status Remediation Reopen
+
+- Human UAT finding:
+  - Agnes Re-Ask succeeds and returns `llm · success`
+  - Health/status simultaneously reports the LLM as degraded or unavailable
+  - Impact: operator-facing health semantics are misleading for the active generic provider
+- Current remediation target:
+  - reproduce the same-runtime mismatch between successful Re-Ask and `/health`
+  - correct provider-neutral LLM health semantics without exposing secrets or changing unrelated MW/RAN, queue, cancellation, download, ZIP, or submodule behavior
+
+## 2026-06-30 PR #22 Health Status Remediation Verification
+
+- Live root-cause reproduction before the fix:
+  - `GET /health` returned `services.llm.status = degraded`, `provider = agnes`, `configured = true`, `lastError = LLM provider request timed out.`
+  - same runtime `POST /api/jobs/PR-20260630-017/ask` returned `answerSource = llm`, `llmStatus = success`
+  - measured timings from the same runtime:
+    - Health probe path: degraded after about 10.2 seconds
+    - successful Agnes Re-Ask path: about 49.6 seconds
+- Focused backend health coverage:
+  - `node backend/scripts/health-status-test.js`
+  - Result: PASS
+  - Covered: Agnes healthy provider-neutral status, Qwen regression, incomplete configuration, unknown provider degraded path, safe error redaction
+- Focused frontend health rendering coverage:
+  - `npm.cmd exec vitest run src/views/__tests__/AdminHealthView.spec.js`
+  - Result: PASS
+- Required backend suite:
+  - `npm.cmd --prefix backend test`
+  - Result: PASS
+  - Note: backend output still includes the existing non-failing ZIP-size warnings and circular-dependency warnings, but exits `0`
+- Required frontend suite:
+  - `npm.cmd --prefix frontend test`
+  - Result: PASS
+- Required frontend production build:
+  - `npm.cmd --prefix frontend run build`
+  - Result: PASS
+- Diff integrity:
+  - `git diff --check`
+  - Result: PASS
+- Focused live UAT from the existing worktree:
+  - restarted backend and frontend from `C:\dev\ai-worker-platform-agnes-reask`
+  - confirmed backend `/health` now reports `services.llm.status = ok`, `provider = agnes`, `reachable = true`
+  - confirmed the live user portal status chip and admin login portal both showed `🟢Healthy`
+  - confirmed live Re-Ask submission for `PR-20260630-017` rendered:
+    - `LLM · SUCCESS`
+    - `Why did this finish cleanly?`
+    - `The job finished cleanly because all 2,552 requested sites were successfully matched, resulting in zero unmatched sites, zero review-required items, and zero warnings.`
+  - stopped the backend and confirmed the live UI degraded safely to `⚪Unavailable`
+  - restarted the backend and confirmed the live UI recovered to `🟢Healthy`

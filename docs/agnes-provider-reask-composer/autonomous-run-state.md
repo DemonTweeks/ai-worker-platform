@@ -27,3 +27,6 @@
   - Reopened the mission for scoped PR #22 UAT remediation of missing inline Re-Ask failure feedback beside the composer.
   - Added contextual inline Re-Ask failure feedback at the composer while preserving the existing global error path.
   - Passed focused remediation frontend tests, required backend/frontend/build/diff validation, and focused failure-then-retry manual UAT.
+  - Reopened the mission for scoped PR #22 Health/status remediation after human UAT found a misleading degraded Agnes status despite successful Re-Ask responses.
+  - Replaced the overly strict LLM health probe with a lightweight provider-neutral probe that preserves degraded semantics for real failures and unknown providers.
+  - Passed focused health backend and frontend coverage, required backend/frontend/build/diff validation, and focused live UAT for healthy, unavailable, and recovered states.

@@ -20,3 +20,12 @@
   - draft retention and retry usability are preserved
   - top-level Job Detail error behavior remains unchanged for non-Re-Ask failures
   - no Agnes/Qwen/backend/submodule behavior changed during this UI remediation
+
+## 2026-06-30 PR #22 Health Status Remediation Review
+
+- Findings: none
+- Verified:
+  - Health/status semantics now reflect the active generic provider rather than a legacy overly strict probe
+  - degraded semantics are preserved for incomplete configuration, unknown providers, and backend-unavailable states
+  - Qwen-compatible provider behavior remains covered
+  - no MW/RAN, queue, cancellation, downloads, ZIP, or submodule behavior changed during this remediation

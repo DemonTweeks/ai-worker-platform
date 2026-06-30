@@ -12,12 +12,27 @@ const { generateText } = require('../llm/llmClient');
 const { getLlmStatus, isLlmConfigured, redactSensitive } = require('../llm/llmUtils');
 
 const LLM_HEALTH_CACHE_MS = 60 * 1000;
-const LLM_HEALTH_TIMEOUT_MS = 5000;
+const LLM_HEALTH_MAX_TOKENS = 8;
+const LLM_HEALTH_MIN_TIMEOUT_MS = 10000;
+const LLM_HEALTH_MAX_TIMEOUT_MS = 15000;
 let llmReachabilityCache = null;
 
 const nowIso = () => new Date().toISOString();
 
 const safeError = (error) => (error && error.message ? redactSensitive(error.message) : 'Health check failed.');
+
+const resolveLlmHealthTimeoutMs = () => {
+  const configuredTimeoutMs = Number(config.llm.timeoutMs);
+
+  if (!Number.isFinite(configuredTimeoutMs) || configuredTimeoutMs <= 0) {
+    return LLM_HEALTH_MAX_TIMEOUT_MS;
+  }
+
+  return Math.max(
+    LLM_HEALTH_MIN_TIMEOUT_MS,
+    Math.min(configuredTimeoutMs, LLM_HEALTH_MAX_TIMEOUT_MS)
+  );
+};
 
 const serviceResult = async (check) => {
   try {
@@ -157,11 +172,11 @@ const runLlmReachabilityCheck = async () => {
 
   const result = await generateText({
     task: 'health_check',
-    systemPrompt: 'You are a health check endpoint. Reply with exactly OK.',
-    userPrompt: 'Reply with exactly OK.',
+    systemPrompt: 'Reply with exactly OK.',
+    userPrompt: 'OK?',
     temperature: 0,
-    maxTokens: 128,
-    timeoutMs: LLM_HEALTH_TIMEOUT_MS
+    maxTokens: LLM_HEALTH_MAX_TOKENS,
+    timeoutMs: resolveLlmHealthTimeoutMs()
   });
 
   const value = result.ok

@@ -27,3 +27,7 @@
 - Remediation scope is limited to contextual inline Re-Ask failure feedback while preserving the existing global page-level safe-error behavior for Job Detail failures outside the Re-Ask interaction flow.
 - Chose to preserve the current top-level safe-error path for Re-Ask failures and add a second scoped inline error surface via `ReAskPanel.vue`, rather than rerouting all Re-Ask errors away from the page-level error area.
 - Chose to track Re-Ask failure text separately from global Job Detail failures so the inline error can clear on draft edit and successful retry without changing unrelated page-level error handling.
+- Human UAT on PR #22 reported a second scoped pre-merge defect: a working Agnes Re-Ask runtime returns `llm · success`, but the Health view still reports the LLM as degraded or unavailable.
+- Remediation scope is limited to provider-neutral Health/status accuracy for the active shared LLM provider while preserving degraded semantics for truly unavailable, incomplete, or unknown-provider states and keeping Qwen-compatible behavior.
+- Root cause from live reproduction: the Health endpoint used a fixed 5-second, 128-token LLM probe, which timed out under the working Agnes runtime even though the same backend could complete a real Re-Ask successfully.
+- Chose to keep Health provider-neutral by retaining a live shared-LLM probe, but made that probe lightweight and bounded using a shorter prompt, lower token budget, and timeout clamped from the generic shared LLM timeout instead of a Qwen-era fixed timeout.

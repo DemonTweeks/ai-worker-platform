@@ -34,7 +34,8 @@
     "Reopened the mission for scoped PR #22 UAT remediation of missing inline Re-Ask failure feedback",
     "Added contextual inline Re-Ask error feedback while preserving global Job Detail safe-error behavior",
     "Passed required frontend, backend, build, diff, and focused manual remediation UAT gates",
-    "Restored completed mission state after PR #22 remediation validation"
+    "Restored completed mission state after PR #22 remediation validation",
+    "Corrected provider-neutral LLM Health/status semantics so working Agnes runtimes no longer report degraded solely because of the old health probe"
   ],
   "phase_1_discovery": {
     "backend_surfaces": [

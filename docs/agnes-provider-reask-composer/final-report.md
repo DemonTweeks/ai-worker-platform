@@ -71,3 +71,23 @@ Completed the Agnes provider + Re-Ask composer reliability mission in `feature/a
   - `npm.cmd --prefix backend test`: PASS
   - `git diff --check`: PASS
   - focused manual UAT with backend outage, restart, and successful retry: PASS
+
+## PR #22 Health Status Remediation
+
+- Human UAT identified one additional pre-merge defect after Agnes Re-Ask was working: Health/status still reported the LLM as degraded or unavailable even when the same runtime returned successful Agnes answers.
+- Root cause:
+  - the Health endpoint used a fixed 5-second, 128-token LLM probe that timed out under the working Agnes runtime
+  - the same runtime completed a real Agnes Re-Ask successfully, so the degraded health state was misleading
+- Remediation delivered:
+  - replaced the overly strict Health probe with a lightweight provider-neutral shared-LLM probe
+  - kept generic provider reporting through the existing shared LLM abstraction
+  - preserved degraded behavior for incomplete configuration, unknown providers, and backend-unavailable states
+  - added focused backend Health coverage and focused frontend Health rendering coverage
+- Remediation validation:
+  - `node backend/scripts/health-status-test.js`: PASS
+  - `npm.cmd exec vitest run src/views/__tests__/AdminHealthView.spec.js`: PASS
+  - `npm.cmd --prefix backend test`: PASS
+  - `npm.cmd --prefix frontend test`: PASS
+  - `npm.cmd --prefix frontend run build`: PASS
+  - `git diff --check`: PASS
+  - focused live UAT with healthy Agnes status, successful Re-Ask, backend-down degradation, and recovery: PASS
