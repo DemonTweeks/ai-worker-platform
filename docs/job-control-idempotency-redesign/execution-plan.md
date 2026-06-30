@@ -33,4 +33,5 @@ Correct PR #20 from one-active-job-per-worker/browser-session behavior to idempo
 - The stale worker-state cancellation concern was confirmed and fixed: persisted non-terminal jobs now enter `cancelling` only when queue runtime ownership is present.
 - Browser UAT has now confirmed same-tab active-job restoration and independent cross-tab active-job visibility by `browserTabSessionId`.
 - The same UAT pass revealed and resolved a selected-job persistence leak: the Status route is now same-tab only instead of falling back to cross-tab `localStorage`.
-- The next bounded action is a draft PR description/comment refresh that summarizes the stale-worker-state fix, the same-tab selected-job fix, and the UAT evidence.
+- Controlled live UAT has now covered duplicate replay, MW+RAN coexistence under queue concurrency, queued cancellation, running cancellation with partial result, partial ZIP warning copy, and unchanged normal ZIP behavior.
+- The next bounded action is a completion audit against the Master Prompt acceptance gates, followed by `final-report.md` and `COMPLETED` only if every requirement is proven satisfied.

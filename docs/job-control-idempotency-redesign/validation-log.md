@@ -42,6 +42,23 @@
 - Fixed the selected-job leak by removing the `localStorage` fallback and using `sessionStorage` plus an in-tab `awp:selected-job-changed` event for the app shell Status link.
 - Re-ran `npm.cmd --prefix frontend test` after the fix and reloaded both live tabs; Tab B no longer inherited Tab A's Status route, while same-tab restore still worked.
 
+## Live queue-and-cancellation UAT on 2026-06-30
+
+- Started a fresh browser tab on the live frontend, captured its real `browserTabSessionId`, and issued controlled backend create requests bound to that same tab session.
+- Verified idempotent replay for MW create: the first request created `PR-20260630-007` with HTTP `201`, and the repeated request with the same `workerId + idempotencyKey` returned HTTP `200` with the same Job id and the replay message `Existing job returned for the repeated idempotent create request.`
+- Verified MW plus RAN coexistence under global concurrency: immediately after creating MW `PR-20260630-007` and RAN `PR-20260630-008`, backend health showed both in `activeJobIds`, while RAN `PR-20260630-009` remained queued in `queuedJobIds` under `MAX_CONCURRENT_JOBS = 2`.
+- Refreshed the browser workbench and confirmed the same tab showed the live non-terminal RAN jobs in Active Jobs, including queued `PR-20260630-010` and running `PR-20260630-008` / `PR-20260630-009` during the cancellation pass.
+- Cancelled queued `PR-20260630-010` through the browser UI (`Stop / Cancel` -> `Confirm Stop Job`); the job disappeared from Active Jobs, and backend detail confirmed terminal `cancelled` with `cancellation.finalStatus = cancelled`.
+- Cancelled runtime-owned `PR-20260630-009` through the browser UI while it was still active (`exporting` at click time); the workbench showed `Stopping...`, and backend detail later confirmed terminal `cancelled_with_partial_result` with `cancellation.finalStatus = cancelled_with_partial_result`.
+- Waited for terminal outcomes and verified backend detail:
+  - `PR-20260630-007` -> `completed` with available ZIP output
+  - `PR-20260630-008` -> `completed` with available ZIP output
+  - `PR-20260630-009` -> `cancelled_with_partial_result` with available ZIP output
+  - `PR-20260630-010` -> `cancelled`
+- Opened browser detail for `PR-20260630-009` and confirmed `Download Partial ZIP` plus warning copy `Partial cancelled result only. This package is not a completed delivery.`
+- Opened browser detail for `PR-20260630-008` and confirmed normal `Download ZIP` behavior remained unchanged, without the partial-cancel warning copy.
+- Refreshed Draft PR #20 description after the UAT pass so it now reflects the completed evidence gathered in this session and remains Draft.
+
 ## Outstanding blocker
 
-- Draft PR description/comment update has not been posted from this session.
+- Final completion audit and completion artifacts (`final-report.md`, `COMPLETED`) are still pending.
