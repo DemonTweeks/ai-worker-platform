@@ -125,3 +125,30 @@
 
 - INCOMPLETE: Real Stop Job cancellation-selector UAT in the active browser-tab session.
   - Evidence: no cancellable active job is currently exposed in the session, and the in-app browser sandbox still withholds `sessionStorage` and file-construction APIs needed for supported runtime binding from automation alone.
+
+## 2026-07-01 Live RAN Selector Verification And Session Probe
+
+### Browser surface check
+
+- PASS: Browser runtime backend listing returned only the in-app browser (`iab`) surface for this thread.
+  - Result: no Chrome extension backend is available to provide a richer file/storage automation path.
+
+### Live RAN selector check
+
+- PASS: Real-data browser UAT for the RAN General Item selector.
+  - Result: after selecting `RAN PR Worker` and `General Item`, `select.compact-inline-select` was enabled and accepted the long real project value `CD consolidation 2023 (Swap/ Modernize)`.
+- PASS: Compact layout metrics remained within the intended bounds on the recovered real-data path.
+  - Result: width `176px`, height `37px`, min-height `36px`, font-size `13px`, `text-overflow: ellipsis`, `white-space: nowrap`, and no page-level horizontal overflow (`scrollWidth == clientWidth`).
+- PASS: Browser console check after the real-data selector interaction.
+  - Result: no warning or error logs were captured.
+- INCOMPLETE: Keyboard-arrow verification for the live RAN selector in this automation surface.
+  - Evidence: repeated `press('ArrowDown')` and DOM-CUA keypress attempts did not move the native select selection in the in-app browser automation runtime, so this path remains unverified rather than classified as a product regression.
+
+### Session-binding probe
+
+- PASS: Created one real MW all-sites job with historical browser-tab id `tab-100bea9e312f42f38da92f2c7f54545a`.
+  - Result: backend prevalidation and job creation succeeded, producing job `PR-20260701-001`.
+- PASS: Reloaded Home after that job creation and inspected the Active Jobs table.
+  - Result: the current tab still showed `No active jobs are running or queued in this browser tab.`
+- PASS: Session-binding conclusion from the probe.
+  - Result: the current in-app browser tab is not reusing that historical `browserTabSessionId`, so historical session replay does not unlock the cancellation selector in this environment.

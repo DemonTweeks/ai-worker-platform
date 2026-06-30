@@ -45,3 +45,10 @@
 - Because the submodule checkout was incomplete, used the one explicitly allowed repair command, `git submodule update --init --recursive`, and did not modify the submodule pointer or any backend/frontend source.
 - Verified that `/api/jobs/ran-projects` recovered immediately after initialization, so the prior workbook-missing condition was not a frontend regression and is no longer the controlling blocker.
 - Kept the mission blocked only on the narrower remaining gap: no real cancellable active job is available in the current browser-tab session, and supported automation still cannot bind one through the in-app browser sandbox.
+
+### Split the remaining blocker into verified and unverified UAT paths
+
+- After the RAN catalog recovered, completed a real-data browser check for the RAN General Item selector instead of leaving the whole UI under one broad blocker.
+- Recorded the RAN selector long-value and layout path as verified on live data, while keeping keyboard-arrow behavior explicitly unverified because the in-app browser automation surface did not drive the native select reliably enough to prove that requirement either way.
+- Probed the strongest remaining non-invasive session-binding hypothesis by creating a real MW job under the most recent historical `browserTabSessionId` already present in the database, then reloading Home in the current tab.
+- Because that real job never appeared in the current tab's Active Jobs list, treated historical session replay as disproven and kept the remaining blocker focused on unknown current-session binding in an iab-only browser environment.

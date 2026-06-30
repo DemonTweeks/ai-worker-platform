@@ -61,3 +61,11 @@ PR #22 was verified on `origin/main` before Issue #21 work began.
 - Ran the one allowed recovery command, `git submodule update --init --recursive`, which restored `skills/create-pr-cd-ran` and repopulated its required workbook files.
 - Verified `GET /api/jobs/ran-projects` now returns HTTP `200` with the real project list, so the live RAN selector data path is restored without any source-code changes.
 - The remaining blocked acceptance gate is the real current-session Stop Job cancellation selector, because no cancellable active job is exposed in the active browser-tab session and supported automation still cannot bind one through storage or file APIs.
+
+`verify_live_ran_selector_and_probe_session_binding`
+
+- Confirmed the only browser backend available to this thread is the in-app browser surface; no Chrome extension backend is available for a richer file/storage path.
+- Verified the recovered live RAN General Item selector is enabled, can select the long real project label `CD consolidation 2023 (Swap/ Modernize)`, stays compact, and does not trigger page-level horizontal overflow or console warnings/errors.
+- Native select keyboard-arrow behavior could not be conclusively driven through the in-app browser automation surface, so keyboard navigation for the live RAN selector remains unverified rather than marked regressed.
+- Created one real MW all-sites job against the most recent historical `browserTabSessionId` from the database and reloaded Home; the job did not appear in the current tab's Active Jobs list, which shows the current in-app tab is not reusing that historical session id.
+- The remaining blocker is still current-session job binding for HomeView cancellation UAT, not the RAN selector data path or compact-style implementation.

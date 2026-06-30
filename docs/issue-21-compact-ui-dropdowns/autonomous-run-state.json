@@ -9,7 +9,7 @@
   "feature_branch": "fix/compact-ui-dropdowns",
   "feature_worktree": "C:\\dev\\ai-worker-platform-dropdowns",
   "baseline_sha": "e2365800ec5a45638bc6d92ba15893b8e23c367d",
-  "current_step": "environment_recovery_and_blocker_reclassification",
+  "current_step": "live_ran_selector_verification_and_session_binding_probe",
   "next_action": "BLOCKED_ACTIVE_JOB_UAT_ENVIRONMENT",
   "active_goal": "Autonomously complete AI Worker Platform GitHub Issue #21 by verifying PR #22 is merged in origin/main, then executing bounded continuation steps in the fix/compact-ui-dropdowns worktree under the master automation prompt until a single draft PR is ready.",
   "automation": {
@@ -116,6 +116,18 @@
         "Verified GET /api/jobs/ran-projects now returns HTTP 200 with the real project list, so the live RAN selector data path is available again without any source-code changes.",
         "The remaining blocked acceptance gate is the real current-session Stop Job cancellation selector, because no cancellable active job is exposed in the active browser-tab session and supported automation still cannot bind one through storage or file APIs."
       ]
+    },
+    {
+      "name": "verify_live_ran_selector_and_probe_session_binding",
+      "completed_at": "2026-07-01",
+      "outcome": "partial",
+      "notes": [
+        "Confirmed the only browser backend available to this thread is the in-app browser surface; no Chrome extension backend is available for a richer file/storage path.",
+        "Verified the recovered live RAN General Item selector is enabled, can select the long real project label CD consolidation 2023 (Swap/ Modernize), stays at compact dimensions, and does not introduce page-level horizontal overflow or console warnings/errors.",
+        "Native select keyboard-arrow behavior could not be conclusively driven through the in-app browser automation surface, so keyboard navigation for the live RAN selector remains unverified rather than marked regressed.",
+        "Created one real MW all-sites job against the most recent historical browserTabSessionId from the database and reloaded Home; the job did not appear in the current tab's Active Jobs list, proving the current in-app tab is not reusing that historical session id.",
+        "The remaining blocker is still current-session job binding for HomeView cancellation UAT, not the RAN selector data path or compact-style implementation."
+      ]
     }
   ],
   "blocker": {
@@ -124,7 +136,7 @@
     "details": [
       "The RAN workbook-backed project list is restored and /api/jobs/ran-projects now succeeds after submodule initialization.",
       "No active job exists for the current browser-tab session, so the real cancellation selector is not rendered.",
-      "The in-app browser sandbox used for UAT does not expose sessionStorage, File/DataTransfer/Blob constructors, or Vue app handles needed to bind a created job into the live page through supported automation."
+      "The only available browser backend for this thread is the in-app browser, and its automation surface still does not expose sessionStorage, File/DataTransfer/Blob constructors, or usable Vue app handles needed to bind a created job into the live page through supported automation."
     ]
   },
   "constraints": {
