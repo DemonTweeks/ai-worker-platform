@@ -1,0 +1,32 @@
+# Autonomous Run State
+
+- Mission: Agnes provider + Re-Ask composer reliability
+- Phase: Completed
+- Status: completed
+- Baseline: `origin/main` and worktree `HEAD` both verified at `987f264cce94829733a7d3b1f5bebcb127cefb98`
+- Worktree: `C:\dev\ai-worker-platform-agnes-reask`
+- Branch: `feature/agnes-provider-reask-composer`
+- Heartbeat: `agnes-provider-reask-composer-hourly-follow-up` (`FREQ=HOURLY;INTERVAL=1`, `ACTIVE`)
+- Last checkpoint before this step: `e62de67dca09618a06cd8f53c5d631f334817fcf`
+- Acceptance status: `passed`
+- Next action: `NO_OP_COMPLETED`
+- Completed scope:
+  - Read the Master Prompt from disk.
+  - Verified `C:\dev\ai-worker-platform` is clean and `origin/main` matches the expected baseline.
+  - Validated the existing dedicated worktree and feature branch.
+  - Created the recurring hourly thread heartbeat.
+  - Initialized persistent mission-state documents.
+  - Inspected the shared LLM registry, Qwen provider, config contract, LLM callers, and current backend script-based coverage.
+  - Inspected the Re-Ask panel, Job Detail view, API helpers, and current frontend Vitest coverage.
+  - Selected the implementation approach of a sibling Agnes adapter plus parent-owned controlled Re-Ask draft state.
+  - Added the Agnes shared provider adapter and focused backend provider coverage.
+  - Added focused Re-Ask component and Job Detail integration coverage.
+  - Implemented controlled draft retention, success-only clearing, Shift+Enter multiline behavior, and duplicate prevention.
+  - Passed backend tests, frontend tests, frontend build, and `git diff --check`.
+  - Recorded changed-file scope, sensitive-data scan, unchanged-submodule verification, and browser UAT evidence.
+  - Reopened the mission for scoped PR #22 UAT remediation of missing inline Re-Ask failure feedback beside the composer.
+  - Added contextual inline Re-Ask failure feedback at the composer while preserving the existing global error path.
+  - Passed focused remediation frontend tests, required backend/frontend/build/diff validation, and focused failure-then-retry manual UAT.
+  - Reopened the mission for scoped PR #22 Health/status remediation after human UAT found a misleading degraded Agnes status despite successful Re-Ask responses.
+  - Replaced the overly strict LLM health probe with a lightweight provider-neutral probe that preserves degraded semantics for real failures and unknown providers.
+  - Passed focused health backend and frontend coverage, required backend/frontend/build/diff validation, and focused live UAT for healthy, unavailable, and recovered states.

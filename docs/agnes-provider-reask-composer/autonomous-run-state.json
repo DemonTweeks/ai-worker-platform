@@ -1,0 +1,67 @@
+{
+  "mission": "Agnes provider + Re-Ask composer reliability",
+  "master_prompt_path": "C:\\dev\\codex-prompts\\agnes-provider-reask-composer-master-prompt.md",
+  "primary_checkout": "C:\\dev\\ai-worker-platform",
+  "worktree": "C:\\dev\\ai-worker-platform-agnes-reask",
+  "branch": "feature/agnes-provider-reask-composer",
+  "baseline": {
+    "expected_origin_main": "987f264cce94829733a7d3b1f5bebcb127cefb98",
+    "verified_origin_main": "987f264cce94829733a7d3b1f5bebcb127cefb98",
+    "verified_worktree_head": "987f264cce94829733a7d3b1f5bebcb127cefb98",
+    "verified_at": "2026-06-30"
+  },
+  "heartbeat": {
+    "name": "agnes-provider-reask-composer-hourly-follow-up",
+    "schedule": "FREQ=HOURLY;INTERVAL=1",
+    "status": "ACTIVE"
+  },
+  "phase": "Completed",
+  "status": "completed",
+  "completed_scope": [
+    "Read the external Master Prompt from disk",
+    "Verified primary checkout cleanliness and expected origin/main baseline",
+    "Validated existing feature worktree and branch state",
+    "Created recurring hourly thread heartbeat",
+    "Initialized persistent mission-state documents",
+    "Inspected shared LLM implementation, configuration helpers, callers, and current backend test surface",
+    "Inspected Re-Ask component and Job Detail flow plus current frontend test surface",
+    "Recorded an evidence-based implementation approach and exact planned file changes without modifying product source",
+    "Added focused Agnes provider backend coverage and shared-provider registration",
+    "Implemented controlled Re-Ask composer ownership and duplicate-prevention behavior",
+    "Passed required focused and full backend/frontend validation gates",
+    "Recorded changed-file scope, secret scan, unchanged-submodule, and browser UAT evidence",
+    "Wrote final mission completion artifacts and completion marker",
+    "Reopened the mission for scoped PR #22 UAT remediation of missing inline Re-Ask failure feedback",
+    "Added contextual inline Re-Ask error feedback while preserving global Job Detail safe-error behavior",
+    "Passed required frontend, backend, build, diff, and focused manual remediation UAT gates",
+    "Restored completed mission state after PR #22 remediation validation",
+    "Corrected provider-neutral LLM Health/status semantics so working Agnes runtimes no longer report degraded solely because of the old health probe"
+  ],
+  "phase_1_discovery": {
+    "backend_surfaces": [
+      "backend/src/llm/llmClient.js",
+      "backend/src/llm/providers/qwenProvider.js",
+      "backend/src/llm/llmUtils.js",
+      "backend/src/config/env.js",
+      "backend/src/llm/reAskService.js",
+      "backend/src/services/healthService.js",
+      "backend/scripts/smoke-test.js"
+    ],
+    "frontend_surfaces": [
+      "frontend/src/components/ReAskPanel.vue",
+      "frontend/src/views/JobDetailView.vue",
+      "frontend/src/api/reAskApi.js",
+      "frontend/src/api/jobApi.js",
+      "frontend/src/views/__tests__/HomeView.spec.js"
+    ],
+    "selected_approach": {
+      "agnes_adapter": "Create backend/src/llm/providers/agnesProvider.js as a sibling of qwenProvider.js and register it in the shared provider map without changing caller entrypoints.",
+      "reask_flow": "Move draft ownership to JobDetailView.vue, make ReAskPanel.vue controlled, guard duplicate submissions in parent and child, and clear the draft only after successful askJob completion."
+    }
+  },
+  "next_action": "NO_OP_COMPLETED",
+  "remaining_acceptance_gates": [],
+  "last_checkpoint_commit": "b4f9ab4a65fc615374760f4a8491efb094ee9320",
+  "acceptance_status": "passed",
+  "completed": true
+}

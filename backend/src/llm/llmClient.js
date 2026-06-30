@@ -1,4 +1,5 @@
 const config = require('../config/env');
+const agnesProvider = require('./providers/agnesProvider');
 const qwenProvider = require('./providers/qwenProvider');
 const { LLM_ERROR_CODES } = require('./llmTypes');
 const {
@@ -9,6 +10,7 @@ const {
 } = require('./llmUtils');
 
 const providers = {
+  agnes: agnesProvider,
   qwen: qwenProvider
 };
 
@@ -18,7 +20,8 @@ const generateText = async ({
   userPrompt,
   temperature = 0.2,
   maxTokens = 500,
-  timeoutMs
+  timeoutMs,
+  maxRetries
 }) => {
   if (!config.llm.enabled) {
     return getDisabledResult();
@@ -37,7 +40,7 @@ const generateText = async ({
     );
   }
 
-  const attempts = Math.max(0, config.llm.maxRetries) + 1;
+  const attempts = Math.max(0, maxRetries ?? config.llm.maxRetries) + 1;
   let lastResult = null;
 
   for (let attempt = 0; attempt < attempts; attempt += 1) {
