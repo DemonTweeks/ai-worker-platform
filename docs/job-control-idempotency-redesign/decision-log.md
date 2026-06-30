@@ -30,3 +30,7 @@
 - `selectedJobId` persistence for the live workbench must remain same-tab only, just like `browserTabSessionId`.
 - The frontend must not fall back to cross-tab `localStorage` for the active Status route or selected active job restoration.
 - The app shell now updates the Status link from `sessionStorage` plus an in-tab event, preventing Tab B from inheriting Tab A's selected active job.
+
+## 2026-06-30 - Completion hygiene
+
+- `storage/ran-workspaces/` is runtime-only state that must remain untouched; the repository now ignores it so the branch can reach a clean completion state without deleting or rewriting user/runtime work.

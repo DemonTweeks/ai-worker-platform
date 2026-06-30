@@ -2,12 +2,13 @@ mission: "PR #20 Job Queue Redesign"
 repository: "DemonTweeks/ai-worker-platform"
 branch: "fix/job-control-duplicate-guard-and-cancellation"
 pull_request: 20
+acceptance_status: "passed"
 draft: true
-completed: false
+completed: true
 started_at: "2026-06-30"
-current_commit: "f737a72e02eb03054f097b1c76e1d7800d10e7e4"
-previous_local_head: "a454c76ad52848113aa72cfbe5d08e365ae8546f"
-remote_head: "f737a72e02eb03054f097b1c76e1d7800d10e7e4"
+current_commit: "cf30f1fa81579104574d0f51f973d628ada48b63"
+previous_local_head: "f737a72e02eb03054f097b1c76e1d7800d10e7e4"
+remote_head: "cf30f1fa81579104574d0f51f973d628ada48b63"
 known_live_uat_failure:
   job_generating: "PR-20260630-003"
   hidden_completed_job: "PR-20260630-002"
@@ -44,5 +45,6 @@ notes:
   - "Browser UAT also exposed a cross-tab Status-link bleed from localStorage-backed selected job persistence; the frontend now scopes selected-job restore to sessionStorage only."
   - "Controlled live UAT against a real browserTabSessionId confirmed same-tab duplicate replay, MW plus RAN coexistence under global concurrency, queued cancellation, running cancellation with partial result, partial ZIP warning copy, and unchanged normal ZIP copy."
   - "Draft PR #20 description has been refreshed with the completed UAT evidence gathered so far and remains Draft."
-next_action: "Run a completion audit against the Master Prompt requirements, then write final-report.md and COMPLETED only if every acceptance gate and verification artifact is fully satisfied."
-blocker: "Completion artifacts and final requirement-by-requirement audit are still pending."
+  - "The repository now ignores storage/ran-workspaces/ so the required runtime directory can remain untouched without blocking a clean completion state."
+next_action: "NO_OP_COMPLETED"
+blocker: ""
