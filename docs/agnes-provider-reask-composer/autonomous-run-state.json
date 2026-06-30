@@ -1,0 +1,43 @@
+{
+  "mission": "Agnes provider + Re-Ask composer reliability",
+  "master_prompt_path": "C:\\dev\\codex-prompts\\agnes-provider-reask-composer-master-prompt.md",
+  "primary_checkout": "C:\\dev\\ai-worker-platform",
+  "worktree": "C:\\dev\\ai-worker-platform-agnes-reask",
+  "branch": "feature/agnes-provider-reask-composer",
+  "baseline": {
+    "expected_origin_main": "987f264cce94829733a7d3b1f5bebcb127cefb98",
+    "verified_origin_main": "987f264cce94829733a7d3b1f5bebcb127cefb98",
+    "verified_worktree_head": "987f264cce94829733a7d3b1f5bebcb127cefb98",
+    "verified_at": "2026-06-30"
+  },
+  "heartbeat": {
+    "name": "agnes-provider-reask-composer-hourly-follow-up",
+    "schedule": "FREQ=HOURLY;INTERVAL=1",
+    "status": "ACTIVE"
+  },
+  "phase": "Phase 0",
+  "status": "initialized",
+  "completed_scope": [
+    "Read the external Master Prompt from disk",
+    "Verified primary checkout cleanliness and expected origin/main baseline",
+    "Validated existing feature worktree and branch state",
+    "Created recurring hourly thread heartbeat",
+    "Initialized persistent mission-state documents"
+  ],
+  "next_action": "inspect-llm-and-reask-implementation-surfaces",
+  "remaining_acceptance_gates": [
+    "Agnes provider implementation and focused backend coverage",
+    "Re-Ask composer reliability implementation and focused frontend coverage",
+    "backend test suite",
+    "frontend test suite",
+    "frontend production build",
+    "git diff --check",
+    "browser UAT evidence",
+    "changed-file scope review",
+    "submodule unchanged verification",
+    "draft PR creation after all gates pass"
+  ],
+  "last_checkpoint_commit": null,
+  "acceptance_status": "not-started",
+  "completed": false
+}
