@@ -1,0 +1,40 @@
+mission: "PR #20 Job Queue Redesign"
+repository: "DemonTweeks/ai-worker-platform"
+branch: "fix/job-control-duplicate-guard-and-cancellation"
+pull_request: 20
+draft: true
+completed: false
+started_at: "2026-06-30"
+current_commit: "16873b151a3ec8c6d2d438dfeaa719727913642c"
+previous_local_head: "0137392e6339a45e169e5e1c3547d118aba6051d"
+remote_head: "16873b151a3ec8c6d2d438dfeaa719727913642c"
+known_live_uat_failure:
+  job_generating: "PR-20260630-003"
+  hidden_completed_job: "PR-20260630-002"
+  observed_ui_failure: "Home view showed Idle, blocked RAN validation, and did not expose the running job for selection or cancellation."
+scope_boundaries:
+  in_scope:
+    - "Replace submissionScope/browser-session active-job locking with idempotent create semantics."
+    - "Preserve MAX_CONCURRENT_JOBS as the only queue-wide concurrency limit."
+    - "Expose multiple active current-session jobs in the frontend."
+    - "Retain cancellation support and add persisted-orphan recovery handling."
+    - "Update automated tests and manual validation evidence."
+  out_of_scope:
+    - "Do not merge or deploy this branch."
+    - "Do not close issues #13 or #16."
+    - "Do not add Gumb-D/codex-unattended-development as a dependency or submodule."
+    - "Do not modify worker-engine semantics beyond queue/idempotency/cancellation-orphan correctness."
+rules:
+  - "No merge."
+  - "No deploy."
+  - "No engine modification outside queue-control integration needs."
+  - "Do not discard uncommitted user work, including storage/ran-workspaces/."
+planned_phases:
+  - "Phase 1: inspect current backend/frontend job-control flow and PR review context."
+  - "Phase 2: backend idempotent submission, queue listing, and orphan cancellation recovery."
+  - "Phase 3: frontend multi-job workbench and browser-session restoration."
+  - "Phase 4: replace lock-based tests with idempotency/concurrency/visibility coverage."
+  - "Phase 5: run validation suite, browser UAT, and PR handoff updates."
+notes:
+  - "Fetched latest remote head before implementation."
+  - "Remote head introduced accidental docs/.keep placeholder; remove it from this branch and final PR diff."
