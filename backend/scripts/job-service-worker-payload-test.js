@@ -1,6 +1,7 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
+const { matchFilter } = require('../src/models/compatibility');
 
 const repoRoot = path.resolve(__dirname, '..');
 const setCachedModule = (modulePath, exports) => {
@@ -9,6 +10,7 @@ const setCachedModule = (modulePath, exports) => {
 
 const storageService = require('../src/services/storageService');
 const jobQueue = require('../src/queue/jobQueue');
+const workerStateService = require('../src/services/workerStateService');
 const { Job, JobFile, ReviewRequiredItem, WarningItem } = require('../src/models');
 
 const runTests = async () => {
@@ -113,13 +115,26 @@ const runTests = async () => {
       maxConcurrentJobs: 2
     });
     Job.create = async (payload) => {
-      createdJobs.push(payload);
-      return {
+      const createdJob = {
         ...payload,
         createdAt: '2026-06-26T00:00:00.000Z',
         finalWorkerSummary: payload.finalWorkerSummary || ''
       };
+      createdJobs.push(createdJob);
+      return createdJob;
     };
+    Job.find = (filter = {}) => ({
+      sort: () => ({
+        limit: () => ({
+          lean: async () => createdJobs.filter((job) => matchFilter(job, filter))
+        }),
+        skip: () => ({
+          limit: () => ({
+            lean: async () => createdJobs.filter((job) => matchFilter(job, filter))
+          })
+        })
+      })
+    });
     JobFile.create = async (payload) => {
       createdFiles.push(payload);
       return {
@@ -131,6 +146,8 @@ const runTests = async () => {
     const createResult = await jobService.createJob({
       prevalidatedFileId: 'prevalidated-1',
       workerId: 'mw-pr',
+      browserTabSessionId: 'mw-pr-tab-1234',
+      idempotencyKey: 'mw-idem-1234',
       prScope: 'TSS',
       generationScope: 'site_code',
       siteCodes: ['abc001', 'ABC001']
@@ -143,8 +160,23 @@ const runTests = async () => {
     assert.strictEqual(createdJobs[0].workerId, 'mw-pr');
     assert.strictEqual(createdJobs[0].engineVersion, 'platform-current');
     assert.strictEqual(createdJobs[0].engineCommit, 'platform-current');
+    assert.strictEqual(createdJobs[0].browserTabSessionId, 'mw-pr-tab-1234');
+    assert.strictEqual(createdJobs[0].idempotencyKey, 'mw-idem-1234');
     assert(copiedBuffers[0].includes('"workerId": "mw-pr"'));
     assert.strictEqual(createdFiles[0].fileType, 'uploaded_export');
+    assert.strictEqual(createdJobs[0].browserTabSessionId, 'mw-pr-tab-1234');
+
+    const duplicateMwResult = await jobService.createJob({
+        prevalidatedFileId: 'prevalidated-duplicate',
+        workerId: 'mw-pr',
+        browserTabSessionId: 'mw-pr-tab-1234',
+        idempotencyKey: 'mw-idem-1234',
+        prScope: 'TSS',
+        generationScope: 'site_code',
+        siteCodes: ['ABC001']
+      });
+    assert.strictEqual(duplicateMwResult.job.jobId, createResult.job.jobId, 'duplicate MW submissions should replay the existing job');
+    assert.strictEqual(createdJobs.length, 1, 'duplicate MW submissions should not create a second job');
 
     createdJobs.length = 0;
     createdFiles.length = 0;
@@ -152,6 +184,8 @@ const runTests = async () => {
 
     const ranCreateResult = await jobService.createJob({
       workerId: 'ran-pr',
+      browserTabSessionId: 'ran-pr-tab-1234',
+      idempotencyKey: 'ran-idem-1234',
       bomPrevalidatedFileId: 'ran-bom-1',
       epmsPrevalidatedFileId: 'ran-epms-1',
       runMode: 'general-item',
@@ -176,6 +210,20 @@ const runTests = async () => {
     assert(copiedBuffers[0].includes('"workerId": "ran-pr"'));
     assert(copiedBuffers[0].includes('"runMode": "general-item"'));
     assert(copiedBuffers[0].includes('"selectedProject": "Project Thanos"'));
+    assert.strictEqual(createdJobs[0].browserTabSessionId, 'ran-pr-tab-1234');
+    assert.strictEqual(createdJobs[0].idempotencyKey, 'ran-idem-1234');
+
+    const duplicateRanResult = await jobService.createJob({
+        workerId: 'ran-pr',
+        browserTabSessionId: 'ran-pr-tab-1234',
+        idempotencyKey: 'ran-idem-1234',
+        bomPrevalidatedFileId: 'ran-bom-1',
+        epmsPrevalidatedFileId: 'ran-epms-1',
+        runMode: 'general-item',
+        selectedProject: 'Project Thanos'
+      });
+    assert.strictEqual(duplicateRanResult.job.jobId, ranCreateResult.job.jobId, 'duplicate RAN submissions should replay the existing job');
+    assert.strictEqual(createdJobs.length, 1, 'duplicate RAN submissions should not create a second job');
 
     await assert.rejects(
       () => jobService.createJob({
@@ -206,6 +254,8 @@ const runTests = async () => {
         workerId: 'ran-pr',
         workerType: 'pr-worker',
         status: 'completed',
+        browserTabSessionId: 'ran-pr-tab-1234',
+        idempotencyKey: 'ran-idem-1234',
         createdAt: '2026-06-26T00:00:00.000Z',
         generationScope: 'all_sites',
         prScope: 'TSS',
@@ -226,6 +276,8 @@ const runTests = async () => {
         workerId: 'mw-pr',
         workerType: 'pr-worker',
         status: 'queued',
+        browserTabSessionId: 'mw-pr-tab-1234',
+        idempotencyKey: 'mw-idem-1234',
         createdAt: '2026-06-26T00:00:00.000Z',
         generationScope: 'site_code',
         prScope: 'TI',
@@ -243,19 +295,27 @@ const runTests = async () => {
       sort: () => ({
         skip: () => ({
           limit: () => ({
-            lean: async () => mockJobs.filter((job) => !filter.workerId || job.workerId === filter.workerId)
+            lean: async () => mockJobs.filter((job) => (
+              (!filter.workerId || job.workerId === filter.workerId)
+              && (!filter.browserTabSessionId || job.browserTabSessionId === filter.browserTabSessionId)
+            ))
           })
         })
       })
     });
-    Job.countDocuments = async (filter) => mockJobs.filter((job) => !filter.workerId || job.workerId === filter.workerId).length;
+    Job.countDocuments = async (filter) => mockJobs.filter((job) => (
+      (!filter.workerId || job.workerId === filter.workerId)
+      && (!filter.browserTabSessionId || job.browserTabSessionId === filter.browserTabSessionId)
+    )).length;
 
-    const listResult = await jobService.listJobs({ workerId: 'ran-pr' });
+    const listResult = await jobService.listJobs({ workerId: 'ran-pr', browserTabSessionId: 'ran-pr-tab-1234' });
     assert.strictEqual(listResult.items.length, 1);
     assert.strictEqual(listResult.items[0].workerId, 'ran-pr');
     assert.strictEqual(listResult.items[0].workerDisplayName, 'RAN PR Worker');
     assert.strictEqual(listResult.items[0].runMode, 'general-item');
     assert.strictEqual(listResult.items[0].selectedProject, 'Project Thanos');
+    assert.strictEqual(listResult.items[0].browserTabSessionId, 'ran-pr-tab-1234');
+    assert.strictEqual(listResult.items[0].idempotencyKey, 'ran-idem-1234');
 
     const detailJob = {
       ...mockJobs[0],
@@ -289,6 +349,100 @@ const runTests = async () => {
     assert.strictEqual(detailResult.job.engineCommit, '239910e2816153339a94881597bbb95355059741');
     assert.strictEqual(detailResult.job.runMode, 'general-item');
     assert.strictEqual(detailResult.job.selectedProject, 'Project Thanos');
+
+    const queuedCancellationJob = {
+      jobId: 'MW-CANCEL-QUEUED',
+      workerId: 'mw-pr',
+      workerType: 'pr-worker',
+      status: 'queued',
+      createdAt: '2026-06-26T00:00:00.000Z',
+      requestedSiteCount: 0,
+      matchedSiteCount: 0,
+      unmatchedSiteCount: 0,
+      outputFileCount: 0,
+      reviewRequiredCount: 0,
+      warningCount: 0,
+      finalWorkerSummary: '',
+      save: async function save() { return this; }
+    };
+    Job.findOne = async ({ jobId }) => (jobId === queuedCancellationJob.jobId ? queuedCancellationJob : null);
+    jobQueue.cancelQueuedJob = async () => ({ cancelled: true, running: false, alreadyRequested: false });
+
+    const queuedCancellationResult = await jobService.cancelJob(queuedCancellationJob.jobId, {
+      reasonCode: 'wrong_inputs',
+      reasonText: 'BOM and EPMS were swapped'
+    }, {
+      requestedBy: 'qa-user'
+    });
+    assert.strictEqual(queuedCancellationResult.job.status, 'cancelled');
+    assert.strictEqual(queuedCancellationJob.cancellation.requestedBy, 'qa-user');
+    assert.strictEqual(queuedCancellationJob.cancellation.reasonCode, 'wrong_inputs');
+    assert.strictEqual(queuedCancellationJob.cancellation.finalStatus, 'cancelled');
+    assert.strictEqual(queuedCancellationJob.statusEvents.length, 2, 'queued cancellation should record requested and completed events once');
+
+    const runningCancellationJob = {
+      jobId: 'RAN-CANCEL-RUNNING',
+      workerId: 'ran-pr',
+      workerType: 'pr-worker',
+      status: 'generating',
+      createdAt: '2026-06-26T00:00:00.000Z',
+      requestedSiteCount: 0,
+      matchedSiteCount: 0,
+      unmatchedSiteCount: 0,
+      outputFileCount: 0,
+      reviewRequiredCount: 0,
+      warningCount: 0,
+      finalWorkerSummary: '',
+      save: async function save() { return this; }
+    };
+    Job.findOne = async ({ jobId }) => (jobId === runningCancellationJob.jobId ? runningCancellationJob : null);
+    jobQueue.cancelQueuedJob = async () => ({ cancelled: false, running: true, alreadyRequested: false });
+
+    const runningCancellationResult = await jobService.cancelJob(runningCancellationJob.jobId, {
+      reasonCode: 'long_running'
+    }, {
+      requestedBy: 'qa-user'
+    });
+    assert.strictEqual(runningCancellationResult.job.status, 'cancelling');
+    assert.strictEqual(runningCancellationJob.status, 'cancelling');
+    assert.strictEqual(runningCancellationJob.statusEvents.length, 1, 'running cancellation should not duplicate completion events before terminal state');
+
+    const repeatedCancellationResult = await jobService.cancelJob(runningCancellationJob.jobId, {
+      reasonCode: 'long_running'
+    }, {
+      requestedBy: 'qa-user'
+    });
+    assert.strictEqual(repeatedCancellationResult.job.status, 'cancelling');
+    assert.strictEqual(runningCancellationJob.statusEvents.length, 1, 'repeated cancellation requests should be idempotent');
+
+    const orphanedRunningJob = {
+      jobId: 'MW-CANCEL-ORPHAN',
+      workerId: 'mw-pr',
+      workerType: 'pr-worker',
+      status: 'generating',
+      outputFileCount: 0,
+      createdAt: '2026-06-26T00:00:00.000Z',
+      requestedSiteCount: 0,
+      matchedSiteCount: 0,
+      unmatchedSiteCount: 0,
+      reviewRequiredCount: 0,
+      warningCount: 0,
+      finalWorkerSummary: '',
+      save: async function save() { return this; }
+    };
+    workerStateService.createState(orphanedRunningJob.jobId, 'GENERATION_STARTED');
+    Job.findOne = async ({ jobId }) => (jobId === orphanedRunningJob.jobId ? orphanedRunningJob : null);
+    jobQueue.cancelQueuedJob = async () => ({ cancelled: false, running: false, alreadyRequested: false });
+
+    const orphanedCancellationResult = await jobService.cancelJob(orphanedRunningJob.jobId, {
+      reasonCode: 'long_running'
+    }, {
+      requestedBy: 'qa-user'
+    });
+    assert.strictEqual(orphanedCancellationResult.job.status, 'cancelled', 'stale workerState must not keep an orphaned runtime job in cancelling');
+    assert.strictEqual(orphanedRunningJob.status, 'cancelled', 'orphaned runtime jobs should resolve to a terminal status immediately');
+    assert.strictEqual(orphanedRunningJob.cancellation.finalStatus, 'cancelled', 'orphaned runtime cancellation should persist the terminal final status');
+    assert.strictEqual(orphanedRunningJob.statusEvents.length, 2, 'orphaned runtime cancellation should record requested and completed events');
 
     console.log('--- Job Service Worker Payload Tests Passed! ---');
   } finally {

@@ -30,6 +30,7 @@ storage/jobs/*
 storage/assets/*
 storage/outputs/*
 storage/temp/*
+storage/ran-workspaces/
 !storage/jobs/.gitkeep
 !storage/assets/.gitkeep
 !storage/outputs/.gitkeep

@@ -5,6 +5,7 @@ const { saveFinalSummary } = require('./finalSummaryService');
 const { determineFinalStatus } = require('./zeroOutputPolicyService');
 const ranPrAdapter = require('../workers/adapters/ranPrAdapter');
 const { JOB_EVENTS, publishJobEvent } = require('../websocket/eventPublisher');
+const { RUNNING_JOB_STATUSES, appendStatusEvent } = require('./jobControlService');
 
 const statusByPhase = {
   VALIDATION_STARTED: 'validating',
@@ -14,7 +15,21 @@ const statusByPhase = {
 };
 
 const setJobStatus = async (jobId, status, extra = {}) => {
-  await Job.updateOne({ jobId }, { $set: { status, ...extra } });
+  const currentJob = await Job.findOne({ jobId });
+
+  if (!currentJob) {
+    return null;
+  }
+
+  let resolvedStatus = status;
+  if (['cancelled', 'cancelled_with_partial_result'].includes(currentJob.status)) {
+    resolvedStatus = currentJob.status;
+  } else if (currentJob.status === 'cancelling' && RUNNING_JOB_STATUSES.includes(status)) {
+    resolvedStatus = 'cancelling';
+  }
+
+  await Job.updateOne({ jobId }, { $set: { status: resolvedStatus, ...extra } });
+  return resolvedStatus;
 };
 
 const setPhaseAndStatus = async (jobId, phase, message, extra = {}) => {
@@ -65,6 +80,38 @@ const finalizeFailedOutputValidation = async (jobId, safeError, summary) => {
     error: safeError,
     finalWorkerSummary
   };
+};
+
+const finalizeCancelledJob = async (jobId, summary, { includeZip, message }) => {
+  const finalStatus = summary.outputFileCount > 0 ? 'cancelled_with_partial_result' : 'cancelled';
+  const cancelledAt = new Date();
+
+  await setJobStatus(jobId, finalStatus, {
+    cancelledAt,
+    completedAt: cancelledAt,
+    cancellation: {
+      ...(await Job.findOne({ jobId })).cancellation,
+      completedAt: cancelledAt.toISOString(),
+      finalStatus
+    },
+    statusEvents: appendStatusEvent(await Job.findOne({ jobId }), 'cancellation_completed', {
+      createdAt: cancelledAt.toISOString(),
+      finalStatus
+    }),
+    ...summary
+  });
+  const finalWorkerSummary = await saveFinalSummary({ jobId, summary, statusOverride: finalStatus });
+  await setJobStatus(jobId, finalStatus, { finalWorkerSummary });
+  await generateReportsAndPackage(jobId, { includeZip });
+  workerStateService.setCancelled(jobId, message);
+  await publishJobEvent(jobId, JOB_EVENTS.JOB_CANCELLED, {
+    phase: 'CANCELLED',
+    status: finalStatus,
+    message,
+    summary
+  });
+
+  return finalStatus;
 };
 
 const failJob = async (jobId, error) => {
@@ -152,23 +199,11 @@ const runRanWorkerJob = async (jobId) => {
       outputFileCount: result.outputCollection.outputFileCount
     });
 
-    if (result.pipelineResult.cancelled) {
-      const finalStatus = summary.outputFileCount > 0 ? 'cancelled_with_partial_result' : 'cancelled';
-      await setJobStatus(jobId, finalStatus, {
-        cancelledAt: new Date(),
-        ...summary
+    if (result.pipelineResult.cancelled || workerStateService.isCancellationRequested(jobId)) {
+      const finalStatus = await finalizeCancelledJob(jobId, summary, {
+        includeZip: summary.outputFileCount > 0,
+        message: 'RAN PR worker job cancelled.'
       });
-      const finalWorkerSummary = await saveFinalSummary({ jobId, summary });
-      await setJobStatus(jobId, finalStatus, { finalWorkerSummary });
-      await generateReportsAndPackage(jobId, { includeZip: summary.outputFileCount > 0 });
-      workerStateService.setCancelled(jobId);
-      await publishJobEvent(jobId, JOB_EVENTS.JOB_CANCELLED, {
-        phase: 'CANCELLED',
-        status: finalStatus,
-        message: 'RAN PR worker job cancelled.',
-        summary
-      });
-
       return {
         status: finalStatus,
         summary,
@@ -203,6 +238,17 @@ const runRanWorkerJob = async (jobId) => {
       result
     };
   } catch (error) {
+    if (workerStateService.isCancellationRequested(jobId)) {
+      const summary = buildRanSummary();
+      const finalStatus = await finalizeCancelledJob(jobId, summary, {
+        includeZip: false,
+        message: 'RAN PR worker job cancelled.'
+      });
+      return {
+        status: finalStatus,
+        summary
+      };
+    }
     await failJob(jobId, error);
     return {
       status: 'failed',

@@ -7,9 +7,10 @@
         class="download-button"
         :href="zipUrl"
       >
-        Download ZIP
+        {{ zipLabel }}
       </a>
     </div>
+    <p v-if="isPartialCancelledResult" class="muted">Partial cancelled result only. This package is not a completed delivery.</p>
     <div v-if="outputs.length === 0" class="empty-state">No output files are tracked for this job.</div>
     <div v-else class="table-wrap">
       <table>
@@ -63,11 +64,18 @@ export default {
   name: 'JobDetailFiles',
   props: {
     jobId: { type: String, required: true },
-    outputs: { type: Array, default: () => [] }
+    outputs: { type: Array, default: () => [] },
+    status: { type: String, default: '' }
   },
   computed: {
     canDownloadZip() {
       return this.outputs.some((file) => file.fileType === 'zip_package' && file.available);
+    },
+    isPartialCancelledResult() {
+      return this.status === 'cancelled_with_partial_result';
+    },
+    zipLabel() {
+      return this.isPartialCancelledResult ? 'Download Partial ZIP' : 'Download ZIP';
     },
     zipUrl() {
       return getZipDownloadUrl(this.jobId);

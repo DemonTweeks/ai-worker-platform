@@ -24,6 +24,9 @@ const sampleBomPath = path.join(ranSkillRoot, 'input', 'BOM.xlsx');
 const sampleEpmsPath = path.join(ranSkillRoot, 'input', 'EPMS.xlsx');
 
 const createdJobIds = new Set();
+const browserTabSessionId = 'QA-RAN-TAB-SESSION';
+let idempotencySequence = 0;
+const nextIdempotencyKey = () => `ran-pr-route-${++idempotencySequence}`;
 
 const request = async (baseUrl, route, options = {}) => {
   const response = await fetch(`${baseUrl}${route}`, options);
@@ -124,6 +127,8 @@ const testRanRoutes = async (baseUrl) => {
   try {
     const created = await postJson(baseUrl, '/api/jobs', {
       workerId: 'ran-pr',
+      browserTabSessionId,
+      idempotencyKey: nextIdempotencyKey(),
       bomPrevalidatedFileId: bomPrevalidation.body.prevalidatedFileId,
       epmsPrevalidatedFileId: epmsPrevalidation.body.prevalidatedFileId,
       runMode: 'standard-pr'
@@ -175,6 +180,8 @@ const testRanRoutes = async (baseUrl) => {
 
     const wrongKindCreate = await postJson(baseUrl, '/api/jobs', {
       workerId: 'ran-pr',
+      browserTabSessionId,
+      idempotencyKey: nextIdempotencyKey(),
       bomPrevalidatedFileId: mwUpload.body.prevalidatedFileId,
       epmsPrevalidatedFileId: epmsPrevalidationForWrongKind.body.prevalidatedFileId,
       runMode: 'standard-pr'

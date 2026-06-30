@@ -30,12 +30,15 @@ const QA_PREFIX = 'QA15';
 const OBSOLETE_QUEUE_SUMMARY = 'Job created and queued. PR Worker execution will run after the worker queue layer is implemented.';
 const terminalStatuses = new Set(['completed', 'completed_with_warning', 'failed', 'cancelled', 'cancelled_with_partial_result']);
 const cleanupJobIds = new Set();
+const browserTabSessionId = `${QA_PREFIX}-TAB-SESSION`;
+let idempotencySequence = 0;
 
 const repoRoot = path.resolve(__dirname, '../..');
 const skillRoot = path.join(repoRoot, 'skills', 'create-pr-cd');
 const sampleInputPath = path.join(skillRoot, 'Info', 'input', 'site_pr_po_view.xlsx');
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const nextIdempotencyKey = (workerId = 'mw-pr') => `${workerId}-${QA_PREFIX}-IDEMP-${++idempotencySequence}`;
 
 const request = async (baseUrl, route, options = {}) => {
   const response = await fetch(`${baseUrl}${route}`, options);
@@ -140,6 +143,9 @@ const runJobFlow = async ({ baseUrl, prScope, siteCodes, allowExplainedZeroOutpu
   assert(prevalidation.body.prevalidatedFileId, 'prevalidation should return file id');
 
   const created = await postJson(baseUrl, '/api/jobs', {
+    workerId: 'mw-pr',
+    browserTabSessionId,
+    idempotencyKey: nextIdempotencyKey('mw-pr'),
     prevalidatedFileId: prevalidation.body.prevalidatedFileId,
     prScope,
     generationScope: 'site_code',
@@ -210,6 +216,9 @@ const testApiAndWorker = async (baseUrl) => {
   assert.strictEqual(invalidPrevalidation.response.status, 400, 'invalid workbook should be rejected');
 
   const invalidScope = await postJson(baseUrl, '/api/jobs', {
+    workerId: 'mw-pr',
+    browserTabSessionId,
+    idempotencyKey: nextIdempotencyKey('mw-pr'),
     prevalidatedFileId: 'not-needed',
     prScope: 'BAD',
     generationScope: 'all_sites',
@@ -573,6 +582,9 @@ sys.exit(5)
     const siteCode = getSampleSiteCode();
 
     const createdCrash = await postJson(baseUrl, '/api/jobs', {
+      workerId: 'mw-pr',
+      browserTabSessionId,
+      idempotencyKey: nextIdempotencyKey('mw-pr'),
       prevalidatedFileId: prevalidation.body.prevalidatedFileId,
       prScope: 'TSS',
       generationScope: 'site_code',
@@ -602,6 +614,9 @@ sys.exit(0)
     const prevalidation2 = await uploadFile(baseUrl, '/api/jobs/prevalidate', sampleInputPath);
     assert(prevalidation2.response.ok, 'prevalidation should pass');
     const createdMissing = await postJson(baseUrl, '/api/jobs', {
+      workerId: 'mw-pr',
+      browserTabSessionId,
+      idempotencyKey: nextIdempotencyKey('mw-pr'),
       prevalidatedFileId: prevalidation2.body.prevalidatedFileId,
       prScope: 'TI',
       generationScope: 'site_code',
@@ -639,6 +654,9 @@ sys.exit(0)
     const prevalidation3 = await uploadFile(baseUrl, '/api/jobs/prevalidate', sampleInputPath);
     assert(prevalidation3.response.ok, 'prevalidation should pass');
     const createdParseFail = await postJson(baseUrl, '/api/jobs', {
+      workerId: 'mw-pr',
+      browserTabSessionId,
+      idempotencyKey: nextIdempotencyKey('mw-pr'),
       prevalidatedFileId: prevalidation3.body.prevalidatedFileId,
       prScope: 'TI',
       generationScope: 'site_code',
@@ -664,6 +682,9 @@ sys.exit(0)
     const prevalidation4 = await uploadFile(baseUrl, '/api/jobs/prevalidate', sampleInputPath);
     assert(prevalidation4.response.ok, 'prevalidation should pass');
     const createdZeroMatch = await postJson(baseUrl, '/api/jobs', {
+      workerId: 'mw-pr',
+      browserTabSessionId,
+      idempotencyKey: nextIdempotencyKey('mw-pr'),
       prevalidatedFileId: prevalidation4.body.prevalidatedFileId,
       prScope: 'TI',
       generationScope: 'site_code',

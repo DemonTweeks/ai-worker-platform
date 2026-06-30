@@ -10,6 +10,12 @@ const asyncHandler = (handler) => (req, res, next) => (
   Promise.resolve(handler(req, res, next)).catch(next)
 );
 
+const getRequestedBy = (req) => (
+  req.adminUser?.username
+  || req.user?.username
+  || null
+);
+
 router.post('/prevalidate', upload.single('file'), asyncHandler(async (req, res) => {
   const result = await prevalidationService.validateUpload(req.file, {
     uploadKind: req.body ? req.body.uploadKind : undefined
@@ -19,7 +25,7 @@ router.post('/prevalidate', upload.single('file'), asyncHandler(async (req, res)
 
 router.post('/', asyncHandler(async (req, res) => {
   const result = await jobService.createJob(req.body);
-  res.status(201).json(result);
+  res.status(result.created === false ? 200 : 201).json(result);
 }));
 
 router.get('/', asyncHandler(async (req, res) => {
@@ -39,7 +45,9 @@ router.get('/:jobId', asyncHandler(async (req, res) => {
 }));
 
 router.post('/:jobId/cancel', asyncHandler(async (req, res) => {
-  const result = await jobService.cancelJob(req.params.jobId);
+  const result = await jobService.cancelJob(req.params.jobId, req.body || {}, {
+    requestedBy: getRequestedBy(req)
+  });
   res.json(result);
 }));
 

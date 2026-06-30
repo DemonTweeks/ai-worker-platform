@@ -1,0 +1,50 @@
+mission: "PR #20 Job Queue Redesign"
+repository: "DemonTweeks/ai-worker-platform"
+branch: "fix/job-control-duplicate-guard-and-cancellation"
+pull_request: 20
+acceptance_status: "passed"
+draft: true
+completed: true
+started_at: "2026-06-30"
+current_commit: "cf30f1fa81579104574d0f51f973d628ada48b63"
+previous_local_head: "f737a72e02eb03054f097b1c76e1d7800d10e7e4"
+remote_head: "cf30f1fa81579104574d0f51f973d628ada48b63"
+known_live_uat_failure:
+  job_generating: "PR-20260630-003"
+  hidden_completed_job: "PR-20260630-002"
+  observed_ui_failure: "Home view showed Idle, blocked RAN validation, and did not expose the running job for selection or cancellation."
+scope_boundaries:
+  in_scope:
+    - "Replace submissionScope/browser-session active-job locking with idempotent create semantics."
+    - "Preserve MAX_CONCURRENT_JOBS as the only queue-wide concurrency limit."
+    - "Expose multiple active current-session jobs in the frontend."
+    - "Retain cancellation support and add persisted-orphan recovery handling."
+    - "Update automated tests and manual validation evidence."
+  out_of_scope:
+    - "Do not merge or deploy this branch."
+    - "Do not close issues #13 or #16."
+    - "Do not add Gumb-D/codex-unattended-development as a dependency or submodule."
+    - "Do not modify worker-engine semantics beyond queue/idempotency/cancellation-orphan correctness."
+rules:
+  - "No merge."
+  - "No deploy."
+  - "No engine modification outside queue-control integration needs."
+  - "Do not discard uncommitted user work, including storage/ran-workspaces/."
+planned_phases:
+  - "Phase 1: inspect current backend/frontend job-control flow and PR review context."
+  - "Phase 2: backend idempotent submission, queue listing, and orphan cancellation recovery."
+  - "Phase 3: frontend multi-job workbench and browser-tab restoration."
+  - "Phase 4: replace lock-based tests with idempotency/concurrency/visibility coverage."
+  - "Phase 5: run validation suite, browser UAT, and PR handoff updates."
+notes:
+  - "Fetched latest remote head before implementation."
+  - "Remote head introduced accidental docs/.keep placeholder; remove it from this branch and final PR diff."
+  - "Stale worker-state cancellation concern was confirmed: a non-owned generating job could remain stuck in cancelling when only orphaned workerState existed."
+  - "The fix makes queue runtime ownership authoritative for running cancellation, and the regression suite now covers the stale worker-state orphan case."
+  - "Browser UAT confirmed same-tab active-job restoration and independent cross-tab active-job isolation once active jobs were seeded deterministically by browserTabSessionId."
+  - "Browser UAT also exposed a cross-tab Status-link bleed from localStorage-backed selected job persistence; the frontend now scopes selected-job restore to sessionStorage only."
+  - "Controlled live UAT against a real browserTabSessionId confirmed same-tab duplicate replay, MW plus RAN coexistence under global concurrency, queued cancellation, running cancellation with partial result, partial ZIP warning copy, and unchanged normal ZIP copy."
+  - "Draft PR #20 description has been refreshed with the completed UAT evidence gathered so far and remains Draft."
+  - "The repository now ignores storage/ran-workspaces/ so the required runtime directory can remain untouched without blocking a clean completion state."
+next_action: "NO_OP_COMPLETED"
+blocker: ""

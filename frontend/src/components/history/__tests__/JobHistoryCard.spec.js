@@ -77,4 +77,28 @@ describe('JobHistoryCard.vue Component', () => {
     expect(text).toContain('general-item');
     expect(text).toContain('Project Thanos');
   });
+
+  it('labels cancelled partial packages as partial delivery', () => {
+    const job = {
+      jobId: 'PR-CANCELLED-PARTIAL-004',
+      status: 'cancelled_with_partial_result',
+      workerType: 'pr-worker',
+      outputFileCount: 1,
+      finalWorkerSummary: 'Task cancelled after partial output was preserved.',
+      createdAt: new Date().toISOString()
+    };
+
+    const wrapper = mount(JobHistoryCard, {
+      propsData: { job },
+      stubs: {
+        routerLink: true,
+        JobStatusBadge: true,
+        JobScopeBadge: true
+      }
+    });
+
+    const text = wrapper.text();
+    expect(text).toContain('Download Partial ZIP');
+    expect(text).toContain('not a completed delivery');
+  });
 });

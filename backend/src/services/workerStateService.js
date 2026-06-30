@@ -10,6 +10,7 @@ const PHASES = {
   GENERATION_COMPLETED: 'GENERATION_COMPLETED',
   OUTPUT_COLLECTION_STARTED: 'OUTPUT_COLLECTION_STARTED',
   OUTPUT_COLLECTION_COMPLETED: 'OUTPUT_COLLECTION_COMPLETED',
+  CANCELLING: 'CANCELLING',
   COMPLETED: 'COMPLETED',
   FAILED: 'FAILED',
   CANCELLED: 'CANCELLED'
@@ -78,6 +79,7 @@ const setProgress = (jobId, { processedRows, totalRows, message } = {}) => mutat
 });
 
 const requestCancellation = (jobId) => mutateState(jobId, (state) => {
+  state.phase = PHASES.CANCELLING;
   state.cancellationRequested = true;
   state.heartbeat.message = 'Cancellation requested.';
 });

@@ -12,6 +12,7 @@ const { consumePrevalidatedUpload, UPLOAD_KINDS } = require('./prevalidationServ
 const { parseSiteCodes } = require('./siteCodeParser');
 const workerStateService = require('./workerStateService');
 const jobQueue = require('../queue/jobQueue');
+const { JOB_EVENTS, publishJobEvent } = require('../websocket/eventPublisher');
 const { answerReAsk } = require('../llm/reAskService');
 const { generateUniqueJobId } = require('../utils/jobIdGenerator');
 const { assertPathInsideRoot, toStorageRelativePath } = require('../utils/pathUtils');
@@ -20,31 +21,27 @@ const { sanitizeRanStageName } = require('../workers/ranFailureService');
 const { validateRanRunConfiguration } = require('../workers/ranProjectCatalogService');
 const { WORKER_IDS } = require('../workers/workerTypes');
 const { getWorkerManifest } = require('../workers/workerRegistry');
+const {
+  CANCELLATION_REASON_LABELS,
+  RUNNING_JOB_STATUSES,
+  TERMINAL_JOB_STATUSES,
+  appendStatusEvent,
+  buildCancellationMetadata,
+  findJobByIdempotency,
+  normalizeBrowserTabSessionId,
+  normalizeCancellationReason,
+  normalizeIdempotencyKey,
+  normalizeWorkerId,
+  withIdempotencyReservation
+} = require('./jobControlService');
 
 const CANCELLABLE_BEFORE_WORKER_STATUSES = ['queued'];
-const RUNNING_STATUSES = [
-  'validating',
-  'filtering_sites',
-  'loading_assets',
-  'generating',
-  'exporting',
-  'waiting_for_user_input'
-];
-const TERMINAL_STATUSES = [
-  'completed',
-  'completed_with_warning',
-  'failed',
-  'cancelled',
-  'cancelled_with_partial_result'
-];
 const PR_SCOPES = ['TSS', 'TI'];
 const INPUT_FILE_TYPES = new Set(['uploaded_export', 'ran_bom_upload', 'ran_epms_upload']);
 
 const normalizeSiteCodes = (siteCodes = []) => parseSiteCodes(siteCodes).siteCodes;
 
 const normalizePrScope = (prScope) => String(prScope || 'TSS').trim().toUpperCase();
-const normalizeWorkerId = (workerId) => String(workerId || WORKER_IDS.MW_PR).trim();
-
 const addRetentionDays = () => (
   new Date(Date.now() + config.limits.fileRetentionDays * 24 * 60 * 60 * 1000)
 );
@@ -266,6 +263,23 @@ const getFailureDiagnosis = (job) => {
   };
 };
 
+const serializeCancellation = (job = {}) => {
+  if (!job.cancellation) {
+    return null;
+  }
+
+  return {
+    source: job.cancellation.source || 'user',
+    requestedAt: job.cancellation.requestedAt || null,
+    requestedBy: job.cancellation.requestedBy || null,
+    reasonCode: job.cancellation.reasonCode || 'requested_by_user',
+    reasonLabel: job.cancellation.reasonLabel || CANCELLATION_REASON_LABELS.requested_by_user,
+    reasonText: job.cancellation.reasonText || '',
+    completedAt: job.cancellation.completedAt || null,
+    finalStatus: job.cancellation.finalStatus || null
+  };
+};
+
 const serializeJobSummary = (job) => ({
   ...getWorkerPresentation(job),
   jobId: job.jobId,
@@ -284,8 +298,26 @@ const serializeJobSummary = (job) => ({
   reviewRequiredCount: job.reviewRequiredCount,
   warningCount: job.warningCount,
   finalWorkerSummary: job.finalWorkerSummary,
+  browserTabSessionId: job.browserTabSessionId || null,
+  idempotencyKey: job.idempotencyKey || null,
+  cancellation: serializeCancellation(job),
   failureSummary: getFailureSummary(job)
 });
+
+const buildIdempotentReplayResult = async ({ workerId, idempotencyKey }) => {
+  const existingJob = await findJobByIdempotency({ workerId, idempotencyKey });
+
+  if (!existingJob) {
+    return null;
+  }
+
+  return {
+    created: false,
+    job: serializeJobSummary(existingJob),
+    queue: jobQueue.getQueueState(),
+    message: 'Existing job returned for the repeated idempotent create request.'
+  };
+};
 
 const assertJobExists = async (jobId) => {
   const job = await Job.findOne({ jobId });
@@ -302,6 +334,8 @@ const createMwJob = async ({
   generationScope,
   siteCodes,
   prScope,
+  browserTabSessionId,
+  idempotencyKey,
   workerManifest,
   normalizedWorkerId
 }) => {
@@ -320,6 +354,8 @@ const createMwJob = async ({
   }
 
   const normalizedSiteCodes = normalizeSiteCodes(siteCodes);
+  const normalizedBrowserTabSessionId = normalizeBrowserTabSessionId(browserTabSessionId);
+  const normalizedIdempotencyKey = normalizeIdempotencyKey(idempotencyKey);
 
   if (generationScope === 'site_code' && normalizedSiteCodes.length === 0) {
     throw createApiError(400, 'VALIDATION_ERROR', 'siteCodes must be provided when generationScope is site_code.');
@@ -329,67 +365,99 @@ const createMwJob = async ({
     throw createApiError(400, 'SITE_CODE_LIMIT_EXCEEDED', `Site code count exceeds the configured limit of ${config.limits.maxSiteCodes}.`);
   }
 
-  const upload = await consumePrevalidatedUpload(prevalidatedFileId);
-  if (upload.uploadKind && upload.uploadKind !== UPLOAD_KINDS.MW_EXPORT) {
-    throw createApiError(400, 'VALIDATION_ERROR', 'prevalidatedFileId must reference an iEPMS export upload.');
-  }
-  const jobId = await generateUniqueJobId();
-  await storageService.createJobFolders(jobId);
-
-  const inputPath = storageService.resolveJobInputPath(jobId, upload.originalFileName);
-  await fs.promises.copyFile(upload.absolutePath, inputPath);
-  await storageService.deleteFileSafe(upload.absolutePath);
-  const inputMetadata = await storageService.buildFileMetadata(inputPath);
-  const retentionUntil = addRetentionDays();
-  const requestPath = storageService.resolveJobTempPath(jobId, 'job-request.json');
-  await storageService.saveBufferToFile(
-    requestPath,
-    Buffer.from(JSON.stringify({
-      jobId,
-      workerId: normalizedWorkerId,
-      prScope: normalizedPrScope,
-      generationScope,
-      siteCodes: normalizedSiteCodes,
-      createdAt: new Date().toISOString()
-    }, null, 2))
-  );
-
-  const job = await Job.create({
-    jobId,
+  return withIdempotencyReservation({
     workerId: normalizedWorkerId,
-    engineVersion: workerManifest.engineVersion,
-    engineCommit: workerManifest.engineCommit,
-    workerType: 'pr-worker',
-    status: 'queued',
-    prScope: normalizedPrScope,
-    generationScope,
-    requestedSiteCount: generationScope === 'site_code' ? normalizedSiteCodes.length : 0,
-    fileRetentionUntil: retentionUntil
-  });
+    idempotencyKey: normalizedIdempotencyKey
+  }, async () => {
+    let jobId = null;
 
-  const jobFile = await JobFile.create({
-    jobId,
-    fileType: 'uploaded_export',
-    fileName: upload.originalFileName,
-    filePath: inputMetadata.filePath,
-    fileSize: inputMetadata.fileSize,
-    retentionUntil
-  });
-  const queueState = await jobQueue.enqueueJob(jobId);
+    try {
+      const replayResult = await buildIdempotentReplayResult({
+        workerId: normalizedWorkerId,
+        idempotencyKey: normalizedIdempotencyKey
+      });
 
-  return {
-    job: serializeJobSummary(job),
-    jobFile: {
-      id: jobFile._id.toString(),
-      fileType: jobFile.fileType,
-      fileName: jobFile.fileName,
-      fileSize: jobFile.fileSize,
-      retentionUntil: jobFile.retentionUntil
-    },
-    normalizedSiteCodes,
-    queue: queueState,
-    message: 'Job record and input file were prepared and queued for PR Worker execution.'
-  };
+      if (replayResult) {
+        return replayResult;
+      }
+
+      const upload = await consumePrevalidatedUpload(prevalidatedFileId);
+      if (upload.uploadKind && upload.uploadKind !== UPLOAD_KINDS.MW_EXPORT) {
+        throw createApiError(400, 'VALIDATION_ERROR', 'prevalidatedFileId must reference an iEPMS export upload.');
+      }
+      jobId = await generateUniqueJobId();
+      await storageService.createJobFolders(jobId);
+
+      const inputPath = storageService.resolveJobInputPath(jobId, upload.originalFileName);
+      await fs.promises.copyFile(upload.absolutePath, inputPath);
+      await storageService.deleteFileSafe(upload.absolutePath);
+      const inputMetadata = await storageService.buildFileMetadata(inputPath);
+      const retentionUntil = addRetentionDays();
+      const requestPath = storageService.resolveJobTempPath(jobId, 'job-request.json');
+      await storageService.saveBufferToFile(
+        requestPath,
+        Buffer.from(JSON.stringify({
+          jobId,
+          workerId: normalizedWorkerId,
+          browserTabSessionId: normalizedBrowserTabSessionId,
+          idempotencyKey: normalizedIdempotencyKey,
+          prScope: normalizedPrScope,
+          generationScope,
+          siteCodes: normalizedSiteCodes,
+          createdAt: new Date().toISOString()
+        }, null, 2))
+      );
+
+      const job = await Job.create({
+        jobId,
+        workerId: normalizedWorkerId,
+        engineVersion: workerManifest.engineVersion,
+        engineCommit: workerManifest.engineCommit,
+        workerType: 'pr-worker',
+        status: 'queued',
+        browserTabSessionId: normalizedBrowserTabSessionId,
+        idempotencyKey: normalizedIdempotencyKey,
+        prScope: normalizedPrScope,
+        generationScope,
+        requestedSiteCount: generationScope === 'site_code' ? normalizedSiteCodes.length : 0,
+        fileRetentionUntil: retentionUntil
+      });
+
+      const jobFile = await JobFile.create({
+        jobId,
+        fileType: 'uploaded_export',
+        fileName: upload.originalFileName,
+        filePath: inputMetadata.filePath,
+        fileSize: inputMetadata.fileSize,
+        retentionUntil
+      });
+      const queueState = await jobQueue.enqueueJob(jobId);
+
+      return {
+        created: true,
+        job: serializeJobSummary(job),
+        jobFile: {
+          id: jobFile._id.toString(),
+          fileType: jobFile.fileType,
+          fileName: jobFile.fileName,
+          fileSize: jobFile.fileSize,
+          retentionUntil: jobFile.retentionUntil
+        },
+        normalizedSiteCodes,
+        queue: queueState,
+        message: 'Job record and input file were prepared and queued for PR Worker execution.'
+      };
+    } catch (error) {
+      if (jobId) {
+        await Promise.all([
+          Job.deleteMany({ jobId }),
+          JobFile.deleteMany({ jobId }),
+          storageService.deleteFolderSafe(storageService.getJobRootPath(jobId)).catch(() => {})
+        ]).catch(() => {});
+      }
+      throw error;
+    }
+  });
 };
 
 const createRanJob = async ({
@@ -397,6 +465,8 @@ const createRanJob = async ({
   epmsPrevalidatedFileId,
   runMode,
   selectedProject,
+  browserTabSessionId,
+  idempotencyKey,
   workerManifest,
   normalizedWorkerId
 }) => {
@@ -415,96 +485,131 @@ const createRanJob = async ({
     throw createApiError(400, 'VALIDATION_ERROR', error.message);
   }
 
-  const [bomUpload, epmsUpload] = await Promise.all([
-    consumePrevalidatedUpload(bomPrevalidatedFileId),
-    consumePrevalidatedUpload(epmsPrevalidatedFileId)
-  ]);
-  assertUploadKind(bomUpload, UPLOAD_KINDS.RAN_BOM, 'BOM');
-  assertUploadKind(epmsUpload, UPLOAD_KINDS.RAN_EPMS, 'EPMS');
+  const normalizedBrowserTabSessionId = normalizeBrowserTabSessionId(browserTabSessionId);
+  const normalizedIdempotencyKey = normalizeIdempotencyKey(idempotencyKey);
 
-  const jobId = await generateUniqueJobId();
-  await storageService.createJobFolders(jobId);
-
-  const retentionUntil = addRetentionDays();
-  const bomInputPath = storageService.resolveJobInputPath(jobId, bomUpload.originalFileName);
-  const epmsInputPath = storageService.resolveJobInputPath(jobId, epmsUpload.originalFileName);
-
-  await Promise.all([
-    fs.promises.copyFile(bomUpload.absolutePath, bomInputPath),
-    fs.promises.copyFile(epmsUpload.absolutePath, epmsInputPath)
-  ]);
-  await Promise.all([
-    storageService.deleteFileSafe(bomUpload.absolutePath),
-    storageService.deleteFileSafe(epmsUpload.absolutePath)
-  ]);
-
-  const [bomMetadata, epmsMetadata] = await Promise.all([
-    storageService.buildFileMetadata(bomInputPath),
-    storageService.buildFileMetadata(epmsInputPath)
-  ]);
-  const requestPath = storageService.resolveJobTempPath(jobId, 'job-request.json');
-  await storageService.saveBufferToFile(
-    requestPath,
-    Buffer.from(JSON.stringify({
-      jobId,
-      workerId: normalizedWorkerId,
-      runMode: normalizedRunConfiguration.runMode,
-      selectedProject: normalizedRunConfiguration.selectedProject,
-      createdAt: new Date().toISOString(),
-      inputs: {
-        bomFileName: bomUpload.originalFileName,
-        epmsFileName: epmsUpload.originalFileName
-      }
-    }, null, 2))
-  );
-
-  const job = await Job.create({
-    jobId,
+  return withIdempotencyReservation({
     workerId: normalizedWorkerId,
-    engineVersion: workerManifest.engineVersion,
-    engineCommit: workerManifest.engineCommit,
-    workerType: 'pr-worker',
-    status: 'queued',
-    generationScope: 'all_sites',
-    prScope: null,
-    runMode: normalizedRunConfiguration.runMode,
-    selectedProject: normalizedRunConfiguration.selectedProject,
-    requestedSiteCount: 0,
-    fileRetentionUntil: retentionUntil
-  });
+    idempotencyKey: normalizedIdempotencyKey
+  }, async () => {
+    let jobId = null;
 
-  const jobFiles = await JobFile.insertMany([
-    {
-      jobId,
-      fileType: 'ran_bom_upload',
-      fileName: bomUpload.originalFileName,
-      filePath: bomMetadata.filePath,
-      fileSize: bomMetadata.fileSize,
-      retentionUntil
-    },
-    {
-      jobId,
-      fileType: 'ran_epms_upload',
-      fileName: epmsUpload.originalFileName,
-      filePath: epmsMetadata.filePath,
-      fileSize: epmsMetadata.fileSize,
-      retentionUntil
+    try {
+      const replayResult = await buildIdempotentReplayResult({
+        workerId: normalizedWorkerId,
+        idempotencyKey: normalizedIdempotencyKey
+      });
+
+      if (replayResult) {
+        return replayResult;
+      }
+
+      const [bomUpload, epmsUpload] = await Promise.all([
+        consumePrevalidatedUpload(bomPrevalidatedFileId),
+        consumePrevalidatedUpload(epmsPrevalidatedFileId)
+      ]);
+      assertUploadKind(bomUpload, UPLOAD_KINDS.RAN_BOM, 'BOM');
+      assertUploadKind(epmsUpload, UPLOAD_KINDS.RAN_EPMS, 'EPMS');
+
+      jobId = await generateUniqueJobId();
+      await storageService.createJobFolders(jobId);
+
+      const retentionUntil = addRetentionDays();
+      const bomInputPath = storageService.resolveJobInputPath(jobId, bomUpload.originalFileName);
+      const epmsInputPath = storageService.resolveJobInputPath(jobId, epmsUpload.originalFileName);
+
+      await Promise.all([
+        fs.promises.copyFile(bomUpload.absolutePath, bomInputPath),
+        fs.promises.copyFile(epmsUpload.absolutePath, epmsInputPath)
+      ]);
+      await Promise.all([
+        storageService.deleteFileSafe(bomUpload.absolutePath),
+        storageService.deleteFileSafe(epmsUpload.absolutePath)
+      ]);
+
+      const [bomMetadata, epmsMetadata] = await Promise.all([
+        storageService.buildFileMetadata(bomInputPath),
+        storageService.buildFileMetadata(epmsInputPath)
+      ]);
+      const requestPath = storageService.resolveJobTempPath(jobId, 'job-request.json');
+      await storageService.saveBufferToFile(
+        requestPath,
+        Buffer.from(JSON.stringify({
+          jobId,
+          workerId: normalizedWorkerId,
+          browserTabSessionId: normalizedBrowserTabSessionId,
+          idempotencyKey: normalizedIdempotencyKey,
+          runMode: normalizedRunConfiguration.runMode,
+          selectedProject: normalizedRunConfiguration.selectedProject,
+          createdAt: new Date().toISOString(),
+          inputs: {
+            bomFileName: bomUpload.originalFileName,
+            epmsFileName: epmsUpload.originalFileName
+          }
+        }, null, 2))
+      );
+
+      const job = await Job.create({
+        jobId,
+        workerId: normalizedWorkerId,
+        engineVersion: workerManifest.engineVersion,
+        engineCommit: workerManifest.engineCommit,
+        workerType: 'pr-worker',
+        status: 'queued',
+        browserTabSessionId: normalizedBrowserTabSessionId,
+        idempotencyKey: normalizedIdempotencyKey,
+        generationScope: 'all_sites',
+        prScope: null,
+        runMode: normalizedRunConfiguration.runMode,
+        selectedProject: normalizedRunConfiguration.selectedProject,
+        requestedSiteCount: 0,
+        fileRetentionUntil: retentionUntil
+      });
+
+      const jobFiles = await JobFile.insertMany([
+        {
+          jobId,
+          fileType: 'ran_bom_upload',
+          fileName: bomUpload.originalFileName,
+          filePath: bomMetadata.filePath,
+          fileSize: bomMetadata.fileSize,
+          retentionUntil
+        },
+        {
+          jobId,
+          fileType: 'ran_epms_upload',
+          fileName: epmsUpload.originalFileName,
+          filePath: epmsMetadata.filePath,
+          fileSize: epmsMetadata.fileSize,
+          retentionUntil
+        }
+      ]);
+      const queueState = await jobQueue.enqueueJob(jobId);
+
+      return {
+        created: true,
+        job: serializeJobSummary(job),
+        jobFiles: jobFiles.map((file) => ({
+          id: file._id.toString(),
+          fileType: file.fileType,
+          fileName: file.fileName,
+          fileSize: file.fileSize,
+          retentionUntil: file.retentionUntil
+        })),
+        queue: queueState,
+        message: 'RAN job record and tracked BOM/EPMS inputs were prepared and queued for PR Worker execution.'
+      };
+    } catch (error) {
+      if (jobId) {
+        await Promise.all([
+          Job.deleteMany({ jobId }),
+          JobFile.deleteMany({ jobId }),
+          storageService.deleteFolderSafe(storageService.getJobRootPath(jobId)).catch(() => {})
+        ]).catch(() => {});
+      }
+      throw error;
     }
-  ]);
-  const queueState = await jobQueue.enqueueJob(jobId);
-
-  return {
-    job: serializeJobSummary(job),
-    jobFiles: jobFiles.map((file) => ({
-      id: file._id.toString(),
-      fileType: file.fileType,
-      fileName: file.fileName,
-      fileSize: file.fileSize,
-      retentionUntil: file.retentionUntil
-    })),
-    queue: queueState,
-    message: 'RAN job record and tracked BOM/EPMS inputs were prepared and queued for PR Worker execution.'
-  };
+  });
 };
 
 const createJob = async ({
@@ -516,7 +621,9 @@ const createJob = async ({
   bomPrevalidatedFileId,
   epmsPrevalidatedFileId,
   runMode,
-  selectedProject
+  selectedProject,
+  browserTabSessionId,
+  idempotencyKey
 }) => {
   const normalizedWorkerId = normalizeWorkerId(workerId);
   let workerManifest;
@@ -533,6 +640,8 @@ const createJob = async ({
       generationScope,
       siteCodes,
       prScope,
+      browserTabSessionId,
+      idempotencyKey,
       workerManifest,
       normalizedWorkerId
     });
@@ -543,6 +652,8 @@ const createJob = async ({
     epmsPrevalidatedFileId,
     runMode,
     selectedProject,
+    browserTabSessionId,
+    idempotencyKey,
     workerManifest,
     normalizedWorkerId
   });
@@ -557,6 +668,14 @@ const buildListFilter = async (query) => {
 
   if (query.workerType) {
     filter.workerType = query.workerType;
+  }
+
+  if (query.browserTabSessionId) {
+    filter.browserTabSessionId = normalizeBrowserTabSessionId(query.browserTabSessionId);
+  }
+
+  if (query.idempotencyKey) {
+    filter.idempotencyKey = normalizeIdempotencyKey(query.idempotencyKey);
   }
 
   if (query.status) {
@@ -670,6 +789,7 @@ const getJobDetail = async (jobId) => {
       ...serializeJobSummary(job),
       startedAt: job.startedAt,
       cancelledAt: job.cancelledAt,
+      statusEvents: Array.isArray(job.statusEvents) ? job.statusEvents : [],
       prScope: getDisplayPrScope(job),
       assetVersions: job.assetVersions || {},
       fileRetentionUntil: job.fileRetentionUntil,
@@ -685,16 +805,68 @@ const getJobDetail = async (jobId) => {
   };
 };
 
-const cancelJob = async (jobId) => {
-  const job = await assertJobExists(jobId);
+const resolveRequestedBy = (requestContext = {}) => {
+  const requestedBy = requestContext.requestedBy;
+  return typeof requestedBy === 'string' && requestedBy.trim() ? requestedBy.trim().slice(0, 120) : null;
+};
 
-  if (TERMINAL_STATUSES.includes(job.status)) {
-    throw createApiError(409, 'JOB_NOT_CANCELLABLE', `Job is already in terminal status ${job.status}.`);
+const cancelJob = async (jobId, cancellationRequest = {}, requestContext = {}) => {
+  const job = await assertJobExists(jobId);
+  const requestedBy = resolveRequestedBy(requestContext);
+  const reason = normalizeCancellationReason(cancellationRequest);
+  const requestedAt = new Date().toISOString();
+
+  if (TERMINAL_JOB_STATUSES.includes(job.status)) {
+    return {
+      job: serializeJobSummary(job),
+      message: 'Job cancellation has already been recorded.'
+    };
   }
+
+  job.cancellation = buildCancellationMetadata({
+    job,
+    requestedAt,
+    requestedBy,
+    ...reason
+  });
+  job.statusEvents = appendStatusEvent(job, 'cancellation_requested', {
+    createdAt: requestedAt,
+    requestedBy,
+    reasonCode: reason.reasonCode,
+    reasonLabel: reason.reasonLabel,
+    reasonText: reason.reasonText
+  });
 
   const queueCancelResult = await jobQueue.cancelQueuedJob(jobId);
 
   if (queueCancelResult.cancelled) {
+    const cancelledAt = new Date();
+    job.status = 'cancelled';
+    job.cancelledAt = cancelledAt;
+    job.completedAt = cancelledAt;
+    job.finalWorkerSummary = 'Task cancelled. Any completed partial output files have been preserved where available.';
+    job.cancellation = buildCancellationMetadata({
+      job,
+      requestedAt,
+      requestedBy,
+      completedAt: cancelledAt.toISOString(),
+      finalStatus: 'cancelled',
+      ...reason
+    });
+    job.statusEvents = appendStatusEvent(job, 'cancellation_completed', {
+      createdAt: cancelledAt.toISOString(),
+      requestedBy: job.cancellation.requestedBy,
+      reasonCode: job.cancellation.reasonCode,
+      reasonLabel: job.cancellation.reasonLabel,
+      reasonText: job.cancellation.reasonText,
+      finalStatus: 'cancelled'
+    });
+    await job.save();
+    await publishJobEvent(jobId, JOB_EVENTS.JOB_CANCELLED, {
+      phase: 'CANCELLED',
+      status: 'cancelled',
+      message: 'Queued job cancelled before execution.'
+    });
     const cancelledJob = await Job.findOne({ jobId });
     return {
       job: serializeJobSummary(cancelledJob),
@@ -702,10 +874,57 @@ const cancelJob = async (jobId) => {
     };
   }
 
-  if (queueCancelResult.running || RUNNING_STATUSES.includes(job.status)) {
+  if (queueCancelResult.running) {
+    job.status = 'cancelling';
+    await job.save();
+    await publishJobEvent(jobId, JOB_EVENTS.JOB_CANCELLATION_REQUESTED, {
+      phase: 'CANCELLING',
+      status: 'cancelling',
+      message: 'Cancellation requested. The running worker will stop at the next safe checkpoint.'
+    });
     return {
       job: serializeJobSummary(job),
-      message: 'Cancellation requested. The running worker will stop at the next safe checkpoint.'
+      message: queueCancelResult.alreadyRequested
+        ? 'Cancellation is already in progress for this job.'
+        : 'Cancellation requested. The running worker will stop at the next safe checkpoint.'
+    };
+  }
+
+  if (RUNNING_JOB_STATUSES.includes(job.status) || job.status === 'cancelling') {
+    const cancelledAt = new Date();
+    const finalStatus = (job.outputFileCount || 0) > 0 ? 'cancelled_with_partial_result' : 'cancelled';
+    const orphanResolutionMessage = 'Cancellation completed after runtime ownership was lost; no live worker process was found.';
+
+    job.status = finalStatus;
+    job.cancelledAt = cancelledAt;
+    job.completedAt = cancelledAt;
+    job.finalWorkerSummary = orphanResolutionMessage;
+    job.cancellation = buildCancellationMetadata({
+      job,
+      requestedAt,
+      requestedBy,
+      completedAt: cancelledAt.toISOString(),
+      finalStatus,
+      ...reason
+    });
+    job.statusEvents = appendStatusEvent(job, 'cancellation_completed', {
+      createdAt: cancelledAt.toISOString(),
+      requestedBy: job.cancellation.requestedBy,
+      reasonCode: job.cancellation.reasonCode,
+      reasonLabel: job.cancellation.reasonLabel,
+      reasonText: job.cancellation.reasonText,
+      finalStatus
+    });
+    await job.save();
+    workerStateService.setCancelled(jobId, orphanResolutionMessage);
+    await publishJobEvent(jobId, JOB_EVENTS.JOB_CANCELLED, {
+      phase: 'CANCELLED',
+      status: finalStatus,
+      message: orphanResolutionMessage
+    });
+    return {
+      job: serializeJobSummary(job),
+      message: orphanResolutionMessage
     };
   }
 

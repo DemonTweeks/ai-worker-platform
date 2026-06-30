@@ -125,6 +125,9 @@ const ranSkillRoot = path.join(repoRoot, '..', 'skills', 'create-pr-cd-ran');
 const sampleBomPath = path.join(ranSkillRoot, 'input', 'BOM.xlsx');
 const sampleEpmsPath = path.join(ranSkillRoot, 'input', 'EPMS.xlsx');
 const createdJobIds = new Set();
+const browserTabSessionId = 'QA-RAN-LIVE-TAB';
+let idempotencySequence = 0;
+const nextIdempotencyKey = () => `ran-live-${++idempotencySequence}`;
 
 const request = async (baseUrl, route, options = {}) => {
   const response = await fetch(`${baseUrl}${route}`, options);
@@ -326,6 +329,8 @@ const testRanLiveRuntime = async ({ baseUrl, wsUrl }) => {
 
     const created = await postJson(baseUrl, '/api/jobs', {
       workerId: 'ran-pr',
+      browserTabSessionId,
+      idempotencyKey: nextIdempotencyKey(),
       bomPrevalidatedFileId: bomPrevalidation.body.prevalidatedFileId,
       epmsPrevalidatedFileId: epmsPrevalidation.body.prevalidatedFileId,
       runMode: 'standard-pr'
@@ -381,6 +386,8 @@ const testRanLiveCancellation = async ({ baseUrl, wsUrl }) => {
 
     const created = await postJson(baseUrl, '/api/jobs', {
       workerId: 'ran-pr',
+      browserTabSessionId,
+      idempotencyKey: nextIdempotencyKey(),
       bomPrevalidatedFileId: bomPrevalidation.body.prevalidatedFileId,
       epmsPrevalidatedFileId: epmsPrevalidation.body.prevalidatedFileId,
       runMode: 'standard-pr'

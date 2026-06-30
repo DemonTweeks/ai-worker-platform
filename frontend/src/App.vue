@@ -48,13 +48,17 @@
 <script>
 import { getHealth } from './api/jobApi';
 
+const SELECTED_JOB_STORAGE_KEY = 'selectedJobId';
+const SELECTED_JOB_CHANGED_EVENT = 'awp:selected-job-changed';
+
 export default {
   name: 'App',
   data() {
     return {
       health: null,
       healthError: false,
-      healthTimer: null
+      healthTimer: null,
+      storedSelectedJobId: ''
     };
   },
   computed: {
@@ -69,19 +73,40 @@ export default {
       if (this.$route.params.jobId) {
         return this.$route.params.jobId;
       }
-      return localStorage.getItem('currentJobId') || '';
+      return this.storedSelectedJobId;
     }
   },
   mounted() {
+    this.syncStoredSelectedJobId();
+    if (typeof window !== 'undefined') {
+      window.addEventListener(SELECTED_JOB_CHANGED_EVENT, this.handleSelectedJobChanged);
+    }
     this.checkHealth();
     this.healthTimer = setInterval(this.checkHealth, 30000);
   },
   beforeDestroy() {
+    if (typeof window !== 'undefined') {
+      window.removeEventListener(SELECTED_JOB_CHANGED_EVENT, this.handleSelectedJobChanged);
+    }
     if (this.healthTimer) {
       clearInterval(this.healthTimer);
     }
   },
   methods: {
+    syncStoredSelectedJobId() {
+      if (typeof window === 'undefined') {
+        this.storedSelectedJobId = '';
+        return;
+      }
+
+      this.storedSelectedJobId = window.sessionStorage.getItem(SELECTED_JOB_STORAGE_KEY) || '';
+    },
+    handleSelectedJobChanged(event) {
+      const nextJobId = event && event.detail && typeof event.detail.jobId === 'string'
+        ? event.detail.jobId
+        : '';
+      this.storedSelectedJobId = nextJobId;
+    },
     async checkHealth() {
       try {
         this.health = await getHealth();
@@ -93,4 +118,4 @@ export default {
     }
   }
 };
-</script>
+</script>

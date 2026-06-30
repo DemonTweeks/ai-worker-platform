@@ -17,11 +17,17 @@ export const getHealth = async () => {
   return response.data;
 };
 
-export const prevalidateUpload = async (file, uploadKind = null) => {
+export const prevalidateUpload = async (file, uploadKind = null, requestScope = {}) => {
   const formData = new FormData();
   formData.append('file', file);
   if (uploadKind) {
     formData.append('uploadKind', uploadKind);
+  }
+  if (requestScope.workerId) {
+    formData.append('workerId', requestScope.workerId);
+  }
+  if (requestScope.browserTabSessionId) {
+    formData.append('browserTabSessionId', requestScope.browserTabSessionId);
   }
   const response = await api.post('/api/jobs/prevalidate', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
@@ -37,6 +43,11 @@ export const createJob = async (payload) => {
 
 export const listRanProjects = async () => {
   const response = await api.get('/api/jobs/ran-projects');
+  return response.data;
+};
+
+export const cancelJob = async (jobId, payload = {}) => {
+  const response = await api.post(`/api/jobs/${encodeURIComponent(jobId)}/cancel`, payload);
   return response.data;
 };
 

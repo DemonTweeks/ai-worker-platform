@@ -30,6 +30,7 @@
       <small>Created: {{ formatDateTime(job.createdAt) }}</small>
       <small v-if="job.completedAt">Completed: {{ formatDateTime(job.completedAt) }}</small>
       <small v-else>Completion: In progress</small>
+      <small v-if="job.cancellation">Cancelled by user: {{ job.cancellation.reasonText || job.cancellation.reasonLabel }}</small>
     </div>
 
     <div class="card-actions">
@@ -41,10 +42,11 @@
         class="secondary-link"
         :href="zipUrl"
       >
-        Download ZIP
+        {{ downloadLabel }}
       </a>
       <span v-else class="muted">ZIP not ready</span>
     </div>
+    <p v-if="job.status === 'cancelled_with_partial_result'" class="muted">Partial cancelled result only. This package is not a completed delivery.</p>
   </article>
 </template>
 
@@ -79,6 +81,9 @@ export default {
     },
     zipUrl() {
       return getZipDownloadUrl(this.job.jobId);
+    },
+    downloadLabel() {
+      return this.job.status === 'cancelled_with_partial_result' ? 'Download Partial ZIP' : 'Download ZIP';
     },
     summaryPreview() {
       if (this.job.status === 'failed') {

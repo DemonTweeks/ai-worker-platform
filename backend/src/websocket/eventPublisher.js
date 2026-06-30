@@ -16,6 +16,7 @@ const statusByPhase = {
   GENERATION_COMPLETED: 'generating',
   OUTPUT_COLLECTION_STARTED: 'exporting',
   OUTPUT_COLLECTION_COMPLETED: 'exporting',
+  CANCELLING: 'cancelling',
   COMPLETED: 'completed',
   FAILED: 'failed',
   CANCELLED: 'cancelled'
@@ -38,10 +39,19 @@ const getStatusForMessage = (job, state, fallbackStatus) => (
   fallbackStatus || (job && job.status) || (state && statusByPhase[state.phase]) || 'unknown'
 );
 
+const resolveJobRecord = async (jobId, jobOverride = null) => {
+  if (jobOverride) {
+    return jobOverride;
+  }
+
+  const query = Job.findOne({ jobId });
+  return query && typeof query.lean === 'function' ? query.lean() : query;
+};
+
 const buildJobStateSnapshot = async (jobId, jobOverride = null) => {
   const normalizedJobId = normalizeJobId(jobId);
   const [job, fileCount, warningCount, reviewRequiredCount] = await Promise.all([
-    jobOverride || Job.findOne({ jobId: normalizedJobId }).lean(),
+    resolveJobRecord(normalizedJobId, jobOverride),
     JobFile.countDocuments({ jobId: normalizedJobId }),
     WarningItem.countDocuments({ jobId: normalizedJobId }),
     ReviewRequiredItem.countDocuments({ jobId: normalizedJobId })
@@ -76,7 +86,7 @@ const buildJobStateSnapshot = async (jobId, jobOverride = null) => {
 const publishJobEvent = async (jobId, event, payload = {}) => {
   const normalizedJobId = normalizeJobId(jobId);
   const [job, state] = await Promise.all([
-    Job.findOne({ jobId: normalizedJobId }).lean(),
+    resolveJobRecord(normalizedJobId),
     Promise.resolve(workerStateService.getState(normalizedJobId))
   ]);
 
@@ -117,7 +127,7 @@ const publishJobEvent = async (jobId, event, payload = {}) => {
 const publishHeartbeat = async (jobId) => {
   const normalizedJobId = normalizeJobId(jobId);
   const [job, state] = await Promise.all([
-    Job.findOne({ jobId: normalizedJobId }).lean(),
+    resolveJobRecord(normalizedJobId),
     Promise.resolve(workerStateService.getState(normalizedJobId))
   ]);
 
