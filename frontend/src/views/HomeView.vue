@@ -6,12 +6,12 @@
       @dismiss="dismissErrorMessage"
     />
 
-    <section class="workbench-hero" aria-label="AI Worker PR Creator workbench">
+    <section class="workbench-hero" aria-label="AI Worker workbench">
       <div class="workbench-hero-copy">
         <p class="workbench-kicker">ZTE AI Worker</p>
-        <h2>Turn site exports into PR-ready worker jobs.</h2>
+        <h2>Launch validated worker jobs from one operations cockpit.</h2>
         <p class="workbench-subtitle">
-          Launch MW or RAN PR worker jobs from one operational workbench with validated inputs and live output tracking.
+          Launch MW PR, RAN PR, or PR Auditor jobs with validated inputs, live progress, and controlled result delivery.
         </p>
 
         <div class="workbench-chip-row" aria-label="Workflow status">
@@ -22,22 +22,22 @@
         </div>
 
         <div class="workbench-action-row" aria-label="Primary actions">
-          <a class="workbench-primary-link" href="#pr-creator-workbench">Create PR Job</a>
+          <a class="workbench-primary-link" href="#worker-workbench">{{ primaryActionLabel }}</a>
           <a class="workbench-secondary-link" href="#worker-console">View Live Output</a>
         </div>
       </div>
 
-      <section id="pr-creator-workbench" class="workbench-surface" aria-label="PR Creator workflow">
+      <section id="worker-workbench" class="workbench-surface" :aria-label="activeWorkbenchAriaLabel">
         <div class="workbench-surface-header">
           <div>
             <p class="eyebrow">Operational Workflow</p>
-            <h3>PR Creator</h3>
+            <h3>{{ activeWorkbenchTitle }}</h3>
           </div>
           <span class="workbench-status-pill">{{ progressStateLabel }}</span>
         </div>
 
         <div class="workbench-main-grid">
-          <div v-if="!isRanWorker" class="workbench-upload-stack">
+          <div v-if="isMwWorker" class="workbench-upload-stack">
             <UploadPanel
               class="cockpit-card upload-card workbench-upload-card"
               :result="prevalidation"
@@ -47,7 +47,7 @@
               @prevalidate="prevalidate"
             />
           </div>
-          <div v-else class="workbench-upload-stack">
+          <div v-else-if="isRanWorker" class="workbench-upload-stack">
             <UploadPanel
               class="cockpit-card upload-card workbench-upload-card"
               title="BOM Upload"
@@ -77,6 +77,50 @@
               @prevalidate="prevalidateRanUpload('epms', $event)"
             />
           </div>
+          <div v-else class="workbench-upload-stack">
+            <UploadPanel
+              class="cockpit-card upload-card workbench-upload-card"
+              title="Final PO Upload"
+              input-id="pr-auditor-final-po-file"
+              input-label="Final PO workbook"
+              input-hint="Upload the current Final PO workbook to be audited."
+              validate-label="Validate Final PO"
+              accept=".xlsx,.xls"
+              :result="prAuditorFinalPoPrevalidation"
+              :loading="prAuditorFinalPoPrevalidating"
+              :disable-action="workerFormLocked"
+              @file-selected="onPrAuditorFileSelected('finalPo', $event)"
+              @prevalidate="prevalidatePrAuditorUpload('finalPo', $event)"
+            />
+            <UploadPanel
+              class="cockpit-card upload-card workbench-upload-card"
+              title="EPMS Upload"
+              input-id="pr-auditor-epms-file"
+              input-label="EPMS workbook"
+              input-hint="Upload the EPMS workbook used for audit matching."
+              validate-label="Validate EPMS"
+              accept=".xlsx,.xls"
+              :result="prAuditorEpmsPrevalidation"
+              :loading="prAuditorEpmsPrevalidating"
+              :disable-action="workerFormLocked"
+              @file-selected="onPrAuditorFileSelected('epms', $event)"
+              @prevalidate="prevalidatePrAuditorUpload('epms', $event)"
+            />
+            <UploadPanel
+              class="cockpit-card upload-card workbench-upload-card"
+              title="PR Model Upload"
+              input-id="pr-auditor-pr-model-file"
+              input-label="PR Model workbook"
+              input-hint="Upload the PR Model workbook that defines the expected audit rules."
+              validate-label="Validate PR Model"
+              accept=".xlsx,.xls"
+              :result="prAuditorPrModelPrevalidation"
+              :loading="prAuditorPrModelPrevalidating"
+              :disable-action="workerFormLocked"
+              @file-selected="onPrAuditorFileSelected('prModel', $event)"
+              @prevalidate="prevalidatePrAuditorUpload('prModel', $event)"
+            />
+          </div>
 
           <section class="panel cockpit-card workbench-config-card">
             <div class="cockpit-card-heading">
@@ -102,10 +146,17 @@
                   >
                     RAN PR Worker
                   </button>
+                  <button
+                    type="button"
+                    :class="{ active: selectedWorkerId === 'pr-auditor' }"
+                    @click="handleWorkerChange('pr-auditor')"
+                  >
+                    PR Auditor
+                  </button>
                 </div>
               </div>
 
-              <template v-if="!isRanWorker">
+              <template v-if="isMwWorker">
                 <div class="cockpit-field-group">
                   <span class="field-label">Site mode</span>
                   <div class="segmented compact-segmented">
@@ -142,7 +193,7 @@
                 </div>
               </template>
 
-              <template v-else>
+              <template v-else-if="isRanWorker">
                 <div class="cockpit-field-group">
                   <span class="field-label">Run mode</span>
                   <div class="segmented compact-segmented">
@@ -183,9 +234,17 @@
                   <p v-if="ranProjectLoadError" class="cockpit-note">{{ ranProjectLoadError }}</p>
                 </div>
               </template>
+              <template v-else>
+                <div class="cockpit-empty-card">
+                  <strong>PR Auditor</strong>
+                  <p>PR Auditor reviews submitted PO data against configured audit rules.</p>
+                  <p>It does not create or modify PR or ECC records.</p>
+                  <p>Audit findings require business review.</p>
+                </div>
+              </template>
             </div>
 
-            <div v-if="!isRanWorker" class="cockpit-field-group workbench-sites-field">
+            <div v-if="isMwWorker" class="cockpit-field-group workbench-sites-field">
               <div class="cockpit-card-heading">
                 <span>Sites</span>
                 <small>{{ siteCodeCount }} site(s)</small>
@@ -208,7 +267,7 @@
 
             <div class="workbench-create-row">
               <LoadingButton
-                label="Create Job"
+                :label="primaryActionLabel"
                 loading-text="Creating..."
                 :loading="creating"
                 :disabled="!canCreateJob"
@@ -220,11 +279,11 @@
                 class="secondary-link"
                 @click="beginCreateAnotherJob"
               >
-                Create Another Job
+                {{ secondaryActionLabel }}
               </button>
               <p v-if="createDisabledReason" class="cockpit-note">{{ createDisabledReason }}</p>
-              <p v-else-if="activePendingIdempotencyKey" class="cockpit-note">This Create Job action will reuse the current idempotency key until you change inputs or choose Create Another Job.</p>
-              <p v-else class="cockpit-ready">Ready to create Job</p>
+              <p v-else-if="activePendingIdempotencyKey" class="cockpit-note">{{ idempotencyNotice }}</p>
+              <p v-else class="cockpit-ready">{{ readyActionText }}</p>
             </div>
           </section>
         </div>
@@ -492,6 +551,15 @@ export default {
       ranEpmsPrevalidation: null,
       ranBomPrevalidating: false,
       ranEpmsPrevalidating: false,
+      prAuditorFinalPoFile: null,
+      prAuditorEpmsFile: null,
+      prAuditorPrModelFile: null,
+      prAuditorFinalPoPrevalidation: null,
+      prAuditorEpmsPrevalidation: null,
+      prAuditorPrModelPrevalidation: null,
+      prAuditorFinalPoPrevalidating: false,
+      prAuditorEpmsPrevalidating: false,
+      prAuditorPrModelPrevalidating: false,
       browserTabSessionId: '',
       activeSessionJobs: [],
       currentJobId: '',
@@ -518,6 +586,7 @@ export default {
       chatMessageSequence: 0,
       mwPendingIdempotencyKey: '',
       ranPendingIdempotencyKey: '',
+      prAuditorPendingIdempotencyKey: '',
       showCancelForm: false,
       cancellingRequest: false,
       cancelReasonCode: 'requested_by_user',
@@ -525,18 +594,52 @@ export default {
     };
   },
   computed: {
+    isMwWorker() {
+      return this.selectedWorkerId === 'mw-pr';
+    },
     isRanWorker() {
       return this.selectedWorkerId === 'ran-pr';
     },
+    isPrAuditorWorker() {
+      return this.selectedWorkerId === 'pr-auditor';
+    },
     activeWorkerLabel() {
+      if (this.isPrAuditorWorker) {
+        return 'PR Auditor';
+      }
+
       return this.isRanWorker ? 'RAN PR Worker' : 'MW PR Worker';
     },
     activeModeLabel() {
+      if (this.isPrAuditorWorker) {
+        return 'Audit Run';
+      }
+
       if (this.isRanWorker) {
         return this.ranRunMode === 'general-item' ? 'General Item' : 'Standard PR';
       }
 
       return this.generationScopeLabel;
+    },
+    activeWorkbenchTitle() {
+      return this.isPrAuditorWorker ? 'PR Auditor' : 'PR Creator';
+    },
+    activeWorkbenchAriaLabel() {
+      return this.isPrAuditorWorker ? 'PR Auditor workflow' : 'PR Creator workflow';
+    },
+    primaryActionLabel() {
+      return this.isPrAuditorWorker ? 'Run Audit' : 'Create Job';
+    },
+    secondaryActionLabel() {
+      return this.isPrAuditorWorker ? 'Run Another Audit' : 'Create Another Job';
+    },
+    readyActionText() {
+      return this.isPrAuditorWorker ? 'Ready to run audit' : 'Ready to create Job';
+    },
+    idempotencyNotice() {
+      return this.isPrAuditorWorker
+        ? 'This Run Audit action will reuse the current idempotency key until you change inputs or choose Run Another Audit.'
+        : 'This Create Job action will reuse the current idempotency key until you change inputs or choose Create Another Job.';
     },
     healthLabel() {
       if (this.health && this.health.status === 'ok') return '🟢Healthy';
@@ -546,6 +649,10 @@ export default {
       return '🔵Checking';
     },
     activePendingIdempotencyKey() {
+      if (this.isPrAuditorWorker) {
+        return this.prAuditorPendingIdempotencyKey;
+      }
+
       return this.isRanWorker ? this.ranPendingIdempotencyKey : this.mwPendingIdempotencyKey;
     },
     visibleActiveSessionJobs() {
@@ -563,6 +670,14 @@ export default {
     canCreateJob() {
       if (this.creating) return false;
 
+      if (this.isPrAuditorWorker) {
+        if (!this.prAuditorFinalPoFile || !this.prAuditorEpmsFile || !this.prAuditorPrModelFile) return false;
+        if (!this.prAuditorFinalPoPrevalidation || !this.prAuditorFinalPoPrevalidation.passed) return false;
+        if (!this.prAuditorEpmsPrevalidation || !this.prAuditorEpmsPrevalidation.passed) return false;
+        if (!this.prAuditorPrModelPrevalidation || !this.prAuditorPrModelPrevalidation.passed) return false;
+        return true;
+      }
+
       if (this.isRanWorker) {
         if (!this.ranBomFile || !this.ranEpmsFile) return false;
         if (!this.ranBomPrevalidation || !this.ranBomPrevalidation.passed) return false;
@@ -577,6 +692,23 @@ export default {
       return true;
     },
     createDisabledReason() {
+      if (this.isPrAuditorWorker) {
+        if (!this.prAuditorFinalPoFile || !this.prAuditorEpmsFile || !this.prAuditorPrModelFile) {
+          return 'Upload Final PO, EPMS, and PR Model workbooks to start.';
+        }
+        if (this.prAuditorFinalPoPrevalidating || this.prAuditorEpmsPrevalidating || this.prAuditorPrModelPrevalidating) {
+          return 'PR Auditor upload validation is in progress.';
+        }
+        if (!this.prAuditorFinalPoPrevalidation || !this.prAuditorEpmsPrevalidation || !this.prAuditorPrModelPrevalidation) {
+          return 'Validate Final PO, EPMS, and PR Model workbooks before running the audit.';
+        }
+        if (!this.prAuditorFinalPoPrevalidation.passed || !this.prAuditorEpmsPrevalidation.passed || !this.prAuditorPrModelPrevalidation.passed) {
+          return 'Validation failed; resolve the PR Auditor upload issues before running the audit.';
+        }
+        if (this.creating) return 'Submitting audit request.';
+        return '';
+      }
+
       if (this.isRanWorker) {
         if (!this.ranBomFile || !this.ranEpmsFile) return 'Upload both BOM and EPMS workbooks to start.';
         if (this.ranBomPrevalidating || this.ranEpmsPrevalidating) return 'RAN upload validation is in progress.';
@@ -915,10 +1047,16 @@ export default {
     initializePendingIdempotencyKeys() {
       this.mwPendingIdempotencyKey = sessionStorage.getItem(buildWorkerIdempotencyStorageKey('mw-pr')) || '';
       this.ranPendingIdempotencyKey = sessionStorage.getItem(buildWorkerIdempotencyStorageKey('ran-pr')) || '';
+      this.prAuditorPendingIdempotencyKey = sessionStorage.getItem(buildWorkerIdempotencyStorageKey('pr-auditor')) || '';
     },
     setPendingIdempotencyKey(workerId, idempotencyKey) {
       const storageKey = buildWorkerIdempotencyStorageKey(workerId);
       sessionStorage.setItem(storageKey, idempotencyKey);
+
+      if (workerId === 'pr-auditor') {
+        this.prAuditorPendingIdempotencyKey = idempotencyKey;
+        return;
+      }
 
       if (workerId === 'ran-pr') {
         this.ranPendingIdempotencyKey = idempotencyKey;
@@ -928,7 +1066,11 @@ export default {
       this.mwPendingIdempotencyKey = idempotencyKey;
     },
     ensurePendingIdempotencyKey(workerId) {
-      const currentValue = workerId === 'ran-pr' ? this.ranPendingIdempotencyKey : this.mwPendingIdempotencyKey;
+      const currentValue = workerId === 'pr-auditor'
+        ? this.prAuditorPendingIdempotencyKey
+        : workerId === 'ran-pr'
+          ? this.ranPendingIdempotencyKey
+          : this.mwPendingIdempotencyKey;
 
       if (currentValue) {
         return currentValue;
@@ -941,6 +1083,11 @@ export default {
     resetPendingIdempotencyKey(workerId) {
       const storageKey = buildWorkerIdempotencyStorageKey(workerId);
       sessionStorage.removeItem(storageKey);
+
+      if (workerId === 'pr-auditor') {
+        this.prAuditorPendingIdempotencyKey = '';
+        return;
+      }
 
       if (workerId === 'ran-pr') {
         this.ranPendingIdempotencyKey = '';
@@ -1083,6 +1230,10 @@ export default {
         return;
       }
 
+      if (workerId === 'pr-auditor') {
+        return;
+      }
+
       this.ranSelectedProject = '';
       if (this.ranProjects.length === 0) {
         await this.loadRanProjects();
@@ -1124,6 +1275,20 @@ export default {
         this.ranEpmsPrevalidation = null;
       }
       this.resetPendingIdempotencyKey('ran-pr');
+    },
+    onPrAuditorFileSelected(kind, file) {
+      if (kind === 'finalPo') {
+        this.prAuditorFinalPoFile = file;
+        this.prAuditorFinalPoPrevalidation = null;
+      } else if (kind === 'epms') {
+        this.prAuditorEpmsFile = file;
+        this.prAuditorEpmsPrevalidation = null;
+      } else {
+        this.prAuditorPrModelFile = file;
+        this.prAuditorPrModelPrevalidation = null;
+      }
+
+      this.resetPendingIdempotencyKey('pr-auditor');
     },
     async prevalidate(file) {
       if (!file) {
@@ -1188,6 +1353,63 @@ export default {
         }
       }
     },
+    async prevalidatePrAuditorUpload(kind, file) {
+      if (!file) {
+        const label = kind === 'finalPo' ? 'Final PO' : kind === 'epms' ? 'EPMS' : 'PR Model';
+        this.errorMessage = `Select a ${label} file first.`;
+        return;
+      }
+
+      if (kind === 'finalPo') {
+        this.prAuditorFinalPoPrevalidating = true;
+      } else if (kind === 'epms') {
+        this.prAuditorEpmsPrevalidating = true;
+      } else {
+        this.prAuditorPrModelPrevalidating = true;
+      }
+      this.errorMessage = '';
+
+      const uploadKind = kind === 'finalPo'
+        ? 'pr-auditor-final-po'
+        : kind === 'epms'
+          ? 'pr-auditor-epms'
+          : 'pr-auditor-pr-model';
+
+      try {
+        const result = await prevalidateUpload(file, uploadKind, {
+          workerId: 'pr-auditor',
+          browserTabSessionId: this.browserTabSessionId
+        });
+
+        if (kind === 'finalPo') {
+          this.prAuditorFinalPoPrevalidation = result;
+        } else if (kind === 'epms') {
+          this.prAuditorEpmsPrevalidation = result;
+        } else {
+          this.prAuditorPrModelPrevalidation = result;
+        }
+      } catch (error) {
+        const fallback = this.getSafePrevalidationPayload(error);
+        if (kind === 'finalPo') {
+          this.prAuditorFinalPoPrevalidation = fallback;
+        } else if (kind === 'epms') {
+          this.prAuditorEpmsPrevalidation = fallback;
+        } else {
+          this.prAuditorPrModelPrevalidation = fallback;
+        }
+        if (!this.isExpectedPrevalidationFailure(error)) {
+          this.errorMessage = getErrorMessage(error);
+        }
+      } finally {
+        if (kind === 'finalPo') {
+          this.prAuditorFinalPoPrevalidating = false;
+        } else if (kind === 'epms') {
+          this.prAuditorEpmsPrevalidating = false;
+        } else {
+          this.prAuditorPrModelPrevalidating = false;
+        }
+      }
+    },
     parseSiteCodes() {
       return this.siteCodesText
         .split(/[\s,]+/)
@@ -1233,9 +1455,18 @@ export default {
       this.chatMessages = [];
       this.resetCancellationForm();
       try {
-        const workerId = this.isRanWorker ? 'ran-pr' : 'mw-pr';
+        const workerId = this.isPrAuditorWorker ? 'pr-auditor' : this.isRanWorker ? 'ran-pr' : 'mw-pr';
         const idempotencyKey = this.ensurePendingIdempotencyKey(workerId);
-        const payload = this.isRanWorker
+        const payload = this.isPrAuditorWorker
+          ? {
+              workerId,
+              browserTabSessionId: this.browserTabSessionId,
+              idempotencyKey,
+              finalPoPrevalidatedFileId: this.prAuditorFinalPoPrevalidation.prevalidatedFileId,
+              epmsPrevalidatedFileId: this.prAuditorEpmsPrevalidation.prevalidatedFileId,
+              prModelPrevalidatedFileId: this.prAuditorPrModelPrevalidation.prevalidatedFileId
+            }
+          : this.isRanWorker
           ? {
               workerId,
               browserTabSessionId: this.browserTabSessionId,
@@ -1257,7 +1488,7 @@ export default {
         const result = await createJob(payload);
         this.upsertActiveSessionJob(result.job);
         this.rememberSelectedJobId(result.job.jobId);
-        this.currentPrScope = result.job.prScope || (this.isRanWorker ? 'RAN' : this.prScope);
+        this.currentPrScope = result.job.prScope || (this.isRanWorker ? 'RAN' : this.isPrAuditorWorker ? 'AUDIT' : this.prScope);
         this.currentStatus = result.job.status;
         this.currentPhase = result.job.phase || '';
         this.consoleAutoStick = true;

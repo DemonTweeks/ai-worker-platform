@@ -91,3 +91,16 @@
    Result: pass.
 7. Re-ran `npm run test:job-service-workers`.
    Result: pass; prior PR Auditor registration and job payload coverage remains green after Step 5 changes.
+
+## 2026-07-03 Phase 0 Step 6
+
+1. Added failing Home view tests in `frontend/src/views/__tests__/HomeView.spec.js`.
+   Result: initial red phase failed because the Home view did not expose `PR Auditor`, did not provide PR Auditor upload handlers, and did not create PR Auditor launch payloads.
+2. Installed frontend dependencies in the feature worktree with `npm install` because the isolated worktree did not yet have `frontend/node_modules`.
+   Result: `vitest` and the frontend unit test runner became available in this worktree.
+3. Implemented the dedicated PR Auditor launch flow in `frontend/src/views/HomeView.vue`.
+   Result: Home view now exposes PR Auditor as a top-level worker with three required upload panels, dedicated prevalidation wiring, required notice text, and `Run Audit` create payload handling.
+4. Ran `npm run test:unit -- src/views/__tests__/HomeView.spec.js`.
+   Result: pass; focused PR Auditor launch tests and existing Home view tests are green.
+5. Ran `npm run test:unit`.
+   Result: pass; all 51 frontend unit tests passed after the Step 6 changes.

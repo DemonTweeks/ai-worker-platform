@@ -1,6 +1,6 @@
 {
   "missionId": "pr-auditor-platform-integration",
-  "updatedAt": "2026-07-03T04:00:00Z",
+  "updatedAt": "2026-07-03T05:00:00Z",
   "repositoryRoot": "C:\\dev\\ai-worker-platform-pr-auditor",
   "sourceRepositoryRoot": "C:\\dev\\ai-worker-platform",
   "baselineBranch": "main",
@@ -8,8 +8,8 @@
   "featureBranch": "feature/pr-auditor-platform-integration",
   "worktreePath": "C:\\dev\\ai-worker-platform-pr-auditor",
   "currentPhase": "phase-0",
-  "currentBoundedStep": "5. Output collection, safe summary, history, and download integration",
-  "nextAction": "Implement bounded Step 6: add the dedicated top-level PR Auditor frontend entry point and three-upload launch flow with the required notice text.",
+  "currentBoundedStep": "6. Dedicated PR Auditor frontend launch flow",
+  "nextAction": "Implement bounded Step 7: update active jobs, job detail, history, filters, and download presentation for PR Auditor-specific summaries.",
   "completed": false,
   "acceptanceStatus": "in_progress",
   "humanAcceptanceStatus": "not_started",
@@ -49,12 +49,13 @@
     "prAuditorWorkspaceScaffoldingImplemented": true,
     "prAuditorRuntimeGuardImplemented": true,
     "prAuditorOutputIngestionImplemented": true,
-    "prAuditorSummaryPersistenceImplemented": true
+    "prAuditorSummaryPersistenceImplemented": true,
+    "prAuditorFrontendLaunchFlowImplemented": true
   },
   "knownLimitations": [
     "No approved tx-pr-auditor engine pin has been recorded yet.",
     "PR Auditor workspace preparation and command scaffolding are implemented, but runtime execution remains closed until a safe engine pin is approved.",
-    "Current Home view presents MW and RAN as PR Creator variants rather than an independent PR Auditor entry point.",
-    "PR Auditor backend now persists trusted structured audit summary metadata, but frontend launch, detail, and history rendering are still pending."
+    "PR Auditor now has a dedicated frontend launch flow, but active job detail, history, filtering, and download presentation are still pending PR Auditor-specific rendering.",
+    "PR Auditor backend now persists trusted structured audit summary metadata, but frontend job detail and history surfaces do not render that summary yet."
   ]
 }

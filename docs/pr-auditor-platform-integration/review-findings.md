@@ -1,5 +1,5 @@
 # Review Findings
 
-Status: pending frontend integration and broader verification review.
+Status: pending PR Auditor detail/history integration and broader verification review.
 
-No code-review findings are recorded yet. The backend now includes PR Auditor output-ingestion and trusted summary-persistence scaffolding, but frontend UI integration and end-to-end verification are still pending before a meaningful broader review pass.
+No code-review findings are recorded yet. The backend plus launch-surface integration are now in place, but PR Auditor-specific detail/history rendering and end-to-end verification are still pending before a meaningful broader review pass.

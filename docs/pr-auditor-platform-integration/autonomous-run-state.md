@@ -7,11 +7,11 @@
 - Feature branch: `feature/pr-auditor-platform-integration`
 - Baseline: `origin/main` at `ec82e58f26055146a3b2403d6106e8809e994ad3`
 - Current phase: `phase-0`
-- Current bounded step: `5. Output collection, safe summary, history, and download integration`
+- Current bounded step: `6. Dedicated PR Auditor frontend launch flow`
 - Completed: `false`
 - Acceptance status: `in_progress`
 - Human acceptance status: `not_started`
-- Next action: Implement bounded Step 6 by adding the dedicated top-level PR Auditor frontend entry point and three-upload launch flow with the required notice text.
+- Next action: Implement bounded Step 7 by updating active jobs, job detail, history, filters, and download presentation for PR Auditor-specific summaries.
 
 ## Engine Status
 
@@ -55,3 +55,10 @@
 - Backend job storage now persists trusted `auditSummary` metadata plus `reviewRequiredCount`, `warningCount`, and report-backed `outputFileCount` for PR Auditor jobs.
 - Shared summary/report generation now carries PR Auditor audit summary metadata into history/detail payloads and produces PR Auditor-specific final summary wording without parsing arbitrary workbook content.
 - Focused backend tests now cover output ingestion and trusted audit summary propagation in addition to prior workspace and adapter coverage.
+
+## Step 6 Outputs
+
+- Home view worker selection now exposes `PR Auditor` as a distinct top-level worker entry point alongside MW PR Worker and RAN PR Worker.
+- The PR Auditor launch flow now shows only the three required uploads: Final PO, EPMS, and PR Model, each with dedicated prevalidation wiring and a `Run Audit` action.
+- The required PR Auditor notice text is now shown in the dedicated launch configuration, while MW/RAN-only controls such as Site mode, Task Type, and General Item project remain hidden from PR Auditor.
+- Focused Home view tests now cover PR Auditor launch copy, three-upload validation flow, and create-job payload behavior, and the full frontend unit suite remains green.
