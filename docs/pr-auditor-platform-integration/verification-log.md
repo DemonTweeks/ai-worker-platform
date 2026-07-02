@@ -192,3 +192,20 @@
     `git status --short --branch`
     `git diff --stat`
     Result: Step 9 intended changes are limited to the RAN golden regression harness plus mission-state documentation.
+
+## 2026-07-03 Phase 0 Step 10
+
+1. Started an isolated backend/browser-verification stack with dedicated storage and workspace roots after the default ports were already occupied.
+   Result: backend health responded successfully on `http://127.0.0.1:8010/health` and the isolated frontend responded on `http://127.0.0.1:3010/`.
+2. Seeded a synthetic completed PR Auditor job into the isolated backend storage.
+   Result: browser validation used job `PR-AUDIT-UI-001` with trusted audit summary counts, one downloadable audit report, and two warning records.
+3. Ran `npm run test:unit -- src/__tests__/App.spec.js src/views/__tests__/HomeView.spec.js` in `frontend/`.
+   Result: pass; 23 focused frontend tests passed after the rendered-session copy fixes.
+4. Verified the dedicated PR Auditor launch flow in a rendered browser session against `http://127.0.0.1:3010/`.
+   Result: pass; the shell title now reads `AI Workers`, the PR Auditor notice and three dedicated uploads render correctly, `Run Audit` is present, and MW/RAN-only controls plus stale `Standard PR runs non-interactively after BOM and EPMS validation.` copy are absent from the PR Auditor experience.
+5. Verified the rendered history route against `http://127.0.0.1:3010/history`.
+   Result: pass; `PR Auditor` filtering is present and the seeded `PR-AUDIT-UI-001` card shows completed status plus trusted summary counts (`Normal: 4`, `Invalid PO: 1`, `Wrong PO: 2`, `Duplicate PO: 3`, `Review Required: 5`, `Warnings: 2`).
+6. Verified the rendered job-detail route against `http://127.0.0.1:3010/jobs/PR-AUDIT-UI-001`.
+   Result: pass; the dedicated PR Auditor worker label, completed status, trusted summary counts, warning table, and downloadable `Audit Report` / `Audit Summary JSON` artifacts render correctly.
+7. Ran `git diff --check`.
+   Result: pass aside from existing CRLF normalization warnings in the frontend working tree; no patch-format errors were reported.

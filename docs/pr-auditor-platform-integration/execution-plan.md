@@ -64,10 +64,10 @@
 - [x] Step 7: Update active jobs, job detail, history, filters, and download presentation for PR Auditor-specific summaries.
 - [x] Step 8: Add synthetic backend and engine validation for happy path, missing upload, invalid workbook, concurrent isolation, cancellation, history reload, and download behavior.
 - [x] Step 9: Run MW PR and RAN PR regression validation plus build/test verification, then perform changed-scope review and review findings cleanup.
-- [ ] Step 10: Browser/UI validation in a rendered session.
+- [x] Step 10: Browser/UI validation in a rendered session.
 - [ ] Step 11: Review, final verification, and Draft PR preparation.
 - [ ] Step 12: Push feature branch and open exactly one Draft PR.
 
 ## Immediate Next Step
 
-- [ ] Execute bounded Step 10 only: perform browser/UI validation for the dedicated PR Auditor flow and confirm key user-facing behavior in a real rendered session.
+- [ ] Execute bounded Step 11 only: run final review and verification, update completion artifacts, and prepare the single Draft PR while preserving the unresolved engine pin safety gate in the final report.

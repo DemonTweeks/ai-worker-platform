@@ -262,7 +262,7 @@
               </div>
             </div>
             <div v-else class="cockpit-empty-card">
-              {{ ranRunMode === 'general-item' ? 'Select a workbook-backed General Item project after both uploads validate.' : 'Standard PR runs non-interactively after BOM and EPMS validation.' }}
+              {{ isPrAuditorWorker ? 'Run Audit uses the validated Final PO, EPMS, and PR Model workbooks for one dedicated PR Auditor job.' : (ranRunMode === 'general-item' ? 'Select a workbook-backed General Item project after both uploads validate.' : 'Standard PR runs non-interactively after BOM and EPMS validation.') }}
             </div>
 
             <div class="workbench-create-row">
