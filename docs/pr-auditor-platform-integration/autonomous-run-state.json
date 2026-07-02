@@ -1,0 +1,51 @@
+{
+  "missionId": "pr-auditor-platform-integration",
+  "updatedAt": "2026-07-03T00:00:00Z",
+  "repositoryRoot": "C:\\dev\\ai-worker-platform-pr-auditor",
+  "sourceRepositoryRoot": "C:\\dev\\ai-worker-platform",
+  "baselineBranch": "main",
+  "baselineSha": "ec82e58f26055146a3b2403d6106e8809e994ad3",
+  "featureBranch": "feature/pr-auditor-platform-integration",
+  "worktreePath": "C:\\dev\\ai-worker-platform-pr-auditor",
+  "currentPhase": "phase-0",
+  "currentBoundedStep": "1. Baseline, architecture, and engine safety discovery",
+  "nextAction": "Define the integration contract and changed-file allowlist for pr-auditor without altering MW PR, RAN PR, or shared PR Creator behaviour.",
+  "completed": false,
+  "acceptanceStatus": "in_progress",
+  "humanAcceptanceStatus": "not_started",
+  "engine": {
+    "expectedPath": "skills/tx-pr-auditor",
+    "repository": "https://github.com/BL2ZteSolution/tx-pr-auditor.git",
+    "candidateCommitSha": "5ef4485c9662384356e93960fe7a2b101f452349",
+    "pinnedCommitSha": null,
+    "pinStatus": "unapproved_pending_data_safety_review",
+    "dataSafetyStatus": "candidate repo contains a committed input/pr_model.xlsx workbook with non-synthetic-looking PR model rows; do not pin until safety is explicitly resolved and documented"
+  },
+  "submodules": {
+    "gitmodulesPresent": true,
+    "existingEntries": [
+      "skills/create-pr-cd",
+      "skills/create-pr-cd-ran",
+      "agent-guideline/vscode-agent"
+    ],
+    "txPrAuditorPresent": false,
+    "statusAtBaseline": [
+      "-ee9d0bf729b4116d15b08e8e88088df5037aa782 agent-guideline/vscode-agent",
+      "-32f1da236a62042989ea63dce30ca95c4b3006ea skills/create-pr-cd",
+      "-239910e2816153339a94881597bbb95355059741 skills/create-pr-cd-ran"
+    ]
+  },
+  "validationResults": {
+    "originMainFetched": true,
+    "sourceRepoClean": true,
+    "featureWorktreeCreated": true,
+    "featureBranchCreated": true,
+    "workerArchitectureInspected": true,
+    "engineCandidateInspected": true
+  },
+  "knownLimitations": [
+    "No approved tx-pr-auditor engine pin has been recorded yet.",
+    "Platform currently supports mw-pr and ran-pr only; pr-auditor is not yet registered in backend or frontend.",
+    "Current Home view presents MW and RAN as PR Creator variants rather than an independent PR Auditor entry point."
+  ]
+}
