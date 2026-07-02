@@ -1,6 +1,6 @@
 {
   "missionId": "pr-auditor-platform-integration",
-  "updatedAt": "2026-07-03T02:00:00Z",
+  "updatedAt": "2026-07-03T03:00:00Z",
   "repositoryRoot": "C:\\dev\\ai-worker-platform-pr-auditor",
   "sourceRepositoryRoot": "C:\\dev\\ai-worker-platform",
   "baselineBranch": "main",
@@ -8,8 +8,8 @@
   "featureBranch": "feature/pr-auditor-platform-integration",
   "worktreePath": "C:\\dev\\ai-worker-platform-pr-auditor",
   "currentPhase": "phase-0",
-  "currentBoundedStep": "3. Worker registry and backend adapter implementation",
-  "nextAction": "Implement bounded Step 4: add PR Auditor upload validation details, isolated workspace preparation, and deterministic runtime scaffolding without executing the external engine until the safety gate is resolved.",
+  "currentBoundedStep": "4. Upload validation and isolated workspace implementation",
+  "nextAction": "Implement bounded Step 5: add PR Auditor approved output collection, safe summary persistence scaffolding, and download/history integration without parsing arbitrary workbook content.",
   "completed": false,
   "acceptanceStatus": "in_progress",
   "humanAcceptanceStatus": "not_started",
@@ -45,11 +45,13 @@
     "integrationContractDefined": true,
     "fileLevelChangeMapDefined": true,
     "prAuditorRegisteredInBackend": true,
-    "prAuditorCreateJobFlowImplemented": true
+    "prAuditorCreateJobFlowImplemented": true,
+    "prAuditorWorkspaceScaffoldingImplemented": true,
+    "prAuditorRuntimeGuardImplemented": true
   },
   "knownLimitations": [
     "No approved tx-pr-auditor engine pin has been recorded yet.",
-    "PR Auditor is registered in backend create/list/detail flow, but worker runtime execution is not implemented yet.",
+    "PR Auditor workspace preparation and command scaffolding are implemented, but runtime execution remains closed until a safe engine pin is approved.",
     "Current Home view presents MW and RAN as PR Creator variants rather than an independent PR Auditor entry point.",
     "PR Auditor-specific summary persistence shape is defined contractually but not yet implemented in backend storage or frontend rendering."
   ]

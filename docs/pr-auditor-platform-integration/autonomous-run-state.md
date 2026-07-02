@@ -7,11 +7,11 @@
 - Feature branch: `feature/pr-auditor-platform-integration`
 - Baseline: `origin/main` at `ec82e58f26055146a3b2403d6106e8809e994ad3`
 - Current phase: `phase-0`
-- Current bounded step: `3. Worker registry and backend adapter implementation`
+- Current bounded step: `4. Upload validation and isolated workspace implementation`
 - Completed: `false`
 - Acceptance status: `in_progress`
 - Human acceptance status: `not_started`
-- Next action: Implement bounded Step 4 by adding PR Auditor upload-validation detail, isolated workspace preparation, and deterministic runtime scaffolding without altering MW PR, RAN PR, or PR Creator behavior.
+- Next action: Implement bounded Step 5 by adding PR Auditor approved output collection, safe summary persistence scaffolding, and download/history integration without altering MW PR, RAN PR, or PR Creator behavior.
 
 ## Engine Status
 
@@ -41,3 +41,10 @@
 - Backend registry exposes a PR Auditor manifest with safe placeholder engine metadata pending pin approval.
 - Backend job creation now accepts three prevalidated PR Auditor uploads and persists a queued job plus tracked input files for Final PO, EPMS, and PR Model.
 - Focused backend tests now cover PR Auditor create/list/detail payload behavior.
+
+## Step 4 Outputs
+
+- Dedicated PR Auditor workspace root and storage helpers are now scaffolded.
+- PR Auditor workspace preparation now copies only approved engine directories and stages only the current job uploads with explicit runtime paths.
+- PR Auditor adapter now builds deterministic explicit-path command arguments and fails closed with `PR_AUDITOR_ENGINE_PIN_UNAPPROVED` until a safe engine pin is approved.
+- Focused backend tests now cover workspace preparation and runtime closed-gate behavior.

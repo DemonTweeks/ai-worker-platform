@@ -58,7 +58,7 @@
 - [x] Step 1: Verify `origin/main`, inspect current worktrees, create `C:\dev\ai-worker-platform-pr-auditor` on `feature/pr-auditor-platform-integration`, inspect worker architecture, and inspect PR Auditor engine candidate safety.
 - [x] Step 2: Define the dedicated PR Auditor worker contract, upload kinds, output contract, and changed-file allowlist details from discovered backend/frontend patterns.
 - [x] Step 3: Register `pr-auditor` in backend worker types, manifest, registry, and job creation flow without changing MW or RAN behavior.
-- [ ] Step 4: Implement PR Auditor upload prevalidation, isolated workspace preparation, deterministic Python execution, and safe progress mapping.
+- [x] Step 4: Implement PR Auditor upload prevalidation, isolated workspace preparation, deterministic Python execution, and safe progress mapping.
 - [ ] Step 5: Implement approved output ingestion, safe structured audit summary persistence, history/detail/download integration, and cancellation handling.
 - [ ] Step 6: Add the dedicated top-level PR Auditor frontend entry point and three-upload launch flow with required notice text.
 - [ ] Step 7: Update active jobs, job detail, history, filters, and download presentation for PR Auditor-specific summaries.
@@ -68,4 +68,4 @@
 
 ## Immediate Next Step
 
-- [ ] Execute bounded Step 4 only: implement PR Auditor upload validation details, isolated workspace preparation, deterministic runtime scaffolding, and safe progress mapping without pinning or executing the external engine until the safety gate is resolved.
+- [ ] Execute bounded Step 5 only: implement PR Auditor approved output collection, safe structured summary persistence scaffolding, and detail/download integration without parsing arbitrary workbook content.

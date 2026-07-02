@@ -48,3 +48,21 @@
    Result: pass after implementing `pr-auditor` backend registration and job creation flow.
 4. Ran a direct registry verification snippet in `backend/`.
    Result: `listWorkers()` and `getWorkerManifest('pr-auditor')` both returned the expected `PR Auditor` manifest with placeholder safe-pin metadata.
+
+## 2026-07-03 Phase 0 Step 4
+
+1. Added failing tests:
+   `backend/scripts/pr-auditor-workspace-test.js`
+   `backend/scripts/pr-auditor-adapter-test.js`
+   Result: both failed red because `prAuditorWorkspaceService` and `prAuditorAdapter` did not exist yet.
+2. Implemented PR Auditor workspace and runtime scaffolding:
+   `backend/src/workers/prAuditorWorkspaceService.js`,
+   `backend/src/workers/adapters/prAuditorAdapter.js`,
+   storage/config support in `backend/src/services/storageService.js` and `backend/src/config/env.js`.
+   Result: PR Auditor now has isolated workspace preparation, staged explicit input/output paths, deterministic command construction, and a closed-gate runtime guard.
+3. Ran `node scripts/pr-auditor-workspace-test.js`.
+   Result: pass.
+4. Ran `node scripts/pr-auditor-adapter-test.js`.
+   Result: pass.
+5. Re-ran `npm run test:job-service-workers`.
+   Result: pass; Step 3 backend create/list/detail coverage remains green after Step 4 changes.

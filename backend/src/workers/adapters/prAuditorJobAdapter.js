@@ -1,8 +1,6 @@
-const run = async () => {
-  const error = new Error('PR Auditor runtime adapter is not implemented yet.');
-  error.code = 'PR_AUDITOR_RUNTIME_NOT_IMPLEMENTED';
-  throw error;
-};
+const prAuditorAdapter = require('./prAuditorAdapter');
+
+const run = async (jobId, options = {}) => prAuditorAdapter.run(jobId, options);
 
 module.exports = {
   run

@@ -9,3 +9,4 @@
 5. Contract decision: keep `pr-auditor` under the existing `pr-worker` history umbrella for additive integration, but do not overload MW/RAN-specific fields such as `prScope`, `runMode`, `selectedProject`, or site-count semantics for audit results.
 6. Delivery decision: model PR Auditor delivery around direct audit report download plus optional trusted structured summary, not around ECC ZIP packaging as the primary user-facing outcome.
 7. Step 3 implementation decision: register PR Auditor with placeholder manifest metadata (`engineVersion: pending-safe-pin`, `engineCommit: unapproved`) so backend create/list/detail contracts can be wired before any engine pin or runtime execution is approved.
+8. Step 4 implementation decision: scaffold PR Auditor workspace preparation and explicit command construction now, but fail closed before runtime execution with `PR_AUDITOR_ENGINE_PIN_UNAPPROVED` until the engine safety gate is cleared.
