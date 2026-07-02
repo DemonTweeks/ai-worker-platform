@@ -101,4 +101,54 @@ describe('JobHistoryCard.vue Component', () => {
     expect(text).toContain('Download Partial ZIP');
     expect(text).toContain('not a completed delivery');
   });
+
+  it('renders PR Auditor summary counts and audit report download action', () => {
+    const job = {
+      jobId: 'PR-AUDIT-005',
+      status: 'completed',
+      workerType: 'pr-worker',
+      workerId: 'pr-auditor',
+      workerDisplayName: 'PR Auditor',
+      outputFileCount: 1,
+      warningCount: 2,
+      reviewRequiredCount: 5,
+      auditSummary: {
+        normalCount: 4,
+        invalidPoCount: 1,
+        wrongPoCount: 2,
+        duplicatePoCount: 3,
+        reviewRequiredCount: 5,
+        warnings: ['warning-a', 'warning-b']
+      },
+      outputs: [
+        {
+          id: 'audit-result-1',
+          fileType: 'pr_audit_result_xlsx',
+          available: true
+        }
+      ],
+      finalWorkerSummary: 'Audit report generated.',
+      createdAt: new Date().toISOString()
+    };
+
+    const wrapper = mount(JobHistoryCard, {
+      propsData: { job },
+      stubs: {
+        routerLink: true,
+        JobStatusBadge: true,
+        JobScopeBadge: true
+      }
+    });
+
+    const text = wrapper.text();
+    expect(text).toContain('PR Auditor');
+    expect(text).toContain('Audit Result');
+    expect(text).toContain('Normal: 4');
+    expect(text).toContain('Invalid PO: 1');
+    expect(text).toContain('Wrong PO: 2');
+    expect(text).toContain('Duplicate PO: 3');
+    expect(text).toContain('Review Required: 5');
+    expect(text).toContain('Warnings: 2');
+    expect(text).toContain('Download Audit Report');
+  });
 });

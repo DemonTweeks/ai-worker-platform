@@ -8,6 +8,7 @@ vi.mock('../../api/jobApi', () => ({
   cancelJob: vi.fn(),
   createJob: vi.fn(),
   getErrorMessage: vi.fn((error) => error.userMessage || error.message || 'Request failed.'),
+  getFileDownloadUrl: vi.fn((jobId, fileId) => `/jobs/${jobId}/download/${fileId}`),
   getHealth: vi.fn(async () => ({ status: 'ok' })),
   getJobDetail: vi.fn(),
   getZipDownloadUrl: vi.fn(() => '/download.zip'),
@@ -45,8 +46,21 @@ const safeValidationFailure = {
 
 const mountView = () => mount(HomeView, {
   stubs: {
-    UploadPanel: true,
-    LoadingButton: true
+    UploadPanel: {
+      props: ['title', 'inputLabel', 'validateLabel', 'inputHint'],
+      template: `
+        <div class="upload-panel-stub">
+          <span class="upload-panel-title">{{ title }}</span>
+          <span class="upload-panel-label">{{ inputLabel }}</span>
+          <span class="upload-panel-validate">{{ validateLabel }}</span>
+          <span class="upload-panel-hint">{{ inputHint }}</span>
+        </div>
+      `
+    },
+    LoadingButton: {
+      props: ['label'],
+      template: '<button type="button" class="loading-button-stub">{{ label }}</button>'
+    }
   }
 });
 
@@ -572,5 +586,143 @@ describe('HomeView worker notifications', () => {
     expect(wrapper.vm.prevalidation).toBe(null);
     expect(wrapper.vm.errorMessage).toBe('Network Error');
     expect(wrapper.text()).toContain('Network Error');
+  });
+
+  it('shows a dedicated PR Auditor launch flow with three uploads, the required notice, and no PR Creator controls', async () => {
+    const wrapper = mountView();
+    await wrapper.vm.handleWorkerChange('pr-auditor');
+    await flushPromises();
+
+    expect(wrapper.text()).toContain('PR Auditor');
+    expect(wrapper.text()).toContain('Final PO workbook');
+    expect(wrapper.text()).toContain('EPMS workbook');
+    expect(wrapper.text()).toContain('PR Model workbook');
+    expect(wrapper.text()).toContain('Run Audit');
+    expect(wrapper.text()).toContain('PR Auditor reviews submitted PO data against configured audit rules.');
+    expect(wrapper.text()).toContain('It does not create or modify PR or ECC records.');
+    expect(wrapper.text()).toContain('Audit findings require business review.');
+    expect(wrapper.text()).not.toContain('Site mode');
+    expect(wrapper.text()).not.toContain('Task Type');
+    expect(wrapper.text()).not.toContain('General Item project');
+  });
+
+  it('prevalidates PR Auditor uploads with the dedicated upload kinds and only enables Run Audit after all three pass', async () => {
+    prevalidateUpload
+      .mockResolvedValueOnce({ passed: true, prevalidatedFileId: 'final-po-1' })
+      .mockResolvedValueOnce({ passed: true, prevalidatedFileId: 'epms-1' })
+      .mockResolvedValueOnce({ passed: true, prevalidatedFileId: 'pr-model-1' });
+
+    const wrapper = mountView();
+    await wrapper.vm.handleWorkerChange('pr-auditor');
+    await flushPromises();
+
+    const finalPoFile = new File(['final-po'], 'Final PO.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const epmsFile = new File(['epms'], 'EPMS.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const prModelFile = new File(['pr-model'], 'pr_model.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+    wrapper.vm.onPrAuditorFileSelected('finalPo', finalPoFile);
+    wrapper.vm.onPrAuditorFileSelected('epms', epmsFile);
+    wrapper.vm.onPrAuditorFileSelected('prModel', prModelFile);
+
+    expect(wrapper.vm.canCreateJob).toBe(false);
+    expect(wrapper.vm.createDisabledReason).toContain('Validate Final PO, EPMS, and PR Model');
+
+    await wrapper.vm.prevalidatePrAuditorUpload('finalPo', finalPoFile);
+    await wrapper.vm.prevalidatePrAuditorUpload('epms', epmsFile);
+    await wrapper.vm.prevalidatePrAuditorUpload('prModel', prModelFile);
+    await flushPromises();
+
+    expect(prevalidateUpload).toHaveBeenNthCalledWith(1, finalPoFile, 'pr-auditor-final-po', expect.objectContaining({
+      workerId: 'pr-auditor'
+    }));
+    expect(prevalidateUpload).toHaveBeenNthCalledWith(2, epmsFile, 'pr-auditor-epms', expect.objectContaining({
+      workerId: 'pr-auditor'
+    }));
+    expect(prevalidateUpload).toHaveBeenNthCalledWith(3, prModelFile, 'pr-auditor-pr-model', expect.objectContaining({
+      workerId: 'pr-auditor'
+    }));
+    expect(wrapper.vm.canCreateJob).toBe(true);
+  });
+
+  it('creates a PR Auditor job with the three dedicated prevalidated upload ids', async () => {
+    createJob.mockResolvedValueOnce({
+      job: {
+        jobId: 'AUDIT-123',
+        workerId: 'pr-auditor',
+        status: 'queued',
+        phase: 'queued'
+      }
+    });
+
+    const wrapper = mountView();
+    await wrapper.setData({
+      selectedWorkerId: 'pr-auditor',
+      prAuditorFinalPoFile: { name: 'Final PO.xlsx' },
+      prAuditorEpmsFile: { name: 'EPMS.xlsx' },
+      prAuditorPrModelFile: { name: 'pr_model.xlsx' },
+      prAuditorFinalPoPrevalidation: {
+        passed: true,
+        prevalidatedFileId: 'final-po-1'
+      },
+      prAuditorEpmsPrevalidation: {
+        passed: true,
+        prevalidatedFileId: 'epms-1'
+      },
+      prAuditorPrModelPrevalidation: {
+        passed: true,
+        prevalidatedFileId: 'pr-model-1'
+      }
+    });
+
+    await wrapper.vm.createWorkerJob();
+    await flushPromises();
+
+    expect(createJob).toHaveBeenCalledWith(expect.objectContaining({
+      workerId: 'pr-auditor',
+      finalPoPrevalidatedFileId: 'final-po-1',
+      epmsPrevalidatedFileId: 'epms-1',
+      prModelPrevalidatedFileId: 'pr-model-1'
+    }));
+    expect(wrapper.vm.currentJobId).toBe('AUDIT-123');
+    expect(connectSpy).toHaveBeenCalledWith('AUDIT-123');
+  });
+
+  it('shows PR Auditor result delivery as an audit report download instead of a ZIP download', async () => {
+    const wrapper = mountView();
+    await flushPromises();
+    await wrapper.setData({
+      currentJobId: 'AUDIT-RESULT-1',
+      currentStatus: 'completed',
+      jobDetail: {
+        job: {
+          jobId: 'AUDIT-RESULT-1',
+          workerId: 'pr-auditor',
+          workerDisplayName: 'PR Auditor',
+          status: 'completed',
+          outputFileCount: 1,
+          warningCount: 2,
+          reviewRequiredCount: 5,
+          auditSummary: {
+            normalCount: 4,
+            invalidPoCount: 1,
+            wrongPoCount: 2,
+            duplicatePoCount: 3,
+            reviewRequiredCount: 5,
+            warnings: ['warning-a', 'warning-b']
+          }
+        },
+        outputs: [
+          {
+            id: 'audit-result-1',
+            fileType: 'pr_audit_result_xlsx',
+            available: true,
+            exists: true
+          }
+        ]
+      }
+    });
+
+    expect(wrapper.text()).toContain('Download Audit Report');
+    expect(wrapper.text()).not.toContain('Download ZIP');
   });
 });

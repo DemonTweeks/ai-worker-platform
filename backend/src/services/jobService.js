@@ -14,7 +14,7 @@ const workerStateService = require('./workerStateService');
 const jobQueue = require('../queue/jobQueue');
 const { JOB_EVENTS, publishJobEvent } = require('../websocket/eventPublisher');
 const { answerReAsk } = require('../llm/reAskService');
-const { generateUniqueJobId } = require('../utils/jobIdGenerator');
+const { reserveUniqueJobId } = require('../utils/jobIdGenerator');
 const { assertPathInsideRoot, toStorageRelativePath } = require('../utils/pathUtils');
 const { createApiError } = require('../utils/apiError');
 const { sanitizeRanStageName } = require('../workers/ranFailureService');
@@ -37,7 +37,14 @@ const {
 
 const CANCELLABLE_BEFORE_WORKER_STATUSES = ['queued'];
 const PR_SCOPES = ['TSS', 'TI'];
-const INPUT_FILE_TYPES = new Set(['uploaded_export', 'ran_bom_upload', 'ran_epms_upload']);
+const INPUT_FILE_TYPES = new Set([
+  'uploaded_export',
+  'ran_bom_upload',
+  'ran_epms_upload',
+  'pr_auditor_final_po_upload',
+  'pr_auditor_epms_upload',
+  'pr_auditor_pr_model_upload'
+]);
 
 const normalizeSiteCodes = (siteCodes = []) => parseSiteCodes(siteCodes).siteCodes;
 
@@ -68,8 +75,9 @@ const getWorkerPresentation = (job = {}) => {
 };
 
 const isRanWorker = (workerId) => workerId === WORKER_IDS.RAN_PR;
+const isPrAuditorWorker = (workerId) => workerId === WORKER_IDS.PR_AUDITOR;
 const getDisplayPrScope = (job = {}) => (
-  isRanWorker(job.workerId) ? (job.prScope || null) : (job.prScope || 'TSS')
+  (isRanWorker(job.workerId) || isPrAuditorWorker(job.workerId)) ? (job.prScope || null) : (job.prScope || 'TSS')
 );
 
 const assertUploadKind = (upload, expectedKind, label) => {
@@ -297,6 +305,7 @@ const serializeJobSummary = (job) => ({
   outputFileCount: job.outputFileCount,
   reviewRequiredCount: job.reviewRequiredCount,
   warningCount: job.warningCount,
+  auditSummary: job.auditSummary || null,
   finalWorkerSummary: job.finalWorkerSummary,
   browserTabSessionId: job.browserTabSessionId || null,
   idempotencyKey: job.idempotencyKey || null,
@@ -370,6 +379,7 @@ const createMwJob = async ({
     idempotencyKey: normalizedIdempotencyKey
   }, async () => {
     let jobId = null;
+    let releaseJobIdReservation = null;
 
     try {
       const replayResult = await buildIdempotentReplayResult({
@@ -385,7 +395,9 @@ const createMwJob = async ({
       if (upload.uploadKind && upload.uploadKind !== UPLOAD_KINDS.MW_EXPORT) {
         throw createApiError(400, 'VALIDATION_ERROR', 'prevalidatedFileId must reference an iEPMS export upload.');
       }
-      jobId = await generateUniqueJobId();
+      const jobIdReservation = await reserveUniqueJobId();
+      jobId = jobIdReservation.jobId;
+      releaseJobIdReservation = jobIdReservation.release;
       await storageService.createJobFolders(jobId);
 
       const inputPath = storageService.resolveJobInputPath(jobId, upload.originalFileName);
@@ -456,6 +468,10 @@ const createMwJob = async ({
         ]).catch(() => {});
       }
       throw error;
+    } finally {
+      if (releaseJobIdReservation) {
+        releaseJobIdReservation();
+      }
     }
   });
 };
@@ -493,6 +509,7 @@ const createRanJob = async ({
     idempotencyKey: normalizedIdempotencyKey
   }, async () => {
     let jobId = null;
+    let releaseJobIdReservation = null;
 
     try {
       const replayResult = await buildIdempotentReplayResult({
@@ -511,7 +528,9 @@ const createRanJob = async ({
       assertUploadKind(bomUpload, UPLOAD_KINDS.RAN_BOM, 'BOM');
       assertUploadKind(epmsUpload, UPLOAD_KINDS.RAN_EPMS, 'EPMS');
 
-      jobId = await generateUniqueJobId();
+      const jobIdReservation = await reserveUniqueJobId();
+      jobId = jobIdReservation.jobId;
+      releaseJobIdReservation = jobIdReservation.release;
       await storageService.createJobFolders(jobId);
 
       const retentionUntil = addRetentionDays();
@@ -608,6 +627,178 @@ const createRanJob = async ({
         ]).catch(() => {});
       }
       throw error;
+    } finally {
+      if (releaseJobIdReservation) {
+        releaseJobIdReservation();
+      }
+    }
+  });
+};
+
+const createPrAuditorJob = async ({
+  finalPoPrevalidatedFileId,
+  epmsPrevalidatedFileId,
+  prModelPrevalidatedFileId,
+  browserTabSessionId,
+  idempotencyKey,
+  workerManifest,
+  normalizedWorkerId
+}) => {
+  if (!finalPoPrevalidatedFileId) {
+    throw createApiError(400, 'VALIDATION_ERROR', 'finalPoPrevalidatedFileId is required for PR Auditor jobs.');
+  }
+
+  if (!epmsPrevalidatedFileId) {
+    throw createApiError(400, 'VALIDATION_ERROR', 'epmsPrevalidatedFileId is required for PR Auditor jobs.');
+  }
+
+  if (!prModelPrevalidatedFileId) {
+    throw createApiError(400, 'VALIDATION_ERROR', 'prModelPrevalidatedFileId is required for PR Auditor jobs.');
+  }
+
+  const normalizedBrowserTabSessionId = normalizeBrowserTabSessionId(browserTabSessionId);
+  const normalizedIdempotencyKey = normalizeIdempotencyKey(idempotencyKey);
+
+  return withIdempotencyReservation({
+    workerId: normalizedWorkerId,
+    idempotencyKey: normalizedIdempotencyKey
+  }, async () => {
+    let jobId = null;
+    let releaseJobIdReservation = null;
+
+    try {
+      const replayResult = await buildIdempotentReplayResult({
+        workerId: normalizedWorkerId,
+        idempotencyKey: normalizedIdempotencyKey
+      });
+
+      if (replayResult) {
+        return replayResult;
+      }
+
+      const [finalPoUpload, epmsUpload, prModelUpload] = await Promise.all([
+        consumePrevalidatedUpload(finalPoPrevalidatedFileId),
+        consumePrevalidatedUpload(epmsPrevalidatedFileId),
+        consumePrevalidatedUpload(prModelPrevalidatedFileId)
+      ]);
+      assertUploadKind(finalPoUpload, UPLOAD_KINDS.PR_AUDITOR_FINAL_PO, 'Final PO');
+      assertUploadKind(epmsUpload, UPLOAD_KINDS.PR_AUDITOR_EPMS, 'EPMS');
+      assertUploadKind(prModelUpload, UPLOAD_KINDS.PR_AUDITOR_PR_MODEL, 'PR Model');
+
+      const jobIdReservation = await reserveUniqueJobId();
+      jobId = jobIdReservation.jobId;
+      releaseJobIdReservation = jobIdReservation.release;
+      await storageService.createJobFolders(jobId);
+
+      const retentionUntil = addRetentionDays();
+      const finalPoInputPath = storageService.resolveJobInputPath(jobId, finalPoUpload.originalFileName);
+      const epmsInputPath = storageService.resolveJobInputPath(jobId, epmsUpload.originalFileName);
+      const prModelInputPath = storageService.resolveJobInputPath(jobId, prModelUpload.originalFileName);
+
+      await Promise.all([
+        fs.promises.copyFile(finalPoUpload.absolutePath, finalPoInputPath),
+        fs.promises.copyFile(epmsUpload.absolutePath, epmsInputPath),
+        fs.promises.copyFile(prModelUpload.absolutePath, prModelInputPath)
+      ]);
+      await Promise.all([
+        storageService.deleteFileSafe(finalPoUpload.absolutePath),
+        storageService.deleteFileSafe(epmsUpload.absolutePath),
+        storageService.deleteFileSafe(prModelUpload.absolutePath)
+      ]);
+
+      const [finalPoMetadata, epmsMetadata, prModelMetadata] = await Promise.all([
+        storageService.buildFileMetadata(finalPoInputPath),
+        storageService.buildFileMetadata(epmsInputPath),
+        storageService.buildFileMetadata(prModelInputPath)
+      ]);
+      const requestPath = storageService.resolveJobTempPath(jobId, 'job-request.json');
+      await storageService.saveBufferToFile(
+        requestPath,
+        Buffer.from(JSON.stringify({
+          jobId,
+          workerId: normalizedWorkerId,
+          browserTabSessionId: normalizedBrowserTabSessionId,
+          idempotencyKey: normalizedIdempotencyKey,
+          createdAt: new Date().toISOString(),
+          inputs: {
+            finalPoFileName: finalPoUpload.originalFileName,
+            epmsFileName: epmsUpload.originalFileName,
+            prModelFileName: prModelUpload.originalFileName
+          }
+        }, null, 2))
+      );
+
+      const job = await Job.create({
+        jobId,
+        workerId: normalizedWorkerId,
+        engineVersion: workerManifest.engineVersion,
+        engineCommit: workerManifest.engineCommit,
+        workerType: 'pr-worker',
+        status: 'queued',
+        browserTabSessionId: normalizedBrowserTabSessionId,
+        idempotencyKey: normalizedIdempotencyKey,
+        generationScope: 'all_sites',
+        prScope: null,
+        runMode: null,
+        selectedProject: null,
+        requestedSiteCount: 0,
+        fileRetentionUntil: retentionUntil
+      });
+
+      const jobFiles = await JobFile.insertMany([
+        {
+          jobId,
+          fileType: 'pr_auditor_final_po_upload',
+          fileName: finalPoUpload.originalFileName,
+          filePath: finalPoMetadata.filePath,
+          fileSize: finalPoMetadata.fileSize,
+          retentionUntil
+        },
+        {
+          jobId,
+          fileType: 'pr_auditor_epms_upload',
+          fileName: epmsUpload.originalFileName,
+          filePath: epmsMetadata.filePath,
+          fileSize: epmsMetadata.fileSize,
+          retentionUntil
+        },
+        {
+          jobId,
+          fileType: 'pr_auditor_pr_model_upload',
+          fileName: prModelUpload.originalFileName,
+          filePath: prModelMetadata.filePath,
+          fileSize: prModelMetadata.fileSize,
+          retentionUntil
+        }
+      ]);
+      const queueState = await jobQueue.enqueueJob(jobId);
+
+      return {
+        created: true,
+        job: serializeJobSummary(job),
+        jobFiles: jobFiles.map((file) => ({
+          id: file._id.toString(),
+          fileType: file.fileType,
+          fileName: file.fileName,
+          fileSize: file.fileSize,
+          retentionUntil: file.retentionUntil
+        })),
+        queue: queueState,
+        message: 'PR Auditor job record and tracked Final PO/EPMS/PR Model inputs were prepared and queued for audit execution.'
+      };
+    } catch (error) {
+      if (jobId) {
+        await Promise.all([
+          Job.deleteMany({ jobId }),
+          JobFile.deleteMany({ jobId }),
+          storageService.deleteFolderSafe(storageService.getJobRootPath(jobId)).catch(() => {})
+        ]).catch(() => {});
+      }
+      throw error;
+    } finally {
+      if (releaseJobIdReservation) {
+        releaseJobIdReservation();
+      }
     }
   });
 };
@@ -620,6 +811,8 @@ const createJob = async ({
   workerId,
   bomPrevalidatedFileId,
   epmsPrevalidatedFileId,
+  finalPoPrevalidatedFileId,
+  prModelPrevalidatedFileId,
   runMode,
   selectedProject,
   browserTabSessionId,
@@ -640,6 +833,18 @@ const createJob = async ({
       generationScope,
       siteCodes,
       prScope,
+      browserTabSessionId,
+      idempotencyKey,
+      workerManifest,
+      normalizedWorkerId
+    });
+  }
+
+  if (normalizedWorkerId === WORKER_IDS.PR_AUDITOR) {
+    return createPrAuditorJob({
+      finalPoPrevalidatedFileId,
+      epmsPrevalidatedFileId,
+      prModelPrevalidatedFileId,
       browserTabSessionId,
       idempotencyKey,
       workerManifest,

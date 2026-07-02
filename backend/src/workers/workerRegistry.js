@@ -1,6 +1,8 @@
 const mwPrManifest = require('./manifests/mwPrManifest');
+const prAuditorManifest = require('./manifests/prAuditorManifest');
 const ranPrManifest = require('./manifests/ranPrManifest');
 const mwPrAdapter = require('./adapters/mwPrAdapter');
+const prAuditorJobAdapter = require('./adapters/prAuditorJobAdapter');
 const ranPrJobAdapter = require('./adapters/ranPrJobAdapter');
 const { WORKER_IDS } = require('./workerTypes');
 
@@ -8,6 +10,10 @@ const registry = new Map([
   [WORKER_IDS.MW_PR, {
     manifest: mwPrManifest,
     adapterFactory: () => mwPrAdapter
+  }],
+  [WORKER_IDS.PR_AUDITOR, {
+    manifest: prAuditorManifest,
+    adapterFactory: () => prAuditorJobAdapter
   }],
   [WORKER_IDS.RAN_PR, {
     manifest: ranPrManifest,

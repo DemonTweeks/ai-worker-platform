@@ -5,7 +5,7 @@
         <span class="brand-mark">ZTE</span>
         <div>
           <p class="eyebrow">AI Worker Platform</p>
-          <h1>PR Creator</h1>
+          <h1>AI Workers</h1>
         </div>
       </div>
 

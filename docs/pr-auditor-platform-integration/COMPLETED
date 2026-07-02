@@ -1,0 +1,8 @@
+Mission: pr-auditor-platform-integration
+Completed: true
+Acceptance status: passed
+Human acceptance status: pending_before_merge
+Feature branch: feature/pr-auditor-platform-integration
+Draft PR: https://github.com/DemonTweeks/ai-worker-platform/pull/28
+Next action: NO_OP_COMPLETED
+Known limitation: tx-pr-auditor engine pin remains unresolved and runtime stays fail-closed until safety review is completed.

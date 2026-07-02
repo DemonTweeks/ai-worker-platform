@@ -22,6 +22,7 @@
           <option value="">All workers</option>
           <option value="mw-pr">MW PR Worker</option>
           <option value="ran-pr">RAN PR Worker</option>
+          <option value="pr-auditor">PR Auditor</option>
         </select>
       </label>
       <label>

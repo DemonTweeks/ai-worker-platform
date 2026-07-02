@@ -26,7 +26,7 @@
         </section>
         <section class="panel">
           <h2>Files and Outputs</h2>
-          <JobDetailFiles :job-id="detail.job.jobId" :outputs="detail.outputs || []" :status="detail.job.status" />
+          <JobDetailFiles :job-id="detail.job.jobId" :worker-id="detail.job.workerId || ''" :outputs="detail.outputs || []" :status="detail.job.status" />
         </section>
       </div>
       <JobDetailWarnings :warnings="detail.warnings || []" />
