@@ -278,6 +278,40 @@ describe('HomeView worker notifications', () => {
     expect(wrapper.vm.createDisabledReason).toContain('Select a validated General Item project');
   });
 
+  it('applies the compact dropdown hook only to the issue 21 project and cancellation selects', async () => {
+    const projectWrapper = mountView();
+    await flushPromises();
+
+    await projectWrapper.setData({
+      selectedWorkerId: 'ran-pr',
+      ranRunMode: 'general-item',
+      ranProjects: ['Project With A Very Long Workbook Backed Name']
+    });
+
+    const projectSelect = projectWrapper.find('select.compact-inline-select');
+    expect(projectSelect.exists()).toBe(true);
+    expect(projectSelect.attributes('id')).toBeUndefined();
+    expect(projectSelect.classes()).toContain('cockpit-sites-input');
+
+    const cancelWrapper = mountView();
+    await flushPromises();
+
+    await cancelWrapper.setData({
+      activeSessionJobs: [{
+        jobId: 'JOB-CANCEL-1',
+        status: 'generating',
+        workerId: 'ran-pr'
+      }],
+      currentJobId: 'JOB-CANCEL-1',
+      currentStatus: 'generating',
+      showCancelForm: true
+    });
+
+    const cancelSelect = cancelWrapper.find('#cancel-reason.compact-inline-select');
+    expect(cancelSelect.exists()).toBe(true);
+    expect(cancelSelect.classes()).toContain('cockpit-sites-input');
+  });
+
   it('disables create and prevalidate while the current worker has an active job', async () => {
     const wrapper = mountView();
 

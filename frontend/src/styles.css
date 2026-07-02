@@ -1980,6 +1980,17 @@ body:has(.home-cockpit) {
   resize: none;
 }
 
+.compact-inline-select {
+  font-size: 13px;
+  min-height: 36px;
+  max-width: min(100%, 320px);
+  overflow: hidden;
+  padding: 8px 32px 8px 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: min(100%, 320px);
+}
+
 .download-compact {
   display: flex;
   flex-direction: column;

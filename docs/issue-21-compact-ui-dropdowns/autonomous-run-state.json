@@ -1,0 +1,197 @@
+{
+  "issue": 21,
+  "title": "fix(ui): compact oversized project and cancellation dropdowns",
+  "repository": "DemonTweeks/ai-worker-platform",
+  "status": "awaiting_external_uat",
+  "mission_status": "AWAITING_EXTERNAL_UAT",
+  "code_complete": true,
+  "completed": false,
+  "acceptance_status": "pending_external_manual_uat",
+  "base_branch": "main",
+  "feature_branch": "fix/compact-ui-dropdowns",
+  "feature_worktree": "C:\\dev\\ai-worker-platform-dropdowns",
+  "baseline_sha": "e2365800ec5a45638bc6d92ba15893b8e23c367d",
+  "current_step": "draft_pr_closeout_pending_external_manual_uat",
+  "next_action": "AWAIT_EXTERNAL_BROWSER_UAT",
+  "active_goal": "Autonomously complete AI Worker Platform GitHub Issue #21 by verifying PR #22 is merged in origin/main, then executing bounded continuation steps in the fix/compact-ui-dropdowns worktree under the master automation prompt until a single draft PR is ready.",
+  "automation": {
+    "id": "ai-worker-platform-issue-21-compact-dropdowns-hourly-follow-up",
+    "name": "ai-worker-platform-issue-21-compact-dropdowns-hourly-follow-up",
+    "schedule": "FREQ=HOURLY;INTERVAL=1",
+    "kind": "heartbeat"
+  },
+  "precondition": {
+    "pr22_verified_on_origin_main": true,
+    "pr_number": 22,
+    "merge_commit": "e2365800ec5a45638bc6d92ba15893b8e23c367d",
+    "verified_at": "2026-07-01",
+    "evidence": [
+      "git pull --ff-only origin main fast-forwarded local main to e236580",
+      "git log -1 --oneline returned feat(llm): add Agnes provider and reliable Re-Ask composer (#22)",
+      "git log origin/main --oneline --grep=\"Agnes provider\" -20 returned e236580 feat(llm): add Agnes provider and reliable Re-Ask composer (#22)",
+      "gh pr view 22 confirmed state=MERGED, baseRefName=main, mergeCommit=e2365800ec5a45638bc6d92ba15893b8e23c367d, mergedAt=2026-06-30T16:32:39Z"
+    ]
+  },
+  "discovery": {
+    "target_view": "frontend/src/views/HomeView.vue",
+    "project_selector": {
+      "lines": "167-182",
+      "control_class": "cockpit-sites-input",
+      "notes": [
+        "Selector sits beside compact segmented controls in the Launch Configuration card.",
+        "Current shared input class is full-width and does not impose compact select-specific sizing or text truncation."
+      ]
+    },
+    "cancel_reason_selector": {
+      "lines": "323-336",
+      "control_class": "cockpit-sites-input",
+      "notes": [
+        "Selector appears in the Stop Job flow and shares the same input class as the General Item project selector.",
+        "Its selected value needs compact sizing without changing the cancellation payload or option values."
+      ]
+    },
+    "nearby_compact_pattern": {
+      "styles": [
+        "frontend/src/styles.css:1938-1981",
+        "frontend/src/styles.css:1029-1035"
+      ],
+      "notes": [
+        "Nearby workbench controls already use dense spacing through cockpit-field-group and compact-segmented.",
+        "A focused frontend style adjustment is likely sufficient if it preserves width behavior and long-value truncation."
+      ]
+    },
+    "existing_behavior_tests": [
+      "frontend/src/views/__tests__/HomeView.spec.js:202-279",
+      "frontend/src/views/__tests__/HomeView.spec.js:398-430"
+    ]
+  },
+  "bounded_steps": [
+    {
+      "name": "initialize_mission_and_capture_dropdown_discovery",
+      "completed_at": "2026-07-01",
+      "outcome": "done",
+      "notes": [
+        "Created the Issue #21 worktree from verified origin/main on fix/compact-ui-dropdowns.",
+        "Initialized mission state/log files.",
+        "Located both dropdown implementations and documented the first implementation hypothesis without editing frontend behavior yet."
+      ]
+    },
+    {
+      "name": "implement_compact_dropdown_hook_and_styles",
+      "completed_at": "2026-07-01",
+      "outcome": "done",
+      "notes": [
+        "Added the opt-in compact-inline-select class to the RAN General Item project selector and the cancellation-reason selector in frontend/src/views/HomeView.vue.",
+        "Added narrow compact select styling in frontend/src/styles.css without changing the shared cockpit-sites-input behavior for unrelated controls.",
+        "Added a focused HomeView regression test to prove the Issue #21 class hook is wired only to the two target selects and verified the full HomeView spec file passes."
+      ]
+    },
+    {
+      "name": "run_full_validation_and_partial_browser_uat",
+      "completed_at": "2026-07-01",
+      "outcome": "partial",
+      "notes": [
+        "Required local frontend validation passed: frontend test, frontend build, frontend smoke, git diff --check, and submodule status review.",
+        "Browser verification confirmed the current worktree frontend and backend load on ports 3000 and 8000 without overlays or console errors.",
+        "Live browser metrics confirmed the RAN General Item selector renders with the compact-inline-select class at compact dimensions and without page-level horizontal overflow.",
+        "MW and RAN Job Detail routes loaded normally in the browser.",
+        "Full browser UAT remains incomplete because the live RAN project catalog endpoint fails with RAN_PROJECT_WORKBOOK_MISSING and no active job was available in the current browser-tab session to expose the real cancellation selector."
+      ]
+    },
+    {
+      "name": "attempt_live_job_creation_and_browser_session_binding",
+      "completed_at": "2026-07-01",
+      "outcome": "blocked",
+      "notes": [
+        "Attempted to finish live browser UAT by creating or attaching to a current-session active job through the existing UI and APIs.",
+        "The in-app browser page-evaluation sandbox does not expose storage APIs, Vue instance handles, or file-input constructors needed to bind a created job into the current browser session through supported automation alone.",
+        "No active job exists for the current browser-tab session, so the real Stop Job cancellation selector cannot be rendered naturally without an external-state change."
+      ]
+    },
+    {
+      "name": "recover_ran_catalog_environment_and_reclassify_blocker",
+      "completed_at": "2026-07-01",
+      "outcome": "partial",
+      "notes": [
+        "Classified the reported RAN selector failure as an environment issue caused by an uninitialized submodule checkout rather than a frontend regression.",
+        "Ran the one allowed recovery command, git submodule update --init --recursive, which restored skills/create-pr-cd-ran at commit 239910e2816153339a94881597bbb95355059741 and repopulated its config workbook files.",
+        "Verified GET /api/jobs/ran-projects now returns HTTP 200 with the real project list, so the live RAN selector data path is available again without any source-code changes.",
+        "The remaining blocked acceptance gate is the real current-session Stop Job cancellation selector, because no cancellable active job is exposed in the active browser-tab session and supported automation still cannot bind one through storage or file APIs."
+      ]
+    },
+    {
+      "name": "verify_live_ran_selector_and_probe_session_binding",
+      "completed_at": "2026-07-01",
+      "outcome": "partial",
+      "notes": [
+        "Confirmed the only browser backend available to this thread is the in-app browser surface; no Chrome extension backend is available for a richer file/storage path.",
+        "Verified the recovered live RAN General Item selector is enabled, can select the long real project label CD consolidation 2023 (Swap/ Modernize), stays at compact dimensions, and does not introduce page-level horizontal overflow or console warnings/errors.",
+        "Native select keyboard-arrow behavior could not be conclusively driven through the in-app browser automation surface, so keyboard navigation for the live RAN selector remains unverified rather than marked regressed.",
+        "Created one real MW all-sites job against the most recent historical browserTabSessionId from the database and reloaded Home; the job did not appear in the current tab's Active Jobs list, proving the current in-app tab is not reusing that historical session id.",
+        "The remaining blocker is still current-session job binding for HomeView cancellation UAT, not the RAN selector data path or compact-style implementation."
+      ]
+    },
+    {
+      "name": "final_in_app_session_probe",
+      "completed_at": "2026-07-01",
+      "outcome": "blocked",
+      "notes": [
+        "Re-probed the current in-app browser tab after a fresh reload for any authoritative session-binding surface exposed to supported automation.",
+        "Confirmed the browser runtime exposes no window, DOM, or Vue hooks matching the HomeView session state, including __AWP_HOME_VM__, __VUE__, __VUE_DEVTOOLS_GLOBAL_HOOK__, __vueParentComponent, __vue_app__, or any session/job/AWP-related global keys.",
+        "This leaves no supported path in the current iab-only environment to read or replay the active browserTabSessionId required to surface the real Stop Job selector in HomeView.",
+        "The resumed goal has now hit the same external blocker for three consecutive continuation turns, satisfying the blocked threshold for the active-goal audit."
+      ]
+    },
+    {
+      "name": "convert_blocked_state_to_draft_pr_pending_external_uat",
+      "completed_at": "2026-07-01",
+      "outcome": "done",
+      "notes": [
+        "Applied the Terminal External UAT Exception and Draft PR Policy after the three-turn IAB limitation threshold was reached.",
+        "Reconfirmed repository scope from origin/main, reran the mandatory frontend validation gates, and confirmed the RAN submodule pointer remains unchanged.",
+        "Marked the code implementation complete with automated validation passed while leaving live acceptance pending external manual browser UAT.",
+        "No further automated IAB probing, session-state probing, Vue/global searches, DOM injection, or unsupported environment manipulation is permitted for this mission.",
+        "The minimum external UAT evidence required before merge is a standard-browser verification of the long-value RAN selector path and the real Stop Job cancellation selector path, including compact layout, keyboard behavior, and normal cancellation flow."
+      ]
+    }
+  ],
+  "blocker": {
+    "code": "ACTIVE_JOB_UAT_ENVIRONMENT_UNAVAILABLE",
+    "summary": "The remaining Issue #21 acceptance gates require a real current-session active job path that is not reachable with the current environment state.",
+    "details": [
+      "The RAN workbook-backed project list is restored and /api/jobs/ran-projects now succeeds after submodule initialization.",
+      "No active job exists for the current browser-tab session, so the real cancellation selector is not rendered.",
+      "The only available browser backend for this thread is the in-app browser, and its automation surface still does not expose sessionStorage, File/DataTransfer/Blob constructors, or usable Vue app handles needed to bind a created job into the live page through supported automation."
+    ]
+  },
+  "external_manual_uat_required": {
+    "required_before_merge": true,
+    "minimum_evidence": [
+      "Open RAN General Item mode in a standard browser session and select a long project value.",
+      "Confirm the RAN selector stays compact and does not overflow or distort layout.",
+      "Open a real cancellable job in the same standard browser session.",
+      "Open Stop Job and select a long cancellation reason.",
+      "Confirm the cancellation selector stays compact, keyboard navigation works, and the cancellation flow remains normal."
+    ],
+    "automated_iab_probe_permitted": false
+  },
+  "constraints": {
+    "allowed_paths": [
+      "frontend/",
+      "docs/issue-21-compact-ui-dropdowns/"
+    ],
+    "blocked_paths_or_topics": [
+      "backend/",
+      "skills/create-pr-cd-ran",
+      "RAN submodule pointer",
+      "MW or RAN business rules",
+      "queue",
+      "cancellation lifecycle semantics",
+      "ZIP/download lifecycle",
+      "Firebase/history contracts",
+      "package manifests",
+      "lockfiles",
+      "Issue #15 timestamp formatting"
+    ]
+  }
+}
