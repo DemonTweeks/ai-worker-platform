@@ -154,3 +154,41 @@
    Result: pass; lifecycle behavior remained green after the shared job-id reservation change.
 9. Re-ran `node scripts/pr-auditor-route-test.js`.
    Result: pass; route, download, and reload behavior remained green after the shared job-id reservation change.
+
+## 2026-07-03 Phase 0 Step 9
+
+1. Inspected `backend/package.json` and `frontend/package.json` to derive the documented verification commands for existing MW/RAN regressions and broader build/test coverage.
+   Result: selected backend aggregate verification via `npm test`, supplemental RAN regression scripts (`ran-history-reload`, `ran-concurrency`, `ran-invalid-safe-error`, `ran-golden`), and frontend aggregate verification via `npm test`.
+2. Initial Step 9 attempt:
+   ran backend/frontend verification and supplemental RAN scripts before hydrating submodules.
+   Result: setup-only failures. MW and RAN backend regressions could not read pinned workbook assets because `skills/create-pr-cd` and `skills/create-pr-cd-ran` existed as empty submodule directories in this worktree.
+3. Investigated submodule state with:
+   `git submodule status`,
+   `.gitmodules`,
+   directory inspection under `skills/`.
+   Result: confirmed the worktree had the expected pinned gitlinks but the MW/RAN submodule working trees were not initialized locally.
+4. Ran `git submodule update --init skills/create-pr-cd skills/create-pr-cd-ran`.
+   Result: hydrated the already-pinned MW and RAN worker-engine submodules without changing their recorded commits.
+5. Ran `npm test` in `backend/`.
+   Result: pass; the documented aggregate backend verification suite succeeded after submodule hydration, including smoke, integration, error hardening, RAN route/runtime coverage, queue/worker dispatch, and shared job payload validation.
+6. Ran `npm test` in `frontend/`.
+   Result: pass; all 55 unit tests passed, `vite build` succeeded, and route smoke checks passed.
+7. Important verification hygiene note:
+   the first parallel launch of supplemental RAN scripts shared a common RTDB-backed test environment and produced a false negative in `ran-history-reload-test.js`.
+   Result: discarded that parallel-run failure as non-authoritative and reran the affected scripts in isolation.
+8. Ran `node scripts/ran-history-reload-test.js` in isolation.
+   Result: pass; history list, job detail, and ZIP download all reloaded successfully after restart for a completed RAN general-item job.
+9. Ran `node scripts/ran-concurrency-test.js` in isolation.
+   Result: pass; concurrent RAN jobs retained distinct workspace roots, isolated staged inputs, distinct persisted outputs, and unchanged pinned submodule input/output trees.
+10. Ran `node scripts/ran-invalid-safe-error-test.js` in isolation.
+    Result: pass; invalid-input and safe-error handling remained correct for RAN jobs.
+11. Ran `node scripts/ran-golden-test.js`.
+    Initial result: fail with `400 !== 201` because the legacy golden regression script no longer supplied the now-required `browserTabSessionId` and `idempotencyKey` create-job fields.
+12. Updated `backend/scripts/ran-golden-test.js` to send `browserTabSessionId` and `idempotencyKey`.
+    Result: the golden regression harness is now aligned with the current additive backend create-job contract.
+13. Re-ran `node scripts/ran-golden-test.js`.
+    Result: pass; both the standard and general-item RAN golden runs completed successfully and their retained ECC workbooks matched the pinned upstream logical workbook references.
+14. Changed-file scope review:
+    `git status --short --branch`
+    `git diff --stat`
+    Result: Step 9 intended changes are limited to the RAN golden regression harness plus mission-state documentation.

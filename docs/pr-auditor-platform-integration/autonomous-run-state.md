@@ -7,11 +7,11 @@
 - Feature branch: `feature/pr-auditor-platform-integration`
 - Baseline: `origin/main` at `ec82e58f26055146a3b2403d6106e8809e994ad3`
 - Current phase: `phase-0`
-- Current bounded step: `8. Synthetic backend and engine validation`
+- Current bounded step: `9. Existing MW PR and RAN PR regression validation`
 - Completed: `false`
 - Acceptance status: `in_progress`
 - Human acceptance status: `not_started`
-- Next action: Implement bounded Step 9 by running MW PR and RAN PR regression validation plus broader build/test verification, changed-scope review, and review findings cleanup.
+- Next action: Implement bounded Step 10 by performing browser/UI validation for the dedicated PR Auditor flow in a rendered session.
 
 ## Engine Status
 
@@ -76,3 +76,10 @@
 - Synthetic worker lifecycle coverage now verifies completed, cancelled-with-partial-result, and safe failed-finalization outcomes for PR Auditor without requiring an approved engine pin.
 - Synthetic concurrency coverage now verifies two concurrent PR Auditor jobs retain distinct job ids, isolated workspace roots, and distinct persisted audit-report paths.
 - A transactional job-id reservation fix now keeps generated `PR-YYYYMMDD-NNN` identifiers reserved through job creation, preventing concurrent create races from collapsing multiple jobs onto the same id before the `Job` record is written.
+
+## Step 9 Outputs
+
+- Existing MW backend regression coverage now passes again through the documented aggregate backend `npm test` suite after hydrating the already-pinned `skills/create-pr-cd` and `skills/create-pr-cd-ran` submodules in this worktree.
+- Existing RAN regression coverage now passes through the documented route, live-runtime, worker-service, history-reload, concurrency, invalid-safe-error, and golden workbook verification scripts when run in isolation against the shared test backend.
+- The RAN golden regression harness was refreshed to send the now-required `browserTabSessionId` and `idempotencyKey` fields, aligning the existing test with the current additive create-job contract rather than weakening backend validation.
+- Broader frontend verification also passed in this step through `npm test`, covering unit tests, production build output, and route smoke checks.

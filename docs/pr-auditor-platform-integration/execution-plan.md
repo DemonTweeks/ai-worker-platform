@@ -63,9 +63,11 @@
 - [x] Step 6: Add the dedicated top-level PR Auditor frontend entry point and three-upload launch flow with required notice text.
 - [x] Step 7: Update active jobs, job detail, history, filters, and download presentation for PR Auditor-specific summaries.
 - [x] Step 8: Add synthetic backend and engine validation for happy path, missing upload, invalid workbook, concurrent isolation, cancellation, history reload, and download behavior.
-- [ ] Step 9: Run MW PR and RAN PR regression validation plus build/test verification, then perform changed-scope review and review findings cleanup.
-- [ ] Step 10: Record final report, create final checkpoint, push the feature branch, and open exactly one Draft PR after all gates pass.
+- [x] Step 9: Run MW PR and RAN PR regression validation plus build/test verification, then perform changed-scope review and review findings cleanup.
+- [ ] Step 10: Browser/UI validation in a rendered session.
+- [ ] Step 11: Review, final verification, and Draft PR preparation.
+- [ ] Step 12: Push feature branch and open exactly one Draft PR.
 
 ## Immediate Next Step
 
-- [ ] Execute bounded Step 9 only: run MW PR and RAN PR regression validation plus broader build/test verification, then complete changed-scope review and review findings cleanup.
+- [ ] Execute bounded Step 10 only: perform browser/UI validation for the dedicated PR Auditor flow and confirm key user-facing behavior in a real rendered session.
