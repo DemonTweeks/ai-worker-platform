@@ -19,7 +19,10 @@ const MANIFEST_SUFFIX = '.prevalidation.json';
 const UPLOAD_KINDS = {
   MW_EXPORT: 'mw-export',
   RAN_BOM: 'ran-bom',
-  RAN_EPMS: 'ran-epms'
+  RAN_EPMS: 'ran-epms',
+  PR_AUDITOR_FINAL_PO: 'pr-auditor-final-po',
+  PR_AUDITOR_EPMS: 'pr-auditor-epms',
+  PR_AUDITOR_PR_MODEL: 'pr-auditor-pr-model'
 };
 
 const UPLOAD_KIND_CONFIG = {
@@ -39,6 +42,24 @@ const UPLOAD_KIND_CONFIG = {
     successExplanation: 'The uploaded RAN EPMS workbook passed the initial technical checks. Worker-level validation will continue after the job is created.',
     inspectWorkbook: true,
     verifyWorkbookReadable: false
+  },
+  [UPLOAD_KINDS.PR_AUDITOR_FINAL_PO]: {
+    missingFileMessage: 'Please upload a Final PO workbook.',
+    successExplanation: 'The uploaded Final PO workbook passed the initial technical checks. Audit-specific validation will continue after the job is created.',
+    inspectWorkbook: false,
+    verifyWorkbookReadable: true
+  },
+  [UPLOAD_KINDS.PR_AUDITOR_EPMS]: {
+    missingFileMessage: 'Please upload an EPMS workbook.',
+    successExplanation: 'The uploaded EPMS workbook passed the initial technical checks. Audit-specific validation will continue after the job is created.',
+    inspectWorkbook: false,
+    verifyWorkbookReadable: true
+  },
+  [UPLOAD_KINDS.PR_AUDITOR_PR_MODEL]: {
+    missingFileMessage: 'Please upload a PR Model workbook.',
+    successExplanation: 'The uploaded PR Model workbook passed the initial technical checks. Audit-specific validation will continue after the job is created.',
+    inspectWorkbook: false,
+    verifyWorkbookReadable: true
   }
 };
 

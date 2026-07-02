@@ -37,3 +37,14 @@
    Result: exact additive extension points identified for worker registration, upload kinds, job payload branching, output tracking, history filters, and PR Auditor-specific detail rendering.
 2. Wrote `docs/pr-auditor-platform-integration/integration-contract.md`.
    Result: Step 2 now has an explicit worker contract, upload kind contract, file-type contract, UI contract, and file-level change map for subsequent bounded steps.
+
+## 2026-07-03 Phase 0 Step 3
+
+1. Added failing assertions to `backend/scripts/job-service-worker-payload-test.js` for `pr-auditor` create/list/detail behavior.
+   Result: initial red phase failed with `workerId must be one of mw-pr or ran-pr`, proving backend registration was missing.
+2. Installed backend dependencies in the feature worktree with `npm install` because the isolated worktree did not yet have `node_modules`.
+   Result: backend scripts became runnable in this worktree.
+3. Ran `npm run test:job-service-workers`.
+   Result: pass after implementing `pr-auditor` backend registration and job creation flow.
+4. Ran a direct registry verification snippet in `backend/`.
+   Result: `listWorkers()` and `getWorkerManifest('pr-auditor')` both returned the expected `PR Auditor` manifest with placeholder safe-pin metadata.

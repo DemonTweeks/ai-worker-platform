@@ -48,7 +48,10 @@ const runTests = async () => {
       UPLOAD_KINDS: {
         MW_EXPORT: 'mw-export',
         RAN_BOM: 'ran-bom',
-        RAN_EPMS: 'ran-epms'
+        RAN_EPMS: 'ran-epms',
+        PR_AUDITOR_FINAL_PO: 'pr-auditor-final-po',
+        PR_AUDITOR_EPMS: 'pr-auditor-epms',
+        PR_AUDITOR_PR_MODEL: 'pr-auditor-pr-model'
       },
       consumePrevalidatedUpload: async (prevalidatedFileId) => {
         if (prevalidatedFileId === 'ran-bom-1') {
@@ -63,6 +66,30 @@ const runTests = async () => {
           return {
             uploadKind: 'ran-epms',
             originalFileName: 'ran-epms.xlsx',
+            absolutePath: uploadPath
+          };
+        }
+
+        if (prevalidatedFileId === 'pr-auditor-final-po-1') {
+          return {
+            uploadKind: 'pr-auditor-final-po',
+            originalFileName: 'final-po.xlsx',
+            absolutePath: uploadPath
+          };
+        }
+
+        if (prevalidatedFileId === 'pr-auditor-epms-1') {
+          return {
+            uploadKind: 'pr-auditor-epms',
+            originalFileName: 'epms.xlsx',
+            absolutePath: uploadPath
+          };
+        }
+
+        if (prevalidatedFileId === 'pr-auditor-pr-model-1') {
+          return {
+            uploadKind: 'pr-auditor-pr-model',
+            originalFileName: 'pr-model.xlsx',
             absolutePath: uploadPath
           };
         }
@@ -225,6 +252,51 @@ const runTests = async () => {
     assert.strictEqual(duplicateRanResult.job.jobId, ranCreateResult.job.jobId, 'duplicate RAN submissions should replay the existing job');
     assert.strictEqual(createdJobs.length, 1, 'duplicate RAN submissions should not create a second job');
 
+    createdJobs.length = 0;
+    createdFiles.length = 0;
+    copiedBuffers.length = 0;
+
+    const prAuditorCreateResult = await jobService.createJob({
+      workerId: 'pr-auditor',
+      browserTabSessionId: 'pr-auditor-tab-1234',
+      idempotencyKey: 'pr-auditor-idem-1234',
+      finalPoPrevalidatedFileId: 'pr-auditor-final-po-1',
+      epmsPrevalidatedFileId: 'pr-auditor-epms-1',
+      prModelPrevalidatedFileId: 'pr-auditor-pr-model-1'
+    });
+
+    assert.strictEqual(prAuditorCreateResult.job.workerId, 'pr-auditor');
+    assert.strictEqual(prAuditorCreateResult.job.workerDisplayName, 'PR Auditor');
+    assert.strictEqual(prAuditorCreateResult.job.engineVersion, 'pending-safe-pin');
+    assert.strictEqual(prAuditorCreateResult.job.engineCommit, 'unapproved');
+    assert.strictEqual(prAuditorCreateResult.job.prScope, null);
+    assert.strictEqual(prAuditorCreateResult.job.runMode, null);
+    assert.strictEqual(prAuditorCreateResult.job.selectedProject, null);
+    assert.strictEqual(createdJobs[0].workerId, 'pr-auditor');
+    assert.strictEqual(createdJobs[0].browserTabSessionId, 'pr-auditor-tab-1234');
+    assert.strictEqual(createdJobs[0].idempotencyKey, 'pr-auditor-idem-1234');
+    assert.strictEqual(createdJobs[0].requestedSiteCount, 0);
+    assert.strictEqual(createdFiles.length, 3);
+    assert.deepStrictEqual(
+      createdFiles.map((file) => file.fileType).sort(),
+      ['pr_auditor_epms_upload', 'pr_auditor_final_po_upload', 'pr_auditor_pr_model_upload']
+    );
+    assert(copiedBuffers[0].includes('"workerId": "pr-auditor"'));
+    assert(copiedBuffers[0].includes('"finalPoFileName": "final-po.xlsx"'));
+    assert(copiedBuffers[0].includes('"epmsFileName": "epms.xlsx"'));
+    assert(copiedBuffers[0].includes('"prModelFileName": "pr-model.xlsx"'));
+
+    const duplicatePrAuditorResult = await jobService.createJob({
+      workerId: 'pr-auditor',
+      browserTabSessionId: 'pr-auditor-tab-1234',
+      idempotencyKey: 'pr-auditor-idem-1234',
+      finalPoPrevalidatedFileId: 'pr-auditor-final-po-1',
+      epmsPrevalidatedFileId: 'pr-auditor-epms-1',
+      prModelPrevalidatedFileId: 'pr-auditor-pr-model-1'
+    });
+    assert.strictEqual(duplicatePrAuditorResult.job.jobId, prAuditorCreateResult.job.jobId, 'duplicate PR Auditor submissions should replay the existing job');
+    assert.strictEqual(createdJobs.length, 1, 'duplicate PR Auditor submissions should not create a second job');
+
     await assert.rejects(
       () => jobService.createJob({
         prevalidatedFileId: 'prevalidated-2',
@@ -288,6 +360,28 @@ const runTests = async () => {
         reviewRequiredCount: 0,
         warningCount: 0,
         finalWorkerSummary: ''
+      },
+      {
+        jobId: 'PR-AUDITOR-JOB-001',
+        workerId: 'pr-auditor',
+        workerType: 'pr-worker',
+        status: 'completed',
+        browserTabSessionId: 'pr-auditor-tab-1234',
+        idempotencyKey: 'pr-auditor-idem-1234',
+        createdAt: '2026-06-26T00:00:00.000Z',
+        generationScope: 'all_sites',
+        prScope: null,
+        runMode: null,
+        selectedProject: null,
+        engineVersion: 'pending-safe-pin',
+        engineCommit: 'unapproved',
+        requestedSiteCount: 0,
+        matchedSiteCount: 0,
+        unmatchedSiteCount: 0,
+        outputFileCount: 1,
+        reviewRequiredCount: 0,
+        warningCount: 0,
+        finalWorkerSummary: ''
       }
     ];
 
@@ -316,6 +410,16 @@ const runTests = async () => {
     assert.strictEqual(listResult.items[0].selectedProject, 'Project Thanos');
     assert.strictEqual(listResult.items[0].browserTabSessionId, 'ran-pr-tab-1234');
     assert.strictEqual(listResult.items[0].idempotencyKey, 'ran-idem-1234');
+
+    const prAuditorListResult = await jobService.listJobs({ workerId: 'pr-auditor', browserTabSessionId: 'pr-auditor-tab-1234' });
+    assert.strictEqual(prAuditorListResult.items.length, 1);
+    assert.strictEqual(prAuditorListResult.items[0].workerId, 'pr-auditor');
+    assert.strictEqual(prAuditorListResult.items[0].workerDisplayName, 'PR Auditor');
+    assert.strictEqual(prAuditorListResult.items[0].engineVersion, 'pending-safe-pin');
+    assert.strictEqual(prAuditorListResult.items[0].engineCommit, 'unapproved');
+    assert.strictEqual(prAuditorListResult.items[0].prScope, null);
+    assert.strictEqual(prAuditorListResult.items[0].runMode, null);
+    assert.strictEqual(prAuditorListResult.items[0].selectedProject, null);
 
     const detailJob = {
       ...mockJobs[0],
@@ -349,6 +453,23 @@ const runTests = async () => {
     assert.strictEqual(detailResult.job.engineCommit, '239910e2816153339a94881597bbb95355059741');
     assert.strictEqual(detailResult.job.runMode, 'general-item');
     assert.strictEqual(detailResult.job.selectedProject, 'Project Thanos');
+
+    const prAuditorDetailJob = {
+      ...mockJobs[2],
+      startedAt: '2026-06-26T00:20:00.000Z',
+      cancelledAt: null,
+      assetVersions: {},
+      fileRetentionUntil: null
+    };
+    Job.findOne = async () => prAuditorDetailJob;
+    const prAuditorDetailResult = await jobService.getJobDetail('PR-AUDITOR-JOB-001');
+    assert.strictEqual(prAuditorDetailResult.job.workerId, 'pr-auditor');
+    assert.strictEqual(prAuditorDetailResult.job.workerDisplayName, 'PR Auditor');
+    assert.strictEqual(prAuditorDetailResult.job.engineVersion, 'pending-safe-pin');
+    assert.strictEqual(prAuditorDetailResult.job.engineCommit, 'unapproved');
+    assert.strictEqual(prAuditorDetailResult.job.prScope, null);
+    assert.strictEqual(prAuditorDetailResult.job.runMode, null);
+    assert.strictEqual(prAuditorDetailResult.job.selectedProject, null);
 
     const queuedCancellationJob = {
       jobId: 'MW-CANCEL-QUEUED',

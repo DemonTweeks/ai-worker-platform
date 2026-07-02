@@ -1,6 +1,6 @@
 {
   "missionId": "pr-auditor-platform-integration",
-  "updatedAt": "2026-07-03T01:00:00Z",
+  "updatedAt": "2026-07-03T02:00:00Z",
   "repositoryRoot": "C:\\dev\\ai-worker-platform-pr-auditor",
   "sourceRepositoryRoot": "C:\\dev\\ai-worker-platform",
   "baselineBranch": "main",
@@ -8,8 +8,8 @@
   "featureBranch": "feature/pr-auditor-platform-integration",
   "worktreePath": "C:\\dev\\ai-worker-platform-pr-auditor",
   "currentPhase": "phase-0",
-  "currentBoundedStep": "2. Integration contract and changed-file allowlist",
-  "nextAction": "Implement bounded Step 3: register pr-auditor in backend worker types, manifest, registry, and job creation flow without pinning or executing the engine until the safety gate is resolved.",
+  "currentBoundedStep": "3. Worker registry and backend adapter implementation",
+  "nextAction": "Implement bounded Step 4: add PR Auditor upload validation details, isolated workspace preparation, and deterministic runtime scaffolding without executing the external engine until the safety gate is resolved.",
   "completed": false,
   "acceptanceStatus": "in_progress",
   "humanAcceptanceStatus": "not_started",
@@ -43,11 +43,13 @@
     "workerArchitectureInspected": true,
     "engineCandidateInspected": true,
     "integrationContractDefined": true,
-    "fileLevelChangeMapDefined": true
+    "fileLevelChangeMapDefined": true,
+    "prAuditorRegisteredInBackend": true,
+    "prAuditorCreateJobFlowImplemented": true
   },
   "knownLimitations": [
     "No approved tx-pr-auditor engine pin has been recorded yet.",
-    "Platform currently supports mw-pr and ran-pr only; pr-auditor is not yet registered in backend or frontend.",
+    "PR Auditor is registered in backend create/list/detail flow, but worker runtime execution is not implemented yet.",
     "Current Home view presents MW and RAN as PR Creator variants rather than an independent PR Auditor entry point.",
     "PR Auditor-specific summary persistence shape is defined contractually but not yet implemented in backend storage or frontend rendering."
   ]

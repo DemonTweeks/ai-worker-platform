@@ -7,11 +7,11 @@
 - Feature branch: `feature/pr-auditor-platform-integration`
 - Baseline: `origin/main` at `ec82e58f26055146a3b2403d6106e8809e994ad3`
 - Current phase: `phase-0`
-- Current bounded step: `2. Integration contract and changed-file allowlist`
+- Current bounded step: `3. Worker registry and backend adapter implementation`
 - Completed: `false`
 - Acceptance status: `in_progress`
 - Human acceptance status: `not_started`
-- Next action: Implement bounded Step 3 by wiring `pr-auditor` into backend worker registration and job creation flow without altering MW PR, RAN PR, or PR Creator behavior.
+- Next action: Implement bounded Step 4 by adding PR Auditor upload-validation detail, isolated workspace preparation, and deterministic runtime scaffolding without altering MW PR, RAN PR, or PR Creator behavior.
 
 ## Engine Status
 
@@ -34,3 +34,10 @@
 - Integration contract written in `docs/pr-auditor-platform-integration/integration-contract.md`.
 - Exact file-level change map captured in `execution-plan.md`.
 - PR Auditor-specific job payload, upload kinds, file types, summary shape, and UI constraints are now explicit and ready for implementation.
+
+## Step 3 Outputs
+
+- Backend worker identity now includes `pr-auditor`.
+- Backend registry exposes a PR Auditor manifest with safe placeholder engine metadata pending pin approval.
+- Backend job creation now accepts three prevalidated PR Auditor uploads and persists a queued job plus tracked input files for Final PO, EPMS, and PR Model.
+- Focused backend tests now cover PR Auditor create/list/detail payload behavior.
