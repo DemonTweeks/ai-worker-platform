@@ -1,5 +1,5 @@
 # Review Findings
 
-Status: pending synthetic validation, regression verification, and broader review.
+Status: pending MW/RAN regression verification, broader build/test verification, and final review.
 
-No code-review findings are recorded yet. The backend and frontend presentation layers are now in place, but synthetic runtime validation, regression verification, and broader review are still pending before a meaningful review pass.
+No Step 8 review findings are recorded after the synthetic backend validation pass. Residual risk remains in areas intentionally not closed yet: the engine pin is still unapproved, real runtime execution is still fail-closed, and MW/RAN regression plus broader build verification still need to run before final review.

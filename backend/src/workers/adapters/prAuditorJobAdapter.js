@@ -1,6 +1,6 @@
-const prAuditorAdapter = require('./prAuditorAdapter');
+const { runPrAuditorWorkerJob } = require('../../services/prAuditorWorkerService');
 
-const run = async (jobId, options = {}) => prAuditorAdapter.run(jobId, options);
+const run = async (jobId) => runPrAuditorWorkerJob(jobId);
 
 module.exports = {
   run

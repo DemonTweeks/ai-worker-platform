@@ -1,6 +1,6 @@
 {
   "missionId": "pr-auditor-platform-integration",
-  "updatedAt": "2026-07-03T06:00:00Z",
+  "updatedAt": "2026-07-02T17:26:00Z",
   "repositoryRoot": "C:\\dev\\ai-worker-platform-pr-auditor",
   "sourceRepositoryRoot": "C:\\dev\\ai-worker-platform",
   "baselineBranch": "main",
@@ -8,8 +8,8 @@
   "featureBranch": "feature/pr-auditor-platform-integration",
   "worktreePath": "C:\\dev\\ai-worker-platform-pr-auditor",
   "currentPhase": "phase-0",
-  "currentBoundedStep": "7. Job detail, active job, and history/filter presentation",
-  "nextAction": "Implement bounded Step 8: add synthetic backend and engine validation for happy path, missing upload, invalid workbook, concurrent isolation, cancellation, history reload, and audit report download behavior.",
+  "currentBoundedStep": "8. Synthetic backend and engine validation",
+  "nextAction": "Implement bounded Step 9: run MW PR and RAN PR regression validation plus broader build/test verification, changed-scope review, and review findings cleanup.",
   "completed": false,
   "acceptanceStatus": "in_progress",
   "humanAcceptanceStatus": "not_started",
@@ -51,12 +51,15 @@
     "prAuditorOutputIngestionImplemented": true,
     "prAuditorSummaryPersistenceImplemented": true,
     "prAuditorFrontendLaunchFlowImplemented": true,
-    "prAuditorFrontendPresentationImplemented": true
+    "prAuditorFrontendPresentationImplemented": true,
+    "prAuditorWorkerLifecycleValidationImplemented": true,
+    "prAuditorSyntheticRouteValidationImplemented": true,
+    "prAuditorSyntheticConcurrencyValidationImplemented": true
   },
   "knownLimitations": [
     "No approved tx-pr-auditor engine pin has been recorded yet.",
-    "PR Auditor workspace preparation and command scaffolding are implemented, but runtime execution remains closed until a safe engine pin is approved.",
-    "PR Auditor launch, detail, history, and download presentation are wired, but runtime execution remains blocked until a safe engine pin is approved.",
-    "Synthetic PR Auditor happy-path, cancellation, isolation, download, and MW/RAN regression validation are still pending."
+    "PR Auditor workspace preparation and command scaffolding are implemented, but real runtime execution remains closed until a safe engine pin is approved.",
+    "Step 8 validation is synthetic: backend lifecycle, route, download, reload, and concurrency behaviors are verified through patched PR Auditor runtime paths rather than an approved live engine execution.",
+    "MW PR and RAN PR regression validation plus broader build/test verification are still pending."
   ]
 }

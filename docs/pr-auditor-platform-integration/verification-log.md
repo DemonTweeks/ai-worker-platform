@@ -127,3 +127,30 @@
    Result: pass; all 31 focused presentation tests passed.
 4. Ran `npm run test:unit`.
    Result: pass; all 55 frontend unit tests passed after the Step 7 changes.
+
+## 2026-07-03 Phase 0 Step 8
+
+1. Added and inspected focused synthetic backend validation scripts:
+   `backend/scripts/pr-auditor-worker-service-test.js`,
+   `backend/scripts/pr-auditor-route-test.js`,
+   `backend/scripts/pr-auditor-concurrency-test.js`.
+   Result: Step 8 coverage now targets lifecycle completion/cancellation/failure, invalid workbook safe errors, missing-upload create validation, happy-path output persistence, audit report download, restart reload behavior, and concurrent workspace isolation.
+2. Ran `node scripts/pr-auditor-worker-service-test.js`.
+   Result: pass; synthetic worker lifecycle coverage verified completed, cancelled-with-partial-result, and safe failed-output-finalization outcomes.
+3. Ran `node scripts/pr-auditor-route-test.js`.
+   Result: pass; synthetic route coverage verified invalid workbook rejection, missing PR Model validation, completed happy-path persistence, audit report download, and post-restart history/detail reload behavior.
+4. Ran `node scripts/pr-auditor-concurrency-test.js`.
+   Initial result: fail; both concurrent create requests reused `PR-20260703-001`, so the second request did not exercise a distinct active job.
+5. Root-cause investigation:
+   reviewed `backend/src/utils/jobIdGenerator.js`, `backend/src/services/jobService.js`, `backend/src/services/jobControlService.js`, and the mock Firebase data path.
+   Result: confirmed a real shared race in job-id allocation. The generator returned a candidate id before the `Job` record was written, allowing a concurrent non-idempotent create request to select the same id.
+6. Implemented transactional job-id reservation in:
+   `backend/src/utils/jobIdGenerator.js`,
+   `backend/src/services/jobService.js`.
+   Result: generated ids now stay reserved through the full create flow for MW, RAN, and PR Auditor jobs, preventing concurrent create collisions before persistence.
+7. Re-ran `node scripts/pr-auditor-concurrency-test.js`.
+   Result: pass; concurrent PR Auditor jobs now retain distinct ids, distinct isolated workspace roots, and distinct persisted audit report paths.
+8. Re-ran `node scripts/pr-auditor-worker-service-test.js`.
+   Result: pass; lifecycle behavior remained green after the shared job-id reservation change.
+9. Re-ran `node scripts/pr-auditor-route-test.js`.
+   Result: pass; route, download, and reload behavior remained green after the shared job-id reservation change.

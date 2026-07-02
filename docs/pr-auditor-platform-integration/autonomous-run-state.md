@@ -7,11 +7,11 @@
 - Feature branch: `feature/pr-auditor-platform-integration`
 - Baseline: `origin/main` at `ec82e58f26055146a3b2403d6106e8809e994ad3`
 - Current phase: `phase-0`
-- Current bounded step: `7. Job detail, active job, and history/filter presentation`
+- Current bounded step: `8. Synthetic backend and engine validation`
 - Completed: `false`
 - Acceptance status: `in_progress`
 - Human acceptance status: `not_started`
-- Next action: Implement bounded Step 8 by adding synthetic backend and engine validation for happy path, missing upload, invalid workbook, concurrent isolation, cancellation, history reload, and audit report download behavior.
+- Next action: Implement bounded Step 9 by running MW PR and RAN PR regression validation plus broader build/test verification, changed-scope review, and review findings cleanup.
 
 ## Engine Status
 
@@ -69,3 +69,10 @@
 - Job detail and Home view download actions now expose `Download Audit Report` when a trusted PR Auditor report file is available.
 - History cards and filters now include `PR Auditor` explicitly, with history summaries and downloads reflecting audit-report behavior rather than ECC ZIP packaging.
 - Focused presentation tests now cover PR Auditor detail/history/download behavior, and the full frontend unit suite remains green after the Step 7 changes.
+
+## Step 8 Outputs
+
+- Synthetic backend route coverage now verifies invalid workbook safe errors, missing-upload create validation, completed happy-path persistence, audit report download, and post-restart history/detail reload behavior for PR Auditor.
+- Synthetic worker lifecycle coverage now verifies completed, cancelled-with-partial-result, and safe failed-finalization outcomes for PR Auditor without requiring an approved engine pin.
+- Synthetic concurrency coverage now verifies two concurrent PR Auditor jobs retain distinct job ids, isolated workspace roots, and distinct persisted audit-report paths.
+- A transactional job-id reservation fix now keeps generated `PR-YYYYMMDD-NNN` identifiers reserved through job creation, preventing concurrent create races from collapsing multiple jobs onto the same id before the `Job` record is written.

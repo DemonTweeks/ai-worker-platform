@@ -14,7 +14,7 @@ const workerStateService = require('./workerStateService');
 const jobQueue = require('../queue/jobQueue');
 const { JOB_EVENTS, publishJobEvent } = require('../websocket/eventPublisher');
 const { answerReAsk } = require('../llm/reAskService');
-const { generateUniqueJobId } = require('../utils/jobIdGenerator');
+const { reserveUniqueJobId } = require('../utils/jobIdGenerator');
 const { assertPathInsideRoot, toStorageRelativePath } = require('../utils/pathUtils');
 const { createApiError } = require('../utils/apiError');
 const { sanitizeRanStageName } = require('../workers/ranFailureService');
@@ -379,6 +379,7 @@ const createMwJob = async ({
     idempotencyKey: normalizedIdempotencyKey
   }, async () => {
     let jobId = null;
+    let releaseJobIdReservation = null;
 
     try {
       const replayResult = await buildIdempotentReplayResult({
@@ -394,7 +395,9 @@ const createMwJob = async ({
       if (upload.uploadKind && upload.uploadKind !== UPLOAD_KINDS.MW_EXPORT) {
         throw createApiError(400, 'VALIDATION_ERROR', 'prevalidatedFileId must reference an iEPMS export upload.');
       }
-      jobId = await generateUniqueJobId();
+      const jobIdReservation = await reserveUniqueJobId();
+      jobId = jobIdReservation.jobId;
+      releaseJobIdReservation = jobIdReservation.release;
       await storageService.createJobFolders(jobId);
 
       const inputPath = storageService.resolveJobInputPath(jobId, upload.originalFileName);
@@ -465,6 +468,10 @@ const createMwJob = async ({
         ]).catch(() => {});
       }
       throw error;
+    } finally {
+      if (releaseJobIdReservation) {
+        releaseJobIdReservation();
+      }
     }
   });
 };
@@ -502,6 +509,7 @@ const createRanJob = async ({
     idempotencyKey: normalizedIdempotencyKey
   }, async () => {
     let jobId = null;
+    let releaseJobIdReservation = null;
 
     try {
       const replayResult = await buildIdempotentReplayResult({
@@ -520,7 +528,9 @@ const createRanJob = async ({
       assertUploadKind(bomUpload, UPLOAD_KINDS.RAN_BOM, 'BOM');
       assertUploadKind(epmsUpload, UPLOAD_KINDS.RAN_EPMS, 'EPMS');
 
-      jobId = await generateUniqueJobId();
+      const jobIdReservation = await reserveUniqueJobId();
+      jobId = jobIdReservation.jobId;
+      releaseJobIdReservation = jobIdReservation.release;
       await storageService.createJobFolders(jobId);
 
       const retentionUntil = addRetentionDays();
@@ -617,6 +627,10 @@ const createRanJob = async ({
         ]).catch(() => {});
       }
       throw error;
+    } finally {
+      if (releaseJobIdReservation) {
+        releaseJobIdReservation();
+      }
     }
   });
 };
@@ -650,6 +664,7 @@ const createPrAuditorJob = async ({
     idempotencyKey: normalizedIdempotencyKey
   }, async () => {
     let jobId = null;
+    let releaseJobIdReservation = null;
 
     try {
       const replayResult = await buildIdempotentReplayResult({
@@ -670,7 +685,9 @@ const createPrAuditorJob = async ({
       assertUploadKind(epmsUpload, UPLOAD_KINDS.PR_AUDITOR_EPMS, 'EPMS');
       assertUploadKind(prModelUpload, UPLOAD_KINDS.PR_AUDITOR_PR_MODEL, 'PR Model');
 
-      jobId = await generateUniqueJobId();
+      const jobIdReservation = await reserveUniqueJobId();
+      jobId = jobIdReservation.jobId;
+      releaseJobIdReservation = jobIdReservation.release;
       await storageService.createJobFolders(jobId);
 
       const retentionUntil = addRetentionDays();
@@ -778,6 +795,10 @@ const createPrAuditorJob = async ({
         ]).catch(() => {});
       }
       throw error;
+    } finally {
+      if (releaseJobIdReservation) {
+        releaseJobIdReservation();
+      }
     }
   });
 };
