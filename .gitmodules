@@ -7,3 +7,6 @@
 [submodule "skills/create-pr-cd-ran"]
 	path = skills/create-pr-cd-ran
 	url = https://github.com/ammarofficial11/create-pr-cd-ran.git
+[submodule "skills/tx-pr-auditor"]
+	path = skills/tx-pr-auditor
+	url = https://github.com/BL2ZteSolution/tx-pr-auditor.git
