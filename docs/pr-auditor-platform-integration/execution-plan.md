@@ -66,8 +66,8 @@
 - [x] Step 9: Run MW PR and RAN PR regression validation plus build/test verification, then perform changed-scope review and review findings cleanup.
 - [x] Step 10: Browser/UI validation in a rendered session.
 - [x] Step 11: Review, final verification, and Draft PR preparation.
-- [ ] Step 12: Push feature branch and open exactly one Draft PR.
+- [x] Step 12: Push feature branch and open exactly one Draft PR.
 
 ## Immediate Next Step
 
-- [ ] Execute bounded Step 12 only: push the feature branch and open exactly one Draft PR that records the unresolved engine safety gate, verification evidence, and remaining human-UAT merge gate.
+- [x] Execute bounded Step 12 only: push the feature branch and open exactly one Draft PR that records the unresolved engine safety gate, verification evidence, and remaining human-UAT merge gate.
