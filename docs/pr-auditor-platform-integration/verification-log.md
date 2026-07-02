@@ -66,3 +66,28 @@
    Result: pass.
 5. Re-ran `npm run test:job-service-workers`.
    Result: pass; Step 3 backend create/list/detail coverage remains green after Step 4 changes.
+
+## 2026-07-03 Phase 0 Step 5
+
+1. Added failing tests:
+   `backend/scripts/pr-auditor-output-ingestion-test.js`
+   `backend/scripts/pr-auditor-summary-metadata-test.js`
+   Result: initial red phase failed because approved output ingestion and PR Auditor summary propagation were not implemented yet.
+2. Implemented approved output ingestion and trusted summary persistence:
+   `backend/src/workers/prAuditorOutputIngestionService.js`,
+   `backend/src/models/Job.js`,
+   `backend/src/models/JobFile.js`,
+   `backend/src/services/reportGenerator.js`,
+   `backend/src/services/finalSummaryService.js`,
+   `backend/src/services/jobService.js`.
+   Result: PR Auditor now has a constrained output-ingestion path that records only approved artifacts plus trusted structured summary metadata.
+3. Ran `node scripts/pr-auditor-output-ingestion-test.js`.
+   Result: pass.
+4. Ran `node scripts/pr-auditor-summary-metadata-test.js`.
+   Result: pass.
+5. Re-ran `node scripts/pr-auditor-workspace-test.js`.
+   Result: pass.
+6. Re-ran `node scripts/pr-auditor-adapter-test.js`.
+   Result: pass.
+7. Re-ran `npm run test:job-service-workers`.
+   Result: pass; prior PR Auditor registration and job payload coverage remains green after Step 5 changes.

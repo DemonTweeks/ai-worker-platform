@@ -305,6 +305,7 @@ const serializeJobSummary = (job) => ({
   outputFileCount: job.outputFileCount,
   reviewRequiredCount: job.reviewRequiredCount,
   warningCount: job.warningCount,
+  auditSummary: job.auditSummary || null,
   finalWorkerSummary: job.finalWorkerSummary,
   browserTabSessionId: job.browserTabSessionId || null,
   idempotencyKey: job.idempotencyKey || null,

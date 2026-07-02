@@ -13,6 +13,7 @@ const WARNING_REPORT_FILE = 'Error_Warning_Report.xlsx';
 const REVIEW_REPORT_FILE = 'Review_Required_Report.xlsx';
 const SUMMARY_FILE = 'Summary.json';
 const ECC_OUTPUT_FILE_TYPES = ['ecc_output', 'ran_ecc_output', 'ran_ecc_output_with_general_items'];
+const PR_AUDITOR_OUTPUT_FILE_TYPES = ['pr_audit_result_xlsx'];
 
 const setColumns = (worksheet, columns) => {
   worksheet.columns = columns;
@@ -166,6 +167,7 @@ const buildSummaryData = async (jobId) => {
 
   return {
     jobId: job.jobId,
+    workerId: job.workerId || null,
     workerType: job.workerType,
     prScope: job.prScope || 'TSS',
     generationScope: job.generationScope,
@@ -180,7 +182,8 @@ const buildSummaryData = async (jobId) => {
     startedAt: normalizeDate(job.startedAt),
     completedAt: normalizeDate(job.completedAt),
     assetVersions: job.assetVersions || {},
-    finalWorkerSummary: job.finalWorkerSummary || ''
+    finalWorkerSummary: job.finalWorkerSummary || '',
+    auditSummary: job.auditSummary || null
   };
 };
 

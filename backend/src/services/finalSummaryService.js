@@ -1,5 +1,6 @@
 const { Job } = require('../models');
 const { buildFinalSummaryWording } = require('../llm/finalSummaryWordingService');
+const { WORKER_IDS } = require('../workers/workerTypes');
 
 const buildFinalSummary = ({ job, summary }) => {
   if (job.status === 'failed') {
@@ -8,6 +9,33 @@ const buildFinalSummary = ({ job, summary }) => {
 
   if (job.status === 'cancelled' || job.status === 'cancelled_with_partial_result') {
     return 'Task cancelled. Any completed partial output files have been preserved where available.';
+  }
+
+  if (job.workerId === WORKER_IDS.PR_AUDITOR) {
+    const auditSummary = summary.auditSummary;
+
+    if (auditSummary) {
+      return [
+        'Audit report generated.',
+        '',
+        `Normal: ${auditSummary.normalCount}`,
+        `Invalid PO: ${auditSummary.invalidPoCount}`,
+        `Wrong PO: ${auditSummary.wrongPoCount}`,
+        `Duplicate PO: ${auditSummary.duplicatePoCount}`,
+        `Review Required: ${auditSummary.reviewRequiredCount}`,
+        `Warnings: ${auditSummary.warnings.length}`,
+        '',
+        'Download Audit Report from the job detail page.'
+      ].join('\n');
+    }
+
+    return [
+      'Audit report generated.',
+      '',
+      'Detailed findings are available in the workbook.',
+      '',
+      'Download Audit Report from the job detail page.'
+    ].join('\n');
   }
 
   const noEccExplanation = (summary.matchedSiteCount || 0) > 0 && (summary.outputFileCount || 0) === 0

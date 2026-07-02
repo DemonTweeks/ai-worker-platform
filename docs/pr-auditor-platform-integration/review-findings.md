@@ -1,5 +1,5 @@
 # Review Findings
 
-Status: pending broader implementation and verification review.
+Status: pending frontend integration and broader verification review.
 
-No code-review findings are recorded yet because implementation has only reached backend registration plus runtime scaffolding, and it has not yet introduced approved output ingestion, frontend UI, or final verification coverage.
+No code-review findings are recorded yet. The backend now includes PR Auditor output-ingestion and trusted summary-persistence scaffolding, but frontend UI integration and end-to-end verification are still pending before a meaningful broader review pass.

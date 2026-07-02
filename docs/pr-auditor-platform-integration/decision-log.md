@@ -10,3 +10,5 @@
 6. Delivery decision: model PR Auditor delivery around direct audit report download plus optional trusted structured summary, not around ECC ZIP packaging as the primary user-facing outcome.
 7. Step 3 implementation decision: register PR Auditor with placeholder manifest metadata (`engineVersion: pending-safe-pin`, `engineCommit: unapproved`) so backend create/list/detail contracts can be wired before any engine pin or runtime execution is approved.
 8. Step 4 implementation decision: scaffold PR Auditor workspace preparation and explicit command construction now, but fail closed before runtime execution with `PR_AUDITOR_ENGINE_PIN_UNAPPROVED` until the engine safety gate is cleared.
+9. Step 5 ingestion decision: trust only an explicit `pr_audit_summary.json` sidecar for PR Auditor counts and warnings; do not parse arbitrary Excel report content just to populate UI summary fields.
+10. Step 5 history/detail decision: extend shared job/report summary contracts additively with `auditSummary` so PR Auditor can reuse existing history/detail pipelines without changing MW or RAN payload semantics.

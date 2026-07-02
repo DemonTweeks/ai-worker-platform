@@ -7,11 +7,11 @@
 - Feature branch: `feature/pr-auditor-platform-integration`
 - Baseline: `origin/main` at `ec82e58f26055146a3b2403d6106e8809e994ad3`
 - Current phase: `phase-0`
-- Current bounded step: `4. Upload validation and isolated workspace implementation`
+- Current bounded step: `5. Output collection, safe summary, history, and download integration`
 - Completed: `false`
 - Acceptance status: `in_progress`
 - Human acceptance status: `not_started`
-- Next action: Implement bounded Step 5 by adding PR Auditor approved output collection, safe summary persistence scaffolding, and download/history integration without altering MW PR, RAN PR, or PR Creator behavior.
+- Next action: Implement bounded Step 6 by adding the dedicated top-level PR Auditor frontend entry point and three-upload launch flow with the required notice text.
 
 ## Engine Status
 
@@ -48,3 +48,10 @@
 - PR Auditor workspace preparation now copies only approved engine directories and stages only the current job uploads with explicit runtime paths.
 - PR Auditor adapter now builds deterministic explicit-path command arguments and fails closed with `PR_AUDITOR_ENGINE_PIN_UNAPPROVED` until a safe engine pin is approved.
 - Focused backend tests now cover workspace preparation and runtime closed-gate behavior.
+
+## Step 5 Outputs
+
+- Approved PR Auditor output ingestion now tracks only `PR_Audit_Result.xlsx` and optional trusted `pr_audit_summary.json` artifacts.
+- Backend job storage now persists trusted `auditSummary` metadata plus `reviewRequiredCount`, `warningCount`, and report-backed `outputFileCount` for PR Auditor jobs.
+- Shared summary/report generation now carries PR Auditor audit summary metadata into history/detail payloads and produces PR Auditor-specific final summary wording without parsing arbitrary workbook content.
+- Focused backend tests now cover output ingestion and trusted audit summary propagation in addition to prior workspace and adapter coverage.
