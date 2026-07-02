@@ -1,7 +1,22 @@
-export const formatDateTime = (value) => {
-  if (!value) return 'Not available';
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+export const formatDateTime = (value, locale = undefined, options = {}) => {
+  if (value === null || value === undefined || value === '') return 'Not available';
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Not available';
+
+  const datePart = date.toLocaleDateString(locale, {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    ...options
+  });
+  const timePart = date.toLocaleTimeString(locale, {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    ...options
+  });
+
+  return `${datePart}, ${timePart}`;
 };
 
 export const formatBytes = (value) => {

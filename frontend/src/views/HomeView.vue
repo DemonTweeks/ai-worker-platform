@@ -394,7 +394,7 @@
         </div>
         <div class="console-meta">
           <span>{{ connectionStatus }}</span>
-          <span>{{ updatedAt || 'No live update yet' }}</span>
+          <span>{{ updatedAt ? formatDateTime(updatedAt) : 'No live update yet' }}</span>
         </div>
       </div>
 
@@ -432,6 +432,7 @@ import JobWebSocketClient from '../services/websocketClient';
 import { cancelJob, createJob, getErrorMessage, getHealth, getJobDetail, getZipDownloadUrl, listJobs, listRanProjects, prevalidateUpload } from '../api/jobApi';
 import { askJob } from '../api/reAskApi';
 import { displayMessage, isTerminalStatus } from '../utils/statusUtils';
+import { formatDateTime } from '../utils/formatUtils';
 import {
   scheduleNotificationDismiss,
   isWorkerTimeoutError,
@@ -772,7 +773,7 @@ export default {
           title: `Job ${this.currentJobId}`,
           body: `Status ${this.currentStatus || 'created'} with ${this.activeWorkerLabel} in ${this.activeModeLabel} mode.`,
           tone: 'info',
-          time: this.updatedAt
+          time: this.updatedAt ? formatDateTime(this.updatedAt) : ''
         });
       }
 
@@ -788,30 +789,32 @@ export default {
           title: this.currentPhase || this.currentStatus || 'Progress update',
           body: progressParts.join(' / '),
           tone: this.siteCountPayload.failed > 0 ? 'warning' : 'info',
-          time: this.updatedAt
+          time: this.updatedAt ? formatDateTime(this.updatedAt) : ''
         });
       }
 
       this.events.slice().reverse().forEach((event, index) => {
+        const eventTime = event.updatedAt || event.timestamp || '';
         items.push({
           id: `event-${event.timestamp || index}-${event.type || 'message'}`,
           label: event.type || 'Event',
           title: event.status || event.currentPhase || 'Worker event',
           body: event.displayText || displayMessage(event),
           tone: event.status && event.status.toLowerCase().includes('fail') ? 'danger' : 'info',
-          time: event.updatedAt || event.timestamp || ''
+          time: eventTime ? formatDateTime(eventTime) : ''
         });
       });
 
       if (this.jobDetail && this.jobDetail.job) {
         const job = this.jobDetail.job;
+        const formattedJobUpdatedAt = job.updatedAt ? formatDateTime(job.updatedAt) : (this.updatedAt ? formatDateTime(this.updatedAt) : '');
         items.push({
           id: 'result-state',
           label: 'Result',
           title: `Result ${job.status || 'available'}`,
           body: this.resultCompletionMessage,
           tone: this.resultTone,
-          time: job.updatedAt || this.updatedAt
+          time: formattedJobUpdatedAt
         });
 
         const finalSummary = this.jobDetail.finalWorkerSummary || job.finalWorkerSummary || '';
@@ -822,7 +825,7 @@ export default {
             title: 'Final worker summary',
             body: finalSummary,
             tone: 'info',
-            time: job.updatedAt || this.updatedAt
+            time: formattedJobUpdatedAt
           });
         }
 
@@ -833,7 +836,7 @@ export default {
             title: 'Job error',
             body: job.error.message,
             tone: 'danger',
-            time: job.updatedAt || this.updatedAt
+            time: formattedJobUpdatedAt
           });
         }
       }
@@ -845,7 +848,7 @@ export default {
           title: message.role === 'user' ? 'Question' : 'Worker answer',
           body: message.body,
           tone: message.tone || (message.role === 'user' ? 'user' : 'success'),
-          time: message.timestamp || '',
+          time: message.timestamp ? formatDateTime(message.timestamp) : '',
           role: message.role,
           meta: message.meta || ''
         });
@@ -901,6 +904,7 @@ export default {
     }
   },
   methods: {
+    formatDateTime,
     initializeBrowserTabSessionId() {
       const existing = sessionStorage.getItem(BROWSER_TAB_SESSION_STORAGE_KEY);
 
@@ -1098,10 +1102,9 @@ export default {
         this.ranProjects = [];
         this.ranProjectLoadError = getErrorMessage(error);
       } finally {
-        this.ranProjectLoading = false;
-      }
-    },
-    async checkHealth() {
+        }
+
+      async checkHealth() {
       try {
         this.health = await getHealth();
         this.healthError = false;
@@ -1424,7 +1427,7 @@ export default {
         tone,
         label,
         meta,
-        timestamp: new Date().toLocaleTimeString()
+        timestamp: new Date().toISOString()
       });
       this.consoleAutoStick = true;
       this.$nextTick(() => {

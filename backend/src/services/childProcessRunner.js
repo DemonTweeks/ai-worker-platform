@@ -264,13 +264,21 @@ const runCommand = ({ command, args, cwd, timeoutMs, isCancellationRequested, en
     }
   }, 500);
 
-  child.stdout.on('data', (data) => {
-    stdout += data.toString();
-  });
+child.stdout.on('data', (data) => {
+    const text = data.toString();
 
-  child.stderr.on('data', (data) => {
-    stderr += data.toString();
-  });
+    stdout += text;
+
+    process.stdout.write(text);
+});
+
+child.stderr.on('data', (data) => {
+    const text = data.toString();
+
+    stderr += text;
+
+    process.stderr.write(text);
+});
 
   child.on('error', (error) => {
     stderr += error.message;
@@ -335,6 +343,18 @@ const runCreatePrCd = async ({
       timeoutMs,
       isCancellationRequested
     });
+
+    if (result.stdout) {
+    console.log("========== PYTHON OUTPUT ==========");
+    console.log(result.stdout);
+    console.log("===================================");
+}
+
+if (result.stderr) {
+    console.error("========== PYTHON ERRORS ==========");
+    console.error(result.stderr);
+    console.error("===================================");
+}
 
     runs.push({
       scope,

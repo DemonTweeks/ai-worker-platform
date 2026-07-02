@@ -37,6 +37,7 @@
 <script>
 import HealthStatusCard from '../../components/admin/HealthStatusCard.vue';
 import ErrorBanner from '../../components/ErrorBanner.vue';
+import { formatDateTime } from '../../utils/formatUtils';
 import { getHealth, getErrorMessage } from '../../api/jobApi';
 
 export default {
@@ -60,7 +61,9 @@ export default {
       return this.services.backend && this.services.backend.status ? this.services.backend.status : this.health && this.health.status ? this.health.status : 'Not available';
     },
     timestamp() {
-      return this.health && this.health.timestamp ? `Updated ${this.health.timestamp}` : '';
+      if (!this.health || !this.health.timestamp) return '';
+      const formatted = formatDateTime(this.health.timestamp);
+      return formatted === 'Not available' ? '' : `Updated ${formatted}`;
     },
     firebaseStatus() {
       return this.services.firebase && this.services.firebase.status ? this.services.firebase.status : 'Not available';
