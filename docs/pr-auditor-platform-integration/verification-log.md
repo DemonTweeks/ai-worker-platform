@@ -209,3 +209,32 @@
    Result: pass; the dedicated PR Auditor worker label, completed status, trusted summary counts, warning table, and downloadable `Audit Report` / `Audit Summary JSON` artifacts render correctly.
 7. Ran `git diff --check`.
    Result: pass aside from existing CRLF normalization warnings in the frontend working tree; no patch-format errors were reported.
+
+## 2026-07-03 Phase 0 Step 11
+
+1. Ran `npm test` in `frontend/`.
+   Result: pass; all 55 frontend unit tests passed, `vite build` succeeded, and route smoke checks passed in one fresh aggregate run.
+2. Ran `npm test` in `backend/`.
+   Result: pass; the aggregate backend suite succeeded again, covering smoke, LLM-provider hardening, health/preflight, integration, RAN adapter/routes/live-runtime/worker-service, queue registry, job-control concurrency, prevalidate guard, and shared worker payload validation.
+3. Ran `node scripts/pr-auditor-worker-service-test.js`.
+   Result: pass; PR Auditor synthetic lifecycle handling remains green.
+4. Ran `node scripts/pr-auditor-route-test.js`.
+   Result: pass; PR Auditor create/detail/history/download persistence and safe invalid-workbook handling remain green.
+5. Ran `node scripts/pr-auditor-concurrency-test.js`.
+   Result: pass; PR Auditor concurrent-job workspace isolation remains green.
+6. Ran `node scripts/ran-history-reload-test.js`.
+   Initial result after a previously interrupted shell run: fail; the script expected `201` but got `200` because it restarted with the same `ran-history-1` idempotency key and correctly replayed the prior persisted create request.
+7. Updated `backend/scripts/ran-history-reload-test.js` to generate a unique per-process idempotency prefix via `crypto.randomUUID()`.
+   Result: reruns now avoid inheriting interrupted prior-run state while preserving the production idempotency contract under test.
+8. Re-ran `node scripts/ran-history-reload-test.js`.
+   Result: pass; history, detail, and ZIP download all reload correctly after restart for a completed RAN general-item job, and the regression harness is now repeatable across interrupted local runs.
+9. Ran `node scripts/ran-concurrency-test.js`.
+   Result: pass; concurrent RAN jobs retained distinct workspace roots, isolated staged inputs, and distinct persisted outputs.
+10. Ran `node scripts/ran-invalid-safe-error-test.js`.
+    Result: pass; invalid-input and safe-error handling remained correct for RAN jobs.
+11. Ran `node scripts/ran-golden-test.js`.
+    Result: pass; both the standard and general-item RAN golden runs completed successfully and their retained ECC workbooks still matched the pinned upstream logical workbook references.
+12. Ran `git diff --check`.
+    Result: pass aside from CRLF normalization warnings; no patch-format errors were reported.
+13. Reviewed `git diff --name-only origin/main...HEAD` for forbidden committed artifacts.
+    Result: no `.xlsx`, `.xls`, `.zip`, runtime cache, `dist/`, `node_modules/`, `.tmp/`, or `.env` paths are present in the intended diff.

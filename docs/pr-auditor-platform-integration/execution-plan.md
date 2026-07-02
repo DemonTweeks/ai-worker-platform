@@ -65,9 +65,9 @@
 - [x] Step 8: Add synthetic backend and engine validation for happy path, missing upload, invalid workbook, concurrent isolation, cancellation, history reload, and download behavior.
 - [x] Step 9: Run MW PR and RAN PR regression validation plus build/test verification, then perform changed-scope review and review findings cleanup.
 - [x] Step 10: Browser/UI validation in a rendered session.
-- [ ] Step 11: Review, final verification, and Draft PR preparation.
+- [x] Step 11: Review, final verification, and Draft PR preparation.
 - [ ] Step 12: Push feature branch and open exactly one Draft PR.
 
 ## Immediate Next Step
 
-- [ ] Execute bounded Step 11 only: run final review and verification, update completion artifacts, and prepare the single Draft PR while preserving the unresolved engine pin safety gate in the final report.
+- [ ] Execute bounded Step 12 only: push the feature branch and open exactly one Draft PR that records the unresolved engine safety gate, verification evidence, and remaining human-UAT merge gate.
