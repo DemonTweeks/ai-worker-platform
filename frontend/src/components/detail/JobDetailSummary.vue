@@ -2,28 +2,17 @@
   <section class="panel">
     <h2>Job Summary</h2>
     <div class="detail-grid">
-      <span><small>Status</small><strong>{{ statusLabel(job.status) }}</strong></span>
-      <span><small>Worker</small><strong>{{ job.workerDisplayName || job.workerType || 'pr-worker' }}</strong></span>
-      <span><small>Worker ID</small><strong>{{ job.workerId || 'mw-pr' }}</strong></span>
-      <span><small>PR Scope</small><strong>{{ job.prScope || 'N/A' }}</strong></span>
-      <span><small>Run Mode</small><strong>{{ job.runMode || 'N/A' }}</strong></span>
-      <span><small>Project</small><strong>{{ job.selectedProject || 'N/A' }}</strong></span>
-      <span><small>Engine Version</small><strong>{{ job.engineVersion || 'N/A' }}</strong></span>
-      <span><small>Engine Commit</small><strong>{{ job.engineCommit || 'N/A' }}</strong></span>
-      <span><small>Generation</small><strong>{{ generationScopeLabel(job.generationScope) }}</strong></span>
-      <span><small>Requested</small><strong>{{ job.requestedSiteCount || 0 }}</strong></span>
-      <span><small>Matched</small><strong>{{ job.matchedSiteCount || 0 }}</strong></span>
-      <span><small>Unmatched</small><strong>{{ job.unmatchedSiteCount || 0 }}</strong></span>
-      <span><small>Outputs</small><strong>{{ job.outputFileCount || 0 }}</strong></span>
-      <span><small>Review Required</small><strong>{{ job.reviewRequiredCount || 0 }}</strong></span>
-      <span><small>Warnings</small><strong>{{ job.warningCount || 0 }}</strong></span>
-      <span><small>Created</small><strong>{{ formatDateTime(job.createdAt) }}</strong></span>
-      <span><small>Started</small><strong>{{ formatDateTime(job.startedAt) }}</strong></span>
-      <span><small>Completed</small><strong>{{ formatDateTime(job.completedAt) }}</strong></span>
-      <span><small>Cancelled</small><strong>{{ formatDateTime(job.cancelledAt) }}</strong></span>
-      <span v-if="job.cancellation"><small>Cancelled By</small><strong>{{ job.cancellation.requestedBy || 'User' }}</strong></span>
-      <span v-if="job.cancellation"><small>Reason</small><strong>{{ job.cancellation.reasonText || job.cancellation.reasonLabel }}</strong></span>
+      <span v-for="item in summaryItems" :key="item.label"><small>{{ item.label }}</small><strong>{{ item.value }}</strong></span>
     </div>
+    <div v-if="isPrAuditorJob && auditSummary" class="detail-grid">
+      <span><small>Normal</small><strong>{{ auditSummary.normalCount }}</strong></span>
+      <span><small>Invalid PO</small><strong>{{ auditSummary.invalidPoCount }}</strong></span>
+      <span><small>Wrong PO</small><strong>{{ auditSummary.wrongPoCount }}</strong></span>
+      <span><small>Duplicate PO</small><strong>{{ auditSummary.duplicatePoCount }}</strong></span>
+      <span><small>Review Required</small><strong>{{ auditSummary.reviewRequiredCount }}</strong></span>
+      <span><small>Warnings</small><strong>{{ auditSummary.warnings.length }}</strong></span>
+    </div>
+    <p v-else-if="isPrAuditorJob" class="muted">Audit Result summary counts are not trusted yet. Detailed findings remain in the workbook download.</p>
     <p v-if="zeroOutputNotice" class="completion-message" :class="zeroOutputTone">{{ zeroOutputNotice }}</p>
     <p v-if="job.error && job.error.message" class="error-text">{{ job.error.message }}</p>
   </section>
@@ -39,7 +28,57 @@ export default {
     job: { type: Object, required: true }
   },
   computed: {
+    isPrAuditorJob() {
+      return this.job.workerId === 'pr-auditor';
+    },
+    auditSummary() {
+      return this.job.auditSummary || null;
+    },
+    summaryItems() {
+      const common = [
+        { label: 'Status', value: statusLabel(this.job.status) },
+        { label: 'Worker', value: this.job.workerDisplayName || this.job.workerType || 'pr-worker' },
+        { label: 'Worker ID', value: this.job.workerId || 'mw-pr' },
+        { label: 'Engine Version', value: this.job.engineVersion || 'N/A' },
+        { label: 'Engine Commit', value: this.job.engineCommit || 'N/A' },
+        { label: 'Outputs', value: this.job.outputFileCount || 0 },
+        { label: 'Review Required', value: this.job.reviewRequiredCount || 0 },
+        { label: 'Warnings', value: this.job.warningCount || 0 },
+        { label: 'Created', value: formatDateTime(this.job.createdAt) },
+        { label: 'Started', value: formatDateTime(this.job.startedAt) },
+        { label: 'Completed', value: formatDateTime(this.job.completedAt) },
+        { label: 'Cancelled', value: formatDateTime(this.job.cancelledAt) }
+      ];
+
+      if (this.job.cancellation) {
+        common.push(
+          { label: 'Cancelled By', value: this.job.cancellation.requestedBy || 'User' },
+          { label: 'Reason', value: this.job.cancellation.reasonText || this.job.cancellation.reasonLabel }
+        );
+      }
+
+      if (this.isPrAuditorJob) {
+        return common;
+      }
+
+      return [
+        common[0],
+        common[1],
+        common[2],
+        { label: 'PR Scope', value: this.job.prScope || 'N/A' },
+        { label: 'Run Mode', value: this.job.runMode || 'N/A' },
+        { label: 'Project', value: this.job.selectedProject || 'N/A' },
+        common[3],
+        common[4],
+        { label: 'Generation', value: generationScopeLabel(this.job.generationScope) },
+        { label: 'Requested', value: this.job.requestedSiteCount || 0 },
+        { label: 'Matched', value: this.job.matchedSiteCount || 0 },
+        { label: 'Unmatched', value: this.job.unmatchedSiteCount || 0 },
+        ...common.slice(5)
+      ];
+    },
     zeroOutputNotice() {
+      if (this.isPrAuditorJob) return '';
       if (!(this.job.matchedSiteCount > 0 && this.job.outputFileCount === 0)) return '';
       if (this.job.status === 'failed') {
         return this.job.error && this.job.error.message

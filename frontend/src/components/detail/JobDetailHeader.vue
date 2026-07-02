@@ -6,7 +6,7 @@
     </div>
     <div class="badge-row">
       <JobStatusBadge :status="job.status" />
-      <JobScopeBadge :scope="job.prScope" />
+      <JobScopeBadge v-if="showScopeBadge" :scope="job.prScope" />
     </div>
   </section>
 </template>
@@ -25,6 +25,9 @@ export default {
     job: { type: Object, required: true }
   },
   computed: {
+    showScopeBadge() {
+      return Boolean(this.job.prScope);
+    },
     workerEyebrow() {
       const displayName = this.job.workerDisplayName || this.job.workerType || 'PR Worker';
       return this.job.workerId ? `${displayName} • ${this.job.workerId}` : displayName;

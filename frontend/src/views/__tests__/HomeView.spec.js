@@ -8,6 +8,7 @@ vi.mock('../../api/jobApi', () => ({
   cancelJob: vi.fn(),
   createJob: vi.fn(),
   getErrorMessage: vi.fn((error) => error.userMessage || error.message || 'Request failed.'),
+  getFileDownloadUrl: vi.fn((jobId, fileId) => `/jobs/${jobId}/download/${fileId}`),
   getHealth: vi.fn(async () => ({ status: 'ok' })),
   getJobDetail: vi.fn(),
   getZipDownloadUrl: vi.fn(() => '/download.zip'),
@@ -684,5 +685,44 @@ describe('HomeView worker notifications', () => {
     }));
     expect(wrapper.vm.currentJobId).toBe('AUDIT-123');
     expect(connectSpy).toHaveBeenCalledWith('AUDIT-123');
+  });
+
+  it('shows PR Auditor result delivery as an audit report download instead of a ZIP download', async () => {
+    const wrapper = mountView();
+    await flushPromises();
+    await wrapper.setData({
+      currentJobId: 'AUDIT-RESULT-1',
+      currentStatus: 'completed',
+      jobDetail: {
+        job: {
+          jobId: 'AUDIT-RESULT-1',
+          workerId: 'pr-auditor',
+          workerDisplayName: 'PR Auditor',
+          status: 'completed',
+          outputFileCount: 1,
+          warningCount: 2,
+          reviewRequiredCount: 5,
+          auditSummary: {
+            normalCount: 4,
+            invalidPoCount: 1,
+            wrongPoCount: 2,
+            duplicatePoCount: 3,
+            reviewRequiredCount: 5,
+            warnings: ['warning-a', 'warning-b']
+          }
+        },
+        outputs: [
+          {
+            id: 'audit-result-1',
+            fileType: 'pr_audit_result_xlsx',
+            available: true,
+            exists: true
+          }
+        ]
+      }
+    });
+
+    expect(wrapper.text()).toContain('Download Audit Report');
+    expect(wrapper.text()).not.toContain('Download ZIP');
   });
 });

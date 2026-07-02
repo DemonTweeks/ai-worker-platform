@@ -104,3 +104,26 @@
    Result: pass; focused PR Auditor launch tests and existing Home view tests are green.
 5. Ran `npm run test:unit`.
    Result: pass; all 51 frontend unit tests passed after the Step 6 changes.
+
+## 2026-07-03 Phase 0 Step 7
+
+1. Added failing focused frontend tests in:
+   `frontend/src/components/history/__tests__/JobHistoryCard.spec.js`,
+   `frontend/src/components/detail/__tests__/JobDetailMetadata.spec.js`,
+   `frontend/src/views/__tests__/JobHistoryView.spec.js`,
+   `frontend/src/views/__tests__/HomeView.spec.js`.
+   Result: initial red phase failed because history filters omitted PR Auditor and detail/history/download surfaces still assumed ZIP/ECC-oriented PR worker outputs.
+2. Implemented PR Auditor-specific detail/history/download presentation in:
+   `frontend/src/components/history/JobHistoryFilters.vue`,
+   `frontend/src/components/history/JobHistoryCard.vue`,
+   `frontend/src/components/detail/JobDetailHeader.vue`,
+   `frontend/src/components/detail/JobDetailSummary.vue`,
+   `frontend/src/components/detail/JobDetailFiles.vue`,
+   `frontend/src/components/FinalSummary.vue`,
+   `frontend/src/views/JobDetailView.vue`,
+   `frontend/src/views/HomeView.vue`.
+   Result: PR Auditor now has worker-aware audit summary and audit report download rendering across the launch/result, job detail, and history surfaces.
+3. Ran `npm run test:unit -- src/components/history/__tests__/JobHistoryCard.spec.js src/components/detail/__tests__/JobDetailMetadata.spec.js src/views/__tests__/JobHistoryView.spec.js src/views/__tests__/HomeView.spec.js`.
+   Result: pass; all 31 focused presentation tests passed.
+4. Ran `npm run test:unit`.
+   Result: pass; all 55 frontend unit tests passed after the Step 7 changes.

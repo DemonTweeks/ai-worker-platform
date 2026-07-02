@@ -61,11 +61,11 @@
 - [x] Step 4: Implement PR Auditor upload prevalidation, isolated workspace preparation, deterministic Python execution, and safe progress mapping.
 - [x] Step 5: Implement approved output ingestion, safe structured audit summary persistence, history/detail/download integration, and cancellation handling.
 - [x] Step 6: Add the dedicated top-level PR Auditor frontend entry point and three-upload launch flow with required notice text.
-- [ ] Step 7: Update active jobs, job detail, history, filters, and download presentation for PR Auditor-specific summaries.
+- [x] Step 7: Update active jobs, job detail, history, filters, and download presentation for PR Auditor-specific summaries.
 - [ ] Step 8: Add synthetic backend and engine validation for happy path, missing upload, invalid workbook, concurrent isolation, cancellation, history reload, and download behavior.
 - [ ] Step 9: Run MW PR and RAN PR regression validation plus build/test verification, then perform changed-scope review and review findings cleanup.
 - [ ] Step 10: Record final report, create final checkpoint, push the feature branch, and open exactly one Draft PR after all gates pass.
 
 ## Immediate Next Step
 
-- [ ] Execute bounded Step 7 only: update active jobs, job detail, history, filters, and download presentation for PR Auditor-specific summaries.
+- [ ] Execute bounded Step 8 only: add synthetic backend and engine validation for happy path, missing upload, invalid workbook, concurrent isolation, cancellation, history reload, and audit report download behavior.

@@ -49,4 +49,17 @@ describe('JobHistoryView worker-aware filters', () => {
       workerType: 'pr-worker'
     }));
   });
+
+  it('offers PR Auditor in the worker filter options', () => {
+    const wrapper = mount(JobHistoryView, {
+      stubs: {
+        routerLink: true,
+        ErrorBanner: true,
+        JobHistoryCard: true,
+        JobHistoryFilters: false
+      }
+    });
+
+    expect(wrapper.text()).toContain('PR Auditor');
+  });
 });

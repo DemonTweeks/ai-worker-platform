@@ -3,11 +3,11 @@
     <div class="section-title-row">
       <h2>Output Files</h2>
       <a
-        v-if="canDownloadZip"
+        v-if="primaryDownloadUrl"
         class="download-button"
-        :href="zipUrl"
+        :href="primaryDownloadUrl"
       >
-        {{ zipLabel }}
+        {{ primaryDownloadLabel }}
       </a>
     </div>
     <p v-if="isPartialCancelledResult" class="muted">Partial cancelled result only. This package is not a completed delivery.</p>
@@ -57,25 +57,44 @@ const FILE_TYPE_LABELS = {
   review_required_report: 'Review Required Report',
   warning_report: 'Error / Warning Report',
   summary: 'Summary JSON',
-  zip_package: 'ZIP Package'
+  zip_package: 'ZIP Package',
+  pr_audit_result_xlsx: 'Audit Report',
+  pr_audit_summary_json: 'Audit Summary JSON'
 };
 
 export default {
   name: 'JobDetailFiles',
   props: {
     jobId: { type: String, required: true },
+    workerId: { type: String, default: '' },
     outputs: { type: Array, default: () => [] },
     status: { type: String, default: '' }
   },
   computed: {
+    isPrAuditorJob() {
+      return this.workerId === 'pr-auditor';
+    },
     canDownloadZip() {
       return this.outputs.some((file) => file.fileType === 'zip_package' && file.available);
+    },
+    auditReportFile() {
+      return this.outputs.find((file) => file.fileType === 'pr_audit_result_xlsx' && file.available) || null;
     },
     isPartialCancelledResult() {
       return this.status === 'cancelled_with_partial_result';
     },
     zipLabel() {
       return this.isPartialCancelledResult ? 'Download Partial ZIP' : 'Download ZIP';
+    },
+    primaryDownloadLabel() {
+      return this.isPrAuditorJob ? 'Download Audit Report' : this.zipLabel;
+    },
+    primaryDownloadUrl() {
+      if (this.isPrAuditorJob && this.auditReportFile) {
+        return getFileDownloadUrl(this.jobId, this.auditReportFile.id);
+      }
+
+      return this.canDownloadZip ? this.zipUrl : '';
     },
     zipUrl() {
       return getZipDownloadUrl(this.jobId);

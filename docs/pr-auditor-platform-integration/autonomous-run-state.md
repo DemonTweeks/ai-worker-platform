@@ -7,11 +7,11 @@
 - Feature branch: `feature/pr-auditor-platform-integration`
 - Baseline: `origin/main` at `ec82e58f26055146a3b2403d6106e8809e994ad3`
 - Current phase: `phase-0`
-- Current bounded step: `6. Dedicated PR Auditor frontend launch flow`
+- Current bounded step: `7. Job detail, active job, and history/filter presentation`
 - Completed: `false`
 - Acceptance status: `in_progress`
 - Human acceptance status: `not_started`
-- Next action: Implement bounded Step 7 by updating active jobs, job detail, history, filters, and download presentation for PR Auditor-specific summaries.
+- Next action: Implement bounded Step 8 by adding synthetic backend and engine validation for happy path, missing upload, invalid workbook, concurrent isolation, cancellation, history reload, and audit report download behavior.
 
 ## Engine Status
 
@@ -62,3 +62,10 @@
 - The PR Auditor launch flow now shows only the three required uploads: Final PO, EPMS, and PR Model, each with dedicated prevalidation wiring and a `Run Audit` action.
 - The required PR Auditor notice text is now shown in the dedicated launch configuration, while MW/RAN-only controls such as Site mode, Task Type, and General Item project remain hidden from PR Auditor.
 - Focused Home view tests now cover PR Auditor launch copy, three-upload validation flow, and create-job payload behavior, and the full frontend unit suite remains green.
+
+## Step 7 Outputs
+
+- Job detail presentation now renders PR Auditor-specific metadata and trusted audit-result counts without reusing ECC-only wording or ZIP-only assumptions.
+- Job detail and Home view download actions now expose `Download Audit Report` when a trusted PR Auditor report file is available.
+- History cards and filters now include `PR Auditor` explicitly, with history summaries and downloads reflecting audit-report behavior rather than ECC ZIP packaging.
+- Focused presentation tests now cover PR Auditor detail/history/download behavior, and the full frontend unit suite remains green after the Step 7 changes.

@@ -488,7 +488,7 @@ import UploadPanel from '../components/UploadPanel.vue';
 import ErrorBanner from '../components/ErrorBanner.vue';
 import LoadingButton from '../components/LoadingButton.vue';
 import JobWebSocketClient from '../services/websocketClient';
-import { cancelJob, createJob, getErrorMessage, getHealth, getJobDetail, getZipDownloadUrl, listJobs, listRanProjects, prevalidateUpload } from '../api/jobApi';
+import { cancelJob, createJob, getErrorMessage, getFileDownloadUrl, getHealth, getJobDetail, getZipDownloadUrl, listJobs, listRanProjects, prevalidateUpload } from '../api/jobApi';
 import { askJob } from '../api/reAskApi';
 import { displayMessage, isTerminalStatus } from '../utils/statusUtils';
 import {
@@ -746,8 +746,25 @@ export default {
       }
       return this.jobDetail && this.jobDetail.outputs ? this.jobDetail.outputs.length : 0;
     },
+    currentJobWorkerId() {
+      return this.jobDetail && this.jobDetail.job ? (this.jobDetail.job.workerId || '') : '';
+    },
+    isPrAuditorCurrentJob() {
+      return this.currentJobWorkerId === 'pr-auditor';
+    },
+    primaryDownloadFile() {
+      if (!this.jobDetail || !Array.isArray(this.jobDetail.outputs)) {
+        return null;
+      }
+
+      if (this.isPrAuditorCurrentJob) {
+        return this.jobDetail.outputs.find((file) => file.fileType === 'pr_audit_result_xlsx' && file.available) || null;
+      }
+
+      return this.jobDetail.outputs.find((file) => file.fileType === 'zip_package' && file.available) || null;
+    },
     canDownload() {
-      return this.jobDetail && this.jobDetail.outputs && this.jobDetail.outputs.some((file) => file.fileType === 'zip_package' && file.available);
+      return Boolean(this.primaryDownloadFile);
     },
     isCancelledResult() {
       return this.jobDetail && this.jobDetail.job && ['cancelled', 'cancelled_with_partial_result'].includes(this.jobDetail.job.status);
@@ -759,17 +776,28 @@ export default {
       return this.jobDetail && this.jobDetail.job && ['completed', 'completed_with_warning', 'failed', 'cancelled', 'cancelled_with_partial_result'].includes(this.jobDetail.job.status);
     },
     downloadUnavailableMessage() {
-      const zip = this.jobDetail && this.jobDetail.outputs
-        ? this.jobDetail.outputs.find((file) => file.fileType === 'zip_package')
+      const pendingFile = this.jobDetail && this.jobDetail.outputs
+        ? this.jobDetail.outputs.find((file) => (
+          this.isPrAuditorCurrentJob
+            ? file.fileType === 'pr_audit_result_xlsx'
+            : file.fileType === 'zip_package'
+        ))
         : null;
-      if (zip && zip.expired) return 'ZIP has expired based on retention policy.';
-      if (zip && (zip.deletedAt || zip.cleanupReason)) return 'ZIP is unavailable after retention cleanup.';
-      return 'ZIP is not available yet.';
+      if (pendingFile && pendingFile.expired) return this.isPrAuditorCurrentJob ? 'Audit report has expired based on retention policy.' : 'ZIP has expired based on retention policy.';
+      if (pendingFile && (pendingFile.deletedAt || pendingFile.cleanupReason)) return this.isPrAuditorCurrentJob ? 'Audit report is unavailable after retention cleanup.' : 'ZIP is unavailable after retention cleanup.';
+      return this.isPrAuditorCurrentJob ? 'Audit report is not available yet.' : 'ZIP is not available yet.';
     },
     downloadUrl() {
-      return this.currentJobId ? getZipDownloadUrl(this.currentJobId) : '#';
+      if (!this.currentJobId) return '#';
+      if (this.isPrAuditorCurrentJob && this.primaryDownloadFile) {
+        return getFileDownloadUrl(this.currentJobId, this.primaryDownloadFile.id);
+      }
+      return getZipDownloadUrl(this.currentJobId);
     },
     downloadButtonLabel() {
+      if (this.isPrAuditorCurrentJob) {
+        return 'Download Audit Report';
+      }
       return this.isPartialCancelledResult ? 'Download Partial ZIP' : 'Download ZIP';
     },
     deliveryWarningMessage() {
@@ -825,6 +853,14 @@ export default {
         return 'Job cancelled by user after partial output was preserved. Review the package as partial only.';
       }
 
+      if (job.workerId === 'pr-auditor') {
+        const auditSummary = job.auditSummary || null;
+        if (auditSummary) {
+          return `Audit Result ready; Normal ${auditSummary.normalCount}, Invalid PO ${auditSummary.invalidPoCount}, Wrong PO ${auditSummary.wrongPoCount}, Duplicate PO ${auditSummary.duplicatePoCount}, Review Required ${auditSummary.reviewRequiredCount}, warnings ${auditSummary.warnings.length}.`;
+        }
+        return 'Audit report generated. Detailed findings are available in the workbook download.';
+      }
+
       const outputs = this.hasValue(job.outputFileCount)
         ? job.outputFileCount
         : this.outputCount > 0
@@ -854,6 +890,19 @@ export default {
     },
     downloadSummaryItems() {
       const job = this.jobDetail && this.jobDetail.job ? this.jobDetail.job : {};
+      if (job.workerId === 'pr-auditor') {
+        const auditSummary = job.auditSummary || null;
+        return [
+          { label: 'Audit reports', value: this.summaryValue(job.outputFileCount, this.outputCount) },
+          { label: 'Normal', value: auditSummary ? auditSummary.normalCount : 'N/A' },
+          { label: 'Invalid PO', value: auditSummary ? auditSummary.invalidPoCount : 'N/A' },
+          { label: 'Wrong PO', value: auditSummary ? auditSummary.wrongPoCount : 'N/A' },
+          { label: 'Duplicate PO', value: auditSummary ? auditSummary.duplicatePoCount : 'N/A' },
+          { label: 'Review Required', value: this.summaryValue(job.reviewRequiredCount) },
+          { label: 'Warnings', value: this.summaryValue(job.warningCount) }
+        ];
+      }
+
       return [
         { label: 'Requested sites', value: this.summaryValue(job.requestedSiteCount) },
         { label: 'Matched sites', value: this.summaryValue(job.matchedSiteCount) },

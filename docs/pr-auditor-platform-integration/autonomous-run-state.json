@@ -1,6 +1,6 @@
 {
   "missionId": "pr-auditor-platform-integration",
-  "updatedAt": "2026-07-03T05:00:00Z",
+  "updatedAt": "2026-07-03T06:00:00Z",
   "repositoryRoot": "C:\\dev\\ai-worker-platform-pr-auditor",
   "sourceRepositoryRoot": "C:\\dev\\ai-worker-platform",
   "baselineBranch": "main",
@@ -8,8 +8,8 @@
   "featureBranch": "feature/pr-auditor-platform-integration",
   "worktreePath": "C:\\dev\\ai-worker-platform-pr-auditor",
   "currentPhase": "phase-0",
-  "currentBoundedStep": "6. Dedicated PR Auditor frontend launch flow",
-  "nextAction": "Implement bounded Step 7: update active jobs, job detail, history, filters, and download presentation for PR Auditor-specific summaries.",
+  "currentBoundedStep": "7. Job detail, active job, and history/filter presentation",
+  "nextAction": "Implement bounded Step 8: add synthetic backend and engine validation for happy path, missing upload, invalid workbook, concurrent isolation, cancellation, history reload, and audit report download behavior.",
   "completed": false,
   "acceptanceStatus": "in_progress",
   "humanAcceptanceStatus": "not_started",
@@ -50,12 +50,13 @@
     "prAuditorRuntimeGuardImplemented": true,
     "prAuditorOutputIngestionImplemented": true,
     "prAuditorSummaryPersistenceImplemented": true,
-    "prAuditorFrontendLaunchFlowImplemented": true
+    "prAuditorFrontendLaunchFlowImplemented": true,
+    "prAuditorFrontendPresentationImplemented": true
   },
   "knownLimitations": [
     "No approved tx-pr-auditor engine pin has been recorded yet.",
     "PR Auditor workspace preparation and command scaffolding are implemented, but runtime execution remains closed until a safe engine pin is approved.",
-    "PR Auditor now has a dedicated frontend launch flow, but active job detail, history, filtering, and download presentation are still pending PR Auditor-specific rendering.",
-    "PR Auditor backend now persists trusted structured audit summary metadata, but frontend job detail and history surfaces do not render that summary yet."
+    "PR Auditor launch, detail, history, and download presentation are wired, but runtime execution remains blocked until a safe engine pin is approved.",
+    "Synthetic PR Auditor happy-path, cancellation, isolation, download, and MW/RAN regression validation are still pending."
   ]
 }
