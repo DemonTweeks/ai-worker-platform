@@ -18,10 +18,45 @@
 - worker registry / manifests / adapters / services discovered under `backend/src/workers/`
 - engine pin metadata only under `.gitmodules`, `skills/tx-pr-auditor`, and optional lock metadata if safety is approved
 
+### Planned file-level change map
+
+- Backend registration and payload flow:
+  `backend/src/workers/workerTypes.js`,
+  `backend/src/workers/workerRegistry.js`,
+  `backend/src/workers/manifests/prAuditorManifest.js`,
+  `backend/src/workers/adapters/prAuditorAdapter.js`,
+  `backend/src/workers/adapters/prAuditorJobAdapter.js`,
+  `backend/src/services/prevalidationService.js`,
+  `backend/src/services/jobService.js`,
+  `backend/src/models/Job.js`,
+  `backend/src/models/JobFile.js`
+- Backend isolation, output, and tests:
+  `backend/src/workers/prAuditorWorkspaceService.js`,
+  `backend/src/workers/prAuditorOutputIngestionService.js`,
+  `backend/scripts/job-service-worker-payload-test.js`,
+  new PR Auditor validation scripts under `backend/scripts/`
+- Frontend launch, detail, and history:
+  `frontend/src/views/HomeView.vue`,
+  `frontend/src/views/JobDetailView.vue`,
+  `frontend/src/views/JobHistoryView.vue`,
+  `frontend/src/components/UploadPanel.vue`,
+  `frontend/src/components/FinalSummary.vue`,
+  `frontend/src/components/detail/JobDetailSummary.vue`,
+  `frontend/src/components/detail/JobDetailFiles.vue`,
+  `frontend/src/components/history/JobHistoryFilters.vue`,
+  `frontend/src/components/history/JobHistoryCard.vue`,
+  `frontend/src/api/jobApi.js`
+- Docs and mission state:
+  `docs/pr-auditor-platform-integration/*`
+- Engine metadata only if later approved:
+  `.gitmodules`,
+  `skills/tx-pr-auditor`,
+  optional lock metadata
+
 ## Bounded Steps
 
 - [x] Step 1: Verify `origin/main`, inspect current worktrees, create `C:\dev\ai-worker-platform-pr-auditor` on `feature/pr-auditor-platform-integration`, inspect worker architecture, and inspect PR Auditor engine candidate safety.
-- [ ] Step 2: Define the dedicated PR Auditor worker contract, upload kinds, output contract, and changed-file allowlist details from discovered backend/frontend patterns.
+- [x] Step 2: Define the dedicated PR Auditor worker contract, upload kinds, output contract, and changed-file allowlist details from discovered backend/frontend patterns.
 - [ ] Step 3: Register `pr-auditor` in backend worker types, manifest, registry, and job creation flow without changing MW or RAN behavior.
 - [ ] Step 4: Implement PR Auditor upload prevalidation, isolated workspace preparation, deterministic Python execution, and safe progress mapping.
 - [ ] Step 5: Implement approved output ingestion, safe structured audit summary persistence, history/detail/download integration, and cancellation handling.
@@ -33,4 +68,4 @@
 
 ## Immediate Next Step
 
-- [ ] Execute bounded Step 2 only: translate discovery into an explicit integration contract and per-area change map before touching worker code.
+- [ ] Execute bounded Step 3 only: implement backend registration and job creation flow for `pr-auditor` using the contract in `integration-contract.md`, without pinning or executing the engine until the safety gate is resolved.

@@ -6,3 +6,5 @@
 2. Isolation decision: create the dedicated worktree at `C:\dev\ai-worker-platform-pr-auditor` on branch `feature/pr-auditor-platform-integration` to keep this mission separate from existing worktrees and from `main`.
 3. Architecture decision: treat `ran-pr` as the closest platform integration reference, especially for worker registry, job lifecycle, upload handling, isolated workspace setup, output ingestion, and cancellation-safe behavior.
 4. Safety decision: do not pin `BL2ZteSolution/tx-pr-auditor` yet. The candidate repo at `5ef4485c9662384356e93960fe7a2b101f452349` contains a committed `input/pr_model.xlsx` workbook with non-obviously-synthetic model rows, so Phase 0 records it as unapproved pending data-safety review.
+5. Contract decision: keep `pr-auditor` under the existing `pr-worker` history umbrella for additive integration, but do not overload MW/RAN-specific fields such as `prScope`, `runMode`, `selectedProject`, or site-count semantics for audit results.
+6. Delivery decision: model PR Auditor delivery around direct audit report download plus optional trusted structured summary, not around ECC ZIP packaging as the primary user-facing outcome.

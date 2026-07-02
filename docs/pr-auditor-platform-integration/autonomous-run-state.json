@@ -1,6 +1,6 @@
 {
   "missionId": "pr-auditor-platform-integration",
-  "updatedAt": "2026-07-03T00:00:00Z",
+  "updatedAt": "2026-07-03T01:00:00Z",
   "repositoryRoot": "C:\\dev\\ai-worker-platform-pr-auditor",
   "sourceRepositoryRoot": "C:\\dev\\ai-worker-platform",
   "baselineBranch": "main",
@@ -8,8 +8,8 @@
   "featureBranch": "feature/pr-auditor-platform-integration",
   "worktreePath": "C:\\dev\\ai-worker-platform-pr-auditor",
   "currentPhase": "phase-0",
-  "currentBoundedStep": "1. Baseline, architecture, and engine safety discovery",
-  "nextAction": "Define the integration contract and changed-file allowlist for pr-auditor without altering MW PR, RAN PR, or shared PR Creator behaviour.",
+  "currentBoundedStep": "2. Integration contract and changed-file allowlist",
+  "nextAction": "Implement bounded Step 3: register pr-auditor in backend worker types, manifest, registry, and job creation flow without pinning or executing the engine until the safety gate is resolved.",
   "completed": false,
   "acceptanceStatus": "in_progress",
   "humanAcceptanceStatus": "not_started",
@@ -41,11 +41,14 @@
     "featureWorktreeCreated": true,
     "featureBranchCreated": true,
     "workerArchitectureInspected": true,
-    "engineCandidateInspected": true
+    "engineCandidateInspected": true,
+    "integrationContractDefined": true,
+    "fileLevelChangeMapDefined": true
   },
   "knownLimitations": [
     "No approved tx-pr-auditor engine pin has been recorded yet.",
     "Platform currently supports mw-pr and ran-pr only; pr-auditor is not yet registered in backend or frontend.",
-    "Current Home view presents MW and RAN as PR Creator variants rather than an independent PR Auditor entry point."
+    "Current Home view presents MW and RAN as PR Creator variants rather than an independent PR Auditor entry point.",
+    "PR Auditor-specific summary persistence shape is defined contractually but not yet implemented in backend storage or frontend rendering."
   ]
 }

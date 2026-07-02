@@ -7,11 +7,11 @@
 - Feature branch: `feature/pr-auditor-platform-integration`
 - Baseline: `origin/main` at `ec82e58f26055146a3b2403d6106e8809e994ad3`
 - Current phase: `phase-0`
-- Current bounded step: `1. Baseline, architecture, and engine safety discovery`
+- Current bounded step: `2. Integration contract and changed-file allowlist`
 - Completed: `false`
 - Acceptance status: `in_progress`
 - Human acceptance status: `not_started`
-- Next action: Define the PR Auditor integration contract and changed-file allowlist without altering MW PR, RAN PR, or PR Creator behavior.
+- Next action: Implement bounded Step 3 by wiring `pr-auditor` into backend worker registration and job creation flow without altering MW PR, RAN PR, or PR Creator behavior.
 
 ## Engine Status
 
@@ -28,3 +28,9 @@
 - Upload prevalidation currently supports `mw-export`, `ran-bom`, and `ran-epms`.
 - RAN worker isolation copies approved engine directories into a per-job workspace and stages current job uploads explicitly.
 - Frontend home flow currently presents MW and RAN inside one PR Creator workbench, so PR Auditor will need a dedicated top-level entry point rather than another mode.
+
+## Step 2 Outputs
+
+- Integration contract written in `docs/pr-auditor-platform-integration/integration-contract.md`.
+- Exact file-level change map captured in `execution-plan.md`.
+- PR Auditor-specific job payload, upload kinds, file types, summary shape, and UI constraints are now explicit and ready for implementation.
