@@ -39,8 +39,8 @@ Constraints:
 - [x] Step 1: Fetch `origin`, verify `feature/pr-auditor-platform-integration`, record the source SHA, create `C:\dev\ai-worker-platform-worker-navigation`, and confirm the clean feature branch baseline.
 - [x] Step 2: Copy the Master Prompt into the repo docs, create the persistent mission state bundle, inspect router/app/home/tests/scripts, and document the route migration decision.
 - [x] Step 3: Run baseline frontend tests before implementation, record the results, and create the documentation baseline checkpoint.
-- [ ] Step 4: Add a failing test suite for worker routes and header worker navigation behavior.
-- [ ] Step 5: Implement the worker navigation registry, header worker navigation, dedicated worker routes, and compatibility redirect with minimal shared-shell changes.
-- [ ] Step 6: Extract route-owned `PRCreatorView` and `PRAuditorView` pages, remove the cross-worker selector, and keep MW/RAN as internal PR Creator modes only.
-- [ ] Step 7: Update route, app-shell, and worker-page tests until they pass green, then run the frontend unit suite.
-- [ ] Step 8: Run build, smoke test, browser UAT, diff checks, and changed-file review; update mission logs and prepare the Draft PR.
+- [x] Step 4: Add a failing test suite for worker routes and header worker navigation behavior.
+- [x] Step 5: Implement the worker navigation registry, header worker navigation, dedicated worker routes, and compatibility redirect with minimal shared-shell changes.
+- [x] Step 6: Extract route-owned `PRCreatorView` and `PRAuditorView` pages, remove the cross-worker selector, and keep MW/RAN as internal PR Creator modes only.
+- [x] Step 7: Update route, app-shell, and worker-page tests until they pass green, then run the frontend unit suite.
+- [x] Step 8: Run build, smoke test, browser UAT, diff checks, and changed-file review; update mission logs and prepare the Draft PR.

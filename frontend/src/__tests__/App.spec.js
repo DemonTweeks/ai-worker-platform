@@ -56,4 +56,17 @@ describe('App selected job navigation', () => {
     expect(wrapper.vm.currentJobId).toBe('JOB-LIVE-1');
     expect(wrapper.html()).toContain('/jobs/JOB-LIVE-1');
   });
+
+  it('renders top-level worker navigation links separately from global navigation', async () => {
+    const wrapper = mountApp();
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.html()).toContain('/workers/pr-creator');
+    expect(wrapper.html()).toContain('/workers/pr-auditor');
+    expect(wrapper.text()).toContain('PR Creator');
+    expect(wrapper.text()).toContain('PR Auditor');
+    expect(wrapper.text()).toContain('Dashboard');
+    expect(wrapper.text()).toContain('History');
+    expect(wrapper.text()).toContain('Admin');
+  });
 });

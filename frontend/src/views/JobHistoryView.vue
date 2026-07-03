@@ -7,7 +7,7 @@
         <p class="eyebrow">Permanent history</p>
         <h1>Job History</h1>
       </div>
-      <router-link class="download-button" to="/">Run New Job</router-link>
+      <router-link class="download-button" to="/workers/pr-creator">Run New Job</router-link>
     </section>
 
     <JobHistoryFilters
@@ -29,7 +29,7 @@
           <p class="eyebrow">History filters are preserved</p>
           <h2>Recent Job Results</h2>
         </div>
-        <router-link class="secondary-button" to="/">Create New Job</router-link>
+        <router-link class="secondary-button" to="/workers/pr-creator">Create New Job</router-link>
       </div>
     </section>
 

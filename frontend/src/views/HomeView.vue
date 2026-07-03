@@ -9,9 +9,9 @@
     <section class="workbench-hero" aria-label="AI Worker workbench">
       <div class="workbench-hero-copy">
         <p class="workbench-kicker">ZTE AI Worker</p>
-        <h2>Launch validated worker jobs from one operations cockpit.</h2>
+        <h2>{{ heroTitle }}</h2>
         <p class="workbench-subtitle">
-          Launch MW PR, RAN PR, or PR Auditor jobs with validated inputs, live progress, and controlled result delivery.
+          {{ heroSubtitle }}
         </p>
 
         <div class="workbench-chip-row" aria-label="Workflow status">
@@ -129,7 +129,7 @@
             </div>
 
             <div class="workbench-config-grid">
-              <div class="cockpit-field-group">
+              <div v-if="showLegacyWorkerSelector" class="cockpit-field-group">
                 <span class="field-label">Worker</span>
                 <div class="segmented compact-segmented">
                   <button
@@ -152,6 +152,25 @@
                     @click="handleWorkerChange('pr-auditor')"
                   >
                     PR Auditor
+                  </button>
+                </div>
+              </div>
+              <div v-else-if="showPrCreatorModeSelector" class="cockpit-field-group">
+                <span class="field-label">PR Creator Mode</span>
+                <div class="segmented compact-segmented">
+                  <button
+                    type="button"
+                    :class="{ active: selectedWorkerId === 'mw-pr' }"
+                    @click="handleWorkerChange('mw-pr')"
+                  >
+                    MW PR
+                  </button>
+                  <button
+                    type="button"
+                    :class="{ active: selectedWorkerId === 'ran-pr' }"
+                    @click="handleWorkerChange('ran-pr')"
+                  >
+                    RAN PR
                   </button>
                 </div>
               </div>
@@ -528,12 +547,18 @@ export default {
     UploadPanel,
     LoadingButton
   },
+  props: {
+    topLevelWorker: {
+      type: String,
+      default: 'workspace'
+    }
+  },
   data() {
     return {
       selectedFile: null,
       prevalidation: null,
       prevalidating: false,
-      selectedWorkerId: 'mw-pr',
+      selectedWorkerId: this.topLevelWorker === 'pr-auditor' ? 'pr-auditor' : 'mw-pr',
       creating: false,
       asking: false,
       prScope: 'TSS',
@@ -594,6 +619,21 @@ export default {
     };
   },
   computed: {
+    isWorkspaceMode() {
+      return this.topLevelWorker === 'workspace';
+    },
+    isPrCreatorPage() {
+      return this.topLevelWorker === 'pr-creator';
+    },
+    isPrAuditorPage() {
+      return this.topLevelWorker === 'pr-auditor';
+    },
+    showLegacyWorkerSelector() {
+      return this.isWorkspaceMode;
+    },
+    showPrCreatorModeSelector() {
+      return this.isPrCreatorPage;
+    },
     isMwWorker() {
       return this.selectedWorkerId === 'mw-pr';
     },
@@ -604,11 +644,37 @@ export default {
       return this.selectedWorkerId === 'pr-auditor';
     },
     activeWorkerLabel() {
+      if (this.isPrCreatorPage) {
+        return 'PR Creator';
+      }
+
       if (this.isPrAuditorWorker) {
         return 'PR Auditor';
       }
 
       return this.isRanWorker ? 'RAN PR Worker' : 'MW PR Worker';
+    },
+    heroTitle() {
+      if (this.isPrAuditorPage) {
+        return 'Review PO submissions with the dedicated PR Auditor worker.';
+      }
+
+      if (this.isPrCreatorPage) {
+        return 'Launch PR Creator jobs with MW PR and RAN PR modes.';
+      }
+
+      return 'Launch validated worker jobs from one operations cockpit.';
+    },
+    heroSubtitle() {
+      if (this.isPrAuditorPage) {
+        return 'Upload Final PO, EPMS, and PR Model workbooks, run the audit, and review controlled result delivery without exposing PR creation controls.';
+      }
+
+      if (this.isPrCreatorPage) {
+        return 'Launch MW PR or RAN PR jobs with validated inputs, live progress, and controlled result delivery from one dedicated PR Creator route.';
+      }
+
+      return 'Launch MW PR, RAN PR, or PR Auditor jobs with validated inputs, live progress, and controlled result delivery.';
     },
     activeModeLabel() {
       if (this.isPrAuditorWorker) {
@@ -1055,6 +1121,19 @@ export default {
     },
     ranSelectedProject() {
       this.resetPendingIdempotencyKey('ran-pr');
+    },
+    topLevelWorker: {
+      immediate: true,
+      handler(value) {
+        if (value === 'pr-auditor') {
+          this.selectedWorkerId = 'pr-auditor';
+          return;
+        }
+
+        if (value === 'pr-creator' && this.selectedWorkerId === 'pr-auditor') {
+          this.selectedWorkerId = 'mw-pr';
+        }
+      }
     }
   },
   mounted() {
@@ -1263,6 +1342,14 @@ export default {
       this.showCancelForm = true;
     },
     async handleWorkerChange(workerId) {
+      if (this.isPrAuditorPage && workerId !== 'pr-auditor') {
+        return;
+      }
+
+      if (this.isPrCreatorPage && workerId === 'pr-auditor') {
+        return;
+      }
+
       if (this.selectedWorkerId === workerId) {
         if (workerId === 'ran-pr' && this.ranProjects.length === 0) {
           await this.loadRanProjects();

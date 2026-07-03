@@ -3,6 +3,8 @@ const { spawn } = require('child_process');
 
 const routes = [
   '/',
+  '/workers/pr-creator',
+  '/workers/pr-auditor',
   '/history',
   '/jobs/QA15-ROUTE-SMOKE',
   '/admin/login',

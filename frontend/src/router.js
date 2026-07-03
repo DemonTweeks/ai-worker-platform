@@ -1,6 +1,7 @@
 import Vue from 'vue';
 import VueRouter from 'vue-router';
-import HomeView from './views/HomeView.vue';
+import PRCreatorView from './views/PRCreatorView.vue';
+import PRAuditorView from './views/PRAuditorView.vue';
 import JobHistoryView from './views/JobHistoryView.vue';
 import JobDetailView from './views/JobDetailView.vue';
 import AdminLoginView from './views/admin/AdminLoginView.vue';
@@ -15,8 +16,17 @@ Vue.use(VueRouter);
 const routes = [
   {
     path: '/',
-    name: 'home',
-    component: HomeView
+    redirect: '/workers/pr-creator'
+  },
+  {
+    path: '/workers/pr-creator',
+    name: 'pr-creator',
+    component: PRCreatorView
+  },
+  {
+    path: '/workers/pr-auditor',
+    name: 'pr-auditor',
+    component: PRAuditorView
   },
   {
     path: '/history',
