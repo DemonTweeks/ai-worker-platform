@@ -32,4 +32,6 @@ The header now separates Worker navigation (`PR Creator`, `PR Auditor`) from pla
 
 - Existing Draft PR preserved: `#34 — feat(navigation): add top-level AI Worker routes`
 - Draft PR base preserved: `feature/pr-auditor-platform-integration`
-- Draft PR description must describe the corrected worker-ownership split, independent `/dashboard`, corrected tests, and corrected browser UAT evidence.
+- Corrected verified checkpoint commit: `043eba7`
+- Branch update pushed to `origin/feat/issue-29-top-level-worker-navigation`
+- Draft PR description updated to describe the corrected worker-ownership split, independent `/dashboard`, corrected tests, and corrected browser UAT evidence.
