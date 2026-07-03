@@ -30,3 +30,31 @@
   - `/history`, `/jobs/QA15-ROUTE-SMOKE`, and `/admin/login` remained reachable without duplicated worker forms.
   - `/admin/health` preserved its auth gate by redirecting to `/admin/login?redirect=%2Fadmin%2Fhealth`.
   - Browser console error/warn log review returned no errors.
+- User-authorized correction baseline passed with `npx vitest run src/__tests__/App.spec.js src/__tests__/workerRouting.spec.js src/views/__tests__/PRCreatorView.spec.js src/views/__tests__/PRAuditorView.spec.js`:
+  - Test files: `4`
+  - Tests: `12`
+  - Result: pass before adding the corrective red-state assertions
+- Corrective red-state verification passed:
+  - Added failing assertions proving `PRCreatorView` and `PRAuditorView` must not delegate to `HomeView`, and that `/dashboard` must be independent from worker routes.
+  - Verified the targeted suite failed before the corrective refactor.
+- Corrected targeted frontend verification passed with `npx vitest run src/__tests__/App.spec.js src/__tests__/AppNavigation.spec.js src/__tests__/workerRouting.spec.js src/views/__tests__/DashboardView.spec.js src/views/__tests__/PRCreatorView.spec.js src/views/__tests__/PRAuditorView.spec.js`:
+  - Test files: `6`
+  - Tests: `15`
+  - Result: pass
+- Corrected final frontend verification passed with `npm test`:
+  - Test files: `14`
+  - Tests: `47`
+  - Build: pass
+  - Route smoke: pass for `/`, `/dashboard`, `/workers/pr-creator`, `/workers/pr-auditor`, `/history`, `/jobs/QA15-ROUTE-SMOKE`, `/admin/login`, `/admin/assets`, `/admin/audit-logs`, `/admin/health`
+- Corrected `git diff --check` passed after the final changes.
+- Corrected changed-file self-review passed after reviewing the worker-view split, shared runtime extraction, dashboard route, tests, and smoke coverage updates.
+- Corrected browser UAT passed on the issue-29 worktree with frontend `http://127.0.0.1:3000`:
+  - `/workers/pr-creator` loaded directly, showed `PR Creator` active in Worker navigation, kept `MW PR` and `RAN PR` as internal PR Creator modes, exposed `Task Type`, and excluded `Final PO workbook` plus `Run Audit`.
+  - `/workers/pr-auditor` loaded directly, showed `PR Auditor` active in Worker navigation, exposed `Final PO workbook`, `EPMS workbook`, `PR Model workbook`, and `Run Audit`, and excluded PR Creator-only controls such as `Task Type`.
+  - `/dashboard` loaded directly, showed `Dashboard` active in global navigation, kept Worker navigation inactive for global routing, and did not render worker launch forms.
+  - `/` redirected intentionally to `/workers/pr-creator`.
+  - `/history` remained directly reachable.
+  - `/jobs/QA15-ROUTE-SMOKE` direct-loaded successfully for Status / Job Detail route verification and enabled the Status nav link state.
+  - `/admin/login` remained directly reachable.
+  - `/admin/health` preserved its auth gate by redirecting to `/admin/login`.
+  - Browser console error/warn log review returned no errors.

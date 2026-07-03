@@ -12,11 +12,11 @@
 
 ## Current Route Model
 
-- `/` currently renders `HomeView.vue`.
-- `HomeView.vue` currently owns one combined launch surface for MW PR, RAN PR, and PR Auditor.
-- `App.vue` currently exposes only global navigation (`Dashboard`, `Status`, `History`, `Admin`) plus a health indicator.
-- `frontend/src/router.js` currently has no dedicated worker routes.
-- `frontend/src/views/__tests__/HomeView.spec.js` currently verifies combined worker behavior inside the monolithic `HomeView`.
+- `/dashboard` is the platform-global dashboard route.
+- `/workers/pr-creator` owns only PR Creator launch behavior.
+- `/workers/pr-auditor` owns only PR Auditor launch behavior.
+- `/` remains a compatibility redirect to `/workers/pr-creator`.
+- `App.vue` separates Worker navigation from global navigation so active state follows the route hierarchy.
 
 ## Route Migration Decision
 
@@ -34,6 +34,16 @@ Constraints:
 - PR Creator remains the owner of MW PR and RAN PR internal mode switching only.
 - PR Auditor must render from its own page and must not expose PR Creator controls or wording.
 
+## Correction Reopen
+
+The initial route split landed the correct URLs and header navigation, but the current `PRCreatorView.vue` and `PRAuditorView.vue` still delegate the real page ownership to `HomeView.vue` through a `top-level-worker` prop. This correction pass reopens the mission to make worker ownership structurally real and to restore `Dashboard` as an independent platform-global route.
+
+Updated compatibility decision:
+
+1. Keep `/` as a compatibility redirect to `/workers/pr-creator` so existing worker-launch links continue to resolve safely.
+2. Add a genuine platform-global `/dashboard` route and point the global `Dashboard` nav there.
+3. Ensure worker-route activation is driven only by Worker navigation and that Dashboard is not treated as a worker alias.
+
 ## Bounded Steps
 
 - [x] Step 1: Fetch `origin`, verify `feature/pr-auditor-platform-integration`, record the source SHA, create `C:\dev\ai-worker-platform-worker-navigation`, and confirm the clean feature branch baseline.
@@ -44,3 +54,7 @@ Constraints:
 - [x] Step 6: Extract route-owned `PRCreatorView` and `PRAuditorView` pages, remove the cross-worker selector, and keep MW/RAN as internal PR Creator modes only.
 - [x] Step 7: Update route, app-shell, and worker-page tests until they pass green, then run the frontend unit suite.
 - [x] Step 8: Run build, smoke test, browser UAT, diff checks, and changed-file review; update mission logs and prepare the Draft PR.
+- [x] Step 9: Rerun baseline-relevant frontend tests, add failing tests for true worker-page independence and `/dashboard`, and verify the red state.
+- [x] Step 10: Refactor `PRCreatorView` and `PRAuditorView` into genuinely independent page owners, extracting only stable shared primitives.
+- [x] Step 11: Add the independent `/dashboard` route and update global navigation without duplicating worker launch forms.
+- [x] Step 12: Rerun full frontend verification plus browser UAT, update mission docs and PR #34 description, and republish the corrected verified state.

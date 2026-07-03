@@ -1,5 +1,6 @@
 import Vue from 'vue';
 import VueRouter from 'vue-router';
+import DashboardView from './views/DashboardView.vue';
 import PRCreatorView from './views/PRCreatorView.vue';
 import PRAuditorView from './views/PRAuditorView.vue';
 import JobHistoryView from './views/JobHistoryView.vue';
@@ -17,6 +18,11 @@ const routes = [
   {
     path: '/',
     redirect: '/workers/pr-creator'
+  },
+  {
+    path: '/dashboard',
+    name: 'dashboard',
+    component: DashboardView
   },
   {
     path: '/workers/pr-creator',

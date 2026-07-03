@@ -63,10 +63,19 @@ describe('App selected job navigation', () => {
 
     expect(wrapper.html()).toContain('/workers/pr-creator');
     expect(wrapper.html()).toContain('/workers/pr-auditor');
+    expect(wrapper.html()).toContain('/dashboard');
     expect(wrapper.text()).toContain('PR Creator');
     expect(wrapper.text()).toContain('PR Auditor');
     expect(wrapper.text()).toContain('Dashboard');
     expect(wrapper.text()).toContain('History');
     expect(wrapper.text()).toContain('Admin');
+  });
+
+  it('links Dashboard to the platform-global dashboard route', async () => {
+    const wrapper = mountApp();
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.html()).toContain('href="/dashboard"');
+    expect(wrapper.html()).not.toContain('href="/workers/pr-creator">Dashboard<');
   });
 });

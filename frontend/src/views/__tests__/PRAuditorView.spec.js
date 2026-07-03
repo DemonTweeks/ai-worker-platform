@@ -76,4 +76,11 @@ describe('PRAuditorView', () => {
     expect(wrapper.text()).not.toContain('Standard PR');
     expect(wrapper.text()).not.toContain('General Item');
   });
+
+  it('owns the PR Auditor page instead of delegating to HomeView', async () => {
+    const wrapper = mountView();
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.findComponent({ name: 'HomeView' }).exists()).toBe(false);
+  });
 });

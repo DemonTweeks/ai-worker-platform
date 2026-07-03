@@ -24,7 +24,7 @@
         </span>
         <router-link
           class="nav-link"
-          to="/workers/pr-creator"
+          to="/dashboard"
         >
           Dashboard
         </router-link>

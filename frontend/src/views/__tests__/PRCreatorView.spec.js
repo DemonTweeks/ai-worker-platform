@@ -70,4 +70,11 @@ describe('PRCreatorView', () => {
     expect(wrapper.text()).not.toContain('PR Model workbook');
     expect(wrapper.text()).not.toContain('Run Audit');
   });
+
+  it('owns the PR Creator page instead of delegating to HomeView', async () => {
+    const wrapper = mountView();
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.findComponent({ name: 'HomeView' }).exists()).toBe(false);
+  });
 });
