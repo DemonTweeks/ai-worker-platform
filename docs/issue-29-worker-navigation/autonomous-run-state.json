@@ -1,0 +1,28 @@
+{
+  "missionId": "issue-29-worker-navigation",
+  "updatedAt": "2026-07-03T03:00:00Z",
+  "repositoryRoot": "C:\\dev\\ai-worker-platform-worker-navigation",
+  "sourceRepositoryRoot": "C:\\dev\\ai-worker-platform",
+  "source_branch": "feature/pr-auditor-platform-integration",
+  "source_commit": "4c904e821be63a80990a1ca2b176bcd680798b85",
+  "feature_branch": "feat/issue-29-top-level-worker-navigation",
+  "worktreePath": "C:\\dev\\ai-worker-platform-worker-navigation",
+  "completed": false,
+  "acceptance_status": "in_progress",
+  "current_phase": "phase-0-baseline-and-discovery",
+  "currentBoundedStep": "Create the documentation baseline checkpoint after a passing baseline frontend test run",
+  "next_action": "Commit the documentation baseline checkpoint, then add failing worker-route and worker-navigation tests",
+  "last_verified_step": "Copied the Master Prompt, created persistent mission state, documented the route migration decision, and reran the baseline frontend unit suite successfully (10 files, 55 tests passed)",
+  "remaining_gates": [
+    "Route migration decision documented",
+    "Documentation baseline checkpoint committed",
+    "Independent worker routes implemented",
+    "Worker navigation registry implemented",
+    "PR Creator and PR Auditor pages separated",
+    "Frontend test coverage updated and passing",
+    "Build, smoke test, browser UAT, diff checks, and self-review passed",
+    "Draft PR created against feature/pr-auditor-platform-integration"
+  ],
+  "draft_pr_url": null,
+  "heartbeatAutomationId": "issue-29-worker-navigation-hourly-follow-up"
+}
