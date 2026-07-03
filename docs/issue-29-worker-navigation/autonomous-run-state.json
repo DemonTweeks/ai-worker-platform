@@ -1,22 +1,21 @@
 {
   "missionId": "issue-29-worker-navigation",
-  "updatedAt": "2026-07-03T03:20:00Z",
+  "updatedAt": "2026-07-03T03:30:00Z",
   "repositoryRoot": "C:\\dev\\ai-worker-platform-worker-navigation",
   "sourceRepositoryRoot": "C:\\dev\\ai-worker-platform",
   "source_branch": "feature/pr-auditor-platform-integration",
   "source_commit": "4c904e821be63a80990a1ca2b176bcd680798b85",
   "feature_branch": "feat/issue-29-top-level-worker-navigation",
   "worktreePath": "C:\\dev\\ai-worker-platform-worker-navigation",
-  "completed": false,
-  "acceptance_status": "in_progress",
+  "completed": true,
+  "acceptance_status": "passed",
   "current_phase": "phase-4-verification-and-pr-preparation",
-  "currentBoundedStep": "Record final verification evidence, create the feature checkpoint commit, and open the required Draft PR",
-  "next_action": "Commit the verified frontend route split, push feat/issue-29-top-level-worker-navigation, and open the Draft PR against feature/pr-auditor-platform-integration",
-  "last_verified_step": "Frontend worker-route implementation, unit suite, build, route smoke, git diff checks, changed-file review, and browser UAT all passed on the issue-29 worktree using local ports 8010 and 3010",
+  "currentBoundedStep": "Publish the verified branch state and open the required Draft PR",
+  "next_action": "NO_OP_COMPLETED",
+  "last_verified_step": "Created the verified feature checkpoint commit ef90536 after passing frontend unit tests, build, route smoke, changed-file review, and browser UAT",
   "remaining_gates": [
-    "Feature checkpoint committed",
     "Draft PR created against feature/pr-auditor-platform-integration"
   ],
-  "draft_pr_url": null,
+  "draft_pr_url": "pending-draft-pr-publication",
   "heartbeatAutomationId": "issue-29-worker-navigation-hourly-follow-up"
 }

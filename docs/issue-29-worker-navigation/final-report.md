@@ -24,8 +24,8 @@ The header now separates Worker navigation (`PR Creator`, `PR Auditor`) from pla
 - PR Auditor engine safety gate remained untouched.
 - No engine run, merge, deployment, or `main` branch change occurred.
 
-## Remaining Publication Step
+## Publication State
 
-- Commit the verified feature changes.
-- Push `feat/issue-29-top-level-worker-navigation`.
-- Open exactly one Draft PR against `feature/pr-auditor-platform-integration`.
+- Verified feature checkpoint commit: `ef90536`
+- Completion marker recorded in mission state before publication.
+- Next required external step: open exactly one Draft PR against `feature/pr-auditor-platform-integration`.
