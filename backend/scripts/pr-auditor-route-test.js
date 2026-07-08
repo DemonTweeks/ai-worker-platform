@@ -108,7 +108,6 @@ const cleanupArtifacts = async () => {
       ReviewRequiredItem.deleteMany({ jobId })
     ]).catch(() => {});
     await storageService.deleteFolderSafe(storageService.getJobRootPath(jobId)).catch(() => {});
-    await storageService.deletePrAuditorWorkspace(jobId).catch(() => {});
   }
   createdJobIds.clear();
 };
@@ -141,39 +140,35 @@ const verifyInvalidWorkbookSafeError = async (baseUrl) => {
 
 const verifyMissingUploadRejected = async (baseUrl) => {
   const finalPoPrevalidatedFileId = await prevalidateWorkbook(baseUrl, 'pr-auditor-final-po', 'Final PO.xlsx', [['PO'], ['1001']]);
-  const epmsPrevalidatedFileId = await prevalidateWorkbook(baseUrl, 'pr-auditor-epms', 'EPMS.xlsx', [['EPMS'], ['2001']]);
 
   const created = await postJson(baseUrl, '/api/jobs', {
     workerId: 'pr-auditor',
     browserTabSessionId,
     idempotencyKey: nextIdempotencyKey(),
-    finalPoPrevalidatedFileId,
-    epmsPrevalidatedFileId
+    finalPoPrevalidatedFileId
   });
 
-  assert.strictEqual(created.response.status, 400, 'missing PR Model upload should be rejected');
+  assert.strictEqual(created.response.status, 400, 'missing generated ECC upload should be rejected');
   assert.strictEqual(created.body.error.code, 'VALIDATION_ERROR');
-  assert.strictEqual(created.body.error.message, 'prModelPrevalidatedFileId is required for PR Auditor jobs.');
+  assert.strictEqual(created.body.error.message, 'expectedEccPrevalidatedFileId is required for PR Auditor jobs.');
 };
 
 const verifyHappyPathAndReload = async (baseUrl) => {
   const finalPoPrevalidatedFileId = await prevalidateWorkbook(baseUrl, 'pr-auditor-final-po', 'Final PO.xlsx', [['PO'], ['1001']]);
-  const epmsPrevalidatedFileId = await prevalidateWorkbook(baseUrl, 'pr-auditor-epms', 'EPMS.xlsx', [['EPMS'], ['2001']]);
-  const prModelPrevalidatedFileId = await prevalidateWorkbook(baseUrl, 'pr-auditor-pr-model', 'pr_model.xlsx', [['Model'], ['M-1']]);
+  const expectedEccPrevalidatedFileId = await prevalidateWorkbook(baseUrl, 'pr-auditor-expected-ecc', 'ECC_PR_Output.xlsx', [['ECC'], ['2001']]);
 
   const created = await postJson(baseUrl, '/api/jobs', {
     workerId: 'pr-auditor',
     browserTabSessionId,
     idempotencyKey: nextIdempotencyKey(),
     finalPoPrevalidatedFileId,
-    epmsPrevalidatedFileId,
-    prModelPrevalidatedFileId
+    expectedEccPrevalidatedFileId
   });
 
   assert.strictEqual(created.response.status, 201, 'PR Auditor job should be created');
   assert.strictEqual(created.body.job.workerId, 'pr-auditor');
   assert.strictEqual(created.body.job.workerDisplayName, 'PR Auditor');
-  assert.strictEqual(created.body.jobFiles.length, 3, 'PR Auditor create should return three tracked input files');
+  assert.strictEqual(created.body.jobFiles.length, 2, 'PR Auditor create should return two tracked input files');
 
   const jobId = created.body.job.jobId;
   createdJobIds.add(jobId);
@@ -222,25 +217,23 @@ const main = async () => {
     const connection = await checkFirebaseConnection();
     assert(connection.connected, 'Firebase RTDB should be reachable for PR Auditor route verification');
     await storageService.ensureBaseStorage();
-    await storageService.ensurePrAuditorWorkspaceBase();
 
     prAuditorAdapter.run = async (jobId, options = {}) => {
       if (options.onWorkspacePreparing) {
-        await options.onWorkspacePreparing('Preparing isolated PR Auditor workspace.');
+        await options.onWorkspacePreparing('Preparing PR Auditor job workspace.');
       }
 
-      const workspaceRoot = storageService.getPrAuditorWorkspacePath(jobId);
-      const outputRoot = path.join(workspaceRoot, 'output');
+      const workspaceRoot = storageService.getJobRootPath(jobId);
+      const outputRoot = storageService.resolveJobFolderPath(jobId, 'output');
       await fs.promises.mkdir(outputRoot, { recursive: true });
 
       if (options.onWorkspacePrepared) {
-        await options.onWorkspacePrepared('PR Auditor workspace ready.');
+        await options.onWorkspacePrepared('PR Auditor job workspace ready.');
       }
 
       const stages = [
         'Validating files',
-        'Matching EPMS',
-        'Resolving expected entitlement',
+        'Loading generated ECC entitlement',
         'Auditing PO records',
         'Resolving duplicates',
         'Generating audit report'

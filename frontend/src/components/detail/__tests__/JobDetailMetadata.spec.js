@@ -62,8 +62,8 @@ describe('RAN detail metadata rendering', () => {
           workerType: 'pr-worker',
           workerId: 'pr-auditor',
           workerDisplayName: 'PR Auditor',
-          engineVersion: 'pending-safe-pin',
-          engineCommit: 'unapproved',
+          engineVersion: 'approved-bb19525',
+          engineCommit: 'bb19525ab39e55866ff330352ce2a52a400fec17',
           auditSummary: {
             normalCount: 4,
             invalidPoCount: 1,
@@ -123,5 +123,26 @@ describe('RAN detail metadata rendering', () => {
     expect(filesText).toContain('Audit Report');
     expect(filesText).toContain('Audit Summary JSON');
     expect(filesText).toContain('Download Audit Report');
+  });
+
+  it('shows safe PR Auditor failure summary text', () => {
+    const wrapper = mount(JobDetailSummary, {
+      propsData: {
+        job: {
+          jobId: 'PR-AUDIT-DETAIL-004',
+          status: 'failed',
+          workerType: 'pr-worker',
+          workerId: 'pr-auditor',
+          workerDisplayName: 'PR Auditor',
+          failureSummary: 'PR Auditor process failed.',
+          outputFileCount: null,
+          warningCount: 0,
+          reviewRequiredCount: 0,
+          createdAt: new Date().toISOString()
+        }
+      }
+    });
+
+    expect(wrapper.text()).toContain('PR Auditor process failed.');
   });
 });

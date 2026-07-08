@@ -14,15 +14,14 @@ const {
 } = require('../utils/pathUtils');
 const { createApiError } = require('../utils/apiError');
 
-const ALLOWED_EXTENSIONS = ['.xlsx', '.xls'];
+const ALLOWED_EXTENSIONS = ['.xlsx', '.xls', '.xlsm'];
 const MANIFEST_SUFFIX = '.prevalidation.json';
 const UPLOAD_KINDS = {
   MW_EXPORT: 'mw-export',
   RAN_BOM: 'ran-bom',
   RAN_EPMS: 'ran-epms',
   PR_AUDITOR_FINAL_PO: 'pr-auditor-final-po',
-  PR_AUDITOR_EPMS: 'pr-auditor-epms',
-  PR_AUDITOR_PR_MODEL: 'pr-auditor-pr-model'
+  PR_AUDITOR_EXPECTED_ECC: 'pr-auditor-expected-ecc'
 };
 
 const UPLOAD_KIND_CONFIG = {
@@ -49,15 +48,9 @@ const UPLOAD_KIND_CONFIG = {
     inspectWorkbook: false,
     verifyWorkbookReadable: true
   },
-  [UPLOAD_KINDS.PR_AUDITOR_EPMS]: {
-    missingFileMessage: 'Please upload an EPMS workbook.',
-    successExplanation: 'The uploaded EPMS workbook passed the initial technical checks. Audit-specific validation will continue after the job is created.',
-    inspectWorkbook: false,
-    verifyWorkbookReadable: true
-  },
-  [UPLOAD_KINDS.PR_AUDITOR_PR_MODEL]: {
-    missingFileMessage: 'Please upload a PR Model workbook.',
-    successExplanation: 'The uploaded PR Model workbook passed the initial technical checks. Audit-specific validation will continue after the job is created.',
+  [UPLOAD_KINDS.PR_AUDITOR_EXPECTED_ECC]: {
+    missingFileMessage: 'Please upload a generated ECC workbook.',
+    successExplanation: 'The uploaded generated ECC workbook passed the initial technical checks. Audit-specific validation will continue after the job is created.',
     inspectWorkbook: false,
     verifyWorkbookReadable: true
   }
@@ -117,8 +110,8 @@ const hasOleSignature = (buffer) => (
 );
 
 const assertWorkbookReadable = (buffer, extension) => {
-  if (extension === '.xlsx' && !hasZipSignature(buffer)) {
-    throw new Error('Workbook must be a valid .xlsx file.');
+  if ((extension === '.xlsx' || extension === '.xlsm') && !hasZipSignature(buffer)) {
+    throw new Error(`Workbook must be a valid ${extension} file.`);
   }
 
   if (extension === '.xls' && !hasOleSignature(buffer)) {

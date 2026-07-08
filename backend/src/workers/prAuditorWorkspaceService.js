@@ -4,12 +4,11 @@ const config = require('../config/env');
 const storageService = require('../services/storageService');
 const { assertPathInsideRoot } = require('../utils/pathUtils');
 
-const APPROVED_ENGINE_DIRECTORIES = ['scripts'];
 const REQUIRED_WORKSPACE_DIRECTORIES = ['input', 'output', 'temp'];
+const ENGINE_ENTRY_SCRIPT = path.join('scripts', 'audit_final_po.py');
 const DEFAULT_INPUT_FILES = {
   finalPo: 'Final PO.xlsx',
-  epms: 'EPMS.xlsx',
-  prModel: 'pr_model.xlsx'
+  expectedEcc: 'expected_ecc.xlsx'
 };
 const DEFAULT_OUTPUT_FILES = {
   auditResult: 'PR_Audit_Result.xlsx',
@@ -26,43 +25,31 @@ const assertEngineRootExists = () => {
   return config.prAuditorRoot;
 };
 
-const ensurePrAuditorWorkspaceRoot = async () => {
-  await fs.promises.mkdir(config.prAuditorWorkspaceRoot, { recursive: true });
-  return storageService.getPrAuditorWorkspaceRoot();
-};
-
-const copyApprovedEngineAssets = async (workspaceRoot) => {
+const resolveEngineScriptPath = () => {
   const engineRoot = assertEngineRootExists();
+  const scriptPath = assertPathInsideRoot(engineRoot, path.join(engineRoot, ENGINE_ENTRY_SCRIPT));
 
-  for (const directory of APPROVED_ENGINE_DIRECTORIES) {
-    const source = assertPathInsideRoot(engineRoot, path.join(engineRoot, directory));
-    const destination = assertPathInsideRoot(workspaceRoot, path.join(workspaceRoot, directory));
-
-    if (!fs.existsSync(source)) {
-      const error = new Error(`PR Auditor engine directory is missing: ${directory}`);
-      error.code = 'PR_AUDITOR_ENGINE_DIRECTORY_MISSING';
-      error.details = { directory };
-      throw error;
-    }
-
-    await fs.promises.cp(source, destination, { recursive: true, force: true });
+  if (!fs.existsSync(scriptPath)) {
+    const error = new Error(`PR Auditor engine script was not found: ${ENGINE_ENTRY_SCRIPT}`);
+    error.code = 'PR_AUDITOR_ENGINE_SCRIPT_MISSING';
+    error.details = { scriptPath };
+    throw error;
   }
+
+  return scriptPath;
 };
 
-const stageInputFiles = async ({ workspaceRoot, finalPoSourcePath, epmsSourcePath, prModelSourcePath }) => {
+const stageInputFiles = async ({ workspaceRoot, finalPoSourcePath, expectedEccSourcePath }) => {
   const inputRoot = assertPathInsideRoot(workspaceRoot, path.join(workspaceRoot, 'input'));
   const finalPoPath = assertPathInsideRoot(inputRoot, path.join(inputRoot, DEFAULT_INPUT_FILES.finalPo));
-  const epmsPath = assertPathInsideRoot(inputRoot, path.join(inputRoot, DEFAULT_INPUT_FILES.epms));
-  const prModelPath = assertPathInsideRoot(inputRoot, path.join(inputRoot, DEFAULT_INPUT_FILES.prModel));
+  const expectedEccPath = assertPathInsideRoot(inputRoot, path.join(inputRoot, DEFAULT_INPUT_FILES.expectedEcc));
 
   await fs.promises.copyFile(finalPoSourcePath, finalPoPath);
-  await fs.promises.copyFile(epmsSourcePath, epmsPath);
-  await fs.promises.copyFile(prModelSourcePath, prModelPath);
+  await fs.promises.copyFile(expectedEccSourcePath, expectedEccPath);
 
   return {
     finalPoPath,
-    epmsPath,
-    prModelPath
+    expectedEccPath
   };
 };
 
@@ -71,20 +58,16 @@ const buildRuntimePaths = (workspaceRoot) => {
 
   return {
     finalPoPath: assertPathInsideRoot(workspaceRoot, path.join(workspaceRoot, 'input', DEFAULT_INPUT_FILES.finalPo)),
-    epmsPath: assertPathInsideRoot(workspaceRoot, path.join(workspaceRoot, 'input', DEFAULT_INPUT_FILES.epms)),
-    prModelPath: assertPathInsideRoot(workspaceRoot, path.join(workspaceRoot, 'input', DEFAULT_INPUT_FILES.prModel)),
+    expectedEccPath: assertPathInsideRoot(workspaceRoot, path.join(workspaceRoot, 'input', DEFAULT_INPUT_FILES.expectedEcc)),
     outputPath: assertPathInsideRoot(outputRoot, path.join(outputRoot, DEFAULT_OUTPUT_FILES.auditResult)),
     summaryJsonPath: assertPathInsideRoot(outputRoot, path.join(outputRoot, DEFAULT_OUTPUT_FILES.summaryJson)),
-    scriptPath: assertPathInsideRoot(workspaceRoot, path.join(workspaceRoot, 'scripts', 'audit_final_po.py'))
+    scriptPath: resolveEngineScriptPath()
   };
 };
 
-const preparePrAuditorWorkspace = async ({ jobId, finalPoSourcePath, epmsSourcePath, prModelSourcePath }) => {
-  const workspace = await storageService.createPrAuditorWorkspace(jobId);
+const preparePrAuditorWorkspace = async ({ jobId, finalPoSourcePath, expectedEccSourcePath }) => {
+  const workspace = await storageService.createJobFolders(jobId);
   const workspaceRoot = workspace.root;
-
-  await ensurePrAuditorWorkspaceRoot();
-  await copyApprovedEngineAssets(workspaceRoot);
 
   for (const directory of REQUIRED_WORKSPACE_DIRECTORIES) {
     await fs.promises.mkdir(path.join(workspaceRoot, directory), { recursive: true });
@@ -93,8 +76,7 @@ const preparePrAuditorWorkspace = async ({ jobId, finalPoSourcePath, epmsSourceP
   const stagedInputs = await stageInputFiles({
     workspaceRoot,
     finalPoSourcePath,
-    epmsSourcePath,
-    prModelSourcePath
+    expectedEccSourcePath
   });
   const runtimePaths = buildRuntimePaths(workspaceRoot);
 
@@ -110,16 +92,11 @@ const preparePrAuditorWorkspace = async ({ jobId, finalPoSourcePath, epmsSourceP
   };
 };
 
-const cleanupPrAuditorWorkspace = async (jobId) => storageService.deletePrAuditorWorkspace(jobId);
-
 module.exports = {
-  APPROVED_ENGINE_DIRECTORIES,
   DEFAULT_INPUT_FILES,
   DEFAULT_OUTPUT_FILES,
+  ENGINE_ENTRY_SCRIPT,
   REQUIRED_WORKSPACE_DIRECTORIES,
   buildRuntimePaths,
-  cleanupPrAuditorWorkspace,
-  copyApprovedEngineAssets,
-  ensurePrAuditorWorkspaceRoot,
   preparePrAuditorWorkspace
 };

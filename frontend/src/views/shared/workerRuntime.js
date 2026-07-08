@@ -206,7 +206,7 @@ export const workerRuntimeMixin = {
 
       const job = this.jobDetail.job;
       if (job.status === 'failed') {
-        return job.error && job.error.message ? job.error.message : 'Job failed before outputs were generated.';
+        return job.failureSummary || (job.error && job.error.message ? job.error.message : 'Job failed before outputs were generated.');
       }
       if (job.status === 'cancelled') {
         return 'Job cancelled by user before a completed delivery was produced.';
@@ -646,12 +646,13 @@ export const workerRuntimeMixin = {
           });
         }
 
-        if (job.error && job.error.message) {
+        const failureMessage = job.failureSummary || (job.error && job.error.message ? job.error.message : '');
+        if (failureMessage) {
           items.push({
             id: 'job-error',
             label: 'Error',
             title: 'Job error',
-            body: job.error.message,
+            body: failureMessage,
             tone: 'danger',
             time: job.updatedAt || this.updatedAt
           });

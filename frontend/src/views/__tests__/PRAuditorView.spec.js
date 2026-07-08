@@ -63,8 +63,7 @@ describe('PRAuditorView', () => {
 
     expect(wrapper.text()).toContain('PR Auditor');
     expect(wrapper.text()).toContain('Final PO workbook');
-    expect(wrapper.text()).toContain('EPMS workbook');
-    expect(wrapper.text()).toContain('PR Model workbook');
+    expect(wrapper.text()).toContain('Generated ECC workbook');
     expect(wrapper.text()).toContain('Run Audit');
     expect(wrapper.text()).toContain('PR Auditor reviews submitted PO data against configured audit rules.');
     expect(wrapper.text()).toContain('It does not create or modify PR or ECC records.');

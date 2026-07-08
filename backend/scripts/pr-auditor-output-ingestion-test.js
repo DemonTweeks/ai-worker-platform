@@ -108,6 +108,22 @@ const runTests = async () => {
       }
     });
 
+    jobUpdates.length = 0;
+    createdFiles.length = 0;
+
+    const sameRootResult = await ingestionService.ingestPrAuditorOutputs({
+      jobId: 'PR-AUDIT-001',
+      workspaceOutputRoot: storageOutputRoot
+    });
+
+    assert.strictEqual(sameRootResult.outputFileCount, 1, 'job output root should be valid as the runtime output root');
+    assert.strictEqual(sameRootResult.trackedFiles.length, 2);
+    assert.strictEqual(sameRootResult.failure, null);
+    assert.deepStrictEqual(
+      createdFiles.map((file) => file.fileType).sort(),
+      ['pr_audit_result_xlsx', 'pr_audit_summary_json']
+    );
+
     console.log('--- PR Auditor Output Ingestion Tests Passed! ---');
   } finally {
     await fs.promises.rm(tempRoot, { recursive: true, force: true }).catch(() => {});

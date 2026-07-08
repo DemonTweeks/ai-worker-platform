@@ -14,7 +14,7 @@
     </div>
     <p v-else-if="isPrAuditorJob" class="muted">Audit Result summary counts are not trusted yet. Detailed findings remain in the workbook download.</p>
     <p v-if="zeroOutputNotice" class="completion-message" :class="zeroOutputTone">{{ zeroOutputNotice }}</p>
-    <p v-if="job.error && job.error.message" class="error-text">{{ job.error.message }}</p>
+    <p v-if="failureMessage" class="error-text">{{ failureMessage }}</p>
   </section>
 </template>
 
@@ -81,9 +81,7 @@ export default {
       if (this.isPrAuditorJob) return '';
       if (!(this.job.matchedSiteCount > 0 && this.job.outputFileCount === 0)) return '';
       if (this.job.status === 'failed') {
-        return this.job.error && this.job.error.message
-          ? this.job.error.message
-          : 'No ECC output was generated.';
+        return this.failureMessage || 'No ECC output was generated.';
       }
       if ((this.job.reviewRequiredCount || 0) > 0 || (this.job.warningCount || 0) > 0) {
         return `No ECC output was generated; review/warning records explain the result.`;
@@ -92,6 +90,10 @@ export default {
     },
     zeroOutputTone() {
       return this.job.status === 'failed' ? 'danger' : 'warning';
+    },
+    failureMessage() {
+      if (this.job.status !== 'failed') return '';
+      return this.job.failureSummary || (this.job.error && this.job.error.message ? this.job.error.message : '');
     }
   },
   methods: {

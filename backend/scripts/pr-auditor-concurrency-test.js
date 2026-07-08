@@ -88,16 +88,14 @@ const prevalidateWorkbook = async (baseUrl, uploadKind, fileName, rows) => {
 
 const createPrAuditorJob = async (baseUrl, sequence) => {
   const finalPoPrevalidatedFileId = await prevalidateWorkbook(baseUrl, 'pr-auditor-final-po', `Final-PO-${sequence}.xlsx`, [['PO'], [String(1000 + sequence)]]);
-  const epmsPrevalidatedFileId = await prevalidateWorkbook(baseUrl, 'pr-auditor-epms', `EPMS-${sequence}.xlsx`, [['EPMS'], [String(2000 + sequence)]]);
-  const prModelPrevalidatedFileId = await prevalidateWorkbook(baseUrl, 'pr-auditor-pr-model', `PR-Model-${sequence}.xlsx`, [['Model'], [`M-${sequence}`]]);
+  const expectedEccPrevalidatedFileId = await prevalidateWorkbook(baseUrl, 'pr-auditor-expected-ecc', `ECC-${sequence}.xlsx`, [['ECC'], [String(2000 + sequence)]]);
 
   const created = await postJson(baseUrl, '/api/jobs', {
     workerId: 'pr-auditor',
     browserTabSessionId,
     idempotencyKey: nextIdempotencyKey(),
     finalPoPrevalidatedFileId,
-    epmsPrevalidatedFileId,
-    prModelPrevalidatedFileId
+    expectedEccPrevalidatedFileId
   });
 
   assert.strictEqual(created.response.status, 201, 'PR Auditor job should be created');
@@ -111,14 +109,13 @@ const runTests = async () => {
 
   try {
     await storageService.ensureBaseStorage();
-    await storageService.ensurePrAuditorWorkspaceBase();
 
     prAuditorAdapter.run = async (jobId, options = {}) => {
       activeRuns += 1;
       maxConcurrentObserved = Math.max(maxConcurrentObserved, activeRuns);
 
       if (options.onWorkspacePreparing) {
-        await options.onWorkspacePreparing('Preparing isolated PR Auditor workspace.');
+        await options.onWorkspacePreparing('Preparing PR Auditor job workspace.');
       }
 
       const workspaceRoot = path.join(tempRoot, jobId);
@@ -127,7 +124,7 @@ const runTests = async () => {
       await fs.promises.mkdir(outputRoot, { recursive: true });
 
       if (options.onWorkspacePrepared) {
-        await options.onWorkspacePrepared('PR Auditor workspace ready.');
+        await options.onWorkspacePrepared('PR Auditor job workspace ready.');
       }
 
       await delay(400);

@@ -76,10 +76,10 @@ const runTests = async () => {
     setCachedModule(path.join(repoRoot, 'src/workers/adapters/prAuditorAdapter.js'), {
       run: async (_jobId, options = {}) => {
         if (options.onWorkspacePreparing) {
-          await options.onWorkspacePreparing('Preparing isolated PR Auditor workspace.');
+          await options.onWorkspacePreparing('Preparing PR Auditor job workspace.');
         }
         if (options.onWorkspacePrepared) {
-          await options.onWorkspacePrepared('PR Auditor workspace ready.');
+          await options.onWorkspacePrepared('PR Auditor job workspace ready.');
         }
         if (options.onStageStarted) {
           await options.onStageStarted({ stageLabel: 'Validating files', index: 0, total: 6 });
@@ -156,7 +156,7 @@ const runTests = async () => {
     setCachedModule(path.join(repoRoot, 'src/workers/adapters/prAuditorAdapter.js'), {
       run: async (_jobId, options = {}) => {
         if (options.onWorkspacePreparing) {
-          await options.onWorkspacePreparing('Preparing isolated PR Auditor workspace.');
+          await options.onWorkspacePreparing('Preparing PR Auditor job workspace.');
         }
 
         return {
@@ -206,7 +206,7 @@ const runTests = async () => {
     setCachedModule(path.join(repoRoot, 'src/workers/adapters/prAuditorAdapter.js'), {
       run: async (_jobId, options = {}) => {
         if (options.onWorkspacePreparing) {
-          await options.onWorkspacePreparing('Preparing isolated PR Auditor workspace.');
+          await options.onWorkspacePreparing('Preparing PR Auditor job workspace.');
         }
         if (options.onOutputsCollecting) {
           await options.onOutputsCollecting('Collecting approved PR Auditor outputs.');

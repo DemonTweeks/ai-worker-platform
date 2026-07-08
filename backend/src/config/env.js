@@ -33,7 +33,6 @@ const config = {
   ranCreatePrCdRoot: resolveFromRepoRoot(process.env.RAN_CREATE_PR_CD_ROOT, './skills/create-pr-cd-ran'),
   ranWorkspaceRoot: resolveFromRepoRoot(process.env.RAN_WORKSPACE_ROOT, './storage/ran-workspaces'),
   prAuditorRoot: resolveFromRepoRoot(process.env.PR_AUDITOR_ROOT, './skills/tx-pr-auditor'),
-  prAuditorWorkspaceRoot: resolveFromRepoRoot(process.env.PR_AUDITOR_WORKSPACE_ROOT, './storage/pr-auditor-workspaces'),
   llmBaseUrl: process.env.LLM_BASE_URL || '',
   llmApiKey: process.env.LLM_API_KEY || '',
   llm: {

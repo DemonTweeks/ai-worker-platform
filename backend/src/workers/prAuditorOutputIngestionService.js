@@ -93,7 +93,9 @@ const copyApprovedOutput = async ({ jobId, workspaceOutputRoot, definition }) =>
   }
 
   const destinationPath = storageService.resolveJobOutputPath(jobId, definition.workspaceFileName);
-  await fs.promises.copyFile(sourcePath, destinationPath);
+  if (path.resolve(sourcePath) !== path.resolve(destinationPath)) {
+    await fs.promises.copyFile(sourcePath, destinationPath);
+  }
 
   const metadata = await storageService.buildFileMetadata(destinationPath);
   return JobFile.create({

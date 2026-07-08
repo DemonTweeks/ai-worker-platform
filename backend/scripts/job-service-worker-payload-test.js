@@ -50,8 +50,7 @@ const runTests = async () => {
         RAN_BOM: 'ran-bom',
         RAN_EPMS: 'ran-epms',
         PR_AUDITOR_FINAL_PO: 'pr-auditor-final-po',
-        PR_AUDITOR_EPMS: 'pr-auditor-epms',
-        PR_AUDITOR_PR_MODEL: 'pr-auditor-pr-model'
+        PR_AUDITOR_EXPECTED_ECC: 'pr-auditor-expected-ecc'
       },
       consumePrevalidatedUpload: async (prevalidatedFileId) => {
         if (prevalidatedFileId === 'ran-bom-1') {
@@ -78,18 +77,10 @@ const runTests = async () => {
           };
         }
 
-        if (prevalidatedFileId === 'pr-auditor-epms-1') {
+        if (prevalidatedFileId === 'pr-auditor-expected-ecc-1') {
           return {
-            uploadKind: 'pr-auditor-epms',
-            originalFileName: 'epms.xlsx',
-            absolutePath: uploadPath
-          };
-        }
-
-        if (prevalidatedFileId === 'pr-auditor-pr-model-1') {
-          return {
-            uploadKind: 'pr-auditor-pr-model',
-            originalFileName: 'pr-model.xlsx',
+            uploadKind: 'pr-auditor-expected-ecc',
+            originalFileName: 'ecc-output.xlsx',
             absolutePath: uploadPath
           };
         }
@@ -261,14 +252,13 @@ const runTests = async () => {
       browserTabSessionId: 'pr-auditor-tab-1234',
       idempotencyKey: 'pr-auditor-idem-1234',
       finalPoPrevalidatedFileId: 'pr-auditor-final-po-1',
-      epmsPrevalidatedFileId: 'pr-auditor-epms-1',
-      prModelPrevalidatedFileId: 'pr-auditor-pr-model-1'
+      expectedEccPrevalidatedFileId: 'pr-auditor-expected-ecc-1'
     });
 
     assert.strictEqual(prAuditorCreateResult.job.workerId, 'pr-auditor');
     assert.strictEqual(prAuditorCreateResult.job.workerDisplayName, 'PR Auditor');
-    assert.strictEqual(prAuditorCreateResult.job.engineVersion, 'pending-safe-pin');
-    assert.strictEqual(prAuditorCreateResult.job.engineCommit, 'unapproved');
+    assert.strictEqual(prAuditorCreateResult.job.engineVersion, 'approved-bb19525');
+    assert.strictEqual(prAuditorCreateResult.job.engineCommit, 'bb19525ab39e55866ff330352ce2a52a400fec17');
     assert.strictEqual(prAuditorCreateResult.job.prScope, null);
     assert.strictEqual(prAuditorCreateResult.job.runMode, null);
     assert.strictEqual(prAuditorCreateResult.job.selectedProject, null);
@@ -276,23 +266,21 @@ const runTests = async () => {
     assert.strictEqual(createdJobs[0].browserTabSessionId, 'pr-auditor-tab-1234');
     assert.strictEqual(createdJobs[0].idempotencyKey, 'pr-auditor-idem-1234');
     assert.strictEqual(createdJobs[0].requestedSiteCount, 0);
-    assert.strictEqual(createdFiles.length, 3);
+    assert.strictEqual(createdFiles.length, 2);
     assert.deepStrictEqual(
       createdFiles.map((file) => file.fileType).sort(),
-      ['pr_auditor_epms_upload', 'pr_auditor_final_po_upload', 'pr_auditor_pr_model_upload']
+      ['pr_auditor_expected_ecc_upload', 'pr_auditor_final_po_upload']
     );
     assert(copiedBuffers[0].includes('"workerId": "pr-auditor"'));
     assert(copiedBuffers[0].includes('"finalPoFileName": "final-po.xlsx"'));
-    assert(copiedBuffers[0].includes('"epmsFileName": "epms.xlsx"'));
-    assert(copiedBuffers[0].includes('"prModelFileName": "pr-model.xlsx"'));
+    assert(copiedBuffers[0].includes('"expectedEccFileName": "ecc-output.xlsx"'));
 
     const duplicatePrAuditorResult = await jobService.createJob({
       workerId: 'pr-auditor',
       browserTabSessionId: 'pr-auditor-tab-1234',
       idempotencyKey: 'pr-auditor-idem-1234',
       finalPoPrevalidatedFileId: 'pr-auditor-final-po-1',
-      epmsPrevalidatedFileId: 'pr-auditor-epms-1',
-      prModelPrevalidatedFileId: 'pr-auditor-pr-model-1'
+      expectedEccPrevalidatedFileId: 'pr-auditor-expected-ecc-1'
     });
     assert.strictEqual(duplicatePrAuditorResult.job.jobId, prAuditorCreateResult.job.jobId, 'duplicate PR Auditor submissions should replay the existing job');
     assert.strictEqual(createdJobs.length, 1, 'duplicate PR Auditor submissions should not create a second job');
@@ -373,8 +361,8 @@ const runTests = async () => {
         prScope: null,
         runMode: null,
         selectedProject: null,
-        engineVersion: 'pending-safe-pin',
-        engineCommit: 'unapproved',
+        engineVersion: 'approved-bb19525',
+        engineCommit: 'bb19525ab39e55866ff330352ce2a52a400fec17',
         requestedSiteCount: 0,
         matchedSiteCount: 0,
         unmatchedSiteCount: 0,
@@ -415,8 +403,8 @@ const runTests = async () => {
     assert.strictEqual(prAuditorListResult.items.length, 1);
     assert.strictEqual(prAuditorListResult.items[0].workerId, 'pr-auditor');
     assert.strictEqual(prAuditorListResult.items[0].workerDisplayName, 'PR Auditor');
-    assert.strictEqual(prAuditorListResult.items[0].engineVersion, 'pending-safe-pin');
-    assert.strictEqual(prAuditorListResult.items[0].engineCommit, 'unapproved');
+    assert.strictEqual(prAuditorListResult.items[0].engineVersion, 'approved-bb19525');
+    assert.strictEqual(prAuditorListResult.items[0].engineCommit, 'bb19525ab39e55866ff330352ce2a52a400fec17');
     assert.strictEqual(prAuditorListResult.items[0].prScope, null);
     assert.strictEqual(prAuditorListResult.items[0].runMode, null);
     assert.strictEqual(prAuditorListResult.items[0].selectedProject, null);
@@ -465,8 +453,8 @@ const runTests = async () => {
     const prAuditorDetailResult = await jobService.getJobDetail('PR-AUDITOR-JOB-001');
     assert.strictEqual(prAuditorDetailResult.job.workerId, 'pr-auditor');
     assert.strictEqual(prAuditorDetailResult.job.workerDisplayName, 'PR Auditor');
-    assert.strictEqual(prAuditorDetailResult.job.engineVersion, 'pending-safe-pin');
-    assert.strictEqual(prAuditorDetailResult.job.engineCommit, 'unapproved');
+    assert.strictEqual(prAuditorDetailResult.job.engineVersion, 'approved-bb19525');
+    assert.strictEqual(prAuditorDetailResult.job.engineCommit, 'bb19525ab39e55866ff330352ce2a52a400fec17');
     assert.strictEqual(prAuditorDetailResult.job.prScope, null);
     assert.strictEqual(prAuditorDetailResult.job.runMode, null);
     assert.strictEqual(prAuditorDetailResult.job.selectedProject, null);
