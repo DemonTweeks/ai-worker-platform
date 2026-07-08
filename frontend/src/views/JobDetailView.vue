@@ -8,7 +8,7 @@
         <span v-if="detail && detail.job" class="muted">Job ID: {{ detail.job.jobId }}</span>
         <span v-else class="muted">Loading job identifier…</span>
       </div>
-      <router-link class="download-button" to="/">Run New Job</router-link>
+      <router-link class="download-button" to="/workers/pr-creator">Run New Job</router-link>
     </section>
 
     <div v-if="loading" class="panel empty-state">
@@ -26,7 +26,7 @@
         </section>
         <section class="panel">
           <h2>Files and Outputs</h2>
-          <JobDetailFiles :job-id="detail.job.jobId" :outputs="detail.outputs || []" :status="detail.job.status" />
+          <JobDetailFiles :job-id="detail.job.jobId" :worker-id="detail.job.workerId || ''" :outputs="detail.outputs || []" :status="detail.job.status" />
         </section>
       </div>
       <JobDetailWarnings :warnings="detail.warnings || []" />

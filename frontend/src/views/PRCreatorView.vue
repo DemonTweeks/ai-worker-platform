@@ -6,12 +6,12 @@
       @dismiss="dismissErrorMessage"
     />
 
-    <section class="workbench-hero" aria-label="AI Worker PR Creator workbench">
+    <section class="workbench-hero" aria-label="PR Creator workbench">
       <div class="workbench-hero-copy">
         <p class="workbench-kicker">ZTE AI Worker</p>
-        <h2>Turn site exports into PR-ready worker jobs.</h2>
+        <h2>{{ heroTitle }}</h2>
         <p class="workbench-subtitle">
-          Launch MW or RAN PR worker jobs from one operational workbench with validated inputs and live output tracking.
+          {{ heroSubtitle }}
         </p>
 
         <div class="workbench-chip-row" aria-label="Workflow status">
@@ -22,22 +22,22 @@
         </div>
 
         <div class="workbench-action-row" aria-label="Primary actions">
-          <a class="workbench-primary-link" href="#pr-creator-workbench">Create PR Job</a>
+          <a class="workbench-primary-link" href="#worker-workbench">{{ primaryActionLabel }}</a>
           <a class="workbench-secondary-link" href="#worker-console">View Live Output</a>
         </div>
       </div>
 
-      <section id="pr-creator-workbench" class="workbench-surface" aria-label="PR Creator workflow">
+      <section id="worker-workbench" class="workbench-surface" :aria-label="activeWorkbenchAriaLabel">
         <div class="workbench-surface-header">
           <div>
             <p class="eyebrow">Operational Workflow</p>
-            <h3>PR Creator</h3>
+            <h3>{{ activeWorkbenchTitle }}</h3>
           </div>
           <span class="workbench-status-pill">{{ progressStateLabel }}</span>
         </div>
 
         <div class="workbench-main-grid">
-          <div v-if="!isRanWorker" class="workbench-upload-stack">
+          <div v-if="isMwWorker" class="workbench-upload-stack">
             <UploadPanel
               class="cockpit-card upload-card workbench-upload-card"
               :result="prevalidation"
@@ -86,26 +86,26 @@
 
             <div class="workbench-config-grid">
               <div class="cockpit-field-group">
-                <span class="field-label">Worker</span>
+                <span class="field-label">PR Creator Mode</span>
                 <div class="segmented compact-segmented">
                   <button
                     type="button"
                     :class="{ active: selectedWorkerId === 'mw-pr' }"
                     @click="handleWorkerChange('mw-pr')"
                   >
-                    MW PR Worker
+                    MW PR
                   </button>
                   <button
                     type="button"
                     :class="{ active: selectedWorkerId === 'ran-pr' }"
                     @click="handleWorkerChange('ran-pr')"
                   >
-                    RAN PR Worker
+                    RAN PR
                   </button>
                 </div>
               </div>
 
-              <template v-if="!isRanWorker">
+              <template v-if="isMwWorker">
                 <div class="cockpit-field-group">
                   <span class="field-label">Site mode</span>
                   <div class="segmented compact-segmented">
@@ -185,7 +185,7 @@
               </template>
             </div>
 
-            <div v-if="!isRanWorker" class="cockpit-field-group workbench-sites-field">
+            <div v-if="isMwWorker" class="cockpit-field-group workbench-sites-field">
               <div class="cockpit-card-heading">
                 <span>Sites</span>
                 <small>{{ siteCodeCount }} site(s)</small>
@@ -208,7 +208,7 @@
 
             <div class="workbench-create-row">
               <LoadingButton
-                label="Create Job"
+                :label="primaryActionLabel"
                 loading-text="Creating..."
                 :loading="creating"
                 :disabled="!canCreateJob"
@@ -220,11 +220,11 @@
                 class="secondary-link"
                 @click="beginCreateAnotherJob"
               >
-                Create Another Job
+                {{ secondaryActionLabel }}
               </button>
               <p v-if="createDisabledReason" class="cockpit-note">{{ createDisabledReason }}</p>
-              <p v-else-if="activePendingIdempotencyKey" class="cockpit-note">This Create Job action will reuse the current idempotency key until you change inputs or choose Create Another Job.</p>
-              <p v-else class="cockpit-ready">Ready to create Job</p>
+              <p v-else-if="activePendingIdempotencyKey" class="cockpit-note">{{ idempotencyNotice }}</p>
+              <p v-else class="cockpit-ready">{{ readyActionText }}</p>
             </div>
           </section>
         </div>
@@ -428,55 +428,27 @@
 import UploadPanel from '../components/UploadPanel.vue';
 import ErrorBanner from '../components/ErrorBanner.vue';
 import LoadingButton from '../components/LoadingButton.vue';
-import JobWebSocketClient from '../services/websocketClient';
-import { cancelJob, createJob, getErrorMessage, getHealth, getJobDetail, getZipDownloadUrl, listJobs, listRanProjects, prevalidateUpload } from '../api/jobApi';
-import { askJob } from '../api/reAskApi';
-import { displayMessage, isTerminalStatus } from '../utils/statusUtils';
+import { createJob, getErrorMessage, listRanProjects, prevalidateUpload } from '../api/jobApi';
 import {
-  scheduleNotificationDismiss,
-  isWorkerTimeoutError,
-  WORKER_NOTIFICATION_TIMEOUT_MS,
-  WORKER_TIMEOUT_NOTIFICATION_MESSAGE
-} from '../utils/workerNotificationUtils';
-
-const BROWSER_TAB_SESSION_STORAGE_KEY = 'browserTabSessionId';
-const SELECTED_JOB_STORAGE_KEY = 'selectedJobId';
-const WORKER_IDEMPOTENCY_STORAGE_PREFIX = 'workerCreateIdempotencyKey:';
-const SELECTED_JOB_CHANGED_EVENT = 'awp:selected-job-changed';
-
-const buildWorkerIdempotencyStorageKey = (workerId) => `${WORKER_IDEMPOTENCY_STORAGE_PREFIX}${workerId}`;
-
-const createBrowserTabSessionId = () => {
-  if (window.crypto && typeof window.crypto.randomUUID === 'function') {
-    return `tab-${window.crypto.randomUUID().replace(/-/g, '')}`;
-  }
-
-  return `tab-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
-};
-
-const createIdempotencyKey = (workerId) => {
-  if (window.crypto && typeof window.crypto.randomUUID === 'function') {
-    return `${workerId}-${window.crypto.randomUUID().replace(/-/g, '')}`;
-  }
-
-  return `${workerId}-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
-};
+  buildWorkerIdempotencyStorageKey,
+  createIdempotencyKey,
+  workerRuntimeMixin
+} from './shared/workerRuntime';
 
 export default {
-  name: 'HomeView',
+  name: 'PRCreatorView',
   components: {
     ErrorBanner,
     UploadPanel,
     LoadingButton
   },
+  mixins: [workerRuntimeMixin],
   data() {
     return {
+      selectedWorkerId: 'mw-pr',
       selectedFile: null,
       prevalidation: null,
       prevalidating: false,
-      selectedWorkerId: 'mw-pr',
-      creating: false,
-      asking: false,
       prScope: 'TSS',
       prScopeOptions: ['TSS', 'TI'],
       generationScope: 'site_code',
@@ -492,41 +464,22 @@ export default {
       ranEpmsPrevalidation: null,
       ranBomPrevalidating: false,
       ranEpmsPrevalidating: false,
-      browserTabSessionId: '',
-      activeSessionJobs: [],
-      currentJobId: '',
-      currentPrScope: 'TSS',
-      currentStatus: '',
-      currentProgress: null,
-      updatedAt: '',
-      connectionStatus: 'disconnected',
-      events: [],
-      jobDetail: null,
-      reAskAnswer: null,
-      chatMessages: [],
-      health: null,
-      healthError: false,
-      errorMessage: '',
-      errorNotificationId: 0,
-      errorNotificationExpiresAt: 0,
-      wsClient: null,
-      currentPhase: '',
-      commandText: '',
-      commandNotice: '',
-      consoleAutoStick: true,
-      transientErrorTimer: null,
-      chatMessageSequence: 0,
       mwPendingIdempotencyKey: '',
-      ranPendingIdempotencyKey: '',
-      showCancelForm: false,
-      cancellingRequest: false,
-      cancelReasonCode: 'requested_by_user',
-      cancelReasonText: ''
+      ranPendingIdempotencyKey: ''
     };
   },
   computed: {
+    isMwWorker() {
+      return this.selectedWorkerId === 'mw-pr';
+    },
     isRanWorker() {
       return this.selectedWorkerId === 'ran-pr';
+    },
+    heroTitle() {
+      return 'Launch PR Creator jobs with MW PR and RAN PR modes.';
+    },
+    heroSubtitle() {
+      return 'Launch MW PR or RAN PR jobs with validated inputs, live progress, and controlled result delivery from one dedicated PR Creator route.';
     },
     activeWorkerLabel() {
       return this.isRanWorker ? 'RAN PR Worker' : 'MW PR Worker';
@@ -538,27 +491,26 @@ export default {
 
       return this.generationScopeLabel;
     },
-    healthLabel() {
-      if (this.health && this.health.status === 'ok') return '🟢Healthy';
-      if (this.health && this.health.status === 'degraded') return '🟡Degraded';
-      if (this.health && this.health.status === 'down') return '🔴Down';
-      if (this.healthError) return '⚪Unavailable';
-      return '🔵Checking';
+    activeWorkbenchTitle() {
+      return 'PR Creator';
+    },
+    activeWorkbenchAriaLabel() {
+      return 'PR Creator workflow';
+    },
+    primaryActionLabel() {
+      return 'Create Job';
+    },
+    secondaryActionLabel() {
+      return 'Create Another Job';
+    },
+    readyActionText() {
+      return 'Ready to create Job';
+    },
+    idempotencyNotice() {
+      return 'This Create Job action will reuse the current idempotency key until you change inputs or choose Create Another Job.';
     },
     activePendingIdempotencyKey() {
       return this.isRanWorker ? this.ranPendingIdempotencyKey : this.mwPendingIdempotencyKey;
-    },
-    visibleActiveSessionJobs() {
-      return this.activeSessionJobs.filter((job) => !isTerminalStatus(job.status));
-    },
-    hasActiveWorkerJob() {
-      return Boolean(this.currentJobId) && !isTerminalStatus(this.currentStatus || (this.jobDetail && this.jobDetail.job ? this.jobDetail.job.status : ''));
-    },
-    workerFormLocked() {
-      return this.creating;
-    },
-    cancellationMetadata() {
-      return this.jobDetail && this.jobDetail.job ? this.jobDetail.job.cancellation || null : null;
     },
     canCreateJob() {
       if (this.creating) return false;
@@ -601,162 +553,32 @@ export default {
     siteCodeCount() {
       return this.parseSiteCodes().length;
     },
-    siteCountPayload() {
-      return {
-        total: this.currentProgress && this.currentProgress.totalRows ? this.currentProgress.totalRows : 0,
-        processed: this.currentProgress && this.currentProgress.processedRows ? this.currentProgress.processedRows : 0,
-        failed: this.currentProgress && this.currentProgress.failedRows ? this.currentProgress.failedRows : 0
-      };
-    },
-    outputCount() {
-      if (this.jobDetail && this.jobDetail.job && this.hasValue(this.jobDetail.job.outputFileCount)) {
-        return this.jobDetail.job.outputFileCount;
-      }
-      return this.jobDetail && this.jobDetail.outputs ? this.jobDetail.outputs.length : 0;
-    },
-    canDownload() {
-      return this.jobDetail && this.jobDetail.outputs && this.jobDetail.outputs.some((file) => file.fileType === 'zip_package' && file.available);
-    },
-    isCancelledResult() {
-      return this.jobDetail && this.jobDetail.job && ['cancelled', 'cancelled_with_partial_result'].includes(this.jobDetail.job.status);
-    },
-    isPartialCancelledResult() {
-      return this.jobDetail && this.jobDetail.job && this.jobDetail.job.status === 'cancelled_with_partial_result';
-    },
-    jobReady() {
-      return this.jobDetail && this.jobDetail.job && ['completed', 'completed_with_warning', 'failed', 'cancelled', 'cancelled_with_partial_result'].includes(this.jobDetail.job.status);
-    },
-    downloadUnavailableMessage() {
-      const zip = this.jobDetail && this.jobDetail.outputs
-        ? this.jobDetail.outputs.find((file) => file.fileType === 'zip_package')
-        : null;
-      if (zip && zip.expired) return 'ZIP has expired based on retention policy.';
-      if (zip && (zip.deletedAt || zip.cleanupReason)) return 'ZIP is unavailable after retention cleanup.';
-      return 'ZIP is not available yet.';
-    },
-    downloadUrl() {
-      return this.currentJobId ? getZipDownloadUrl(this.currentJobId) : '#';
-    },
-    downloadButtonLabel() {
-      return this.isPartialCancelledResult ? 'Download Partial ZIP' : 'Download ZIP';
-    },
-    deliveryWarningMessage() {
-      if (this.isPartialCancelledResult) {
-        return 'Partial package only. This is not a completed delivery.';
-      }
-      if (this.isCancelledResult) {
-        return 'This job was cancelled and is not a completed delivery.';
-      }
-      return '';
-    },
-    downloadProgressPercent() {
-      if (this.jobReady) return 100;
-      if (!this.currentJobId) return 0;
-      if (!this.currentProgress) return null;
-
-      const exact = this.currentProgress.percent ?? this.currentProgress.percentage ?? this.currentProgress.progressPercent;
-      if (typeof exact === 'number' && Number.isFinite(exact)) {
-        return Math.max(0, Math.min(100, Math.round(exact)));
-      }
-
-      const processed = Number(this.currentProgress.processedRows);
-      const total = Number(this.currentProgress.totalRows);
-      if (Number.isFinite(processed) && Number.isFinite(total) && total > 0) {
-        return Math.max(0, Math.min(100, Math.round((processed / total) * 100)));
-      }
-
-      return null;
-    },
-    progressStateLabel() {
-      if (!this.currentJobId) return 'Idle';
-      if (this.jobReady) return 'Complete';
-      return this.currentPhase || this.currentStatus || 'Running';
-    },
-    downloadProgressLabel() {
-      if (!this.currentJobId) return 'No active Job';
-      if (this.jobReady) return 'Result complete';
-      return this.currentPhase || this.currentStatus || 'Processing';
-    },
-    resultCompletionMessage() {
-      if (!this.jobDetail || !this.jobDetail.job) {
-        return 'Outputs ready; warnings not available; review required not available.';
-      }
-
-      const job = this.jobDetail.job;
-      if (job.status === 'failed') {
-        return job.error && job.error.message ? job.error.message : 'Job failed before outputs were generated.';
-      }
-      if (job.status === 'cancelled') {
-        return 'Job cancelled by user before a completed delivery was produced.';
-      }
-      if (job.status === 'cancelled_with_partial_result') {
-        return 'Job cancelled by user after partial output was preserved. Review the package as partial only.';
-      }
-
-      const outputs = this.hasValue(job.outputFileCount)
-        ? job.outputFileCount
-        : this.outputCount > 0
-          ? this.outputCount
-          : null;
-      const warnings = this.hasValue(job.warningCount) ? job.warningCount : null;
-      const reviewRequired = this.hasValue(job.reviewRequiredCount) ? job.reviewRequiredCount : null;
-
-      const outputText = this.hasValue(outputs) ? `Outputs ${outputs}` : 'Outputs ready';
-      const warningText = this.hasValue(warnings) ? `warnings ${warnings}` : 'warnings not available';
-      const reviewText = this.hasValue(reviewRequired) ? `review required ${reviewRequired}` : 'review required not available';
-      if (job.matchedSiteCount > 0 && outputs === 0) {
-        if ((warnings || 0) > 0 || (reviewRequired || 0) > 0) {
-          return `No ECC output generated; explained by ${warningText} and ${reviewText}.`;
-        }
-        return 'No ECC output generated and no warning or review explanation is available.';
-      }
-      return `${outputText}; ${warningText}; ${reviewText}.`;
-    },
-    resultTone() {
-      const job = this.jobDetail && this.jobDetail.job ? this.jobDetail.job : {};
-      if (job.status === 'failed') return 'danger';
-      if (job.status === 'cancelled' || job.status === 'cancelled_with_partial_result') return 'warning';
-      if (job.status === 'completed_with_warning') return 'warning';
-      if (job.matchedSiteCount > 0 && job.outputFileCount === 0) return 'warning';
-      return 'success';
-    },
-    downloadSummaryItems() {
-      const job = this.jobDetail && this.jobDetail.job ? this.jobDetail.job : {};
-      return [
-        { label: 'Requested sites', value: this.summaryValue(job.requestedSiteCount) },
-        { label: 'Matched sites', value: this.summaryValue(job.matchedSiteCount) },
-        { label: 'Unmatched sites', value: this.summaryValue(job.unmatchedSiteCount) },
-        { label: 'Generated output files', value: this.summaryValue(job.outputFileCount, this.outputCount) },
-        { label: 'Review Required items', value: this.summaryValue(job.reviewRequiredCount) },
-        { label: 'Warnings', value: this.summaryValue(job.warningCount) }
-      ];
-    },
     consoleItems() {
-      const items = [];
+      const items = [
+        {
+          id: 'session-ready',
+          label: 'Workbench',
+          title: 'Ready for PR Creator upload',
+          body: 'Choose MW PR or RAN PR mode, validate the required files, create a Job, then track progress and outputs here.',
+          tone: 'info',
+          time: ''
+        }
+      ];
 
-      items.push({
-        id: 'session-ready',
-        label: 'Workbench',
-        title: 'Ready for source upload',
-        body: 'Upload a source file, validate it, create a Job, then track progress and outputs here.',
-        tone: 'info',
-        time: ''
-      });
-
-      if (this.selectedFile) {
+      if (this.isMwWorker && this.selectedFile) {
         items.push({
-          id: 'file-selected',
+          id: 'mw-file-selected',
           label: 'Upload',
-          title: 'Source file selected',
+          title: 'MW source file selected',
           body: this.selectedFile.name,
           tone: 'info',
           time: ''
         });
       }
 
-      if (this.prevalidation) {
+      if (this.isMwWorker && this.prevalidation) {
         items.push({
-          id: 'validation-state',
+          id: 'mw-validation-state',
           label: 'Validate',
           title: this.prevalidation.passed ? 'Validation passed' : 'Validation failed',
           body: this.prevalidation.workerExplanation || (this.prevalidation.passed ? 'The file is ready for Job creation.' : 'Review the validation checklist and correct the source file.'),
@@ -765,93 +587,51 @@ export default {
         });
       }
 
-      if (this.currentJobId) {
+      if (this.isRanWorker && this.ranBomFile) {
         items.push({
-          id: 'job-created',
-          label: 'Job',
-          title: `Job ${this.currentJobId}`,
-          body: `Status ${this.currentStatus || 'created'} with ${this.activeWorkerLabel} in ${this.activeModeLabel} mode.`,
+          id: 'ran-bom-file-selected',
+          label: 'Upload',
+          title: 'RAN BOM workbook selected',
+          body: this.ranBomFile.name,
           tone: 'info',
-          time: this.updatedAt
+          time: ''
         });
       }
 
-      if (this.currentProgress) {
-        const progressParts = [
-          `Total ${this.siteCountPayload.total}`,
-          `Processed ${this.siteCountPayload.processed}`,
-          `Failed ${this.siteCountPayload.failed}`
-        ];
+      if (this.isRanWorker && this.ranEpmsFile) {
         items.push({
-          id: 'progress-state',
-          label: 'Progress',
-          title: this.currentPhase || this.currentStatus || 'Progress update',
-          body: progressParts.join(' / '),
-          tone: this.siteCountPayload.failed > 0 ? 'warning' : 'info',
-          time: this.updatedAt
+          id: 'ran-epms-file-selected',
+          label: 'Upload',
+          title: 'RAN EPMS workbook selected',
+          body: this.ranEpmsFile.name,
+          tone: 'info',
+          time: ''
         });
       }
 
-      this.events.slice().reverse().forEach((event, index) => {
+      if (this.isRanWorker && this.ranBomPrevalidation) {
         items.push({
-          id: `event-${event.timestamp || index}-${event.type || 'message'}`,
-          label: event.type || 'Event',
-          title: event.status || event.currentPhase || 'Worker event',
-          body: event.displayText || displayMessage(event),
-          tone: event.status && event.status.toLowerCase().includes('fail') ? 'danger' : 'info',
-          time: event.updatedAt || event.timestamp || ''
+          id: 'ran-bom-validation-state',
+          label: 'Validate',
+          title: this.ranBomPrevalidation.passed ? 'BOM validation passed' : 'BOM validation failed',
+          body: this.ranBomPrevalidation.workerExplanation || (this.ranBomPrevalidation.passed ? 'The BOM workbook is ready for Job creation.' : 'Review the BOM validation checklist and correct the workbook.'),
+          tone: this.ranBomPrevalidation.passed ? 'success' : 'danger',
+          time: ''
         });
-      });
-
-      if (this.jobDetail && this.jobDetail.job) {
-        const job = this.jobDetail.job;
-        items.push({
-          id: 'result-state',
-          label: 'Result',
-          title: `Result ${job.status || 'available'}`,
-          body: this.resultCompletionMessage,
-          tone: this.resultTone,
-          time: job.updatedAt || this.updatedAt
-        });
-
-        const finalSummary = this.jobDetail.finalWorkerSummary || job.finalWorkerSummary || '';
-        if (isTerminalStatus(job.status) && finalSummary) {
-          items.push({
-            id: 'final-summary',
-            label: 'AI Explanation',
-            title: 'Final worker summary',
-            body: finalSummary,
-            tone: 'info',
-            time: job.updatedAt || this.updatedAt
-          });
-        }
-
-        if (job.error && job.error.message) {
-          items.push({
-            id: 'job-error',
-            label: 'Error',
-            title: 'Job error',
-            body: job.error.message,
-            tone: 'danger',
-            time: job.updatedAt || this.updatedAt
-          });
-        }
       }
 
-      this.chatMessages.forEach((message) => {
+      if (this.isRanWorker && this.ranEpmsPrevalidation) {
         items.push({
-          id: message.id,
-          label: message.role === 'user' ? 'User' : message.label || 'AI Response',
-          title: message.role === 'user' ? 'Question' : 'Worker answer',
-          body: message.body,
-          tone: message.tone || (message.role === 'user' ? 'user' : 'success'),
-          time: message.timestamp || '',
-          role: message.role,
-          meta: message.meta || ''
+          id: 'ran-epms-validation-state',
+          label: 'Validate',
+          title: this.ranEpmsPrevalidation.passed ? 'EPMS validation passed' : 'EPMS validation failed',
+          body: this.ranEpmsPrevalidation.workerExplanation || (this.ranEpmsPrevalidation.passed ? 'The EPMS workbook is ready for Job creation.' : 'Review the EPMS validation checklist and correct the workbook.'),
+          tone: this.ranEpmsPrevalidation.passed ? 'success' : 'danger',
+          time: ''
         });
-      });
+      }
 
-      return items;
+      return [...items, ...this.buildSharedConsoleItems()];
     }
   },
   watch: {
@@ -876,42 +656,7 @@ export default {
       this.resetPendingIdempotencyKey('ran-pr');
     }
   },
-  mounted() {
-    if (typeof window !== 'undefined') {
-      window.__AWP_HOME_VM__ = this;
-    }
-    this.initializeBrowserTabSessionId();
-    this.initializePendingIdempotencyKeys();
-    this.checkHealth();
-    this.wsClient = new JobWebSocketClient({
-      onMessage: this.handleWebSocketMessage,
-      onStatus: (status) => {
-        this.connectionStatus = status;
-      }
-    });
-    this.restoreActiveJobs();
-    this.$nextTick(() => {
-      this.scrollConsoleToBottom(true);
-    });
-  },
-  beforeDestroy() {
-    this.clearTransientErrorTimer();
-    if (this.wsClient) {
-      this.wsClient.close();
-    }
-  },
   methods: {
-    initializeBrowserTabSessionId() {
-      const existing = sessionStorage.getItem(BROWSER_TAB_SESSION_STORAGE_KEY);
-
-      if (existing) {
-        this.browserTabSessionId = existing;
-        return;
-      }
-
-      this.browserTabSessionId = createBrowserTabSessionId();
-      sessionStorage.setItem(BROWSER_TAB_SESSION_STORAGE_KEY, this.browserTabSessionId);
-    },
     initializePendingIdempotencyKeys() {
       this.mwPendingIdempotencyKey = sessionStorage.getItem(buildWorkerIdempotencyStorageKey('mw-pr')) || '';
       this.ranPendingIdempotencyKey = sessionStorage.getItem(buildWorkerIdempotencyStorageKey('ran-pr')) || '';
@@ -928,7 +673,9 @@ export default {
       this.mwPendingIdempotencyKey = idempotencyKey;
     },
     ensurePendingIdempotencyKey(workerId) {
-      const currentValue = workerId === 'ran-pr' ? this.ranPendingIdempotencyKey : this.mwPendingIdempotencyKey;
+      const currentValue = workerId === 'ran-pr'
+        ? this.ranPendingIdempotencyKey
+        : this.mwPendingIdempotencyKey;
 
       if (currentValue) {
         return currentValue;
@@ -949,122 +696,8 @@ export default {
 
       this.mwPendingIdempotencyKey = '';
     },
-    getStoredSelectedJobId() {
-      return sessionStorage.getItem(SELECTED_JOB_STORAGE_KEY) || '';
-    },
-    notifySelectedJobChange(jobId) {
-      if (typeof window === 'undefined') {
-        return;
-      }
-
-      window.dispatchEvent(new CustomEvent(SELECTED_JOB_CHANGED_EVENT, {
-        detail: { jobId: jobId || '' }
-      }));
-    },
-    rememberSelectedJobId(jobId) {
-      this.currentJobId = jobId;
-      sessionStorage.setItem(SELECTED_JOB_STORAGE_KEY, jobId);
-      this.notifySelectedJobChange(jobId);
-    },
-    normalizeActiveSessionJobs(items = []) {
-      return items
-        .filter((job) => !isTerminalStatus(job.status))
-        .sort((left, right) => new Date(right.createdAt || 0) - new Date(left.createdAt || 0));
-    },
-    async restoreActiveJobs() {
-      try {
-        const result = await listJobs({
-          workerType: 'pr-worker',
-          browserTabSessionId: this.browserTabSessionId,
-          limit: 50
-        });
-        this.activeSessionJobs = this.normalizeActiveSessionJobs(result.items || []);
-      } catch (error) {
-        this.activeSessionJobs = [];
-        this.showWorkerNotification(getErrorMessage(error));
-      }
-
-      const storedJobId = this.getStoredSelectedJobId();
-      const fallbackJobId = this.visibleActiveSessionJobs.length > 0 ? this.visibleActiveSessionJobs[0].jobId : '';
-      const selectedJobId = this.visibleActiveSessionJobs.some((job) => job.jobId === storedJobId)
-        ? storedJobId
-        : fallbackJobId;
-
-      if (!selectedJobId) {
-        this.resetJobSession();
-        return;
-      }
-
-      await this.selectActiveJob(selectedJobId);
-    },
-    async selectActiveJob(jobId) {
-      this.rememberSelectedJobId(jobId);
-      this.events = [];
-      this.currentProgress = null;
-      this.currentPhase = '';
-      this.currentStatus = '';
-      this.jobDetail = null;
-      this.reAskAnswer = null;
-      this.chatMessages = [];
-      const selectedJob = this.activeSessionJobs.find((job) => job.jobId === jobId);
-      if (selectedJob) {
-        this.currentStatus = selectedJob.status;
-        this.currentPrScope = selectedJob.prScope || this.currentPrScope;
-      }
-      if (this.wsClient) {
-        this.wsClient.connect(jobId);
-      }
-      await this.refreshJobDetail();
-    },
-    upsertActiveSessionJob(job) {
-      if (!job || !job.jobId) {
-        return;
-      }
-
-      const remainingJobs = this.activeSessionJobs.filter((item) => item.jobId !== job.jobId);
-
-      if (!isTerminalStatus(job.status)) {
-        remainingJobs.push(job);
-      }
-
-      this.activeSessionJobs = this.normalizeActiveSessionJobs(remainingJobs);
-    },
-    removeActiveSessionJob(jobId) {
-      this.activeSessionJobs = this.activeSessionJobs.filter((job) => job.jobId !== jobId);
-    },
-    resetJobSession() {
-      this.currentJobId = '';
-      sessionStorage.removeItem(SELECTED_JOB_STORAGE_KEY);
-      this.notifySelectedJobChange('');
-      this.currentStatus = '';
-      this.currentProgress = null;
-      this.jobDetail = null;
-      this.events = [];
-      this.currentPrScope = 'TSS';
-      this.errorMessage = '';
-      this.commandNotice = '';
-      this.reAskAnswer = null;
-      this.chatMessages = [];
-      this.currentPhase = '';
-      this.resetCancellationForm();
-    },
-    resetCancellationForm() {
-      this.showCancelForm = false;
-      this.cancellingRequest = false;
-      this.cancelReasonCode = 'requested_by_user';
-      this.cancelReasonText = '';
-    },
-    beginCreateAnotherJob() {
+    resetActivePendingIdempotencyKey() {
       this.resetPendingIdempotencyKey(this.selectedWorkerId);
-    },
-    isJobCancellable(job) {
-      return Boolean(job) && !isTerminalStatus(job.status);
-    },
-    async prepareCancellationForJob(jobId) {
-      if (this.currentJobId !== jobId) {
-        await this.selectActiveJob(jobId);
-      }
-      this.showCancelForm = true;
     },
     async handleWorkerChange(workerId) {
       if (this.selectedWorkerId === workerId) {
@@ -1099,15 +732,6 @@ export default {
         this.ranProjectLoadError = getErrorMessage(error);
       } finally {
         this.ranProjectLoading = false;
-      }
-    },
-    async checkHealth() {
-      try {
-        this.health = await getHealth();
-        this.healthError = false;
-      } catch (error) {
-        this.health = null;
-        this.healthError = true;
       }
     },
     onFileSelected(file) {
@@ -1215,14 +839,6 @@ export default {
         this.isSafePrevalidationPayload(error.response.data)
       );
     },
-    hasValue(value) {
-      return value !== undefined && value !== null && value !== '';
-    },
-    summaryValue(value, fallback = null) {
-      if (this.hasValue(value)) return value;
-      if (this.hasValue(fallback)) return fallback;
-      return 0;
-    },
     async createWorkerJob() {
       if (!this.canCreateJob) return;
       this.creating = true;
@@ -1268,218 +884,6 @@ export default {
       } finally {
         this.creating = false;
       }
-    },
-    async submitCancellationRequest() {
-      if (!this.currentJobId || this.cancellingRequest) return;
-
-      this.cancellingRequest = true;
-      this.dismissErrorMessage();
-      try {
-        const result = await cancelJob(this.currentJobId, {
-          reasonCode: this.cancelReasonCode,
-          reasonText: this.cancelReasonCode === 'other' ? this.cancelReasonText : ''
-        });
-        this.currentStatus = result.job.status;
-        this.upsertActiveSessionJob(result.job);
-        this.showCancelForm = false;
-        await this.refreshJobDetail();
-      } catch (error) {
-        this.showWorkerNotification(getErrorMessage(error));
-      } finally {
-        this.cancellingRequest = false;
-      }
-    },
-    async refreshJobDetail() {
-      if (!this.currentJobId) return;
-      try {
-        this.jobDetail = await getJobDetail(this.currentJobId);
-        if (this.jobDetail && this.jobDetail.job) {
-          this.currentStatus = this.jobDetail.job.status;
-          this.currentPrScope = this.jobDetail.job.prScope || this.currentPrScope;
-          this.currentPhase = this.jobDetail.job.phase || '';
-          this.upsertActiveSessionJob(this.jobDetail.job);
-          if (isTerminalStatus(this.jobDetail.job.status)) {
-            this.removeActiveSessionJob(this.jobDetail.job.jobId);
-          }
-        }
-      } catch (error) {
-        this.showWorkerNotification(getErrorMessage(error));
-      }
-    },
-    handleWebSocketMessage(message) {
-      if (message.type === 'ERROR') {
-        this.showWorkerNotification(message.message || 'Realtime connection error.');
-        return;
-      }
-
-      if (message.type === 'SUBSCRIBED') {
-        this.applySnapshot(message.state);
-        return;
-      }
-
-      if (message.type === 'JOB_EVENT' || message.type === 'JOB_HEARTBEAT') {
-        this.applyRealtimeMessage(message);
-      }
-    },
-    applySnapshot(state) {
-      if (!state) return;
-      this.currentStatus = state.status || this.currentStatus;
-      this.currentProgress = state.progress || this.currentProgress;
-      this.currentPhase = state.currentPhase || this.currentPhase || '';
-      this.updatedAt = state.updatedAt || '';
-      this.events = (state.events || []).map((event) => ({
-        ...event,
-        displayText: displayMessage(event)
-      })).slice(0, 50);
-    },
-    applyRealtimeMessage(message) {
-      this.currentStatus = message.status || this.currentStatus;
-      this.currentPhase = message.currentPhase || this.currentPhase || '';
-      this.currentProgress = message.progress || this.currentProgress;
-      this.updatedAt = message.updatedAt || message.timestamp || '';
-
-      const eventItem = {
-        ...message,
-        displayText: displayMessage(message)
-      };
-
-      this.events = [eventItem, ...this.events].slice(0, 50);
-      const existingJob = this.activeSessionJobs.find((job) => job.jobId === this.currentJobId) || {};
-      this.upsertActiveSessionJob({
-        ...existingJob,
-        jobId: this.currentJobId,
-        status: this.currentStatus,
-        workerId: existingJob.workerId || (this.jobDetail && this.jobDetail.job ? this.jobDetail.job.workerId : this.selectedWorkerId),
-        workerDisplayName: existingJob.workerDisplayName || (this.jobDetail && this.jobDetail.job ? this.jobDetail.job.workerDisplayName : this.activeWorkerLabel),
-        createdAt: existingJob.createdAt || this.updatedAt,
-        prScope: existingJob.prScope || this.currentPrScope
-      });
-
-      if (isTerminalStatus(message.status)) {
-        this.refreshJobDetail();
-        this.restoreActiveJobs();
-      }
-    },
-    async askQuestion(question) {
-      if (!this.currentJobId || !question.trim()) return;
-      this.asking = true;
-      this.dismissErrorMessage();
-      try {
-        const answer = await askJob(this.currentJobId, question);
-        this.reAskAnswer = answer;
-        this.appendChatMessage({
-          role: 'assistant',
-          body: answer.answer || answer.message || JSON.stringify(answer),
-          tone: 'success',
-          label: 'AI Response',
-          meta: [answer.answerSource, answer.llmStatus].filter(Boolean).join(' / ')
-        });
-      } catch (error) {
-        const isTimeout = error && (
-          isWorkerTimeoutError(error)
-        );
-        const message = isTimeout
-          ? WORKER_TIMEOUT_NOTIFICATION_MESSAGE
-          : getErrorMessage(error);
-        this.showWorkerNotification(message);
-      } finally {
-        this.asking = false;
-      }
-    },
-    async submitCommand() {
-      const question = this.commandText.trim();
-      if (!question) return;
-      if (!this.currentJobId) {
-        this.commandNotice = 'Create a Job before sending AI follow-up questions. You can use this field to prepare the prompt now.';
-        return;
-      }
-      this.commandNotice = '';
-      this.appendChatMessage({
-        role: 'user',
-        body: question,
-        tone: 'user',
-        label: 'User'
-      });
-      await this.askQuestion(question);
-      if (!this.errorMessage) {
-        this.commandText = '';
-      }
-    },
-    onConsoleScroll() {
-      const el = this.$refs.consoleBody;
-      if (!el) return;
-      this.consoleAutoStick = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
-    },
-    scrollConsoleToBottom(force) {
-      const el = this.$refs.consoleBody;
-      if (!el || (!force && !this.consoleAutoStick)) return;
-      el.scrollTop = el.scrollHeight;
-    },
-    appendChatMessage({ role, body, tone, label, meta }) {
-      this.chatMessageSequence += 1;
-      this.chatMessages.push({
-        id: `chat-${Date.now()}-${this.chatMessageSequence}`,
-        role,
-        body,
-        tone,
-        label,
-        meta,
-        timestamp: new Date().toLocaleTimeString()
-      });
-      this.consoleAutoStick = true;
-      this.$nextTick(() => {
-        this.scrollConsoleToBottom(true);
-      });
-    },
-    clearTransientErrorTimer() {
-      if (this.transientErrorTimer) {
-        window.clearTimeout(this.transientErrorTimer);
-        this.transientErrorTimer = null;
-      }
-    },
-    dismissErrorMessage() {
-      this.clearTransientErrorTimer();
-      this.errorNotificationExpiresAt = 0;
-      this.errorMessage = '';
-    },
-    getWorkerNotificationMessage(error) {
-      if (isWorkerTimeoutError(error)) {
-        return WORKER_TIMEOUT_NOTIFICATION_MESSAGE;
-      }
-
-      return getErrorMessage(error);
-    },
-    showWorkerNotification(message) {
-      if (!message) {
-        this.dismissErrorMessage();
-        return;
-      }
-
-      if (this.errorMessage === message && this.transientErrorTimer) {
-        return;
-      }
-
-      this.clearTransientErrorTimer();
-      this.errorNotificationId += 1;
-      const notificationId = this.errorNotificationId;
-      this.errorMessage = message;
-      const scheduledDismiss = scheduleNotificationDismiss({
-        activeNotificationId: notificationId,
-        clearTimer: (timer) => window.clearTimeout(timer),
-        currentTimer: this.transientErrorTimer,
-        onDismiss: (dismissedNotificationId) => {
-          if (this.errorNotificationId === dismissedNotificationId) {
-            this.dismissErrorMessage();
-          }
-        },
-        setTimer: (callback, timeoutMs) => window.setTimeout(callback, timeoutMs),
-        timeoutMs: WORKER_NOTIFICATION_TIMEOUT_MS
-      });
-      this.errorNotificationExpiresAt = scheduledDismiss.expiresAt;
-      this.transientErrorTimer = scheduledDismiss.timer;
-    },
-    setTransientError(message) {
-      this.showWorkerNotification(message);
     }
   }
 };

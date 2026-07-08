@@ -26,6 +26,9 @@ const expectedGeneralPath = path.join(ranSkillRoot, 'output', 'ECC_PR_Output_Wit
 const generalItemProject = 'CD consolidation 2023 (Swap/ Modernize)';
 const terminalStatuses = new Set(['completed', 'completed_with_warning', 'failed', 'cancelled', 'cancelled_with_partial_result']);
 const createdJobIds = new Set();
+const browserTabSessionId = 'QA-RAN-GOLDEN-TAB';
+let idempotencySequence = 0;
+const nextIdempotencyKey = () => `ran-golden-${++idempotencySequence}`;
 
 const request = async (baseUrl, route, options = {}) => {
   const response = await fetch(`${baseUrl}${route}`, options);
@@ -178,6 +181,8 @@ const runGoldenJob = async ({ baseUrl, runMode, selectedProject }) => {
 
   const created = await postJson(baseUrl, '/api/jobs', {
     workerId: 'ran-pr',
+    browserTabSessionId,
+    idempotencyKey: nextIdempotencyKey(),
     bomPrevalidatedFileId: bomPrevalidation.body.prevalidatedFileId,
     epmsPrevalidatedFileId: epmsPrevalidation.body.prevalidatedFileId,
     runMode,

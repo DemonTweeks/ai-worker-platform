@@ -8,7 +8,7 @@
       <router-link to="/admin/health">Health Dashboard</router-link>
       <router-link to="/admin/assets">Assets</router-link>
       <router-link to="/admin/audit-logs">Audit Logs</router-link>
-      <router-link to="/">User Portal</router-link>
+      <router-link to="/workers/pr-creator">User Portal</router-link>
     </nav>
     <button type="button" class="secondary-button logout-button" @click="$emit('logout')">Logout</button>
   </div>

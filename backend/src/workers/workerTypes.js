@@ -1,11 +1,13 @@
 const WORKER_IDS = {
   MW_PR: 'mw-pr',
-  RAN_PR: 'ran-pr'
+  RAN_PR: 'ran-pr',
+  PR_AUDITOR: 'pr-auditor'
 };
 
 const WORKER_DISPLAY_NAMES = {
   [WORKER_IDS.MW_PR]: 'MW PR Worker',
-  [WORKER_IDS.RAN_PR]: 'RAN PR Worker'
+  [WORKER_IDS.RAN_PR]: 'RAN PR Worker',
+  [WORKER_IDS.PR_AUDITOR]: 'PR Auditor'
 };
 
 const RAN_RUN_MODES = {

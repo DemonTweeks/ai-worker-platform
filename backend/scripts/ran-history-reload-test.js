@@ -1,4 +1,5 @@
 const assert = require('assert');
+const crypto = require('crypto');
 const fs = require('fs');
 const http = require('http');
 const path = require('path');
@@ -24,8 +25,9 @@ const selectedProject = 'CD consolidation 2023 (Swap/ Modernize)';
 const terminalStatuses = new Set(['completed', 'completed_with_warning', 'failed', 'cancelled', 'cancelled_with_partial_result']);
 const createdJobIds = new Set();
 const browserTabSessionId = 'QA-RAN-HISTORY-TAB';
+const runToken = crypto.randomUUID();
 let idempotencySequence = 0;
-const nextIdempotencyKey = () => `ran-history-${++idempotencySequence}`;
+const nextIdempotencyKey = () => `ran-history-${runToken}-${++idempotencySequence}`;
 
 const request = async (baseUrl, route, options = {}) => {
   const response = await fetch(`${baseUrl}${route}`, options);

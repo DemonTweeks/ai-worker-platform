@@ -14,7 +14,7 @@ const workerStateService = require('./workerStateService');
 const jobQueue = require('../queue/jobQueue');
 const { JOB_EVENTS, publishJobEvent } = require('../websocket/eventPublisher');
 const { answerReAsk } = require('../llm/reAskService');
-const { generateUniqueJobId } = require('../utils/jobIdGenerator');
+const { reserveUniqueJobId } = require('../utils/jobIdGenerator');
 const { assertPathInsideRoot, toStorageRelativePath } = require('../utils/pathUtils');
 const { createApiError } = require('../utils/apiError');
 const { sanitizeRanStageName } = require('../workers/ranFailureService');
@@ -37,7 +37,13 @@ const {
 
 const CANCELLABLE_BEFORE_WORKER_STATUSES = ['queued'];
 const PR_SCOPES = ['TSS', 'TI'];
-const INPUT_FILE_TYPES = new Set(['uploaded_export', 'ran_bom_upload', 'ran_epms_upload']);
+const INPUT_FILE_TYPES = new Set([
+  'uploaded_export',
+  'ran_bom_upload',
+  'ran_epms_upload',
+  'pr_auditor_final_po_upload',
+  'pr_auditor_expected_ecc_upload'
+]);
 
 const normalizeSiteCodes = (siteCodes = []) => parseSiteCodes(siteCodes).siteCodes;
 
@@ -68,8 +74,9 @@ const getWorkerPresentation = (job = {}) => {
 };
 
 const isRanWorker = (workerId) => workerId === WORKER_IDS.RAN_PR;
+const isPrAuditorWorker = (workerId) => workerId === WORKER_IDS.PR_AUDITOR;
 const getDisplayPrScope = (job = {}) => (
-  isRanWorker(job.workerId) ? (job.prScope || null) : (job.prScope || 'TSS')
+  (isRanWorker(job.workerId) || isPrAuditorWorker(job.workerId)) ? (job.prScope || null) : (job.prScope || 'TSS')
 );
 
 const assertUploadKind = (upload, expectedKind, label) => {
@@ -123,12 +130,17 @@ const redactTechnicalDetails = (text) => {
 const getFailureSummary = (job) => {
   if (job.status !== 'failed') return null;
   const error = job.error;
-  if (!error) return 'PR Worker execution failed.';
+  if (!error) {
+    if (job.workerId === WORKER_IDS.PR_AUDITOR) return 'PR Auditor execution failed.';
+    if (job.workerId === WORKER_IDS.RAN_PR) return 'RAN PR Worker execution failed.';
+    return 'PR Worker execution failed.';
+  }
 
   const code = error.code;
   const details = error.details || {};
   const ranStage = sanitizeRanStageName(details.stage);
   const isRanJob = job.workerId === WORKER_IDS.RAN_PR;
+  const isPrAuditorJob = job.workerId === WORKER_IDS.PR_AUDITOR;
 
   if (code === 'PREFLIGHT_FAILED') {
     const allowedPkgs = ['pandas', 'openpyxl'];
@@ -141,6 +153,9 @@ const getFailureSummary = (job) => {
     }
     return 'PR worker dependency check failed.';
   } else if (code === 'WORKER_TIMEOUT') {
+    if (isPrAuditorJob) {
+      return 'PR Auditor execution timed out.';
+    }
     if (isRanJob) {
       return ranStage
         ? `RAN PR worker execution timed out (${ranStage}).`
@@ -151,6 +166,9 @@ const getFailureSummary = (job) => {
     }
     return 'PR worker execution timed out.';
   } else if (code === 'WORKER_PROCESS_FAILED') {
+    if (isPrAuditorJob) {
+      return 'PR Auditor process failed.';
+    }
     if (isRanJob) {
       return ranStage
         ? `RAN PR worker process failed (${ranStage}).`
@@ -163,6 +181,8 @@ const getFailureSummary = (job) => {
   } else if (code === 'RAN_INVALID_ECC_OUTPUT' || code === 'RAN_ZERO_VALID_ECC_OUTPUT') {
     return 'RAN PR worker produced no valid ECC output.';
   }
+  if (isPrAuditorJob) return 'PR Auditor execution failed.';
+  if (isRanJob) return 'RAN PR Worker execution failed.';
   return 'PR Worker execution failed.';
 };
 
@@ -170,10 +190,18 @@ const getFailureDiagnosis = (job) => {
   if (job.status !== 'failed') return undefined;
   const error = job.error;
   if (!error) {
+    const isPrAuditorJob = job.workerId === WORKER_IDS.PR_AUDITOR;
+    const isRanJob = job.workerId === WORKER_IDS.RAN_PR;
     return {
       category: 'WORKER_ERROR',
-      title: job.workerId === WORKER_IDS.RAN_PR ? 'RAN PR Worker execution failed' : 'PR Worker execution failed',
-      summary: job.workerId === WORKER_IDS.RAN_PR
+      title: isPrAuditorJob
+        ? 'PR Auditor execution failed'
+        : isRanJob
+          ? 'RAN PR Worker execution failed'
+          : 'PR Worker execution failed',
+      summary: isPrAuditorJob
+        ? 'An unexpected error occurred during the PR Auditor execution process.'
+        : isRanJob
         ? 'An unexpected error occurred during the RAN PR worker execution process.'
         : 'An unexpected error occurred during the PR worker execution process.',
       technicalDetails: ''
@@ -184,12 +212,21 @@ const getFailureDiagnosis = (job) => {
   const details = error.details || {};
   const ranStage = sanitizeRanStageName(details.stage);
   const isRanJob = job.workerId === WORKER_IDS.RAN_PR;
+  const isPrAuditorJob = job.workerId === WORKER_IDS.PR_AUDITOR;
 
   const allowedCategories = ['PREFLIGHT_FAILED', 'WORKER_TIMEOUT', 'WORKER_PROCESS_FAILED', 'RAN_INVALID_ECC_OUTPUT', 'RAN_ZERO_VALID_ECC_OUTPUT'];
   const category = allowedCategories.includes(code) ? code : 'WORKER_ERROR';
 
-  let title = 'PR Worker execution failed';
-  let summary = 'An unexpected error occurred during the PR worker execution process.';
+  let title = isPrAuditorJob
+    ? 'PR Auditor execution failed'
+    : isRanJob
+      ? 'RAN PR Worker execution failed'
+      : 'PR Worker execution failed';
+  let summary = isPrAuditorJob
+    ? 'An unexpected error occurred during the PR Auditor execution process.'
+    : isRanJob
+      ? 'An unexpected error occurred during the RAN PR worker execution process.'
+      : 'An unexpected error occurred during the PR worker execution process.';
   let missingPackages;
   let pythonExecutable;
   let recommendedCommand;
@@ -220,22 +257,30 @@ const getFailureDiagnosis = (job) => {
     }
   } else if (category === 'WORKER_TIMEOUT') {
     title = 'Worker timeout';
-    summary = isRanJob
+    summary = isPrAuditorJob
+      ? 'PR Auditor execution exceeded the maximum allowed time limit.'
+      : isRanJob
       ? `RAN PR worker execution exceeded the maximum allowed time limit${ranStage ? ` while running ${ranStage}` : ''}.`
       : 'PR worker execution exceeded the maximum allowed time limit.';
 
-    if (isRanJob && ranStage) {
+    if (isPrAuditorJob) {
+      scope = undefined;
+    } else if (isRanJob && ranStage) {
       scope = undefined;
     } else if (details.scope === 'TSS' || details.scope === 'TI') {
       scope = details.scope;
     }
   } else if (category === 'WORKER_PROCESS_FAILED') {
     title = 'Worker process failed';
-    summary = isRanJob
+    summary = isPrAuditorJob
+      ? 'PR Auditor child process exited with an error status during execution.'
+      : isRanJob
       ? `RAN PR worker stage failed${ranStage ? ` while running ${ranStage}` : ''}.`
       : 'PR worker child process exited with an error status during execution.';
 
-    if (isRanJob && ranStage) {
+    if (isPrAuditorJob) {
+      scope = undefined;
+    } else if (isRanJob && ranStage) {
       scope = undefined;
     } else if (details.scope === 'TSS' || details.scope === 'TI') {
       scope = details.scope;
@@ -297,6 +342,7 @@ const serializeJobSummary = (job) => ({
   outputFileCount: job.outputFileCount,
   reviewRequiredCount: job.reviewRequiredCount,
   warningCount: job.warningCount,
+  auditSummary: job.auditSummary || null,
   finalWorkerSummary: job.finalWorkerSummary,
   browserTabSessionId: job.browserTabSessionId || null,
   idempotencyKey: job.idempotencyKey || null,
@@ -370,6 +416,7 @@ const createMwJob = async ({
     idempotencyKey: normalizedIdempotencyKey
   }, async () => {
     let jobId = null;
+    let releaseJobIdReservation = null;
 
     try {
       const replayResult = await buildIdempotentReplayResult({
@@ -385,7 +432,9 @@ const createMwJob = async ({
       if (upload.uploadKind && upload.uploadKind !== UPLOAD_KINDS.MW_EXPORT) {
         throw createApiError(400, 'VALIDATION_ERROR', 'prevalidatedFileId must reference an iEPMS export upload.');
       }
-      jobId = await generateUniqueJobId();
+      const jobIdReservation = await reserveUniqueJobId();
+      jobId = jobIdReservation.jobId;
+      releaseJobIdReservation = jobIdReservation.release;
       await storageService.createJobFolders(jobId);
 
       const inputPath = storageService.resolveJobInputPath(jobId, upload.originalFileName);
@@ -456,6 +505,10 @@ const createMwJob = async ({
         ]).catch(() => {});
       }
       throw error;
+    } finally {
+      if (releaseJobIdReservation) {
+        releaseJobIdReservation();
+      }
     }
   });
 };
@@ -493,6 +546,7 @@ const createRanJob = async ({
     idempotencyKey: normalizedIdempotencyKey
   }, async () => {
     let jobId = null;
+    let releaseJobIdReservation = null;
 
     try {
       const replayResult = await buildIdempotentReplayResult({
@@ -511,7 +565,9 @@ const createRanJob = async ({
       assertUploadKind(bomUpload, UPLOAD_KINDS.RAN_BOM, 'BOM');
       assertUploadKind(epmsUpload, UPLOAD_KINDS.RAN_EPMS, 'EPMS');
 
-      jobId = await generateUniqueJobId();
+      const jobIdReservation = await reserveUniqueJobId();
+      jobId = jobIdReservation.jobId;
+      releaseJobIdReservation = jobIdReservation.release;
       await storageService.createJobFolders(jobId);
 
       const retentionUntil = addRetentionDays();
@@ -608,6 +664,158 @@ const createRanJob = async ({
         ]).catch(() => {});
       }
       throw error;
+    } finally {
+      if (releaseJobIdReservation) {
+        releaseJobIdReservation();
+      }
+    }
+  });
+};
+
+const createPrAuditorJob = async ({
+  finalPoPrevalidatedFileId,
+  expectedEccPrevalidatedFileId,
+  browserTabSessionId,
+  idempotencyKey,
+  workerManifest,
+  normalizedWorkerId
+}) => {
+  if (!finalPoPrevalidatedFileId) {
+    throw createApiError(400, 'VALIDATION_ERROR', 'finalPoPrevalidatedFileId is required for PR Auditor jobs.');
+  }
+
+  if (!expectedEccPrevalidatedFileId) {
+    throw createApiError(400, 'VALIDATION_ERROR', 'expectedEccPrevalidatedFileId is required for PR Auditor jobs.');
+  }
+
+  const normalizedBrowserTabSessionId = normalizeBrowserTabSessionId(browserTabSessionId);
+  const normalizedIdempotencyKey = normalizeIdempotencyKey(idempotencyKey);
+
+  return withIdempotencyReservation({
+    workerId: normalizedWorkerId,
+    idempotencyKey: normalizedIdempotencyKey
+  }, async () => {
+    let jobId = null;
+    let releaseJobIdReservation = null;
+
+    try {
+      const replayResult = await buildIdempotentReplayResult({
+        workerId: normalizedWorkerId,
+        idempotencyKey: normalizedIdempotencyKey
+      });
+
+      if (replayResult) {
+        return replayResult;
+      }
+
+      const [finalPoUpload, expectedEccUpload] = await Promise.all([
+        consumePrevalidatedUpload(finalPoPrevalidatedFileId),
+        consumePrevalidatedUpload(expectedEccPrevalidatedFileId)
+      ]);
+      assertUploadKind(finalPoUpload, UPLOAD_KINDS.PR_AUDITOR_FINAL_PO, 'Final PO');
+      assertUploadKind(expectedEccUpload, UPLOAD_KINDS.PR_AUDITOR_EXPECTED_ECC, 'Generated ECC');
+
+      const jobIdReservation = await reserveUniqueJobId();
+      jobId = jobIdReservation.jobId;
+      releaseJobIdReservation = jobIdReservation.release;
+      await storageService.createJobFolders(jobId);
+
+      const retentionUntil = addRetentionDays();
+      const finalPoInputPath = storageService.resolveJobInputPath(jobId, finalPoUpload.originalFileName);
+      const expectedEccInputPath = storageService.resolveJobInputPath(jobId, expectedEccUpload.originalFileName);
+
+      await Promise.all([
+        fs.promises.copyFile(finalPoUpload.absolutePath, finalPoInputPath),
+        fs.promises.copyFile(expectedEccUpload.absolutePath, expectedEccInputPath)
+      ]);
+      await Promise.all([
+        storageService.deleteFileSafe(finalPoUpload.absolutePath),
+        storageService.deleteFileSafe(expectedEccUpload.absolutePath)
+      ]);
+
+      const [finalPoMetadata, expectedEccMetadata] = await Promise.all([
+        storageService.buildFileMetadata(finalPoInputPath),
+        storageService.buildFileMetadata(expectedEccInputPath)
+      ]);
+      const requestPath = storageService.resolveJobTempPath(jobId, 'job-request.json');
+      await storageService.saveBufferToFile(
+        requestPath,
+        Buffer.from(JSON.stringify({
+          jobId,
+          workerId: normalizedWorkerId,
+          browserTabSessionId: normalizedBrowserTabSessionId,
+          idempotencyKey: normalizedIdempotencyKey,
+          createdAt: new Date().toISOString(),
+          inputs: {
+            finalPoFileName: finalPoUpload.originalFileName,
+            expectedEccFileName: expectedEccUpload.originalFileName
+          }
+        }, null, 2))
+      );
+
+      const job = await Job.create({
+        jobId,
+        workerId: normalizedWorkerId,
+        engineVersion: workerManifest.engineVersion,
+        engineCommit: workerManifest.engineCommit,
+        workerType: 'pr-worker',
+        status: 'queued',
+        browserTabSessionId: normalizedBrowserTabSessionId,
+        idempotencyKey: normalizedIdempotencyKey,
+        generationScope: 'all_sites',
+        prScope: null,
+        runMode: null,
+        selectedProject: null,
+        requestedSiteCount: 0,
+        fileRetentionUntil: retentionUntil
+      });
+
+      const jobFiles = await JobFile.insertMany([
+        {
+          jobId,
+          fileType: 'pr_auditor_final_po_upload',
+          fileName: finalPoUpload.originalFileName,
+          filePath: finalPoMetadata.filePath,
+          fileSize: finalPoMetadata.fileSize,
+          retentionUntil
+        },
+        {
+          jobId,
+          fileType: 'pr_auditor_expected_ecc_upload',
+          fileName: expectedEccUpload.originalFileName,
+          filePath: expectedEccMetadata.filePath,
+          fileSize: expectedEccMetadata.fileSize,
+          retentionUntil
+        }
+      ]);
+      const queueState = await jobQueue.enqueueJob(jobId);
+
+      return {
+        created: true,
+        job: serializeJobSummary(job),
+        jobFiles: jobFiles.map((file) => ({
+          id: file._id.toString(),
+          fileType: file.fileType,
+          fileName: file.fileName,
+          fileSize: file.fileSize,
+          retentionUntil: file.retentionUntil
+        })),
+        queue: queueState,
+        message: 'PR Auditor job record and tracked Final PO/generated ECC inputs were prepared and queued for audit execution.'
+      };
+    } catch (error) {
+      if (jobId) {
+        await Promise.all([
+          Job.deleteMany({ jobId }),
+          JobFile.deleteMany({ jobId }),
+          storageService.deleteFolderSafe(storageService.getJobRootPath(jobId)).catch(() => {})
+        ]).catch(() => {});
+      }
+      throw error;
+    } finally {
+      if (releaseJobIdReservation) {
+        releaseJobIdReservation();
+      }
     }
   });
 };
@@ -620,6 +828,8 @@ const createJob = async ({
   workerId,
   bomPrevalidatedFileId,
   epmsPrevalidatedFileId,
+  finalPoPrevalidatedFileId,
+  expectedEccPrevalidatedFileId,
   runMode,
   selectedProject,
   browserTabSessionId,
@@ -640,6 +850,17 @@ const createJob = async ({
       generationScope,
       siteCodes,
       prScope,
+      browserTabSessionId,
+      idempotencyKey,
+      workerManifest,
+      normalizedWorkerId
+    });
+  }
+
+  if (normalizedWorkerId === WORKER_IDS.PR_AUDITOR) {
+    return createPrAuditorJob({
+      finalPoPrevalidatedFileId,
+      expectedEccPrevalidatedFileId,
       browserTabSessionId,
       idempotencyKey,
       workerManifest,

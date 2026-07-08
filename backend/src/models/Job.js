@@ -31,6 +31,7 @@ class Job {
     if (typeof this.engineCommit === 'undefined') this.engineCommit = null;
     if (typeof this.runMode === 'undefined') this.runMode = null;
     if (typeof this.selectedProject === 'undefined') this.selectedProject = null;
+    if (typeof this.auditSummary === 'undefined') this.auditSummary = null;
     if (this.workerType === 'pr-worker') {
       if (typeof this.requestedSiteCount === 'undefined') this.requestedSiteCount = null;
       if (typeof this.matchedSiteCount === 'undefined') this.matchedSiteCount = null;
@@ -79,7 +80,8 @@ class Job {
       outputFileCount: payload.outputFileCount || 0,
       reviewRequiredCount: payload.reviewRequiredCount || 0,
       warningCount: payload.warningCount || 0,
-      finalWorkerSummary: payload.finalWorkerSummary || ''
+      finalWorkerSummary: payload.finalWorkerSummary || '',
+      auditSummary: payload.auditSummary || null
     });
     await writeFirebase(`jobs/${payload.jobId}`, job);
     return job;

@@ -1,0 +1,255 @@
+# Verification Log
+
+## 2026-07-03 Phase 0
+
+1. `git -C C:\dev\ai-worker-platform fetch origin main`
+   Result: success.
+2. `git -C C:\dev\ai-worker-platform rev-parse origin/main`
+   Result: `ec82e58f26055146a3b2403d6106e8809e994ad3`.
+3. `git -C C:\dev\ai-worker-platform status --short --branch`
+   Result: local `main` is behind `origin/main` by 11 commits and otherwise clean.
+4. `git -C C:\dev\ai-worker-platform worktree list --porcelain`
+   Result: existing linked worktrees inspected; no existing PR Auditor worktree found.
+5. `git -C C:\dev\ai-worker-platform worktree add C:\dev\ai-worker-platform-pr-auditor -b feature/pr-auditor-platform-integration origin/main`
+   Result: success; worktree created from `origin/main`.
+6. `git -C C:\dev\ai-worker-platform-pr-auditor submodule status`
+   Result: existing submodules discovered for `skills/create-pr-cd`, `skills/create-pr-cd-ran`, and `agent-guideline/vscode-agent`; no `skills/tx-pr-auditor` entry yet.
+7. `git ls-remote https://github.com/BL2ZteSolution/tx-pr-auditor.git`
+   Result: remote reachable; `HEAD` and `refs/heads/main` both resolve to `5ef4485c9662384356e93960fe7a2b101f452349`.
+8. Shallow clone of `BL2ZteSolution/tx-pr-auditor`
+   Result: repo contains `scripts/audit_final_po.py`, synthetic workbook generators/tests, and a committed `input/pr_model.xlsx` that requires data-safety review before any pin is approved.
+
+## 2026-07-03 Phase 0 Step 2
+
+1. Reviewed current manifest, job payload, file-tracking, history, and detail/UI contracts:
+   `backend/src/workers/manifests/mwPrManifest.js`,
+   `backend/src/services/jobService.js`,
+   `backend/src/models/Job.js`,
+   `backend/src/models/JobFile.js`,
+   `frontend/src/views/HomeView.vue`,
+   `frontend/src/views/JobDetailView.vue`,
+   `frontend/src/views/JobHistoryView.vue`,
+   `frontend/src/components/history/JobHistoryFilters.vue`,
+   `frontend/src/components/history/JobHistoryCard.vue`,
+   `frontend/src/components/detail/JobDetailSummary.vue`,
+   `frontend/src/components/FinalSummary.vue`,
+   `frontend/src/api/jobApi.js`.
+   Result: exact additive extension points identified for worker registration, upload kinds, job payload branching, output tracking, history filters, and PR Auditor-specific detail rendering.
+2. Wrote `docs/pr-auditor-platform-integration/integration-contract.md`.
+   Result: Step 2 now has an explicit worker contract, upload kind contract, file-type contract, UI contract, and file-level change map for subsequent bounded steps.
+
+## 2026-07-03 Phase 0 Step 3
+
+1. Added failing assertions to `backend/scripts/job-service-worker-payload-test.js` for `pr-auditor` create/list/detail behavior.
+   Result: initial red phase failed with `workerId must be one of mw-pr or ran-pr`, proving backend registration was missing.
+2. Installed backend dependencies in the feature worktree with `npm install` because the isolated worktree did not yet have `node_modules`.
+   Result: backend scripts became runnable in this worktree.
+3. Ran `npm run test:job-service-workers`.
+   Result: pass after implementing `pr-auditor` backend registration and job creation flow.
+4. Ran a direct registry verification snippet in `backend/`.
+   Result: `listWorkers()` and `getWorkerManifest('pr-auditor')` both returned the expected `PR Auditor` manifest with placeholder safe-pin metadata.
+
+## 2026-07-03 Phase 0 Step 4
+
+1. Added failing tests:
+   `backend/scripts/pr-auditor-workspace-test.js`
+   `backend/scripts/pr-auditor-adapter-test.js`
+   Result: both failed red because `prAuditorWorkspaceService` and `prAuditorAdapter` did not exist yet.
+2. Implemented PR Auditor workspace and runtime scaffolding:
+   `backend/src/workers/prAuditorWorkspaceService.js`,
+   `backend/src/workers/adapters/prAuditorAdapter.js`,
+   storage/config support in `backend/src/services/storageService.js` and `backend/src/config/env.js`.
+   Result: PR Auditor now has isolated workspace preparation, staged explicit input/output paths, deterministic command construction, and a closed-gate runtime guard.
+3. Ran `node scripts/pr-auditor-workspace-test.js`.
+   Result: pass.
+4. Ran `node scripts/pr-auditor-adapter-test.js`.
+   Result: pass.
+5. Re-ran `npm run test:job-service-workers`.
+   Result: pass; Step 3 backend create/list/detail coverage remains green after Step 4 changes.
+
+## 2026-07-03 Phase 0 Step 5
+
+1. Added failing tests:
+   `backend/scripts/pr-auditor-output-ingestion-test.js`
+   `backend/scripts/pr-auditor-summary-metadata-test.js`
+   Result: initial red phase failed because approved output ingestion and PR Auditor summary propagation were not implemented yet.
+2. Implemented approved output ingestion and trusted summary persistence:
+   `backend/src/workers/prAuditorOutputIngestionService.js`,
+   `backend/src/models/Job.js`,
+   `backend/src/models/JobFile.js`,
+   `backend/src/services/reportGenerator.js`,
+   `backend/src/services/finalSummaryService.js`,
+   `backend/src/services/jobService.js`.
+   Result: PR Auditor now has a constrained output-ingestion path that records only approved artifacts plus trusted structured summary metadata.
+3. Ran `node scripts/pr-auditor-output-ingestion-test.js`.
+   Result: pass.
+4. Ran `node scripts/pr-auditor-summary-metadata-test.js`.
+   Result: pass.
+5. Re-ran `node scripts/pr-auditor-workspace-test.js`.
+   Result: pass.
+6. Re-ran `node scripts/pr-auditor-adapter-test.js`.
+   Result: pass.
+7. Re-ran `npm run test:job-service-workers`.
+   Result: pass; prior PR Auditor registration and job payload coverage remains green after Step 5 changes.
+
+## 2026-07-03 Phase 0 Step 6
+
+1. Added failing Home view tests in `frontend/src/views/__tests__/HomeView.spec.js`.
+   Result: initial red phase failed because the Home view did not expose `PR Auditor`, did not provide PR Auditor upload handlers, and did not create PR Auditor launch payloads.
+2. Installed frontend dependencies in the feature worktree with `npm install` because the isolated worktree did not yet have `frontend/node_modules`.
+   Result: `vitest` and the frontend unit test runner became available in this worktree.
+3. Implemented the dedicated PR Auditor launch flow in `frontend/src/views/HomeView.vue`.
+   Result: Home view now exposes PR Auditor as a top-level worker with three required upload panels, dedicated prevalidation wiring, required notice text, and `Run Audit` create payload handling.
+4. Ran `npm run test:unit -- src/views/__tests__/HomeView.spec.js`.
+   Result: pass; focused PR Auditor launch tests and existing Home view tests are green.
+5. Ran `npm run test:unit`.
+   Result: pass; all 51 frontend unit tests passed after the Step 6 changes.
+
+## 2026-07-03 Phase 0 Step 7
+
+1. Added failing focused frontend tests in:
+   `frontend/src/components/history/__tests__/JobHistoryCard.spec.js`,
+   `frontend/src/components/detail/__tests__/JobDetailMetadata.spec.js`,
+   `frontend/src/views/__tests__/JobHistoryView.spec.js`,
+   `frontend/src/views/__tests__/HomeView.spec.js`.
+   Result: initial red phase failed because history filters omitted PR Auditor and detail/history/download surfaces still assumed ZIP/ECC-oriented PR worker outputs.
+2. Implemented PR Auditor-specific detail/history/download presentation in:
+   `frontend/src/components/history/JobHistoryFilters.vue`,
+   `frontend/src/components/history/JobHistoryCard.vue`,
+   `frontend/src/components/detail/JobDetailHeader.vue`,
+   `frontend/src/components/detail/JobDetailSummary.vue`,
+   `frontend/src/components/detail/JobDetailFiles.vue`,
+   `frontend/src/components/FinalSummary.vue`,
+   `frontend/src/views/JobDetailView.vue`,
+   `frontend/src/views/HomeView.vue`.
+   Result: PR Auditor now has worker-aware audit summary and audit report download rendering across the launch/result, job detail, and history surfaces.
+3. Ran `npm run test:unit -- src/components/history/__tests__/JobHistoryCard.spec.js src/components/detail/__tests__/JobDetailMetadata.spec.js src/views/__tests__/JobHistoryView.spec.js src/views/__tests__/HomeView.spec.js`.
+   Result: pass; all 31 focused presentation tests passed.
+4. Ran `npm run test:unit`.
+   Result: pass; all 55 frontend unit tests passed after the Step 7 changes.
+
+## 2026-07-03 Phase 0 Step 8
+
+1. Added and inspected focused synthetic backend validation scripts:
+   `backend/scripts/pr-auditor-worker-service-test.js`,
+   `backend/scripts/pr-auditor-route-test.js`,
+   `backend/scripts/pr-auditor-concurrency-test.js`.
+   Result: Step 8 coverage now targets lifecycle completion/cancellation/failure, invalid workbook safe errors, missing-upload create validation, happy-path output persistence, audit report download, restart reload behavior, and concurrent workspace isolation.
+2. Ran `node scripts/pr-auditor-worker-service-test.js`.
+   Result: pass; synthetic worker lifecycle coverage verified completed, cancelled-with-partial-result, and safe failed-output-finalization outcomes.
+3. Ran `node scripts/pr-auditor-route-test.js`.
+   Result: pass; synthetic route coverage verified invalid workbook rejection, missing PR Model validation, completed happy-path persistence, audit report download, and post-restart history/detail reload behavior.
+4. Ran `node scripts/pr-auditor-concurrency-test.js`.
+   Initial result: fail; both concurrent create requests reused `PR-20260703-001`, so the second request did not exercise a distinct active job.
+5. Root-cause investigation:
+   reviewed `backend/src/utils/jobIdGenerator.js`, `backend/src/services/jobService.js`, `backend/src/services/jobControlService.js`, and the mock Firebase data path.
+   Result: confirmed a real shared race in job-id allocation. The generator returned a candidate id before the `Job` record was written, allowing a concurrent non-idempotent create request to select the same id.
+6. Implemented transactional job-id reservation in:
+   `backend/src/utils/jobIdGenerator.js`,
+   `backend/src/services/jobService.js`.
+   Result: generated ids now stay reserved through the full create flow for MW, RAN, and PR Auditor jobs, preventing concurrent create collisions before persistence.
+7. Re-ran `node scripts/pr-auditor-concurrency-test.js`.
+   Result: pass; concurrent PR Auditor jobs now retain distinct ids, distinct isolated workspace roots, and distinct persisted audit report paths.
+8. Re-ran `node scripts/pr-auditor-worker-service-test.js`.
+   Result: pass; lifecycle behavior remained green after the shared job-id reservation change.
+9. Re-ran `node scripts/pr-auditor-route-test.js`.
+   Result: pass; route, download, and reload behavior remained green after the shared job-id reservation change.
+
+## 2026-07-03 Phase 0 Step 9
+
+1. Inspected `backend/package.json` and `frontend/package.json` to derive the documented verification commands for existing MW/RAN regressions and broader build/test coverage.
+   Result: selected backend aggregate verification via `npm test`, supplemental RAN regression scripts (`ran-history-reload`, `ran-concurrency`, `ran-invalid-safe-error`, `ran-golden`), and frontend aggregate verification via `npm test`.
+2. Initial Step 9 attempt:
+   ran backend/frontend verification and supplemental RAN scripts before hydrating submodules.
+   Result: setup-only failures. MW and RAN backend regressions could not read pinned workbook assets because `skills/create-pr-cd` and `skills/create-pr-cd-ran` existed as empty submodule directories in this worktree.
+3. Investigated submodule state with:
+   `git submodule status`,
+   `.gitmodules`,
+   directory inspection under `skills/`.
+   Result: confirmed the worktree had the expected pinned gitlinks but the MW/RAN submodule working trees were not initialized locally.
+4. Ran `git submodule update --init skills/create-pr-cd skills/create-pr-cd-ran`.
+   Result: hydrated the already-pinned MW and RAN worker-engine submodules without changing their recorded commits.
+5. Ran `npm test` in `backend/`.
+   Result: pass; the documented aggregate backend verification suite succeeded after submodule hydration, including smoke, integration, error hardening, RAN route/runtime coverage, queue/worker dispatch, and shared job payload validation.
+6. Ran `npm test` in `frontend/`.
+   Result: pass; all 55 unit tests passed, `vite build` succeeded, and route smoke checks passed.
+7. Important verification hygiene note:
+   the first parallel launch of supplemental RAN scripts shared a common RTDB-backed test environment and produced a false negative in `ran-history-reload-test.js`.
+   Result: discarded that parallel-run failure as non-authoritative and reran the affected scripts in isolation.
+8. Ran `node scripts/ran-history-reload-test.js` in isolation.
+   Result: pass; history list, job detail, and ZIP download all reloaded successfully after restart for a completed RAN general-item job.
+9. Ran `node scripts/ran-concurrency-test.js` in isolation.
+   Result: pass; concurrent RAN jobs retained distinct workspace roots, isolated staged inputs, distinct persisted outputs, and unchanged pinned submodule input/output trees.
+10. Ran `node scripts/ran-invalid-safe-error-test.js` in isolation.
+    Result: pass; invalid-input and safe-error handling remained correct for RAN jobs.
+11. Ran `node scripts/ran-golden-test.js`.
+    Initial result: fail with `400 !== 201` because the legacy golden regression script no longer supplied the now-required `browserTabSessionId` and `idempotencyKey` create-job fields.
+12. Updated `backend/scripts/ran-golden-test.js` to send `browserTabSessionId` and `idempotencyKey`.
+    Result: the golden regression harness is now aligned with the current additive backend create-job contract.
+13. Re-ran `node scripts/ran-golden-test.js`.
+    Result: pass; both the standard and general-item RAN golden runs completed successfully and their retained ECC workbooks matched the pinned upstream logical workbook references.
+14. Changed-file scope review:
+    `git status --short --branch`
+    `git diff --stat`
+    Result: Step 9 intended changes are limited to the RAN golden regression harness plus mission-state documentation.
+
+## 2026-07-03 Phase 0 Step 10
+
+1. Started an isolated backend/browser-verification stack with dedicated storage and workspace roots after the default ports were already occupied.
+   Result: backend health responded successfully on `http://127.0.0.1:8010/health` and the isolated frontend responded on `http://127.0.0.1:3010/`.
+2. Seeded a synthetic completed PR Auditor job into the isolated backend storage.
+   Result: browser validation used job `PR-AUDIT-UI-001` with trusted audit summary counts, one downloadable audit report, and two warning records.
+3. Ran `npm run test:unit -- src/__tests__/App.spec.js src/views/__tests__/HomeView.spec.js` in `frontend/`.
+   Result: pass; 23 focused frontend tests passed after the rendered-session copy fixes.
+4. Verified the dedicated PR Auditor launch flow in a rendered browser session against `http://127.0.0.1:3010/`.
+   Result: pass; the shell title now reads `AI Workers`, the PR Auditor notice and three dedicated uploads render correctly, `Run Audit` is present, and MW/RAN-only controls plus stale `Standard PR runs non-interactively after BOM and EPMS validation.` copy are absent from the PR Auditor experience.
+5. Verified the rendered history route against `http://127.0.0.1:3010/history`.
+   Result: pass; `PR Auditor` filtering is present and the seeded `PR-AUDIT-UI-001` card shows completed status plus trusted summary counts (`Normal: 4`, `Invalid PO: 1`, `Wrong PO: 2`, `Duplicate PO: 3`, `Review Required: 5`, `Warnings: 2`).
+6. Verified the rendered job-detail route against `http://127.0.0.1:3010/jobs/PR-AUDIT-UI-001`.
+   Result: pass; the dedicated PR Auditor worker label, completed status, trusted summary counts, warning table, and downloadable `Audit Report` / `Audit Summary JSON` artifacts render correctly.
+7. Ran `git diff --check`.
+   Result: pass aside from existing CRLF normalization warnings in the frontend working tree; no patch-format errors were reported.
+
+## 2026-07-03 Phase 0 Step 11
+
+1. Ran `npm test` in `frontend/`.
+   Result: pass; all 55 frontend unit tests passed, `vite build` succeeded, and route smoke checks passed in one fresh aggregate run.
+2. Ran `npm test` in `backend/`.
+   Result: pass; the aggregate backend suite succeeded again, covering smoke, LLM-provider hardening, health/preflight, integration, RAN adapter/routes/live-runtime/worker-service, queue registry, job-control concurrency, prevalidate guard, and shared worker payload validation.
+3. Ran `node scripts/pr-auditor-worker-service-test.js`.
+   Result: pass; PR Auditor synthetic lifecycle handling remains green.
+4. Ran `node scripts/pr-auditor-route-test.js`.
+   Result: pass; PR Auditor create/detail/history/download persistence and safe invalid-workbook handling remain green.
+5. Ran `node scripts/pr-auditor-concurrency-test.js`.
+   Result: pass; PR Auditor concurrent-job workspace isolation remains green.
+6. Ran `node scripts/ran-history-reload-test.js`.
+   Initial result after a previously interrupted shell run: fail; the script expected `201` but got `200` because it restarted with the same `ran-history-1` idempotency key and correctly replayed the prior persisted create request.
+7. Updated `backend/scripts/ran-history-reload-test.js` to generate a unique per-process idempotency prefix via `crypto.randomUUID()`.
+   Result: reruns now avoid inheriting interrupted prior-run state while preserving the production idempotency contract under test.
+8. Re-ran `node scripts/ran-history-reload-test.js`.
+   Result: pass; history, detail, and ZIP download all reload correctly after restart for a completed RAN general-item job, and the regression harness is now repeatable across interrupted local runs.
+9. Ran `node scripts/ran-concurrency-test.js`.
+   Result: pass; concurrent RAN jobs retained distinct workspace roots, isolated staged inputs, and distinct persisted outputs.
+10. Ran `node scripts/ran-invalid-safe-error-test.js`.
+    Result: pass; invalid-input and safe-error handling remained correct for RAN jobs.
+11. Ran `node scripts/ran-golden-test.js`.
+    Result: pass; both the standard and general-item RAN golden runs completed successfully and their retained ECC workbooks still matched the pinned upstream logical workbook references.
+12. Ran `git diff --check`.
+    Result: pass aside from CRLF normalization warnings; no patch-format errors were reported.
+13. Reviewed `git diff --name-only origin/main...HEAD` for forbidden committed artifacts.
+    Result: no `.xlsx`, `.xls`, `.zip`, runtime cache, `dist/`, `node_modules/`, `.tmp/`, or `.env` paths are present in the intended diff.
+
+## 2026-07-03 Phase 0 Step 12
+
+1. Ran `gh --version`.
+   Result: pass; GitHub CLI `2.93.0` is available for the publish flow.
+2. Ran `gh auth status`.
+   Result: pass; authenticated GitHub access is available for account `DemonTweeks`.
+3. Ran `git remote get-url origin` and `gh repo view --json nameWithOwner,defaultBranchRef`.
+   Result: verified remote target `DemonTweeks/ai-worker-platform` with default branch `main`.
+4. Ran `git push -u origin feature/pr-auditor-platform-integration`.
+   Result: pass; the feature branch was pushed successfully and now tracks `origin/feature/pr-auditor-platform-integration`.
+5. Ran `gh pr view feature/pr-auditor-platform-integration --json url,isDraft,number --repo DemonTweeks/ai-worker-platform`.
+   Result: confirmed no pre-existing PR was open for this branch before creation.
+6. Ran `gh pr create --draft --repo DemonTweeks/ai-worker-platform --base main --head feature/pr-auditor-platform-integration --title "[codex] Integrate PR Auditor worker" --body-file <temp-file>`.
+   Result: pass; exactly one Draft PR was created successfully at `https://github.com/DemonTweeks/ai-worker-platform/pull/28`.

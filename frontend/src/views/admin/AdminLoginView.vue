@@ -30,7 +30,7 @@
           />
         </div>
 
-        <router-link class="secondary-link back-link" to="/">Back to User Portal</router-link>
+        <router-link class="secondary-link back-link" to="/workers/pr-creator">Back to User Portal</router-link>
       </section>
     </div>
   </div>
