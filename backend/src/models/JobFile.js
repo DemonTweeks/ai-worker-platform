@@ -6,7 +6,7 @@ const FILE_TYPES = [
   'ran_bom_upload',
   'ran_epms_upload',
   'pr_auditor_final_po_upload',
-  'pr_auditor_expected_ecc_upload',
+  'pr_auditor_epms_upload',
   'pr_audit_result_xlsx',
   'pr_audit_summary_json',
   'pr_audit_warning_report',

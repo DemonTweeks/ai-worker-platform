@@ -15,7 +15,7 @@ const runTests = async () => {
   const engineRoot = path.join(tempRoot, 'engine');
   const workspaceRoot = path.join(tempRoot, 'storage', 'jobs', 'PR-AUDIT-001');
   const finalPoSource = path.join(tempRoot, 'source-final-po.xlsx');
-  const expectedEccSource = path.join(tempRoot, 'source-expected-ecc.xlsx');
+  const epmsSource = path.join(tempRoot, 'source-epms.xlsx');
 
   try {
     await fs.promises.mkdir(path.join(engineRoot, 'scripts'), { recursive: true });
@@ -23,7 +23,7 @@ const runTests = async () => {
     await fs.promises.writeFile(path.join(engineRoot, 'scripts', 'audit_final_po.py'), '# synthetic engine entry\n');
     await fs.promises.writeFile(path.join(engineRoot, 'input', 'should-not-copy.txt'), 'do not copy\n');
     await fs.promises.writeFile(finalPoSource, 'final');
-    await fs.promises.writeFile(expectedEccSource, 'ecc');
+    await fs.promises.writeFile(epmsSource, 'epms');
 
     setCachedModule(path.join(repoRoot, 'src/config/env.js'), {
       prAuditorRoot: engineRoot
@@ -44,7 +44,7 @@ const runTests = async () => {
     const result = await workspaceService.preparePrAuditorWorkspace({
       jobId: 'PR-AUDIT-001',
       finalPoSourcePath: finalPoSource,
-      expectedEccSourcePath: expectedEccSource
+      epmsSourcePath: epmsSource
     });
 
     assert.strictEqual(result.workspaceRoot, workspaceRoot);
@@ -54,9 +54,11 @@ const runTests = async () => {
     assert.strictEqual(result.runtimePaths.scriptPath, path.join(engineRoot, 'scripts', 'audit_final_po.py'));
     assert.strictEqual(fs.existsSync(path.join(workspaceRoot, 'input', 'should-not-copy.txt')), false, 'engine input fixtures must not be copied');
     assert.strictEqual(fs.existsSync(result.stagedInputs.finalPoPath), true);
-    assert.strictEqual(fs.existsSync(result.stagedInputs.expectedEccPath), true);
+    assert.strictEqual(fs.existsSync(result.stagedInputs.epmsPath), true);
     assert.strictEqual(path.basename(result.stagedInputs.finalPoPath), 'Final PO.xlsx');
-    assert.strictEqual(path.basename(result.stagedInputs.expectedEccPath), 'expected_ecc.xlsx');
+    assert.strictEqual(path.basename(result.stagedInputs.epmsPath), 'EPMS.xlsx');
+    assert.strictEqual(fs.existsSync(result.runtimePaths.expectedEccRoot), true);
+    assert.strictEqual(path.basename(result.runtimePaths.expectedEccRoot), 'expected-ecc');
     assert.strictEqual(path.basename(result.runtimePaths.outputPath), 'PR_Audit_Result.xlsx');
     assert.strictEqual(path.basename(result.runtimePaths.summaryJsonPath), 'pr_audit_summary.json');
 

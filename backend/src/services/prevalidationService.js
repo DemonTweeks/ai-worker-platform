@@ -21,7 +21,7 @@ const UPLOAD_KINDS = {
   RAN_BOM: 'ran-bom',
   RAN_EPMS: 'ran-epms',
   PR_AUDITOR_FINAL_PO: 'pr-auditor-final-po',
-  PR_AUDITOR_EXPECTED_ECC: 'pr-auditor-expected-ecc'
+  PR_AUDITOR_EPMS: 'pr-auditor-epms'
 };
 
 const UPLOAD_KIND_CONFIG = {
@@ -48,9 +48,9 @@ const UPLOAD_KIND_CONFIG = {
     inspectWorkbook: false,
     verifyWorkbookReadable: true
   },
-  [UPLOAD_KINDS.PR_AUDITOR_EXPECTED_ECC]: {
-    missingFileMessage: 'Please upload a generated ECC workbook.',
-    successExplanation: 'The uploaded generated ECC workbook passed the initial technical checks. Audit-specific validation will continue after the job is created.',
+  [UPLOAD_KINDS.PR_AUDITOR_EPMS]: {
+    missingFileMessage: 'Please upload an EPMS workbook.',
+    successExplanation: 'The uploaded EPMS workbook passed the initial technical checks. Audit-specific validation will continue after the job is created.',
     inspectWorkbook: false,
     verifyWorkbookReadable: true
   }
