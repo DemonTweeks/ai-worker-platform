@@ -148,21 +148,21 @@ const verifyMissingUploadRejected = async (baseUrl) => {
     finalPoPrevalidatedFileId
   });
 
-  assert.strictEqual(created.response.status, 400, 'missing generated ECC upload should be rejected');
+  assert.strictEqual(created.response.status, 400, 'missing EPMS upload should be rejected');
   assert.strictEqual(created.body.error.code, 'VALIDATION_ERROR');
-  assert.strictEqual(created.body.error.message, 'expectedEccPrevalidatedFileId is required for PR Auditor jobs.');
+  assert.strictEqual(created.body.error.message, 'epmsPrevalidatedFileId is required for PR Auditor jobs.');
 };
 
 const verifyHappyPathAndReload = async (baseUrl) => {
   const finalPoPrevalidatedFileId = await prevalidateWorkbook(baseUrl, 'pr-auditor-final-po', 'Final PO.xlsx', [['PO'], ['1001']]);
-  const expectedEccPrevalidatedFileId = await prevalidateWorkbook(baseUrl, 'pr-auditor-expected-ecc', 'ECC_PR_Output.xlsx', [['ECC'], ['2001']]);
+  const epmsPrevalidatedFileId = await prevalidateWorkbook(baseUrl, 'pr-auditor-epms', 'EPMS.xlsx', [['EPMS'], ['2001']]);
 
   const created = await postJson(baseUrl, '/api/jobs', {
     workerId: 'pr-auditor',
     browserTabSessionId,
     idempotencyKey: nextIdempotencyKey(),
     finalPoPrevalidatedFileId,
-    expectedEccPrevalidatedFileId
+    epmsPrevalidatedFileId
   });
 
   assert.strictEqual(created.response.status, 201, 'PR Auditor job should be created');

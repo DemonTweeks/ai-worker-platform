@@ -50,7 +50,7 @@ const runTests = async () => {
         RAN_BOM: 'ran-bom',
         RAN_EPMS: 'ran-epms',
         PR_AUDITOR_FINAL_PO: 'pr-auditor-final-po',
-        PR_AUDITOR_EXPECTED_ECC: 'pr-auditor-expected-ecc'
+        PR_AUDITOR_EPMS: 'pr-auditor-epms'
       },
       consumePrevalidatedUpload: async (prevalidatedFileId) => {
         if (prevalidatedFileId === 'ran-bom-1') {
@@ -77,10 +77,10 @@ const runTests = async () => {
           };
         }
 
-        if (prevalidatedFileId === 'pr-auditor-expected-ecc-1') {
+        if (prevalidatedFileId === 'pr-auditor-epms-1') {
           return {
-            uploadKind: 'pr-auditor-expected-ecc',
-            originalFileName: 'ecc-output.xlsx',
+            uploadKind: 'pr-auditor-epms',
+            originalFileName: 'EPMS.xlsx',
             absolutePath: uploadPath
           };
         }
@@ -252,7 +252,7 @@ const runTests = async () => {
       browserTabSessionId: 'pr-auditor-tab-1234',
       idempotencyKey: 'pr-auditor-idem-1234',
       finalPoPrevalidatedFileId: 'pr-auditor-final-po-1',
-      expectedEccPrevalidatedFileId: 'pr-auditor-expected-ecc-1'
+      epmsPrevalidatedFileId: 'pr-auditor-epms-1'
     });
 
     assert.strictEqual(prAuditorCreateResult.job.workerId, 'pr-auditor');
@@ -269,18 +269,18 @@ const runTests = async () => {
     assert.strictEqual(createdFiles.length, 2);
     assert.deepStrictEqual(
       createdFiles.map((file) => file.fileType).sort(),
-      ['pr_auditor_expected_ecc_upload', 'pr_auditor_final_po_upload']
+      ['pr_auditor_epms_upload', 'pr_auditor_final_po_upload']
     );
     assert(copiedBuffers[0].includes('"workerId": "pr-auditor"'));
     assert(copiedBuffers[0].includes('"finalPoFileName": "final-po.xlsx"'));
-    assert(copiedBuffers[0].includes('"expectedEccFileName": "ecc-output.xlsx"'));
+    assert(copiedBuffers[0].includes('"epmsFileName": "EPMS.xlsx"'));
 
     const duplicatePrAuditorResult = await jobService.createJob({
       workerId: 'pr-auditor',
       browserTabSessionId: 'pr-auditor-tab-1234',
       idempotencyKey: 'pr-auditor-idem-1234',
       finalPoPrevalidatedFileId: 'pr-auditor-final-po-1',
-      expectedEccPrevalidatedFileId: 'pr-auditor-expected-ecc-1'
+      epmsPrevalidatedFileId: 'pr-auditor-epms-1'
     });
     assert.strictEqual(duplicatePrAuditorResult.job.jobId, prAuditorCreateResult.job.jobId, 'duplicate PR Auditor submissions should replay the existing job');
     assert.strictEqual(createdJobs.length, 1, 'duplicate PR Auditor submissions should not create a second job');

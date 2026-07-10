@@ -88,14 +88,14 @@ const prevalidateWorkbook = async (baseUrl, uploadKind, fileName, rows) => {
 
 const createPrAuditorJob = async (baseUrl, sequence) => {
   const finalPoPrevalidatedFileId = await prevalidateWorkbook(baseUrl, 'pr-auditor-final-po', `Final-PO-${sequence}.xlsx`, [['PO'], [String(1000 + sequence)]]);
-  const expectedEccPrevalidatedFileId = await prevalidateWorkbook(baseUrl, 'pr-auditor-expected-ecc', `ECC-${sequence}.xlsx`, [['ECC'], [String(2000 + sequence)]]);
+  const epmsPrevalidatedFileId = await prevalidateWorkbook(baseUrl, 'pr-auditor-epms', `EPMS-${sequence}.xlsx`, [['EPMS'], [String(2000 + sequence)]]);
 
   const created = await postJson(baseUrl, '/api/jobs', {
     workerId: 'pr-auditor',
     browserTabSessionId,
     idempotencyKey: nextIdempotencyKey(),
     finalPoPrevalidatedFileId,
-    expectedEccPrevalidatedFileId
+    epmsPrevalidatedFileId
   });
 
   assert.strictEqual(created.response.status, 201, 'PR Auditor job should be created');

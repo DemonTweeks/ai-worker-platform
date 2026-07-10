@@ -42,7 +42,7 @@ const INPUT_FILE_TYPES = new Set([
   'ran_bom_upload',
   'ran_epms_upload',
   'pr_auditor_final_po_upload',
-  'pr_auditor_expected_ecc_upload'
+  'pr_auditor_epms_upload'
 ]);
 
 const normalizeSiteCodes = (siteCodes = []) => parseSiteCodes(siteCodes).siteCodes;
@@ -674,7 +674,7 @@ const createRanJob = async ({
 
 const createPrAuditorJob = async ({
   finalPoPrevalidatedFileId,
-  expectedEccPrevalidatedFileId,
+  epmsPrevalidatedFileId,
   browserTabSessionId,
   idempotencyKey,
   workerManifest,
@@ -684,8 +684,8 @@ const createPrAuditorJob = async ({
     throw createApiError(400, 'VALIDATION_ERROR', 'finalPoPrevalidatedFileId is required for PR Auditor jobs.');
   }
 
-  if (!expectedEccPrevalidatedFileId) {
-    throw createApiError(400, 'VALIDATION_ERROR', 'expectedEccPrevalidatedFileId is required for PR Auditor jobs.');
+  if (!epmsPrevalidatedFileId) {
+    throw createApiError(400, 'VALIDATION_ERROR', 'epmsPrevalidatedFileId is required for PR Auditor jobs.');
   }
 
   const normalizedBrowserTabSessionId = normalizeBrowserTabSessionId(browserTabSessionId);
@@ -708,12 +708,12 @@ const createPrAuditorJob = async ({
         return replayResult;
       }
 
-      const [finalPoUpload, expectedEccUpload] = await Promise.all([
+      const [finalPoUpload, epmsUpload] = await Promise.all([
         consumePrevalidatedUpload(finalPoPrevalidatedFileId),
-        consumePrevalidatedUpload(expectedEccPrevalidatedFileId)
+        consumePrevalidatedUpload(epmsPrevalidatedFileId)
       ]);
       assertUploadKind(finalPoUpload, UPLOAD_KINDS.PR_AUDITOR_FINAL_PO, 'Final PO');
-      assertUploadKind(expectedEccUpload, UPLOAD_KINDS.PR_AUDITOR_EXPECTED_ECC, 'Generated ECC');
+      assertUploadKind(epmsUpload, UPLOAD_KINDS.PR_AUDITOR_EPMS, 'EPMS');
 
       const jobIdReservation = await reserveUniqueJobId();
       jobId = jobIdReservation.jobId;
@@ -722,20 +722,20 @@ const createPrAuditorJob = async ({
 
       const retentionUntil = addRetentionDays();
       const finalPoInputPath = storageService.resolveJobInputPath(jobId, finalPoUpload.originalFileName);
-      const expectedEccInputPath = storageService.resolveJobInputPath(jobId, expectedEccUpload.originalFileName);
+      const epmsInputPath = storageService.resolveJobInputPath(jobId, epmsUpload.originalFileName);
 
       await Promise.all([
         fs.promises.copyFile(finalPoUpload.absolutePath, finalPoInputPath),
-        fs.promises.copyFile(expectedEccUpload.absolutePath, expectedEccInputPath)
+        fs.promises.copyFile(epmsUpload.absolutePath, epmsInputPath)
       ]);
       await Promise.all([
         storageService.deleteFileSafe(finalPoUpload.absolutePath),
-        storageService.deleteFileSafe(expectedEccUpload.absolutePath)
+        storageService.deleteFileSafe(epmsUpload.absolutePath)
       ]);
 
-      const [finalPoMetadata, expectedEccMetadata] = await Promise.all([
+      const [finalPoMetadata, epmsMetadata] = await Promise.all([
         storageService.buildFileMetadata(finalPoInputPath),
-        storageService.buildFileMetadata(expectedEccInputPath)
+        storageService.buildFileMetadata(epmsInputPath)
       ]);
       const requestPath = storageService.resolveJobTempPath(jobId, 'job-request.json');
       await storageService.saveBufferToFile(
@@ -748,7 +748,7 @@ const createPrAuditorJob = async ({
           createdAt: new Date().toISOString(),
           inputs: {
             finalPoFileName: finalPoUpload.originalFileName,
-            expectedEccFileName: expectedEccUpload.originalFileName
+            epmsFileName: epmsUpload.originalFileName
           }
         }, null, 2))
       );
@@ -781,10 +781,10 @@ const createPrAuditorJob = async ({
         },
         {
           jobId,
-          fileType: 'pr_auditor_expected_ecc_upload',
-          fileName: expectedEccUpload.originalFileName,
-          filePath: expectedEccMetadata.filePath,
-          fileSize: expectedEccMetadata.fileSize,
+          fileType: 'pr_auditor_epms_upload',
+          fileName: epmsUpload.originalFileName,
+          filePath: epmsMetadata.filePath,
+          fileSize: epmsMetadata.fileSize,
           retentionUntil
         }
       ]);
@@ -801,7 +801,7 @@ const createPrAuditorJob = async ({
           retentionUntil: file.retentionUntil
         })),
         queue: queueState,
-        message: 'PR Auditor job record and tracked Final PO/generated ECC inputs were prepared and queued for audit execution.'
+        message: 'PR Auditor job record and tracked Final PO/EPMS inputs were prepared and queued for audit execution.'
       };
     } catch (error) {
       if (jobId) {
@@ -829,7 +829,6 @@ const createJob = async ({
   bomPrevalidatedFileId,
   epmsPrevalidatedFileId,
   finalPoPrevalidatedFileId,
-  expectedEccPrevalidatedFileId,
   runMode,
   selectedProject,
   browserTabSessionId,
@@ -860,7 +859,7 @@ const createJob = async ({
   if (normalizedWorkerId === WORKER_IDS.PR_AUDITOR) {
     return createPrAuditorJob({
       finalPoPrevalidatedFileId,
-      expectedEccPrevalidatedFileId,
+      epmsPrevalidatedFileId,
       browserTabSessionId,
       idempotencyKey,
       workerManifest,

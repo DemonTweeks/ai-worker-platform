@@ -1,7 +1,12 @@
 const fs = require('fs');
 const path = require('path');
 const { Job, JobFile } = require('../../models');
-const { getExplicitPythonExecutable, runPythonStage } = require('../../services/childProcessRunner');
+const {
+  buildCommand,
+  getExplicitPythonExecutable,
+  runCommand,
+  runPythonStage
+} = require('../../services/childProcessRunner');
 const config = require('../../config/env');
 const storageService = require('../../services/storageService');
 const prAuditorManifest = require('../manifests/prAuditorManifest');
@@ -12,19 +17,20 @@ const { assertPathInsideRoot } = require('../../utils/pathUtils');
 
 const PR_AUDITOR_INPUT_FILE_TYPES = {
   FINAL_PO: 'pr_auditor_final_po_upload',
-  EXPECTED_ECC: 'pr_auditor_expected_ecc_upload'
+  EPMS: 'pr_auditor_epms_upload'
 };
 
 const PR_AUDITOR_PROGRESS_STAGES = [
   'Validating files',
+  'Generating TSS entitlement',
+  'Generating TI entitlement',
   'Loading generated ECC entitlement',
   'Auditing PO records',
   'Resolving duplicates',
   'Generating audit report'
 ];
 
-const DEFAULT_FINAL_PO_SHEET = process.env.PR_AUDITOR_FINAL_PO_SHEET || 'Sheet1';
-const DEFAULT_FINAL_PO_HEADER_ROW = process.env.PR_AUDITOR_FINAL_PO_HEADER_ROW || '2';
+const ENTITLEMENT_SCOPES = ['TSS', 'TI'];
 
 const getDefaultStageTimeoutMs = () => config.limits.jobTimeoutMinutes * 60 * 1000;
 
@@ -72,19 +78,43 @@ const getTrackedInputFile = async (jobId, fileType) => {
   };
 };
 
-const buildAuditCommandSpec = ({ workspaceRoot, runtimePaths, pythonExecutable }) => ({
+const getFinalPoLayoutOverrides = () => {
+  const sheet = String(process.env.PR_AUDITOR_FINAL_PO_SHEET || '').trim();
+  const headerRow = String(process.env.PR_AUDITOR_FINAL_PO_HEADER_ROW || '').trim();
+
+  return {
+    sheet: sheet || null,
+    headerRow: headerRow || null
+  };
+};
+
+const buildAuditCommandSpec = ({
+  workspaceRoot,
+  runtimePaths,
   pythonExecutable,
-  cwd: workspaceRoot,
-  scriptPath: runtimePaths.scriptPath,
-  scriptArgs: [
+  finalPoLayout = getFinalPoLayoutOverrides()
+}) => {
+  const scriptArgs = [
     '--final-po', runtimePaths.finalPoPath,
-    '--final-po-sheet', DEFAULT_FINAL_PO_SHEET,
-    '--final-po-header-row', DEFAULT_FINAL_PO_HEADER_ROW,
-    '--expected-ecc', runtimePaths.expectedEccPath,
+    '--expected-ecc', runtimePaths.expectedEccRoot,
     '--output', runtimePaths.outputPath,
     '--summary-json', runtimePaths.summaryJsonPath
-  ]
-});
+  ];
+
+  if (finalPoLayout.sheet) {
+    scriptArgs.push('--final-po-sheet', finalPoLayout.sheet);
+  }
+  if (finalPoLayout.headerRow) {
+    scriptArgs.push('--final-po-header-row', finalPoLayout.headerRow);
+  }
+
+  return {
+    pythonExecutable,
+    cwd: workspaceRoot,
+    scriptPath: runtimePaths.scriptPath,
+    scriptArgs
+  };
+};
 
 const buildPrAuditorExecutionError = ({ type, exitCode, stderr }) => {
   const isTimeout = type === 'timeout';
@@ -101,6 +131,61 @@ const buildPrAuditorExecutionError = ({ type, exitCode, stderr }) => {
   };
 
   return error;
+};
+
+const runEntitlementGeneration = async ({
+  runtimePaths,
+  timeoutMs,
+  isCancellationRequested,
+  onStageStarted
+}) => {
+  const stageResults = [];
+
+  for (let index = 0; index < ENTITLEMENT_SCOPES.length; index += 1) {
+    const scope = ENTITLEMENT_SCOPES[index];
+    if (onStageStarted) {
+      await onStageStarted({
+        stage: `create-pr-cd-${scope.toLowerCase()}`,
+        stageLabel: `Generating ${scope} entitlement`,
+        index: index + 1,
+        total: PR_AUDITOR_PROGRESS_STAGES.length
+      });
+    }
+
+    const commandSpec = buildCommand({
+      siteDataPath: runtimePaths.epmsPath,
+      outputPath: runtimePaths.expectedEccRoot,
+      generationScope: 'all_sites',
+      siteCodes: [],
+      scope
+    });
+    const result = await runCommand({
+      ...commandSpec,
+      timeoutMs: normalizeStageTimeoutMs(timeoutMs),
+      isCancellationRequested
+    });
+    const stageResult = {
+      stage: `create-pr-cd-${scope.toLowerCase()}`,
+      command: commandSpec.command,
+      args: commandSpec.args,
+      cwd: commandSpec.cwd,
+      ...result
+    };
+    stageResults.push(stageResult);
+
+    if (result.cancelled) {
+      return { cancelled: true, stageResults };
+    }
+    if (result.timedOut || result.exitCode !== 0) {
+      throw buildPrAuditorExecutionError({
+        type: result.timedOut ? 'timeout' : 'process_failed',
+        exitCode: result.exitCode,
+        stderr: result.stderr
+      });
+    }
+  }
+
+  return { cancelled: false, stageResults };
 };
 
 const persistJobMetadata = async (jobId) => {
@@ -199,15 +284,15 @@ const run = async (jobId, options = {}) => {
     await options.onWorkspacePreparing('Preparing PR Auditor job workspace.');
   }
 
-  const [finalPoFile, expectedEccFile] = await Promise.all([
+  const [finalPoFile, epmsFile] = await Promise.all([
     getTrackedInputFile(jobId, PR_AUDITOR_INPUT_FILE_TYPES.FINAL_PO),
-    getTrackedInputFile(jobId, PR_AUDITOR_INPUT_FILE_TYPES.EXPECTED_ECC)
+    getTrackedInputFile(jobId, PR_AUDITOR_INPUT_FILE_TYPES.EPMS)
   ]);
 
   const workspace = await preparePrAuditorWorkspace({
     jobId,
     finalPoSourcePath: finalPoFile.absolutePath,
-    expectedEccSourcePath: expectedEccFile.absolutePath
+    epmsSourcePath: epmsFile.absolutePath
   });
 
   if (options.onWorkspacePrepared) {
@@ -225,12 +310,39 @@ const run = async (jobId, options = {}) => {
 
   assertEnginePinApproved();
 
-  const pipelineResult = await runAuditCommand({
+  const entitlementResult = await runEntitlementGeneration({
+    runtimePaths: workspace.runtimePaths,
+    timeoutMs: options.timeoutMs,
+    isCancellationRequested: options.isCancellationRequested,
+    onStageStarted: options.onStageStarted
+  });
+  if (entitlementResult.cancelled) {
+    return {
+      workerId: WORKER_IDS.PR_AUDITOR,
+      workspaceRoot: workspace.workspaceRoot,
+      outputRoot: workspace.outputRoot,
+      manifest: prAuditorManifest,
+      runtime: {
+        progressStages: PR_AUDITOR_PROGRESS_STAGES
+      },
+      pipelineResult: entitlementResult,
+      outputCollection: await ingestPrAuditorOutputs({
+        jobId,
+        workspaceOutputRoot: workspace.outputRoot
+      })
+    };
+  }
+
+  const auditResult = await runAuditCommand({
     commandSpec,
     timeoutMs: options.timeoutMs,
     isCancellationRequested: options.isCancellationRequested,
     onStageStarted: options.onStageStarted
   });
+  const pipelineResult = {
+    cancelled: auditResult.cancelled,
+    stageResults: entitlementResult.stageResults.concat(auditResult.stageResults)
+  };
 
   if (options.onOutputsCollecting) {
     await options.onOutputsCollecting('Collecting approved PR Auditor outputs.');
@@ -262,9 +374,11 @@ module.exports = {
   PR_AUDITOR_PROGRESS_STAGES,
   buildAuditCommandSpec,
   buildPrAuditorExecutionError,
+  getFinalPoLayoutOverrides,
   getTrackedInputFile,
   normalizeStageTimeoutMs,
   persistJobMetadata,
   run,
-  runAuditCommand
+  runAuditCommand,
+  runEntitlementGeneration
 };

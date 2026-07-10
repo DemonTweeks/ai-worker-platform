@@ -4,11 +4,11 @@ const config = require('../config/env');
 const storageService = require('../services/storageService');
 const { assertPathInsideRoot } = require('../utils/pathUtils');
 
-const REQUIRED_WORKSPACE_DIRECTORIES = ['input', 'output', 'temp'];
+const REQUIRED_WORKSPACE_DIRECTORIES = ['input', 'expected-ecc', 'output', 'temp'];
 const ENGINE_ENTRY_SCRIPT = path.join('scripts', 'audit_final_po.py');
 const DEFAULT_INPUT_FILES = {
   finalPo: 'Final PO.xlsx',
-  expectedEcc: 'expected_ecc.xlsx'
+  epms: 'EPMS.xlsx'
 };
 const DEFAULT_OUTPUT_FILES = {
   auditResult: 'PR_Audit_Result.xlsx',
@@ -39,33 +39,35 @@ const resolveEngineScriptPath = () => {
   return scriptPath;
 };
 
-const stageInputFiles = async ({ workspaceRoot, finalPoSourcePath, expectedEccSourcePath }) => {
+const stageInputFiles = async ({ workspaceRoot, finalPoSourcePath, epmsSourcePath }) => {
   const inputRoot = assertPathInsideRoot(workspaceRoot, path.join(workspaceRoot, 'input'));
   const finalPoPath = assertPathInsideRoot(inputRoot, path.join(inputRoot, DEFAULT_INPUT_FILES.finalPo));
-  const expectedEccPath = assertPathInsideRoot(inputRoot, path.join(inputRoot, DEFAULT_INPUT_FILES.expectedEcc));
+  const epmsPath = assertPathInsideRoot(inputRoot, path.join(inputRoot, DEFAULT_INPUT_FILES.epms));
 
   await fs.promises.copyFile(finalPoSourcePath, finalPoPath);
-  await fs.promises.copyFile(expectedEccSourcePath, expectedEccPath);
+  await fs.promises.copyFile(epmsSourcePath, epmsPath);
 
   return {
     finalPoPath,
-    expectedEccPath
+    epmsPath
   };
 };
 
 const buildRuntimePaths = (workspaceRoot) => {
   const outputRoot = assertPathInsideRoot(workspaceRoot, path.join(workspaceRoot, 'output'));
+  const expectedEccRoot = assertPathInsideRoot(workspaceRoot, path.join(workspaceRoot, 'expected-ecc'));
 
   return {
     finalPoPath: assertPathInsideRoot(workspaceRoot, path.join(workspaceRoot, 'input', DEFAULT_INPUT_FILES.finalPo)),
-    expectedEccPath: assertPathInsideRoot(workspaceRoot, path.join(workspaceRoot, 'input', DEFAULT_INPUT_FILES.expectedEcc)),
+    epmsPath: assertPathInsideRoot(workspaceRoot, path.join(workspaceRoot, 'input', DEFAULT_INPUT_FILES.epms)),
+    expectedEccRoot,
     outputPath: assertPathInsideRoot(outputRoot, path.join(outputRoot, DEFAULT_OUTPUT_FILES.auditResult)),
     summaryJsonPath: assertPathInsideRoot(outputRoot, path.join(outputRoot, DEFAULT_OUTPUT_FILES.summaryJson)),
     scriptPath: resolveEngineScriptPath()
   };
 };
 
-const preparePrAuditorWorkspace = async ({ jobId, finalPoSourcePath, expectedEccSourcePath }) => {
+const preparePrAuditorWorkspace = async ({ jobId, finalPoSourcePath, epmsSourcePath }) => {
   const workspace = await storageService.createJobFolders(jobId);
   const workspaceRoot = workspace.root;
 
@@ -76,7 +78,7 @@ const preparePrAuditorWorkspace = async ({ jobId, finalPoSourcePath, expectedEcc
   const stagedInputs = await stageInputFiles({
     workspaceRoot,
     finalPoSourcePath,
-    expectedEccSourcePath
+    epmsSourcePath
   });
   const runtimePaths = buildRuntimePaths(workspaceRoot);
 
@@ -87,6 +89,7 @@ const preparePrAuditorWorkspace = async ({ jobId, finalPoSourcePath, expectedEcc
     engineRoot: config.prAuditorRoot,
     stagedInputs,
     runtimePaths,
+    expectedEccRoot: runtimePaths.expectedEccRoot,
     outputRoot: assertPathInsideRoot(workspaceRoot, path.join(workspaceRoot, 'output')),
     tempRoot: assertPathInsideRoot(workspaceRoot, path.join(workspaceRoot, 'temp'))
   };

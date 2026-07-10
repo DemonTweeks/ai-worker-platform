@@ -6,9 +6,9 @@ module.exports = {
   engineRepository: 'BL2ZteSolution/tx-pr-auditor',
   engineVersion: 'approved-bb19525',
   engineCommit: 'bb19525ab39e55866ff330352ce2a52a400fec17',
-  inputs: ['final-po-upload', 'expected-ecc-upload'],
+  inputs: ['final-po-upload', 'epms-upload'],
   outputs: ['pr-audit-result-xlsx', 'pr-audit-summary'],
-  capabilities: ['final-po-audit'],
-  limitations: ['browser upload accepts generated ECC workbooks, not ECC directories'],
+  capabilities: ['create-pr-cd-entitlement', 'final-po-audit'],
+  limitations: ['create-pr-cd generation currently supports TSS and TI scopes'],
   compatibilityStatus: 'verified'
 };
