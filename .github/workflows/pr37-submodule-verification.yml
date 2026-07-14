@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - chore/sync-create-pr-cd-submodule
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
