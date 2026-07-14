@@ -1,0 +1,59 @@
+name: PR37 Submodule Verification
+
+on:
+  push:
+    branches:
+      - chore/sync-create-pr-cd-submodule
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout recursively
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Verify submodule pins and required RAN workbook
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C skills/create-pr-cd rev-parse HEAD)" = "0bf8f04ded678e186c8d65cf75f801511f634856"
+          test -f "skills/create-pr-cd-ran/config/GENERAL ITEM FOR ALL DU PROJECT Overall.xlsx"
+          git submodule status --recursive
+          git diff --check
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Install backend dependencies
+        run: npm ci --prefix backend
+
+      - name: Run backend tests
+        run: npm test --prefix backend
+
+      - name: Install frontend dependencies
+        run: npm ci --prefix frontend
+
+      - name: Run frontend tests and production build
+        run: npm test --prefix frontend
+
+      - name: Verify tracked tree remains clean
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --exit-code
+          git diff --cached --exit-code
