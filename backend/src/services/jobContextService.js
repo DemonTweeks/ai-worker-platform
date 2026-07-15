@@ -1,6 +1,7 @@
 const path = require('path');
 const { Job, JobFile, ReviewRequiredItem, WarningItem } = require('../models');
 const workerStateService = require('./workerStateService');
+const { sanitizePrAuditorError } = require('../workers/prAuditorFailureService');
 const INPUT_FILE_TYPES = new Set(['uploaded_export', 'ran_bom_upload', 'ran_epms_upload']);
 
 const serializeFile = (file) => ({
@@ -32,6 +33,15 @@ const buildSafeJobContext = async (jobId) => {
     reviewRequiredCount: job.reviewRequiredCount,
     warningCount: job.warningCount
   };
+  const safeJobError = job.error
+    ? (job.error.code === 'PR_AUDITOR_ENGINE_PIN_UNAPPROVED'
+      ? sanitizePrAuditorError(job.error)
+      : {
+        code: job.error.code,
+        message: job.error.message,
+        details: job.error.details
+      })
+    : null;
 
   return {
     job: {
@@ -45,11 +55,7 @@ const buildSafeJobContext = async (jobId) => {
       generationScope: job.generationScope,
       finalWorkerSummary: job.finalWorkerSummary,
       assetVersions: job.assetVersions || {},
-      error: job.error ? {
-        code: job.error.code,
-        message: job.error.message,
-        details: job.error.details
-      } : null
+      error: safeJobError
     },
     workerState: workerStateService.getState(jobId),
     summary,

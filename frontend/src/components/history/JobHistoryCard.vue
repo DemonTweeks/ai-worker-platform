@@ -130,6 +130,10 @@ export default {
       return this.job.status === 'cancelled_with_partial_result' ? 'Download Partial ZIP' : 'Download ZIP';
     },
     summaryPreview() {
+      if (this.job.status === 'failed') {
+        return this.job.failureSummary || 'PR Worker execution failed.';
+      }
+
       if (this.isPrAuditorJob) {
         if (!hasAuditReport(this.job, this.job.outputs)) {
           return prAuditorReportMessage(this.job, this.job.outputs);
@@ -148,9 +152,6 @@ export default {
         return this.job.finalWorkerSummary || prAuditorReportMessage(this.job, this.job.outputs);
       }
 
-      if (this.job.status === 'failed') {
-        return this.job.failureSummary || 'PR Worker execution failed.';
-      }
       const text = this.job.finalWorkerSummary || 'Final worker summary is not available yet.';
       return text.length > 180 ? `${text.slice(0, 177)}...` : text;
     },

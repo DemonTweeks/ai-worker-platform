@@ -1,6 +1,7 @@
 const assert = require('assert');
 const jobService = require('../src/services/jobService');
 const { buildRanExecutionError } = require('../src/workers/ranFailureService');
+const { sanitizePrAuditorError } = require('../src/workers/prAuditorFailureService');
 const { Job, JobFile } = require('../src/models');
 
 const runTests = async () => {
@@ -196,6 +197,44 @@ Authorization: Basic basic-secret
     assert.strictEqual(diag3.title, 'PR Worker execution failed');
     assert.strictEqual(diag3.summary, 'An unexpected error occurred during the PR worker execution process.');
     assert.strictEqual(diag3.technicalDetails.includes('C:\\Users\\JJ\\upload.xlsx'), false);
+
+    // Expected PR Auditor fail-closed condition has specific, diagnostic-free presentation.
+    console.log('Assertion 6a: PR Auditor engine-pin block is presented safely');
+    resetMocks();
+
+    const enginePinMessage = 'PR Auditor runtime is blocked until a safe engine pin is approved and recorded.';
+    const mockBlockedAuditorJob = {
+      jobId: 'PR-AUDITOR-BLOCKED-003A',
+      workerId: 'pr-auditor',
+      workerType: 'pr-worker',
+      status: 'failed',
+      createdAt: new Date().toISOString(),
+      error: {
+        code: 'PR_AUDITOR_ENGINE_PIN_UNAPPROVED',
+        message: 'Hostile replacement message C:\\private\\engine.py',
+        details: { stderr: hostileStderr, command: '--engine unsafe' }
+      }
+    };
+
+    Job.findOne = () => ({
+      lean: () => ({
+        catch: () => mockBlockedAuditorJob
+      }),
+      ...mockBlockedAuditorJob
+    });
+
+    detailResult = await jobService.getJobDetail('PR-AUDITOR-BLOCKED-003A');
+    jobDetail = detailResult.job;
+    assert.strictEqual(jobDetail.failureSummary, enginePinMessage);
+    assert.strictEqual(jobDetail.failureDiagnosis.category, 'PR_AUDITOR_ENGINE_PIN_UNAPPROVED');
+    assert.strictEqual(jobDetail.failureDiagnosis.title, 'PR Auditor runtime blocked');
+    assert.strictEqual(jobDetail.failureDiagnosis.summary, enginePinMessage);
+    assert.strictEqual(jobDetail.failureDiagnosis.technicalDetails, '');
+    assert.deepStrictEqual(sanitizePrAuditorError(mockBlockedAuditorJob.error), {
+      code: 'PR_AUDITOR_ENGINE_PIN_UNAPPROVED',
+      message: enginePinMessage,
+      details: {}
+    });
 
     // 4. No missingPackages are invented (empty/missing list)
     console.log('Assertion 7 (cont): Empty/invalid missingPackages list is omitted');

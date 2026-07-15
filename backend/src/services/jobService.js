@@ -20,6 +20,11 @@ const { createApiError } = require('../utils/apiError');
 const { sanitizeRanStageName } = require('../workers/ranFailureService');
 const { validateRanRunConfiguration } = require('../workers/ranProjectCatalogService');
 const { WORKER_IDS } = require('../workers/workerTypes');
+const {
+  ENGINE_PIN_UNAPPROVED_CODE,
+  ENGINE_PIN_UNAPPROVED_MESSAGE,
+  ENGINE_PIN_UNAPPROVED_TITLE
+} = require('../workers/prAuditorFailureService');
 const { getWorkerManifest } = require('../workers/workerRegistry');
 const {
   CANCELLATION_REASON_LABELS,
@@ -142,6 +147,10 @@ const getFailureSummary = (job) => {
   const isRanJob = job.workerId === WORKER_IDS.RAN_PR;
   const isPrAuditorJob = job.workerId === WORKER_IDS.PR_AUDITOR;
 
+  if (isPrAuditorJob && code === ENGINE_PIN_UNAPPROVED_CODE) {
+    return ENGINE_PIN_UNAPPROVED_MESSAGE;
+  }
+
   if (code === 'PREFLIGHT_FAILED') {
     const allowedPkgs = ['pandas', 'openpyxl'];
     let validPkgs = [];
@@ -214,7 +223,14 @@ const getFailureDiagnosis = (job) => {
   const isRanJob = job.workerId === WORKER_IDS.RAN_PR;
   const isPrAuditorJob = job.workerId === WORKER_IDS.PR_AUDITOR;
 
-  const allowedCategories = ['PREFLIGHT_FAILED', 'WORKER_TIMEOUT', 'WORKER_PROCESS_FAILED', 'RAN_INVALID_ECC_OUTPUT', 'RAN_ZERO_VALID_ECC_OUTPUT'];
+  const allowedCategories = [
+    'PREFLIGHT_FAILED',
+    'WORKER_TIMEOUT',
+    'WORKER_PROCESS_FAILED',
+    'RAN_INVALID_ECC_OUTPUT',
+    'RAN_ZERO_VALID_ECC_OUTPUT'
+  ];
+  if (isPrAuditorJob) allowedCategories.push(ENGINE_PIN_UNAPPROVED_CODE);
   const category = allowedCategories.includes(code) ? code : 'WORKER_ERROR';
 
   let title = isPrAuditorJob
@@ -234,9 +250,14 @@ const getFailureDiagnosis = (job) => {
   let exitCode;
 
   const rawStderr = typeof details.stderr === 'string' ? details.stderr : '';
-  const technicalDetails = redactTechnicalDetails(rawStderr).slice(-2000);
+  const technicalDetails = category === ENGINE_PIN_UNAPPROVED_CODE
+    ? ''
+    : redactTechnicalDetails(rawStderr).slice(-2000);
 
-  if (category === 'PREFLIGHT_FAILED') {
+  if (category === ENGINE_PIN_UNAPPROVED_CODE && isPrAuditorJob) {
+    title = ENGINE_PIN_UNAPPROVED_TITLE;
+    summary = ENGINE_PIN_UNAPPROVED_MESSAGE;
+  } else if (category === 'PREFLIGHT_FAILED') {
     title = 'Python worker dependency missing';
     summary = 'PR worker preflight check failed because some required Python packages are not installed in the environment.';
 
