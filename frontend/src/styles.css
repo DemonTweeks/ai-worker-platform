@@ -939,6 +939,28 @@ textarea {
   border-left: 3px solid #64748b;
 }
 
+.deployment-action-card {
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  width: 100%;
+}
+
+.deployment-action-card:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+}
+
+.deployment-action-card:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.deployment-action-card:focus-visible {
+  outline: 3px solid rgba(0, 112, 192, 0.25);
+  outline-offset: 2px;
+}
+
 .hero-band {
   align-items: center;
   display: flex;

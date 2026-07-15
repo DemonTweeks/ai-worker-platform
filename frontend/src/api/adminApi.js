@@ -48,4 +48,9 @@ export const listAuditLogs = async (params = {}) => {
   return response.data;
 };
 
+export const triggerDeployment = async () => {
+  const response = await api.post('/api/admin/deploy', {}, adminHeaders());
+  return response.data;
+};
+
 export const getAdminErrorMessage = unwrapError;

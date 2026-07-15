@@ -2,10 +2,16 @@ import { mount } from '@vue/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import AdminHealthView from '../admin/AdminHealthView.vue';
 import { getHealth } from '../../api/jobApi';
+import { triggerDeployment } from '../../api/adminApi';
 
 vi.mock('../../api/jobApi', () => ({
   getHealth: vi.fn(),
   getErrorMessage: vi.fn((error) => error.userMessage || error.message || 'Request failed.')
+}));
+
+vi.mock('../../api/adminApi', () => ({
+  triggerDeployment: vi.fn(),
+  getAdminErrorMessage: vi.fn((error) => error.userMessage || error.message || 'Request failed.')
 }));
 
 const mountView = async () => {
@@ -79,5 +85,21 @@ describe('AdminHealthView', () => {
 
     expect(wrapper.text()).toContain('🟡Degraded');
     expect(wrapper.text()).toContain('agnes · model unknown · configured: no');
+  });
+
+  it('triggers deployment from the action card', async () => {
+    getHealth.mockResolvedValueOnce({ status: 'ok', services: {} });
+    triggerDeployment.mockResolvedValueOnce({
+      status: 'accepted',
+      startedAt: '2026-07-15T10:00:00.000Z'
+    });
+    const wrapper = await mountView();
+
+    await wrapper.find('.deployment-action-card').trigger('click');
+    await Promise.resolve();
+
+    expect(triggerDeployment).toHaveBeenCalledTimes(1);
+    expect(wrapper.text()).toContain('Started 2026-07-15T10:00:00.000Z');
+    expect(wrapper.text()).toContain('continue in the background');
   });
 });
