@@ -31,6 +31,7 @@ const mountView = async () => {
 
 describe('AdminHealthView', () => {
   afterEach(() => {
+    vi.useRealTimers();
     vi.clearAllMocks();
   });
 
@@ -88,6 +89,7 @@ describe('AdminHealthView', () => {
   });
 
   it('triggers deployment from the action card', async () => {
+    vi.useFakeTimers();
     getHealth.mockResolvedValueOnce({ status: 'ok', services: {} });
     triggerDeployment.mockResolvedValueOnce({
       status: 'accepted',
@@ -99,7 +101,16 @@ describe('AdminHealthView', () => {
     await Promise.resolve();
 
     expect(triggerDeployment).toHaveBeenCalledTimes(1);
-    expect(wrapper.text()).toContain('Started 2026-07-15T10:00:00.000Z');
-    expect(wrapper.text()).toContain('continue in the background');
+    expect(wrapper.find('.deployment-action-card').attributes('disabled')).toBeDefined();
+    expect(wrapper.text()).toContain('Checking backend availability every 15 seconds');
+
+    getHealth.mockRejectedValueOnce(new Error('Backend restarting'));
+    await vi.advanceTimersByTimeAsync(15000);
+    expect(wrapper.find('.deployment-action-card').attributes('disabled')).toBeDefined();
+
+    getHealth.mockResolvedValueOnce({ status: 'ok', services: {} });
+    await vi.advanceTimersByTimeAsync(15000);
+    expect(wrapper.find('.deployment-action-card').attributes('disabled')).toBeUndefined();
+    expect(wrapper.text()).toContain('Backend available again at');
   });
 });
