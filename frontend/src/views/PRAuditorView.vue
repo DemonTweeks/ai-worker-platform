@@ -156,7 +156,7 @@
                   <th>Status</th>
                   <th>Created</th>
                   <th>Live Output</th>
-                  <th>Stop/Cancel</th>
+                  <th>Stop Job</th>
                 </tr>
               </thead>
               <tbody>
@@ -181,7 +181,7 @@
                       :disabled="!isJobCancellable(job)"
                       @click="prepareCancellationForJob(job.jobId)"
                     >
-                      {{ job.status === 'cancelling' ? 'Stopping...' : 'Stop / Cancel' }}
+                      {{ job.status === 'cancelling' ? 'Stopping...' : 'Stop Job' }}
                     </button>
                   </td>
                 </tr>

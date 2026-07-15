@@ -2065,7 +2065,7 @@ body:has(.home-cockpit) {
 }
 
 .active-jobs-table .active-job-col-created {
-  width: 24%;
+  width: 23%;
 }
 
 .active-jobs-table .active-job-col-view {
@@ -2073,7 +2073,7 @@ body:has(.home-cockpit) {
 }
 
 .active-jobs-table .active-job-col-cancel {
-  width: 13%;
+  width: 14%;
 }
 
 .active-jobs-table th,
@@ -2082,6 +2082,11 @@ body:has(.home-cockpit) {
   overflow-wrap: break-word;
   padding: 9px 8px;
   white-space: normal;
+}
+
+.active-jobs-table th {
+  overflow-wrap: normal;
+  word-break: keep-all;
 }
 
 .active-jobs-table .active-job-action {
