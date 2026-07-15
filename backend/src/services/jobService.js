@@ -977,6 +977,7 @@ const getFileAvailability = async (file) => {
     fileType: file.fileType,
     fileName: file.fileName,
     fileSize: file.fileSize,
+    createdAt: file.createdAt,
     retentionUntil: file.retentionUntil,
     isExpired: Boolean(file.isExpired),
     expiredAt: file.expiredAt,

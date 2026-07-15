@@ -54,6 +54,8 @@ describe('RAN detail metadata rendering', () => {
   });
 
   it('shows PR Auditor-specific summary counts and audit report downloads', () => {
+    const generatedAt = '2026-07-14T10:52:16.000Z';
+    const expiresAt = '2027-01-10T10:52:16.000Z';
     const summaryWrapper = mount(JobDetailSummary, {
       propsData: {
         job: {
@@ -90,6 +92,8 @@ describe('RAN detail metadata rendering', () => {
             fileType: 'pr_audit_result_xlsx',
             fileName: 'PR_Audit_Result.xlsx',
             fileSize: 1024,
+            createdAt: generatedAt,
+            retentionUntil: expiresAt,
             available: true,
             exists: true
           },
@@ -123,6 +127,10 @@ describe('RAN detail metadata rendering', () => {
     expect(filesText).toContain('Audit Report');
     expect(filesText).toContain('Audit Summary JSON');
     expect(filesText).toContain('Download Audit Report');
+    expect(filesText).toContain('Generated At');
+    expect(filesText).toContain('Expires At');
+    expect(filesText).toContain(new Date(generatedAt).toLocaleString());
+    expect(filesText).toContain(new Date(expiresAt).toLocaleString());
   });
 
   it('shows safe PR Auditor failure summary text', () => {
