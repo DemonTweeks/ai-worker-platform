@@ -16,6 +16,13 @@
         </div>
         <p>Worker execution started.</p>
       </li>
+      <li v-if="showExecutedSites">
+        <div class="timeline-title">
+          <strong>Sites executed</strong>
+          <span>{{ executedSiteCodes.length }} site{{ executedSiteCodes.length === 1 ? '' : 's' }}</span>
+        </div>
+        <p class="timeline-site-codes">{{ executedSiteCodes.join(', ') }}</p>
+      </li>
       <li v-if="job.completedAt">
         <div class="timeline-title">
           <strong>Completed</strong>
@@ -52,6 +59,17 @@ export default {
   props: {
     job: { type: Object, required: true },
     liveEvents: { type: Array, default: () => [] }
+  },
+  computed: {
+    executedSiteCodes() {
+      return Array.isArray(this.job.matchedSiteCodes)
+        ? this.job.matchedSiteCodes.filter((siteCode) => typeof siteCode === 'string' && siteCode.trim())
+        : [];
+    },
+    showExecutedSites() {
+      return ['completed', 'completed_with_warning'].includes(this.job.status)
+        && this.executedSiteCodes.length > 0;
+    }
   },
   methods: {
     formatDateTime

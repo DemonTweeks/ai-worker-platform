@@ -235,6 +235,9 @@ const runPrWorkerJob = async (jobId) => {
       generationScope: request.generationScope,
       siteCodes: request.siteCodes
     });
+    await setJobStatus(jobId, 'filtering_sites', {
+      matchedSiteCodes: request.generationScope === 'site_code' ? filteringResult.matchedSiteCodes : []
+    });
     await JobFile.create({
       jobId,
       fileType: 'filtered_input',
