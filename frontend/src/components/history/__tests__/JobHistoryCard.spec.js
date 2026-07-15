@@ -168,8 +168,35 @@ describe('JobHistoryCard.vue Component', () => {
       stubs: { routerLink: true, JobStatusBadge: true, JobScopeBadge: true }
     });
 
-    expect(wrapper.text()).toContain('No audit report was generated.');
+    expect(wrapper.text()).toContain('PR Worker execution failed.');
     expect(wrapper.text()).not.toContain('Audit report generated.');
     expect(wrapper.text()).not.toContain('Download Audit Report');
+  });
+
+  it('shows the safe engine-pin block reason for a failed PR Auditor job', () => {
+    const safeMessage = 'PR Auditor runtime is blocked until a safe engine pin is approved and recorded.';
+    const job = {
+      jobId: 'PR-AUDIT-BLOCKED-006',
+      status: 'failed',
+      workerType: 'pr-worker',
+      workerId: 'pr-auditor',
+      failureSummary: safeMessage,
+      finalWorkerSummary: 'Raw operational failure details must not be shown.',
+      outputFileCount: 0,
+      createdAt: new Date().toISOString()
+    };
+
+    const wrapper = mount(JobHistoryCard, {
+      propsData: { job },
+      stubs: {
+        routerLink: true,
+        JobStatusBadge: true,
+        JobScopeBadge: true
+      }
+    });
+
+    expect(wrapper.text()).toContain(safeMessage);
+    expect(wrapper.text()).not.toContain('Raw operational failure details');
+    expect(wrapper.text()).not.toContain('Audit report generated');
   });
 });

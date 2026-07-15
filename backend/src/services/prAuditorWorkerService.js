@@ -4,6 +4,7 @@ const { saveFinalSummary } = require('./finalSummaryService');
 const prAuditorAdapter = require('../workers/adapters/prAuditorAdapter');
 const { JOB_EVENTS, publishJobEvent } = require('../websocket/eventPublisher');
 const { RUNNING_JOB_STATUSES, appendStatusEvent } = require('./jobControlService');
+const { sanitizePrAuditorError } = require('../workers/prAuditorFailureService');
 
 const statusByPhase = {
   VALIDATION_STARTED: 'validating',
@@ -119,11 +120,7 @@ const finalizeCancelledJob = async (jobId, summary, { message }) => {
 };
 
 const failJob = async (jobId, error) => {
-  const safeError = {
-    code: error.code || 'WORKER_ERROR',
-    message: error.message || 'PR Auditor execution failed.',
-    details: error.details || {}
-  };
+  const safeError = sanitizePrAuditorError(error);
 
   await setJobStatus(jobId, 'failed', {
     completedAt: new Date(),

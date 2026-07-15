@@ -2,12 +2,13 @@
 
 AI Worker Platform is an internal web platform for running approved business-domain workers through a shared, browser-based job lifecycle.
 
-The current baseline provides two PR worker families:
+The current baseline provides three PR worker families:
 
 | Worker | Worker ID | Business-rule owner | Current capability |
 | --- | --- | --- | --- |
 | MW PR Worker | `mw-pr` | `skills/create-pr-cd` | Existing MW TSS/TI PR and ECC workflow |
 | RAN PR Worker | `ran-pr` | Pinned `skills/create-pr-cd-ran` submodule | Standard PR and General Item PR |
+| PR Auditor | `pr-auditor` | Pinned `skills/tx-pr-auditor` submodule | Generate TSS/TI entitlement and audit Final PO submissions |
 
 **Current merged baseline:** RAN PR Worker merged through PR #17 at `29cbd382c92222b4f555d1926f106e1c66837404`.
 
@@ -57,6 +58,32 @@ The RAN integration protects against false success:
 - cancelled jobs with valid partial output become `cancelled_with_partial_result`
 - RAN Python stages inherit the platform job timeout when no explicit valid timeout exists
 
+## PR Auditor Baseline
+
+The PR Auditor engine is a read-only pinned Git submodule:
+
+```text
+skills/tx-pr-auditor
+approved-cba28b7
+cba28b76716bf68f5fe8b03ac33c7e396c8935ee
+```
+
+A PR Auditor job accepts a Final PO workbook and EPMS workbook. The platform runs the approved engines in this order:
+
+1. `create-pr-cd` generates isolated TSS and TI ECC entitlement from EPMS.
+2. `tx-pr-auditor` compares Final PO rows only with those generated ECC workbooks.
+3. The platform validates and tracks `PR_Audit_Result.xlsx` and the optional trusted summary JSON.
+
+`tx-pr-auditor` must not read EPMS or PR Model directly. It owns downstream Final PO comparison, duplicate resolution and report generation; `create-pr-cd` remains the entitlement owner.
+
+The runtime fails closed when the approved engine pin is missing or unverified. Jobs with error code `PR_AUDITOR_ENGINE_PIN_UNAPPROVED` show only this safe message across the live console, History, Job Detail and Re-Ask:
+
+```text
+PR Auditor runtime is blocked until a safe engine pin is approved and recorded.
+```
+
+Do not replace this condition with generic success, expose stderr or local paths, or mark an unverified engine revision as approved.
+
 ## Architecture
 
 ```mermaid
@@ -67,10 +94,15 @@ flowchart LR
   Q --> WR[Worker Registry]
   WR --> MW[MW PR Adapter]
   WR --> RAN[RAN PR Adapter]
+  WR --> AUDIT[PR Auditor Adapter]
   MW --> MWE[MW Engine]
   RAN --> WS[Per-job RAN Workspace]
+  AUDIT --> AWS[Per-job Auditor Workspace]
   RANEngine[Read-only RAN Engine Submodule] --> WS
+  MW --> AWS
+  AuditorEngine[Read-only tx-pr-auditor Submodule] --> AWS
   WS --> PY[Resolved Python Runtime]
+  AWS --> PY
   PY --> OUT[Validated Outputs]
   MWE --> OUT
   OUT --> STORE[Platform Storage and ZIP]
@@ -97,6 +129,8 @@ ai-worker-platform/
 ```
 
 ## Local Development (Windows)
+
+The `skills/` directory includes the MW engine assets plus the pinned, read-only `create-pr-cd-ran` and `tx-pr-auditor` engine submodules.
 
 ### 1. Clone with worker engines
 
@@ -134,6 +168,7 @@ $python = (Resolve-Path .\.venv\Scripts\python.exe).Path
 & $python -m pip install --upgrade pip
 & $python -m pip install -r requirements-worker.txt
 & $python -m pip install -r skills\create-pr-cd\requirements.txt
+& $python -m pip install -r skills\tx-pr-auditor\requirements.txt
 Add-Content .env ('PYTHON_EXECUTABLE="' + $python + '"')
 ```
 
@@ -177,13 +212,30 @@ npm.cmd --prefix backend run test:ran-worker-service
 npm.cmd --prefix backend run test:ran-routes
 ```
 
+Run the PR Auditor engine and platform regression checks when its pin, adapter, workspace, output handling or presentation changes:
+
+```powershell
+& .\.venv\Scripts\python.exe -m unittest discover -s skills\tx-pr-auditor\tests -p "test_*.py" -v
+node backend\scripts\pr-auditor-adapter-test.js
+node backend\scripts\pr-auditor-workspace-test.js
+node backend\scripts\pr-auditor-output-ingestion-test.js
+node backend\scripts\pr-auditor-worker-service-test.js
+node backend\scripts\pr-auditor-summary-metadata-test.js
+node backend\scripts\pr-auditor-route-test.js
+node backend\scripts\pr-auditor-concurrency-test.js
+node backend\scripts\error-visibility-test.js
+```
+
 Firebase-backed tests that share a test backend must run serially.
 
 ## Operational Rules
 
 - Do not update the RAN submodule without explicit approval.
+- Do not update or approve the `tx-pr-auditor` submodule without validating the exact revision and updating its manifest pin.
 - Do not edit RAN business logic in `skills/create-pr-cd-ran` from the platform repository.
+- Do not edit PR Auditor business logic in `skills/tx-pr-auditor` from the platform repository.
 - Do not execute RAN jobs in the upstream fixed `input/` or `output/` folders.
+- Do not execute PR Auditor jobs in the submodule's sample `input/` or `output/` folders; use isolated platform storage.
 - Keep RAN workspaces isolated under platform-owned storage.
 - Treat output validation, cancellation precedence, timeouts, safe errors and final-summary ordering as regression-sensitive lifecycle areas.
 - Do not commit generated Excel files, ZIPs, Firebase exports, `.env` files or runtime workspaces.
