@@ -237,16 +237,24 @@
           <div v-if="visibleActiveSessionJobs.length === 0" class="cockpit-empty-card">
             No active jobs are running or queued in this browser tab.
           </div>
-          <div v-else class="download-compact">
+          <div v-else class="download-compact active-jobs-scroll">
             <table class="active-jobs-table">
+              <colgroup>
+                <col class="active-job-col-id" />
+                <col class="active-job-col-worker" />
+                <col class="active-job-col-status" />
+                <col class="active-job-col-created" />
+                <col class="active-job-col-view" />
+                <col class="active-job-col-cancel" />
+              </colgroup>
               <thead>
                 <tr>
                   <th>Job ID</th>
                   <th>Worker</th>
                   <th>Status</th>
                   <th>Created</th>
-                  <th>View</th>
-                  <th>Stop/Cancel</th>
+                  <th>Live Output</th>
+                  <th>Stop Job</th>
                 </tr>
               </thead>
               <tbody>
@@ -258,20 +266,20 @@
                   <td>{{ job.jobId }}</td>
                   <td>{{ job.workerDisplayName || job.workerId }}</td>
                   <td>{{ job.status }}</td>
-                  <td>{{ job.createdAt || 'Now' }}</td>
+                  <td>{{ formatDateTime(job.createdAt) }}</td>
                   <td>
-                    <button type="button" class="secondary-link" @click="selectActiveJob(job.jobId)">
-                      View
+                    <button type="button" class="secondary-link active-job-action" @click="selectActiveJob(job.jobId)">
+                      View Live Output
                     </button>
                   </td>
                   <td>
                     <button
                       type="button"
-                      class="secondary-link"
+                      class="secondary-link active-job-action"
                       :disabled="!isJobCancellable(job)"
                       @click="prepareCancellationForJob(job.jobId)"
                     >
-                      {{ job.status === 'cancelling' ? 'Stopping...' : 'Stop / Cancel' }}
+                      {{ job.status === 'cancelling' ? 'Stopping...' : 'Stop Job' }}
                     </button>
                   </td>
                 </tr>
