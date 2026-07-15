@@ -13,7 +13,7 @@ vi.mock('../../api', () => ({
   }
 }));
 
-import { prevalidateUpload } from '../jobApi';
+import { createJob, prevalidateUpload } from '../jobApi';
 
 describe('jobApi prevalidateUpload', () => {
   beforeEach(() => {
@@ -41,6 +41,21 @@ describe('jobApi prevalidateUpload', () => {
     expect(formData.get('browserTabSessionId')).toBe('ran-pr-tab-1234');
     expect(config).toMatchObject({
       headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 120000
+    });
+  });
+
+  it('allows job creation setup to run beyond the global request timeout', async () => {
+    postMock.mockResolvedValueOnce({ data: { job: { jobId: 'PR-001' } } });
+    const payload = {
+      workerId: 'pr-auditor',
+      finalPoPrevalidatedFileId: 'final-po-upload',
+      epmsPrevalidatedFileId: 'epms-upload'
+    };
+
+    await createJob(payload);
+
+    expect(postMock).toHaveBeenCalledWith('/api/jobs', payload, {
       timeout: 120000
     });
   });
