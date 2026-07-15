@@ -19,7 +19,8 @@
             <th>Type</th>
             <th>Name</th>
             <th>Size</th>
-            <th>Retention</th>
+            <th>Generated At</th>
+            <th>Expires At</th>
             <th>Status</th>
             <th>Download</th>
           </tr>
@@ -29,6 +30,7 @@
             <td>{{ fileTypeLabel(file.fileType) }}</td>
             <td>{{ file.fileName }}</td>
             <td>{{ formatBytes(file.fileSize) }}</td>
+            <td>{{ formatDateTime(file.createdAt) }}</td>
             <td>{{ formatDateTime(file.retentionUntil) }}</td>
             <td>{{ availabilityText(file) }}</td>
             <td>
