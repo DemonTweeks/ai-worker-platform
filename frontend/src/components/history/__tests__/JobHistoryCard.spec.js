@@ -151,4 +151,25 @@ describe('JobHistoryCard.vue Component', () => {
     expect(text).toContain('Warnings: 2');
     expect(text).toContain('Download Audit Report');
   });
+
+  it('does not claim an audit report exists for a failed PR Auditor job with zero outputs', () => {
+    const wrapper = mount(JobHistoryCard, {
+      propsData: {
+        job: {
+          jobId: 'PR-AUDIT-FAILED-006',
+          status: 'failed',
+          workerId: 'pr-auditor',
+          outputFileCount: 0,
+          outputs: [],
+          finalWorkerSummary: 'Audit report generated.',
+          createdAt: new Date().toISOString()
+        }
+      },
+      stubs: { routerLink: true, JobStatusBadge: true, JobScopeBadge: true }
+    });
+
+    expect(wrapper.text()).toContain('No audit report was generated.');
+    expect(wrapper.text()).not.toContain('Audit report generated.');
+    expect(wrapper.text()).not.toContain('Download Audit Report');
+  });
 });

@@ -17,7 +17,7 @@
     <div v-else-if="detail && detail.job" class="detail-layout">
       <JobDetailHeader :job="detail.job" />
       <FinalSummary :detail="detail" />
-      <JobDetailSummary :job="detail.job" />
+      <JobDetailSummary :job="detail.job" :outputs="detail.outputs || []" />
       <FailureDiagnosis :job="detail.job" />
       <div class="detail-grid-two">
         <section class="panel">

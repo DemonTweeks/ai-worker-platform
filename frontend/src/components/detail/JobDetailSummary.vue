@@ -12,7 +12,8 @@
       <span><small>Review Required</small><strong>{{ auditSummary.reviewRequiredCount }}</strong></span>
       <span><small>Warnings</small><strong>{{ auditSummary.warnings.length }}</strong></span>
     </div>
-    <p v-else-if="isPrAuditorJob" class="muted">Audit Result summary counts are not trusted yet. Detailed findings remain in the workbook download.</p>
+    <p v-else-if="isPrAuditorJob" class="muted">{{ auditSummaryUnavailableMessage }}</p>
+    <p v-if="auditReportNotice" class="completion-message" :class="auditReportTone">{{ auditReportNotice }}</p>
     <p v-if="zeroOutputNotice" class="completion-message" :class="zeroOutputTone">{{ zeroOutputNotice }}</p>
     <p v-if="failureMessage" class="error-text">{{ failureMessage }}</p>
   </section>
@@ -21,11 +22,13 @@
 <script>
 import { formatDateTime } from '../../utils/formatUtils';
 import { generationScopeLabel, statusLabel } from '../../utils/jobStatusUtils';
+import { hasAuditReport, prAuditorReportMessage } from '../../utils/prAuditorResultUtils';
 
 export default {
   name: 'JobDetailSummary',
   props: {
-    job: { type: Object, required: true }
+    job: { type: Object, required: true },
+    outputs: { type: Array, default: null }
   },
   computed: {
     isPrAuditorJob() {
@@ -33,6 +36,20 @@ export default {
     },
     auditSummary() {
       return this.job.auditSummary || null;
+    },
+    auditReportAvailable() {
+      return hasAuditReport(this.job, this.outputs);
+    },
+    auditReportNotice() {
+      if (!this.isPrAuditorJob) return '';
+      return prAuditorReportMessage(this.job, this.outputs);
+    },
+    auditReportTone() {
+      return this.auditReportAvailable ? 'success' : (this.job.status === 'failed' ? 'danger' : 'warning');
+    },
+    auditSummaryUnavailableMessage() {
+      if (!this.auditReportAvailable) return 'Audit Result summary counts are unavailable.';
+      return 'Audit Result summary counts are not trusted yet. Detailed findings are available in the workbook download.';
     },
     summaryItems() {
       const common = [
