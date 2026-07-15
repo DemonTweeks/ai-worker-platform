@@ -2,6 +2,7 @@ const express = require('express');
 const adminAuth = require('../middleware/adminAuth');
 const adminAuthService = require('../services/adminAuthService');
 const auditService = require('../services/auditService');
+const deploymentService = require('../services/deploymentService');
 const { createApiError } = require('../utils/apiError');
 
 const router = express.Router();
@@ -41,6 +42,23 @@ router.get('/assets', asyncHandler(async (req, res) => {
 router.get('/audit-logs', asyncHandler(async (req, res) => {
   const result = await auditService.listAuditLogs(req.query);
   res.json(result);
+}));
+
+router.post('/deploy', asyncHandler(async (req, res) => {
+  const audit = {
+    admin: req.adminUser.username,
+    action: 'deployment_triggered',
+    ip: getRequestIp(req)
+  };
+  const result = deploymentService.startDeployment();
+  auditService.writeAuditLog({
+    ...audit,
+    metadata: { startedAt: result.startedAt, execution: 'fire_and_forget' }
+  }).catch((auditError) => {
+    console.error(`DEPLOYMENT_AUDIT_FAILED: ${auditError.message}`);
+  });
+
+  res.status(202).json(result);
 }));
 
 module.exports = router;

@@ -24,6 +24,12 @@
       <HealthStatusCard label="WebSocket" :value="formatStatus(websocketStatus)" :detail="websocketDetail" :tone="tone(websocketStatus)" />
       <HealthStatusCard label="Disk Usage" :value="diskUsage" :detail="diskDetail" :tone="diskTone" />
       <HealthStatusCard label="Cleanup" :value="formatStatus(cleanupStatus)" :detail="cleanupDetail" :tone="tone(cleanupStatus)" />
+      <DeploymentActionCard
+        :loading="deploying"
+        :tone="deploymentTone"
+        :detail="deploymentDetail"
+        @deploy="triggerDeploy"
+      />
     </section>
 
     <section v-if="health" class="panel info-panel">
@@ -36,23 +42,41 @@
 
 <script>
 import HealthStatusCard from '../../components/admin/HealthStatusCard.vue';
+import DeploymentActionCard from '../../components/admin/DeploymentActionCard.vue';
 import ErrorBanner from '../../components/ErrorBanner.vue';
 import { getHealth, getErrorMessage } from '../../api/jobApi';
+import { triggerDeployment, getAdminErrorMessage } from '../../api/adminApi';
 
 export default {
   name: 'AdminHealthView',
   components: {
     ErrorBanner,
+    DeploymentActionCard,
     HealthStatusCard
   },
   data() {
     return {
       health: null,
       loading: false,
+      deploying: false,
+      deploymentResult: null,
+      deploymentError: '',
       errorMessage: ''
     };
   },
   computed: {
+    deploymentTone() {
+      if (this.deploymentError) return 'danger';
+      if (this.deploymentResult) return 'ok';
+      return this.deploying ? 'warning' : 'neutral';
+    },
+    deploymentDetail() {
+      if (this.deploymentError) return this.deploymentError;
+      if (this.deploymentResult) return `Started ${this.deploymentResult.startedAt}. The scripts will continue in the background.`;
+      return this.deploying
+        ? 'Sending deployment request...'
+        : 'Run stop-service.sh, then deploy.sh';
+    },
     services() {
       return this.health && this.health.services ? this.health.services : {};
     },
@@ -140,6 +164,18 @@ export default {
     this.loadHealth();
   },
   methods: {
+    async triggerDeploy() {
+      this.deploying = true;
+      this.deploymentError = '';
+      this.deploymentResult = null;
+      try {
+        this.deploymentResult = await triggerDeployment();
+      } catch (error) {
+        this.deploymentError = getAdminErrorMessage(error);
+      } finally {
+        this.deploying = false;
+      }
+    },
     async loadHealth() {
       this.loading = true;
       this.errorMessage = '';
