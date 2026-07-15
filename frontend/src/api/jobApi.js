@@ -1,6 +1,7 @@
 import api from '../api';
 
 const PREVALIDATION_TIMEOUT_MS = 120000;
+const JOB_CREATION_TIMEOUT_MS = 120000;
 
 const unwrapError = (error) => {
   if (error.response && error.response.data && error.response.data.error) {
@@ -37,7 +38,9 @@ export const prevalidateUpload = async (file, uploadKind = null, requestScope = 
 };
 
 export const createJob = async (payload) => {
-  const response = await api.post('/api/jobs', payload);
+  const response = await api.post('/api/jobs', payload, {
+    timeout: JOB_CREATION_TIMEOUT_MS
+  });
   return response.data;
 };
 
