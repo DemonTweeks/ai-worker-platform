@@ -10,6 +10,7 @@ import {
 } from '../../api/jobApi';
 import { askJob } from '../../api/reAskApi';
 import { displayMessage, isTerminalStatus } from '../../utils/statusUtils';
+import { formatDateTime } from '../../utils/formatUtils';
 import {
   scheduleNotificationDismiss,
   isWorkerTimeoutError,
@@ -302,6 +303,7 @@ export const workerRuntimeMixin = {
     }
   },
   methods: {
+    formatDateTime,
     initializeBrowserTabSessionId() {
       const existing = sessionStorage.getItem(BROWSER_TAB_SESSION_STORAGE_KEY);
 

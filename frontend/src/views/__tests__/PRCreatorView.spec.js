@@ -77,4 +77,26 @@ describe('PRCreatorView', () => {
 
     expect(wrapper.findComponent({ name: 'HomeView' }).exists()).toBe(false);
   });
+
+  it('keeps active-job controls contained in the responsive workbench card', async () => {
+    const wrapper = mountView();
+    await wrapper.vm.restoreActiveJobs();
+    await wrapper.setData({
+      activeSessionJobs: [{
+        jobId: 'PR-20260702-006',
+        workerId: 'ran-pr',
+        workerDisplayName: 'RAN PR Worker',
+        status: 'loading_assets',
+        createdAt: '2026-07-02T10:00:00.000Z'
+      }]
+    });
+
+    const table = wrapper.find('.active-jobs-table');
+    expect(table.exists()).toBe(true);
+    expect(table.element.parentElement.classList).toContain('active-jobs-scroll');
+    expect(table.text()).toContain('Live Output');
+    expect(table.text()).toContain('View Live Output');
+    expect(table.findAll('col').length).toBe(6);
+    expect(table.text()).not.toContain('2026-07-02T10:00:00.000Z');
+  });
 });
