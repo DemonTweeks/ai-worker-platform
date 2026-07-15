@@ -26,6 +26,7 @@
       <HealthStatusCard label="Cleanup" :value="formatStatus(cleanupStatus)" :detail="cleanupDetail" :tone="tone(cleanupStatus)" />
       <DeploymentActionCard
         :loading="deploying"
+        :waiting="waitingForBackend"
         :tone="deploymentTone"
         :detail="deploymentDetail"
         @deploy="triggerDeploy"
@@ -47,6 +48,8 @@ import ErrorBanner from '../../components/ErrorBanner.vue';
 import { getHealth, getErrorMessage } from '../../api/jobApi';
 import { triggerDeployment, getAdminErrorMessage } from '../../api/adminApi';
 
+const DEPLOYMENT_HEALTH_POLL_INTERVAL_MS = 15000;
+
 export default {
   name: 'AdminHealthView',
   components: {
@@ -59,6 +62,8 @@ export default {
       health: null,
       loading: false,
       deploying: false,
+      waitingForBackend: false,
+      deploymentHealthTimer: null,
       deploymentResult: null,
       deploymentError: '',
       errorMessage: ''
@@ -67,12 +72,14 @@ export default {
   computed: {
     deploymentTone() {
       if (this.deploymentError) return 'danger';
+      if (this.waitingForBackend) return 'warning';
       if (this.deploymentResult) return 'ok';
       return this.deploying ? 'warning' : 'neutral';
     },
     deploymentDetail() {
       if (this.deploymentError) return this.deploymentError;
-      if (this.deploymentResult) return `Started ${this.deploymentResult.startedAt}. The scripts will continue in the background.`;
+      if (this.waitingForBackend) return 'Deployment started. Checking backend availability every 15 seconds.';
+      if (this.deploymentResult && this.deploymentResult.backendReadyAt) return `Backend available again at ${this.deploymentResult.backendReadyAt}.`;
       return this.deploying
         ? 'Sending deployment request...'
         : 'Run stop-services.sh, then deploy.sh';
@@ -163,17 +170,51 @@ export default {
   mounted() {
     this.loadHealth();
   },
+  beforeDestroy() {
+    this.clearDeploymentHealthTimer();
+  },
   methods: {
     async triggerDeploy() {
+      this.clearDeploymentHealthTimer();
       this.deploying = true;
+      this.waitingForBackend = false;
       this.deploymentError = '';
       this.deploymentResult = null;
       try {
         this.deploymentResult = await triggerDeployment();
+        this.waitingForBackend = true;
+        this.scheduleDeploymentHealthCheck();
       } catch (error) {
         this.deploymentError = getAdminErrorMessage(error);
       } finally {
         this.deploying = false;
+      }
+    },
+    clearDeploymentHealthTimer() {
+      if (this.deploymentHealthTimer) {
+        clearTimeout(this.deploymentHealthTimer);
+        this.deploymentHealthTimer = null;
+      }
+    },
+    scheduleDeploymentHealthCheck() {
+      this.clearDeploymentHealthTimer();
+      this.deploymentHealthTimer = setTimeout(
+        () => this.checkDeploymentHealth(),
+        DEPLOYMENT_HEALTH_POLL_INTERVAL_MS
+      );
+    },
+    async checkDeploymentHealth() {
+      this.deploymentHealthTimer = null;
+      if (!this.waitingForBackend) return;
+      try {
+        this.health = await getHealth();
+        this.waitingForBackend = false;
+        this.deploymentResult = {
+          ...this.deploymentResult,
+          backendReadyAt: new Date().toISOString()
+        };
+      } catch (error) {
+        if (this.waitingForBackend) this.scheduleDeploymentHealthCheck();
       }
     },
     async loadHealth() {
