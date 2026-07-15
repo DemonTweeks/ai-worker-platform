@@ -49,6 +49,7 @@ const createUnmatchedWarnings = async (jobId, unmatchedSiteCodes) => {
 const filterSites = async ({ jobId, parsedWorkbook, generationScope, siteCodes }) => {
   let filteredRows = parsedWorkbook.structuredRows;
   let matchedSiteCount = 0;
+  let matchedSiteCodes = [];
   let unmatchedSiteCodes = [];
   const parsedSiteCodes = parseSiteCodes(siteCodes);
 
@@ -58,6 +59,7 @@ const filterSites = async ({ jobId, parsedWorkbook, generationScope, siteCodes }
     const requestedSet = new Set(parsedSiteCodes.siteCodes);
     filteredRows = parsedWorkbook.structuredRows.filter((row) => requestedSet.has(row.siteCode));
     const matchedSet = new Set(filteredRows.map((row) => row.siteCode));
+    matchedSiteCodes = parsedSiteCodes.siteCodes.filter((siteCode) => matchedSet.has(siteCode));
     unmatchedSiteCodes = parsedSiteCodes.siteCodes.filter((siteCode) => !matchedSet.has(siteCode));
     matchedSiteCount = matchedSet.size;
     await createUnmatchedWarnings(jobId, unmatchedSiteCodes);
@@ -73,6 +75,7 @@ const filterSites = async ({ jobId, parsedWorkbook, generationScope, siteCodes }
     filteredRows,
     duplicateSiteCodes: parsedSiteCodes.duplicateSiteCodes,
     unmatchedSiteCodes,
+    matchedSiteCodes,
     matchedSiteCount,
     unmatchedSiteCount: unmatchedSiteCodes.length,
     requestedSiteCount: generationScope === 'site_code' ? parsedSiteCodes.siteCodes.length : matchedSiteCount

@@ -1313,6 +1313,11 @@ textarea {
   margin: 8px 0;
 }
 
+.timeline-site-codes {
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+}
+
 .summary-text {
   background: #f8fafc;
   border-radius: 8px;
