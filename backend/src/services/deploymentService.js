@@ -3,7 +3,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 const { createApiError } = require('../utils/apiError');
 
-const SCRIPT_NAMES = ['stop-service.sh', 'deploy.sh'];
+const SCRIPT_NAMES = ['stop-services.sh', 'deploy.sh'];
 const scriptDirectory = path.resolve(
   process.env.DEPLOY_SCRIPT_DIRECTORY || '/home/ubuntu/ai-worker-platform'
 );

@@ -75,7 +75,7 @@ export default {
       if (this.deploymentResult) return `Started ${this.deploymentResult.startedAt}. The scripts will continue in the background.`;
       return this.deploying
         ? 'Sending deployment request...'
-        : 'Run stop-service.sh, then deploy.sh';
+        : 'Run stop-services.sh, then deploy.sh';
     },
     services() {
       return this.health && this.health.services ? this.health.services : {};
