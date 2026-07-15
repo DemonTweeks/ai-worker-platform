@@ -10,6 +10,7 @@ import {
 } from '../../api/jobApi';
 import { askJob } from '../../api/reAskApi';
 import { displayMessage, isTerminalStatus } from '../../utils/statusUtils';
+import { hasAuditReport, prAuditorReportMessage } from '../../utils/prAuditorResultUtils';
 import {
   scheduleNotificationDismiss,
   isWorkerTimeoutError,
@@ -216,11 +217,15 @@ export const workerRuntimeMixin = {
       }
 
       if (job.workerId === 'pr-auditor') {
+        const outputs = this.jobDetail && Array.isArray(this.jobDetail.outputs) ? this.jobDetail.outputs : [];
+        if (!hasAuditReport(job, outputs)) {
+          return prAuditorReportMessage(job, outputs);
+        }
         const auditSummary = job.auditSummary || null;
         if (auditSummary) {
           return `Audit Result ready; Normal ${auditSummary.normalCount}, Invalid PO ${auditSummary.invalidPoCount}, Wrong PO ${auditSummary.wrongPoCount}, Duplicate PO ${auditSummary.duplicatePoCount}, Review Required ${auditSummary.reviewRequiredCount}, warnings ${auditSummary.warnings.length}.`;
         }
-        return 'Audit report generated. Detailed findings are available in the workbook download.';
+        return prAuditorReportMessage(job, outputs);
       }
 
       const outputs = this.hasValue(job.outputFileCount)

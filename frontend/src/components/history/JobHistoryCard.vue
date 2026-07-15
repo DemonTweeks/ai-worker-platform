@@ -45,6 +45,11 @@
 import { getFileDownloadUrl, getZipDownloadUrl } from '../../api/jobApi';
 import { formatDateTime } from '../../utils/formatUtils';
 import { generationScopeLabel } from '../../utils/jobStatusUtils';
+import {
+  findAvailableAuditReport,
+  hasAuditReport,
+  prAuditorReportMessage
+} from '../../utils/prAuditorResultUtils';
 import JobScopeBadge from './JobScopeBadge.vue';
 import JobStatusBadge from './JobStatusBadge.vue';
 
@@ -108,8 +113,7 @@ export default {
       return getZipDownloadUrl(this.job.jobId);
     },
     auditReportFile() {
-      const outputs = Array.isArray(this.job.outputs) ? this.job.outputs : [];
-      return outputs.find((file) => file.fileType === 'pr_audit_result_xlsx' && file.available) || null;
+      return findAvailableAuditReport(this.job.outputs);
     },
     downloadUrl() {
       if (this.isPrAuditorJob && this.auditReportFile) {
@@ -127,6 +131,9 @@ export default {
     },
     summaryPreview() {
       if (this.isPrAuditorJob) {
+        if (!hasAuditReport(this.job, this.job.outputs)) {
+          return prAuditorReportMessage(this.job, this.job.outputs);
+        }
         const auditSummary = this.job.auditSummary;
         if (auditSummary) {
           return [
@@ -138,7 +145,7 @@ export default {
             `Warnings: ${this.job.warningCount || 0}`
           ].join(' • ');
         }
-        return this.job.finalWorkerSummary || 'Audit report generated. Detailed findings are available in the workbook.';
+        return this.job.finalWorkerSummary || prAuditorReportMessage(this.job, this.job.outputs);
       }
 
       if (this.job.status === 'failed') {

@@ -38,6 +38,7 @@
 
 <script>
 import { isTerminalStatus } from '../utils/statusUtils';
+import { prAuditorReportMessage } from '../utils/prAuditorResultUtils';
 
 export default {
   name: 'FinalSummary',
@@ -53,6 +54,12 @@ export default {
     },
     finalSummaryText() {
       if (!this.detail || !this.detail.job) return '';
+      if (this.isPrAuditorJob) {
+        const reportMessage = prAuditorReportMessage(this.detail.job, this.detail.outputs || []);
+        const persistedSummary = this.detail.finalWorkerSummary || this.detail.job.finalWorkerSummary || '';
+        if (reportMessage.startsWith('No audit report')) return reportMessage;
+        return persistedSummary || reportMessage;
+      }
       return this.detail.finalWorkerSummary || this.detail.job.finalWorkerSummary || '';
     },
     hasFinalSummary() {

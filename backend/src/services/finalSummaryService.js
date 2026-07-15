@@ -13,6 +13,15 @@ const buildFinalSummary = ({ job, summary }) => {
 
   if (job.workerId === WORKER_IDS.PR_AUDITOR) {
     const auditSummary = summary.auditSummary;
+    const hasAuditReport = (summary.outputFileCount || 0) > 0;
+
+    if (!hasAuditReport) {
+      return [
+        'No audit report was generated.',
+        '',
+        'Audit summary counts are unavailable.'
+      ].join('\n');
+    }
 
     if (auditSummary) {
       return [

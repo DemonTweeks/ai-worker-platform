@@ -144,5 +144,27 @@ describe('RAN detail metadata rendering', () => {
     });
 
     expect(wrapper.text()).toContain('PR Auditor process failed.');
+    expect(wrapper.text()).toContain('No audit report was generated.');
+    expect(wrapper.text()).not.toContain('Detailed findings remain in the workbook');
+  });
+
+  it('keeps PR Auditor counts unavailable when a completed report has no trusted summary', () => {
+    const wrapper = mount(JobDetailSummary, {
+      propsData: {
+        job: {
+          jobId: 'PR-AUDIT-DETAIL-005',
+          status: 'completed',
+          workerId: 'pr-auditor',
+          outputFileCount: 1,
+          createdAt: new Date().toISOString()
+        },
+        outputs: [{ id: 'report-1', fileType: 'pr_audit_result_xlsx', available: true }]
+      }
+    });
+
+    expect(wrapper.text()).toContain('Audit report generated.');
+    expect(wrapper.text()).toContain('summary counts are not trusted yet');
+    expect(wrapper.text()).not.toContain('Normal');
+    expect(wrapper.text()).not.toContain('Invalid PO');
   });
 });

@@ -75,6 +75,28 @@ const runTests = async () => {
   assert(text.includes('Review Required: 5'), 'PR Auditor final summary should include Review Required count');
   assert(text.includes('Download Audit Report'), 'PR Auditor final summary should reference the audit report download action');
 
+  const failedNoOutputText = buildFinalSummary({
+    job: {
+      workerId: 'pr-auditor',
+      status: 'failed',
+      error: { message: 'PR Auditor execution failed.' }
+    },
+    summary: { outputFileCount: 0, auditSummary: null }
+  });
+  assert(failedNoOutputText.includes('Task failed.'), 'failed PR Auditor summary should retain the failure state');
+  assert(!failedNoOutputText.includes('Audit report generated'), 'failed zero-output summary must not claim a report exists');
+
+  const completedNoOutputText = buildFinalSummary({
+    job: {
+      workerId: 'pr-auditor',
+      status: 'completed'
+    },
+    summary: { outputFileCount: 0, auditSummary: null }
+  });
+  assert(completedNoOutputText.includes('No audit report was generated.'), 'completed zero-output summary should disclose the missing report');
+  assert(completedNoOutputText.includes('Audit summary counts are unavailable.'), 'missing trusted summary should keep counts unavailable');
+  assert(!completedNoOutputText.includes('Download Audit Report'), 'zero-output summary must not offer a report download');
+
   console.log('--- PR Auditor Summary Metadata Tests Passed! ---');
 };
 
