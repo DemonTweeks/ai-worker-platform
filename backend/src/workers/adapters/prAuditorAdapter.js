@@ -92,7 +92,8 @@ const buildAuditCommandSpec = ({
   workspaceRoot,
   runtimePaths,
   pythonExecutable,
-  finalPoLayout = getFinalPoLayoutOverrides()
+  finalPoLayout = getFinalPoLayoutOverrides(),
+  auditPeriod = null
 }) => {
   const scriptArgs = [
     '--final-po', runtimePaths.finalPoPath,
@@ -106,6 +107,9 @@ const buildAuditCommandSpec = ({
   }
   if (finalPoLayout.headerRow) {
     scriptArgs.push('--final-po-header-row', finalPoLayout.headerRow);
+  }
+  if (auditPeriod && auditPeriod.year && auditPeriod.month) {
+    scriptArgs.push('--filter-year', String(auditPeriod.year), '--filter-month', String(auditPeriod.month));
   }
 
   return {
@@ -278,7 +282,7 @@ const runAuditCommand = async ({
 };
 
 const run = async (jobId, options = {}) => {
-  await assertJobExists(jobId);
+  const job = await assertJobExists(jobId);
 
   if (options.onWorkspacePreparing) {
     await options.onWorkspacePreparing('Preparing PR Auditor job workspace.');
@@ -305,7 +309,8 @@ const run = async (jobId, options = {}) => {
   const commandSpec = buildAuditCommandSpec({
     workspaceRoot: workspace.workspaceRoot,
     runtimePaths: workspace.runtimePaths,
-    pythonExecutable
+    pythonExecutable,
+    auditPeriod: { year: job.auditYear, month: job.auditMonth }
   });
 
   assertEnginePinApproved();

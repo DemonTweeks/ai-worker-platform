@@ -64,6 +64,10 @@ describe('PRAuditorView', () => {
     expect(wrapper.text()).toContain('PR Auditor');
     expect(wrapper.text()).toContain('Final PO workbook');
     expect(wrapper.text()).toContain('EPMS workbook');
+    expect(wrapper.text()).toContain('Final PO Period');
+    expect(wrapper.text()).toContain('Dispatch Date filter');
+    expect(wrapper.find('#pr-auditor-year').exists()).toBe(true);
+    expect(wrapper.find('#pr-auditor-month').exists()).toBe(true);
     expect(wrapper.text()).not.toContain('Generated ECC workbook');
     expect(wrapper.text()).toContain('Run Audit');
     expect(wrapper.text()).toContain('create-pr-cd reads EPMS and generates mandatory TSS and TI ECC lines.');
