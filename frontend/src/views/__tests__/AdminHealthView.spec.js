@@ -113,4 +113,20 @@ describe('AdminHealthView', () => {
     expect(wrapper.find('.deployment-action-card').attributes('disabled')).toBeUndefined();
     expect(wrapper.text()).toContain('Backend available again at');
   });
+
+  it('disables deployment when the backend is running on Windows', async () => {
+    getHealth.mockResolvedValueOnce({
+      status: 'ok',
+      services: { backend: { status: 'ok', platform: 'win32' } }
+    });
+    const wrapper = await mountView();
+    const deploymentCard = wrapper.find('.deployment-action-card');
+
+    expect(deploymentCard.attributes('disabled')).toBeDefined();
+    expect(deploymentCard.text()).toContain('Unavailable');
+    expect(deploymentCard.text()).toContain('Deployment is unavailable on Windows.');
+
+    await deploymentCard.trigger('click');
+    expect(triggerDeployment).not.toHaveBeenCalled();
+  });
 });
