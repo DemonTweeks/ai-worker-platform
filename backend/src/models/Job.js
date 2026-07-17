@@ -32,6 +32,8 @@ class Job {
     if (typeof this.runMode === 'undefined') this.runMode = null;
     if (typeof this.selectedProject === 'undefined') this.selectedProject = null;
     if (typeof this.auditSummary === 'undefined') this.auditSummary = null;
+    if (typeof this.auditYear === 'undefined') this.auditYear = null;
+    if (typeof this.auditMonth === 'undefined') this.auditMonth = null;
     if (this.workerType === 'pr-worker') {
       if (typeof this.requestedSiteCount === 'undefined') this.requestedSiteCount = null;
       if (typeof this.matchedSiteCount === 'undefined') this.matchedSiteCount = null;
@@ -81,7 +83,9 @@ class Job {
       reviewRequiredCount: payload.reviewRequiredCount || 0,
       warningCount: payload.warningCount || 0,
       finalWorkerSummary: payload.finalWorkerSummary || '',
-      auditSummary: payload.auditSummary || null
+      auditSummary: payload.auditSummary || null,
+      auditYear: payload.auditYear || null,
+      auditMonth: payload.auditMonth || null
     });
     await writeFirebase(`jobs/${payload.jobId}`, job);
     return job;

@@ -185,6 +185,23 @@ const runTests = async () => {
   assert(commandSpec.scriptArgs.includes('C:/mock-storage/jobs/PR-AUDIT-001/expected-ecc'));
   assert(commandSpec.scriptArgs.includes('--summary-json'));
 
+  const filteredCommandSpec = prAuditorAdapter.buildAuditCommandSpec({
+    workspaceRoot: 'C:/mock-storage/jobs/PR-AUDIT-001',
+    runtimePaths: {
+      finalPoPath: 'C:/mock-storage/jobs/PR-AUDIT-001/input/Final PO.xlsx',
+      expectedEccRoot: 'C:/mock-storage/jobs/PR-AUDIT-001/expected-ecc',
+      outputPath: 'C:/mock-storage/jobs/PR-AUDIT-001/output/PR_Audit_Result.xlsx',
+      summaryJsonPath: 'C:/mock-storage/jobs/PR-AUDIT-001/output/pr_audit_summary.json',
+      scriptPath: 'C:/mock-skills/tx-pr-auditor/scripts/audit_final_po.py'
+    },
+    pythonExecutable: 'C:/Python311/python.exe',
+    auditPeriod: { year: 2026, month: 7 }
+  });
+  assert.deepStrictEqual(
+    filteredCommandSpec.scriptArgs.slice(-4),
+    ['--filter-year', '2026', '--filter-month', '7']
+  );
+
   const overriddenCommandSpec = prAuditorAdapter.buildAuditCommandSpec({
     workspaceRoot: 'C:/mock-storage/jobs/PR-AUDIT-001',
     runtimePaths: {

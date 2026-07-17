@@ -364,6 +364,8 @@ const serializeJobSummary = (job) => ({
   reviewRequiredCount: job.reviewRequiredCount,
   warningCount: job.warningCount,
   auditSummary: job.auditSummary || null,
+  auditYear: job.auditYear || null,
+  auditMonth: job.auditMonth || null,
   finalWorkerSummary: job.finalWorkerSummary,
   browserTabSessionId: job.browserTabSessionId || null,
   idempotencyKey: job.idempotencyKey || null,
@@ -699,7 +701,9 @@ const createPrAuditorJob = async ({
   browserTabSessionId,
   idempotencyKey,
   workerManifest,
-  normalizedWorkerId
+  normalizedWorkerId,
+  auditYear,
+  auditMonth
 }) => {
   if (!finalPoPrevalidatedFileId) {
     throw createApiError(400, 'VALIDATION_ERROR', 'finalPoPrevalidatedFileId is required for PR Auditor jobs.');
@@ -707,6 +711,16 @@ const createPrAuditorJob = async ({
 
   if (!epmsPrevalidatedFileId) {
     throw createApiError(400, 'VALIDATION_ERROR', 'epmsPrevalidatedFileId is required for PR Auditor jobs.');
+  }
+
+  const hasAuditPeriod = auditYear !== undefined || auditMonth !== undefined;
+  const normalizedAuditYear = hasAuditPeriod ? Number(auditYear) : null;
+  const normalizedAuditMonth = hasAuditPeriod ? Number(auditMonth) : null;
+  if (hasAuditPeriod && (!Number.isInteger(normalizedAuditYear) || normalizedAuditYear < 2000 || normalizedAuditYear > 2100)) {
+    throw createApiError(400, 'VALIDATION_ERROR', 'auditYear must be a whole year between 2000 and 2100.');
+  }
+  if (hasAuditPeriod && (!Number.isInteger(normalizedAuditMonth) || normalizedAuditMonth < 1 || normalizedAuditMonth > 12)) {
+    throw createApiError(400, 'VALIDATION_ERROR', 'auditMonth must be a whole month between 1 and 12.');
   }
 
   const normalizedBrowserTabSessionId = normalizeBrowserTabSessionId(browserTabSessionId);
@@ -766,6 +780,8 @@ const createPrAuditorJob = async ({
           workerId: normalizedWorkerId,
           browserTabSessionId: normalizedBrowserTabSessionId,
           idempotencyKey: normalizedIdempotencyKey,
+          auditYear: normalizedAuditYear,
+          auditMonth: normalizedAuditMonth,
           createdAt: new Date().toISOString(),
           inputs: {
             finalPoFileName: finalPoUpload.originalFileName,
@@ -787,6 +803,8 @@ const createPrAuditorJob = async ({
         prScope: null,
         runMode: null,
         selectedProject: null,
+        auditYear: normalizedAuditYear,
+        auditMonth: normalizedAuditMonth,
         requestedSiteCount: 0,
         fileRetentionUntil: retentionUntil
       });
@@ -853,7 +871,9 @@ const createJob = async ({
   runMode,
   selectedProject,
   browserTabSessionId,
-  idempotencyKey
+  idempotencyKey,
+  auditYear,
+  auditMonth
 }) => {
   const normalizedWorkerId = normalizeWorkerId(workerId);
   let workerManifest;
@@ -873,7 +893,9 @@ const createJob = async ({
       browserTabSessionId,
       idempotencyKey,
       workerManifest,
-      normalizedWorkerId
+      normalizedWorkerId,
+      auditYear,
+      auditMonth
     });
   }
 
@@ -957,6 +979,8 @@ const rerunJob = async (sourceJobId, { browserTabSessionId } = {}) => {
         jobId,
         browserTabSessionId: normalizedBrowserTabSessionId,
         idempotencyKey: null,
+        auditYear: sourceJob.auditYear || null,
+        auditMonth: sourceJob.auditMonth || null,
         rerunSourceJobId: sourceJobId,
         createdAt: new Date().toISOString()
       }, null, 2))
@@ -982,6 +1006,8 @@ const rerunJob = async (sourceJobId, { browserTabSessionId } = {}) => {
       prScope: sourceJob.prScope,
       runMode: sourceJob.runMode,
       selectedProject: sourceJob.selectedProject,
+      auditYear: sourceJob.auditYear || null,
+      auditMonth: sourceJob.auditMonth || null,
       requestedSiteCount: sourceJob.requestedSiteCount || 0,
       rerunSourceJobId: sourceJobId,
       fileRetentionUntil: retentionUntil

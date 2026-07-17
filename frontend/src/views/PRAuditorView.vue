@@ -52,6 +52,27 @@
               @file-selected="onPrAuditorFileSelected('finalPo', $event)"
               @prevalidate="prevalidatePrAuditorUpload('finalPo', $event)"
             />
+            <div class="cockpit-card upload-card workbench-upload-card audit-period-card">
+              <div class="cockpit-card-heading">
+                <span>Final PO Period</span>
+                <small>Dispatch Date filter</small>
+              </div>
+              <div class="audit-period-grid">
+                <div class="cockpit-field-group">
+                  <label class="field-label" for="pr-auditor-year">Year</label>
+                  <select id="pr-auditor-year" v-model.number="prAuditorAuditYear" class="cockpit-sites-input" :disabled="workerFormLocked" @change="onAuditPeriodChanged">
+                    <option v-for="year in auditYearOptions" :key="year" :value="year">{{ year }}</option>
+                  </select>
+                </div>
+                <div class="cockpit-field-group">
+                  <label class="field-label" for="pr-auditor-month">Month</label>
+                  <select id="pr-auditor-month" v-model.number="prAuditorAuditMonth" class="cockpit-sites-input" :disabled="workerFormLocked" @change="onAuditPeriodChanged">
+                    <option v-for="month in auditMonthOptions" :key="month.value" :value="month.value">{{ month.label }}</option>
+                  </select>
+                </div>
+              </div>
+              <p class="field-hint">Only Final PO rows with a Dispatch Date in this period will be audited.</p>
+            </div>
             <UploadPanel
               class="cockpit-card upload-card workbench-upload-card"
               title="EPMS Upload"
@@ -346,6 +367,7 @@ export default {
   },
   mixins: [workerRuntimeMixin],
   data() {
+    const now = new Date();
     return {
       prAuditorFinalPoFile: null,
       prAuditorEpmsFile: null,
@@ -353,10 +375,22 @@ export default {
       prAuditorEpmsPrevalidation: null,
       prAuditorFinalPoPrevalidating: false,
       prAuditorEpmsPrevalidating: false,
-      prAuditorPendingIdempotencyKey: ''
+      prAuditorPendingIdempotencyKey: '',
+      prAuditorAuditYear: now.getFullYear(),
+      prAuditorAuditMonth: now.getMonth() + 1
     };
   },
   computed: {
+    auditYearOptions() {
+      const currentYear = new Date().getFullYear();
+      return Array.from({ length: currentYear - 1998 }, (_, index) => currentYear + 1 - index);
+    },
+    auditMonthOptions() {
+      return Array.from({ length: 12 }, (_, index) => ({
+        value: index + 1,
+        label: new Intl.DateTimeFormat('en', { month: 'long' }).format(new Date(2000, index, 1))
+      }));
+    },
     heroTitle() {
       return 'Review PO submissions with the dedicated PR Auditor worker.';
     },
@@ -480,6 +514,9 @@ export default {
     }
   },
   methods: {
+    onAuditPeriodChanged() {
+      this.resetActivePendingIdempotencyKey();
+    },
     initializePendingIdempotencyKeys() {
       this.prAuditorPendingIdempotencyKey = sessionStorage.getItem(buildWorkerIdempotencyStorageKey('pr-auditor')) || '';
     },
@@ -593,7 +630,9 @@ export default {
           browserTabSessionId: this.browserTabSessionId,
           idempotencyKey: this.ensurePendingIdempotencyKey(),
           finalPoPrevalidatedFileId: this.prAuditorFinalPoPrevalidation.prevalidatedFileId,
-          epmsPrevalidatedFileId: this.prAuditorEpmsPrevalidation.prevalidatedFileId
+          epmsPrevalidatedFileId: this.prAuditorEpmsPrevalidation.prevalidatedFileId,
+          auditYear: this.prAuditorAuditYear,
+          auditMonth: this.prAuditorAuditMonth
         });
         this.upsertActiveSessionJob(result.job);
         this.rememberSelectedJobId(result.job.jobId);
