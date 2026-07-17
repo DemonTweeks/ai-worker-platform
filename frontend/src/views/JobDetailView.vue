@@ -8,7 +8,17 @@
         <span v-if="detail && detail.job" class="muted">Job ID: {{ detail.job.jobId }}</span>
         <span v-else class="muted">Loading job identifier…</span>
       </div>
-      <router-link class="download-button" to="/workers/pr-creator">Run New Job</router-link>
+      <div class="hero-button-group">
+        <button
+          type="button"
+          class="secondary-button"
+          :disabled="!detail || !detail.job || rerunning"
+          @click="rerunCurrentJob"
+        >
+          {{ rerunning ? 'Rerunning…' : 'Rerun Job' }}
+        </button>
+        <router-link class="download-button" to="/workers/pr-creator">Run New Job</router-link>
+      </div>
     </section>
 
     <div v-if="loading" class="panel empty-state">
@@ -64,7 +74,7 @@ import JobDetailSummary from '../components/detail/JobDetailSummary.vue';
 import JobDetailTimeline from '../components/detail/JobDetailTimeline.vue';
 import JobDetailWarnings from '../components/detail/JobDetailWarnings.vue';
 import { askJob } from '../api/reAskApi';
-import { getErrorMessage, getJobDetail } from '../api/jobApi';
+import { getErrorMessage, getJobDetail, rerunJob } from '../api/jobApi';
 import JobWebSocketClient from '../services/websocketClient';
 import { displayMessage, isTerminalStatus } from '../utils/statusUtils';
 import { isRunningStatus } from '../utils/jobStatusUtils';
@@ -92,6 +102,7 @@ export default {
       detail: null,
       loading: false,
       asking: false,
+      rerunning: false,
       errorMessage: '',
       reAskErrorMessage: '',
       reAskDraft: '',
@@ -128,6 +139,26 @@ export default {
     }
   },
   methods: {
+    async rerunCurrentJob() {
+      if (!this.detail || !this.detail.job || this.rerunning) return;
+
+      this.rerunning = true;
+      this.errorMessage = '';
+      try {
+        const result = await rerunJob(this.detail.job.jobId);
+        if (!result || !result.job || !result.job.jobId) {
+          throw new Error('The rerun job was created without a job identifier.');
+        }
+        await this.$router.push({
+          name: 'job-detail',
+          params: { jobId: result.job.jobId }
+        });
+      } catch (error) {
+        this.errorMessage = getErrorMessage(error);
+      } finally {
+        this.rerunning = false;
+      }
+    },
     async loadDetail() {
       this.loading = true;
       this.errorMessage = '';

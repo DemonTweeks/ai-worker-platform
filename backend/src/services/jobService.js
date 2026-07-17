@@ -900,6 +900,130 @@ const createJob = async ({
   });
 };
 
+const rerunJob = async (sourceJobId, { browserTabSessionId } = {}) => {
+  const sourceJob = await assertJobExists(sourceJobId);
+  const inputFiles = await JobFile.find({ jobId: sourceJobId }).sort({ createdAt: 1 }).lean();
+  const trackedInputs = inputFiles.filter((file) => INPUT_FILE_TYPES.has(file.fileType));
+
+  if (trackedInputs.length === 0) {
+    throw createApiError(409, 'RERUN_INPUTS_UNAVAILABLE', 'This job cannot be rerun because its original input files are unavailable.');
+  }
+
+  const resolvedInputs = await Promise.all(trackedInputs.map(async (file) => {
+    try {
+      const resolved = await resolveTrackedFilePath(file);
+      return { file, absolutePath: resolved.absolutePath };
+    } catch (error) {
+      throw createApiError(409, 'RERUN_INPUTS_UNAVAILABLE', 'This job cannot be rerun because one or more original input files are unavailable.');
+    }
+  }));
+
+  const sourceRequestPath = storageService.resolveJobTempPath(sourceJobId, 'job-request.json');
+  let sourceRequest = {};
+  try {
+    sourceRequest = JSON.parse(await fs.promises.readFile(sourceRequestPath, 'utf8'));
+  } catch (error) {
+    if (sourceJob.workerId === WORKER_IDS.MW_PR && sourceJob.generationScope === 'site_code') {
+      throw createApiError(409, 'RERUN_CONFIGURATION_UNAVAILABLE', 'This job cannot be rerun because its original site selection is unavailable.');
+    }
+  }
+
+  let jobId = null;
+  let releaseJobIdReservation = null;
+
+  try {
+    const jobIdReservation = await reserveUniqueJobId();
+    jobId = jobIdReservation.jobId;
+    releaseJobIdReservation = jobIdReservation.release;
+    await storageService.createJobFolders(jobId);
+
+    const retentionUntil = addRetentionDays();
+    const copiedFiles = [];
+    for (const input of resolvedInputs) {
+      const destinationPath = storageService.resolveJobInputPath(jobId, input.file.fileName);
+      await fs.promises.copyFile(input.absolutePath, destinationPath);
+      const metadata = await storageService.buildFileMetadata(destinationPath);
+      copiedFiles.push({ source: input.file, metadata });
+    }
+
+    const normalizedBrowserTabSessionId = normalizeBrowserTabSessionId(
+      browserTabSessionId || sourceJob.browserTabSessionId
+    );
+    const requestPath = storageService.resolveJobTempPath(jobId, 'job-request.json');
+    await storageService.saveBufferToFile(
+      requestPath,
+      Buffer.from(JSON.stringify({
+        ...sourceRequest,
+        jobId,
+        browserTabSessionId: normalizedBrowserTabSessionId,
+        idempotencyKey: null,
+        rerunSourceJobId: sourceJobId,
+        createdAt: new Date().toISOString()
+      }, null, 2))
+    );
+
+    let workerManifest;
+    try {
+      workerManifest = getWorkerManifest(sourceJob.workerId || WORKER_IDS.MW_PR);
+    } catch (error) {
+      throw createApiError(409, 'RERUN_WORKER_UNAVAILABLE', 'This job cannot be rerun because its worker is no longer available.');
+    }
+
+    const job = await Job.create({
+      jobId,
+      workerId: sourceJob.workerId || WORKER_IDS.MW_PR,
+      engineVersion: workerManifest.engineVersion,
+      engineCommit: workerManifest.engineCommit,
+      workerType: sourceJob.workerType || 'pr-worker',
+      status: 'queued',
+      browserTabSessionId: normalizedBrowserTabSessionId,
+      idempotencyKey: null,
+      generationScope: sourceJob.generationScope,
+      prScope: sourceJob.prScope,
+      runMode: sourceJob.runMode,
+      selectedProject: sourceJob.selectedProject,
+      requestedSiteCount: sourceJob.requestedSiteCount || 0,
+      rerunSourceJobId: sourceJobId,
+      fileRetentionUntil: retentionUntil
+    });
+
+    const jobFiles = await JobFile.insertMany(copiedFiles.map(({ source, metadata }) => ({
+      jobId,
+      fileType: source.fileType,
+      fileName: source.fileName,
+      filePath: metadata.filePath,
+      fileSize: metadata.fileSize,
+      retentionUntil
+    })));
+    const queueState = await jobQueue.enqueueJob(jobId);
+
+    return {
+      created: true,
+      job: serializeJobSummary(job),
+      jobFiles: jobFiles.map((file) => ({
+        id: file._id.toString(),
+        fileType: file.fileType,
+        fileName: file.fileName,
+        fileSize: file.fileSize,
+        retentionUntil: file.retentionUntil
+      })),
+      queue: queueState,
+      message: `Job ${sourceJobId} was copied and queued with a new job ID.`
+    };
+  } catch (error) {
+    if (jobId) {
+      await Promise.all([
+        Job.deleteMany({ jobId }),
+        JobFile.deleteMany({ jobId }),
+        storageService.deleteFolderSafe(storageService.getJobRootPath(jobId)).catch(() => {})
+      ]).catch(() => {});
+    }
+    throw error;
+  } finally {
+    if (releaseJobIdReservation) releaseJobIdReservation();
+  }
+};
+
 const buildListFilter = async (query) => {
   const filter = {};
 
@@ -1289,5 +1413,6 @@ module.exports = {
   getJobDetail,
   getZipDownloadFile,
   listJobs,
+  rerunJob,
   normalizeSiteCodes
 };
