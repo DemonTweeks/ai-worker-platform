@@ -359,6 +359,7 @@ const serializeJobSummary = (job) => ({
   selectedProject: job.selectedProject || null,
   requestedSiteCount: job.requestedSiteCount,
   matchedSiteCount: job.matchedSiteCount,
+  matchedSiteCodes: Array.isArray(job.matchedSiteCodes) ? job.matchedSiteCodes : [],
   unmatchedSiteCount: job.unmatchedSiteCount,
   outputFileCount: job.outputFileCount,
   reviewRequiredCount: job.reviewRequiredCount,

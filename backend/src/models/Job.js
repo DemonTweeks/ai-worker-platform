@@ -35,6 +35,7 @@ class Job {
     if (this.workerType === 'pr-worker') {
       if (typeof this.requestedSiteCount === 'undefined') this.requestedSiteCount = null;
       if (typeof this.matchedSiteCount === 'undefined') this.matchedSiteCount = null;
+      if (!Array.isArray(this.matchedSiteCodes)) this.matchedSiteCodes = [];
       if (typeof this.unmatchedSiteCount === 'undefined') this.unmatchedSiteCount = null;
       if (typeof this.outputFileCount === 'undefined') this.outputFileCount = null;
       if (typeof this.reviewRequiredCount === 'undefined') this.reviewRequiredCount = null;
@@ -76,6 +77,7 @@ class Job {
       selectedProject: payload.selectedProject || null,
       requestedSiteCount: payload.requestedSiteCount || 0,
       matchedSiteCount: payload.matchedSiteCount || 0,
+      matchedSiteCodes: Array.isArray(payload.matchedSiteCodes) ? payload.matchedSiteCodes : [],
       unmatchedSiteCount: payload.unmatchedSiteCount || 0,
       outputFileCount: payload.outputFileCount || 0,
       reviewRequiredCount: payload.reviewRequiredCount || 0,

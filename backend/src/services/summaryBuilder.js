@@ -9,6 +9,7 @@ const buildAndSaveSummary = async ({ jobId, filteringResult, outputCollection })
   const update = {
     requestedSiteCount: filteringResult.requestedSiteCount,
     matchedSiteCount: filteringResult.matchedSiteCount,
+    matchedSiteCodes: filteringResult.matchedSiteCodes || [],
     unmatchedSiteCount: filteringResult.unmatchedSiteCount,
     outputFileCount: outputCollection.outputFileCount,
     reviewRequiredCount,
