@@ -25,6 +25,7 @@
       <HealthStatusCard label="Disk Usage" :value="diskUsage" :detail="diskDetail" :tone="diskTone" />
       <HealthStatusCard label="Cleanup" :value="formatStatus(cleanupStatus)" :detail="cleanupDetail" :tone="tone(cleanupStatus)" />
       <DeploymentActionCard
+        :disabled="deploymentDisabled"
         :loading="deploying"
         :waiting="waitingForBackend"
         :tone="deploymentTone"
@@ -70,6 +71,13 @@ export default {
     };
   },
   computed: {
+    deploymentDisabled() {
+      return this.backendPlatform === 'win32';
+    },
+    backendPlatform() {
+      const backend = this.services.backend;
+      return backend && backend.platform ? String(backend.platform).toLowerCase() : '';
+    },
     deploymentTone() {
       if (this.deploymentError) return 'danger';
       if (this.waitingForBackend) return 'warning';
@@ -77,6 +85,7 @@ export default {
       return this.deploying ? 'warning' : 'neutral';
     },
     deploymentDetail() {
+      if (this.deploymentDisabled) return 'Deployment is unavailable on Windows.';
       if (this.deploymentError) return this.deploymentError;
       if (this.waitingForBackend) return 'Deployment started. Checking backend availability every 15 seconds.';
       if (this.deploymentResult && this.deploymentResult.backendReadyAt) return `Backend available again at ${this.deploymentResult.backendReadyAt}.`;
@@ -175,6 +184,7 @@ export default {
   },
   methods: {
     async triggerDeploy() {
+      if (this.deploymentDisabled) return;
       this.clearDeploymentHealthTimer();
       this.deploying = true;
       this.waitingForBackend = false;

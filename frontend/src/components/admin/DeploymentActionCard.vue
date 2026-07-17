@@ -3,7 +3,7 @@
     type="button"
     class="stat-card health-card deployment-action-card"
     :class="`health-${tone}`"
-    :disabled="loading || waiting"
+    :disabled="disabled || loading || waiting"
     @click="$emit('deploy')"
   >
     <span class="health-card-header">
@@ -19,6 +19,7 @@
 export default {
   name: 'DeploymentActionCard',
   props: {
+    disabled: { type: Boolean, default: false },
     loading: { type: Boolean, default: false },
     waiting: { type: Boolean, default: false },
     tone: { type: String, default: 'neutral' },
@@ -26,6 +27,7 @@ export default {
   },
   computed: {
     cardValue() {
+      if (this.disabled) return 'Unavailable';
       if (this.loading) return 'Starting...';
       if (this.waiting) return 'Recovering...';
       return 'Deploy';
