@@ -13,7 +13,7 @@ vi.mock('../../api', () => ({
   }
 }));
 
-import { createJob, prevalidateUpload } from '../jobApi';
+import { createJob, prevalidateUpload, rerunJob } from '../jobApi';
 
 describe('jobApi prevalidateUpload', () => {
   beforeEach(() => {
@@ -58,5 +58,16 @@ describe('jobApi prevalidateUpload', () => {
     expect(postMock).toHaveBeenCalledWith('/api/jobs', payload, {
       timeout: 120000
     });
+  });
+
+  it('requests a rerun for the encoded source job ID', async () => {
+    postMock.mockResolvedValueOnce({ data: { job: { jobId: 'PR-NEW' } } });
+
+    const result = await rerunJob('PR/SOURCE');
+
+    expect(postMock).toHaveBeenCalledWith('/api/jobs/PR%2FSOURCE/rerun', {}, {
+      timeout: 120000
+    });
+    expect(result.job.jobId).toBe('PR-NEW');
   });
 });

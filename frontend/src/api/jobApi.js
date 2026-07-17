@@ -54,6 +54,13 @@ export const cancelJob = async (jobId, payload = {}) => {
   return response.data;
 };
 
+export const rerunJob = async (jobId, payload = {}) => {
+  const response = await api.post(`/api/jobs/${encodeURIComponent(jobId)}/rerun`, payload, {
+    timeout: JOB_CREATION_TIMEOUT_MS
+  });
+  return response.data;
+};
+
 export const listJobs = async (params = {}) => {
   const response = await api.get('/api/jobs', { params });
   return response.data;

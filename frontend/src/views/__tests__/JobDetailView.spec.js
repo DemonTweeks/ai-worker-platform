@@ -2,11 +2,12 @@ import { mount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import JobDetailView from '../JobDetailView.vue';
 import { askJob } from '../../api/reAskApi';
-import { getErrorMessage, getJobDetail } from '../../api/jobApi';
+import { getErrorMessage, getJobDetail, rerunJob } from '../../api/jobApi';
 
 vi.mock('../../api/jobApi', () => ({
   getErrorMessage: vi.fn((error) => error.userMessage || error.message || 'Request failed.'),
-  getJobDetail: vi.fn()
+  getJobDetail: vi.fn(),
+  rerunJob: vi.fn()
 }));
 
 vi.mock('../../api/reAskApi', () => ({
@@ -215,5 +216,31 @@ describe('JobDetailView', () => {
     await Promise.resolve();
 
     expect(wrapper.find('.error-banner').text()).toContain('Top-level load failure');
+  });
+
+  it('reruns the displayed job and navigates to the new job ID', async () => {
+    const push = vi.fn().mockResolvedValue(undefined);
+    rerunJob.mockResolvedValueOnce({ job: { jobId: 'JOB-DETAIL-2' } });
+    const wrapper = await mountView();
+    wrapper.vm.$router = { push };
+
+    await wrapper.vm.rerunCurrentJob();
+
+    expect(rerunJob).toHaveBeenCalledWith('JOB-DETAIL-1');
+    expect(push).toHaveBeenCalledWith({
+      name: 'job-detail',
+      params: { jobId: 'JOB-DETAIL-2' }
+    });
+    expect(wrapper.vm.rerunning).toBe(false);
+  });
+
+  it('shows rerun failures without navigating away', async () => {
+    rerunJob.mockRejectedValueOnce(new Error('Original input file is unavailable'));
+    const wrapper = await mountView();
+
+    await wrapper.vm.rerunCurrentJob();
+
+    expect(wrapper.vm.errorMessage).toBe('Original input file is unavailable');
+    expect(wrapper.vm.rerunning).toBe(false);
   });
 });

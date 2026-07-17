@@ -51,6 +51,11 @@ router.post('/:jobId/cancel', asyncHandler(async (req, res) => {
   res.json(result);
 }));
 
+router.post('/:jobId/rerun', asyncHandler(async (req, res) => {
+  const result = await jobService.rerunJob(req.params.jobId, req.body || {});
+  res.status(201).json(result);
+}));
+
 router.get('/:jobId/download-zip', asyncHandler(async (req, res) => {
   const result = await jobService.getZipDownloadFile(req.params.jobId);
   res.download(result.absolutePath, result.file.fileName);

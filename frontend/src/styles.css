@@ -986,6 +986,13 @@ textarea {
   gap: 8px;
 }
 
+.hero-button-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
 .status-strip {
   align-items: center;
   background: #ffffff;
