@@ -90,7 +90,12 @@ const runTests = async () => {
           originalFileName: 'worker-input.xlsx',
           absolutePath: uploadPath
         };
-      }
+      },
+      getPrevalidatedUpload: async () => ({
+        uploadKind: 'mw-export',
+        originalFileName: 'worker-input.xlsx',
+        absolutePath: uploadPath
+      })
     });
     setCachedModule(path.join(repoRoot, 'src/workers/ranProjectCatalogService.js'), {
       validateRanRunConfiguration: ({ runMode, selectedProject }) => {

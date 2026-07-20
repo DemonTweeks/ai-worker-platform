@@ -37,6 +37,19 @@ export const prevalidateUpload = async (file, uploadKind = null, requestScope = 
   return response.data;
 };
 
+export const getPrevalidatedUpload = async (prevalidatedFileId, browserTabSessionId) => {
+  const response = await api.get(`/api/jobs/prevalidated/${encodeURIComponent(prevalidatedFileId)}`, {
+    params: { browserTabSessionId }
+  });
+  return response.data;
+};
+
+export const releasePrevalidatedUpload = async (prevalidatedFileId, browserTabSessionId) => {
+  await api.delete(`/api/jobs/prevalidated/${encodeURIComponent(prevalidatedFileId)}`, {
+    params: { browserTabSessionId }
+  });
+};
+
 export const createJob = async (payload) => {
   const response = await api.post('/api/jobs', payload, {
     timeout: JOB_CREATION_TIMEOUT_MS
