@@ -77,4 +77,56 @@ describe('PRCreatorView', () => {
 
     expect(wrapper.findComponent({ name: 'HomeView' }).exists()).toBe(false);
   });
+
+  it('selects an active job and scrolls to its live output console', async () => {
+    const wrapper = mountView();
+    await wrapper.vm.restoreActiveJobs();
+    await wrapper.setData({
+      activeSessionJobs: [{
+        jobId: 'PR-20260720-001',
+        workerId: 'mw-pr',
+        workerDisplayName: 'MW PR Worker',
+        status: 'generating',
+        createdAt: '2026-07-20T02:14:55.000Z'
+      }]
+    });
+    const selectActiveJob = vi.spyOn(wrapper.vm, 'selectActiveJob').mockResolvedValue();
+    const scrollIntoView = vi.fn();
+    wrapper.vm.$refs.workerConsole.scrollIntoView = scrollIntoView;
+    const viewButton = wrapper.findAll('button').wrappers.find((button) => button.text() === 'View');
+
+    await viewButton.trigger('click');
+    await wrapper.vm.$nextTick();
+
+    expect(selectActiveJob).toHaveBeenCalledWith('PR-20260720-001');
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
+  });
+
+  it('opens the stop-job confirmation and scrolls to Result Delivery', async () => {
+    const wrapper = mountView();
+    await wrapper.vm.restoreActiveJobs();
+    await wrapper.setData({
+      activeSessionJobs: [{
+        jobId: 'PR-20260720-001',
+        workerId: 'mw-pr',
+        workerDisplayName: 'MW PR Worker',
+        status: 'generating',
+        createdAt: '2026-07-20T02:14:55.000Z'
+      }],
+      currentJobId: 'PR-20260720-001',
+      currentStatus: 'generating'
+    });
+    const scrollIntoView = vi.fn();
+    const focus = vi.spyOn(HTMLElement.prototype, 'focus');
+    HTMLElement.prototype.scrollIntoView = scrollIntoView;
+    const stopButton = wrapper.findAll('button').wrappers.find((button) => button.text() === 'Stop / Cancel');
+
+    await stopButton.trigger('click');
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.vm.showCancelForm).toBe(true);
+    expect(wrapper.vm.$refs.cancellationPanel.textContent).toContain('Result Delivery');
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'center' });
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true });
+  });
 });

@@ -183,7 +183,7 @@
                   <td>{{ job.status }}</td>
                   <td>{{ job.createdAt || 'Now' }}</td>
                   <td>
-                    <button type="button" class="secondary-link" @click="selectActiveJob(job.jobId)">
+                    <button type="button" class="secondary-link" @click="viewLiveOutput(job.jobId)">
                       View
                     </button>
                   </td>
@@ -203,7 +203,7 @@
           </div>
         </section>
 
-        <section class="panel cockpit-card workbench-result-card">
+        <section ref="cancellationPanel" class="panel cockpit-card workbench-result-card">
           <div class="cockpit-card-heading">
             <span>Result Delivery</span>
             <small>{{ outputCount }} output(s)</small>
@@ -246,6 +246,7 @@
                 <label class="field-label" for="cancel-reason">Cancellation reason</label>
                 <select
                   id="cancel-reason"
+                  ref="cancelReasonSelect"
                   class="cockpit-sites-input compact-inline-select"
                   :disabled="cancellingRequest"
                   :value="cancelReasonCode"
@@ -309,7 +310,7 @@
       <p v-if="commandNotice" class="cockpit-note">{{ commandNotice }}</p>
     </form>
 
-    <section id="worker-console" class="cockpit-console-shell">
+    <section id="worker-console" ref="workerConsole" class="cockpit-console-shell">
       <div class="console-title-row">
         <div>
           <p class="eyebrow">Live Output</p>

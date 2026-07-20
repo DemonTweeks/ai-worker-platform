@@ -385,6 +385,13 @@ export const workerRuntimeMixin = {
       }
       await this.refreshJobDetail();
     },
+    async viewLiveOutput(jobId) {
+      await this.selectActiveJob(jobId);
+      await this.$nextTick();
+      if (this.$refs.workerConsole) {
+        this.$refs.workerConsole.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    },
     upsertActiveSessionJob(job) {
       if (!job || !job.jobId) {
         return;
@@ -436,6 +443,13 @@ export const workerRuntimeMixin = {
         await this.selectActiveJob(jobId);
       }
       this.showCancelForm = true;
+      await this.$nextTick();
+      if (this.$refs.cancellationPanel) {
+        this.$refs.cancellationPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      if (this.$refs.cancelReasonSelect) {
+        this.$refs.cancelReasonSelect.focus({ preventScroll: true });
+      }
     },
     async checkHealth() {
       try {
