@@ -1,24 +1,27 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { postMock, getMock } = vi.hoisted(() => ({
+const { postMock, getMock, deleteMock } = vi.hoisted(() => ({
   postMock: vi.fn(),
-  getMock: vi.fn()
+  getMock: vi.fn(),
+  deleteMock: vi.fn()
 }));
 
 vi.mock('../../api', () => ({
   default: {
     post: postMock,
     get: getMock,
+    delete: deleteMock,
     defaults: { baseURL: 'http://localhost:3000' }
   }
 }));
 
-import { createJob, prevalidateUpload, rerunJob } from '../jobApi';
+import { createJob, getPrevalidatedUpload, prevalidateUpload, releasePrevalidatedUpload, rerunJob } from '../jobApi';
 
 describe('jobApi prevalidateUpload', () => {
   beforeEach(() => {
     postMock.mockReset();
     getMock.mockReset();
+    deleteMock.mockReset();
   });
 
   it('uses a scoped 120 second timeout for upload prevalidation requests', async () => {
@@ -69,5 +72,20 @@ describe('jobApi prevalidateUpload', () => {
       timeout: 120000
     });
     expect(result.job.jobId).toBe('PR-NEW');
+  });
+
+  it('retrieves and releases a reusable validated upload within the browser session', async () => {
+    getMock.mockResolvedValueOnce({ data: { prevalidatedFileId: 'preval-1', reusable: true } });
+    deleteMock.mockResolvedValueOnce({});
+
+    await expect(getPrevalidatedUpload('preval-1', 'tab-1')).resolves.toMatchObject({ reusable: true });
+    await releasePrevalidatedUpload('preval-1', 'tab-1');
+
+    expect(getMock).toHaveBeenCalledWith('/api/jobs/prevalidated/preval-1', {
+      params: { browserTabSessionId: 'tab-1' }
+    });
+    expect(deleteMock).toHaveBeenCalledWith('/api/jobs/prevalidated/preval-1', {
+      params: { browserTabSessionId: 'tab-1' }
+    });
   });
 });

@@ -41,8 +41,9 @@
             <UploadPanel
               class="cockpit-card upload-card workbench-upload-card"
               :result="prevalidation"
-              :loading="prevalidating"
+              :loading="prevalidating || restoringPrevalidatedUpload"
               :disable-action="workerFormLocked"
+              :retained-file-name="prevalidation && prevalidation.reusable ? prevalidation.originalFileName : ''"
               @file-selected="onFileSelected"
               @prevalidate="prevalidate"
             />
@@ -428,12 +429,21 @@
 import UploadPanel from '../components/UploadPanel.vue';
 import ErrorBanner from '../components/ErrorBanner.vue';
 import LoadingButton from '../components/LoadingButton.vue';
-import { createJob, getErrorMessage, listRanProjects, prevalidateUpload } from '../api/jobApi';
+import {
+  createJob,
+  getErrorMessage,
+  getPrevalidatedUpload,
+  listRanProjects,
+  prevalidateUpload,
+  releasePrevalidatedUpload
+} from '../api/jobApi';
 import {
   buildWorkerIdempotencyStorageKey,
   createIdempotencyKey,
   workerRuntimeMixin
 } from './shared/workerRuntime';
+
+const REUSABLE_MW_UPLOAD_STORAGE_KEY = 'awp.prCreator.reusableMwUpload';
 
 export default {
   name: 'PRCreatorView',
@@ -449,6 +459,7 @@ export default {
       selectedFile: null,
       prevalidation: null,
       prevalidating: false,
+      restoringPrevalidatedUpload: false,
       prScope: 'TSS',
       prScopeOptions: ['TSS', 'TI'],
       generationScope: 'site_code',
@@ -525,7 +536,7 @@ export default {
 
       if (!this.prevalidation || !this.prevalidation.passed) return false;
       if (this.generationScope === 'site_code' && this.parseSiteCodes().length === 0) return false;
-      if (!this.selectedFile) return false;
+      if (!this.hasReusableMwUpload) return false;
       return true;
     },
     createDisabledReason() {
@@ -539,7 +550,7 @@ export default {
         return '';
       }
 
-      if (!this.selectedFile) return 'Upload a source file to start.';
+      if (!this.hasReusableMwUpload) return 'Upload and validate a source file to start.';
       if (this.prevalidating) return 'Prevalidation is in progress.';
       if (!this.prevalidation) return 'Run validation before creating a Job.';
       if (!this.prevalidation.passed) return 'Validation failed; resolve the listed issues before creating a Job.';
@@ -553,6 +564,12 @@ export default {
     siteCodeCount() {
       return this.parseSiteCodes().length;
     },
+    hasReusableMwUpload() {
+      return Boolean(this.prevalidation && this.prevalidation.passed && this.prevalidation.prevalidatedFileId);
+    },
+    mwUploadFileName() {
+      return this.selectedFile ? this.selectedFile.name : (this.prevalidation ? this.prevalidation.originalFileName : '');
+    },
     consoleItems() {
       const items = [
         {
@@ -565,12 +582,12 @@ export default {
         }
       ];
 
-      if (this.isMwWorker && this.selectedFile) {
+      if (this.isMwWorker && this.mwUploadFileName) {
         items.push({
           id: 'mw-file-selected',
           label: 'Upload',
           title: 'MW source file selected',
-          body: this.selectedFile.name,
+          body: this.mwUploadFileName,
           tone: 'info',
           time: ''
         });
@@ -656,6 +673,9 @@ export default {
       this.resetPendingIdempotencyKey('ran-pr');
     }
   },
+  mounted() {
+    this.restoreReusableMwUpload();
+  },
   methods: {
     initializePendingIdempotencyKeys() {
       this.mwPendingIdempotencyKey = sessionStorage.getItem(buildWorkerIdempotencyStorageKey('mw-pr')) || '';
@@ -711,8 +731,6 @@ export default {
       this.dismissErrorMessage();
 
       if (workerId === 'mw-pr') {
-        this.selectedFile = null;
-        this.prevalidation = null;
         return;
       }
 
@@ -734,10 +752,67 @@ export default {
         this.ranProjectLoading = false;
       }
     },
-    onFileSelected(file) {
+    async onFileSelected(file) {
+      if (this.prevalidation && this.prevalidation.prevalidatedFileId) {
+        await this.releaseReusableMwUpload({ silent: true });
+      }
       this.selectedFile = file;
       this.prevalidation = null;
       this.resetPendingIdempotencyKey('mw-pr');
+    },
+    storeReusableMwUpload(prevalidation) {
+      if (!prevalidation || !prevalidation.prevalidatedFileId) return;
+      sessionStorage.setItem(REUSABLE_MW_UPLOAD_STORAGE_KEY, JSON.stringify({
+        prevalidatedFileId: prevalidation.prevalidatedFileId
+      }));
+    },
+    clearStoredReusableMwUpload() {
+      sessionStorage.removeItem(REUSABLE_MW_UPLOAD_STORAGE_KEY);
+    },
+    async restoreReusableMwUpload() {
+      const raw = sessionStorage.getItem(REUSABLE_MW_UPLOAD_STORAGE_KEY);
+      if (!raw) return;
+
+      let stored;
+      try {
+        stored = JSON.parse(raw);
+      } catch (_error) {
+        this.clearStoredReusableMwUpload();
+        return;
+      }
+
+      if (!stored || !stored.prevalidatedFileId) {
+        this.clearStoredReusableMwUpload();
+        return;
+      }
+
+      this.restoringPrevalidatedUpload = true;
+      try {
+        this.prevalidation = await getPrevalidatedUpload(
+          stored.prevalidatedFileId,
+          this.browserTabSessionId
+        );
+        this.selectedFile = null;
+      } catch (_error) {
+        this.clearStoredReusableMwUpload();
+        this.prevalidation = null;
+        this.commandNotice = 'The previously validated upload is no longer available. Please select it again.';
+      } finally {
+        this.restoringPrevalidatedUpload = false;
+      }
+    },
+    async releaseReusableMwUpload(options = {}) {
+      const prevalidatedFileId = this.prevalidation && this.prevalidation.prevalidatedFileId;
+      this.clearStoredReusableMwUpload();
+      this.prevalidation = null;
+      this.selectedFile = null;
+
+      if (!prevalidatedFileId) return;
+      try {
+        await releasePrevalidatedUpload(prevalidatedFileId, this.browserTabSessionId);
+      } catch (error) {
+        if (!options.silent) this.showWorkerNotification(getErrorMessage(error));
+      }
     },
     onRanFileSelected(kind, file) {
       if (kind === 'bom') {
@@ -761,6 +836,8 @@ export default {
           workerId: 'mw-pr',
           browserTabSessionId: this.browserTabSessionId
         });
+        this.prevalidation.reusable = true;
+        this.storeReusableMwUpload(this.prevalidation);
       } catch (error) {
         this.prevalidation = this.getSafePrevalidationPayload(error);
         if (!this.isExpectedPrevalidationFailure(error)) {

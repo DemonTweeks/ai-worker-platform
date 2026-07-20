@@ -8,7 +8,7 @@ const {
   WarningItem
 } = require('../models');
 const storageService = require('./storageService');
-const { consumePrevalidatedUpload, UPLOAD_KINDS } = require('./prevalidationService');
+const { consumePrevalidatedUpload, getPrevalidatedUpload, UPLOAD_KINDS } = require('./prevalidationService');
 const { parseSiteCodes } = require('./siteCodeParser');
 const workerStateService = require('./workerStateService');
 const jobQueue = require('../queue/jobQueue');
@@ -451,7 +451,9 @@ const createMwJob = async ({
         return replayResult;
       }
 
-      const upload = await consumePrevalidatedUpload(prevalidatedFileId);
+      const upload = await getPrevalidatedUpload(prevalidatedFileId, {
+        browserTabSessionId: normalizedBrowserTabSessionId
+      });
       if (upload.uploadKind && upload.uploadKind !== UPLOAD_KINDS.MW_EXPORT) {
         throw createApiError(400, 'VALIDATION_ERROR', 'prevalidatedFileId must reference an iEPMS export upload.');
       }
@@ -462,7 +464,6 @@ const createMwJob = async ({
 
       const inputPath = storageService.resolveJobInputPath(jobId, upload.originalFileName);
       await fs.promises.copyFile(upload.absolutePath, inputPath);
-      await storageService.deleteFileSafe(upload.absolutePath);
       const inputMetadata = await storageService.buildFileMetadata(inputPath);
       const retentionUntil = addRetentionDays();
       const requestPath = storageService.resolveJobTempPath(jobId, 'job-request.json');
