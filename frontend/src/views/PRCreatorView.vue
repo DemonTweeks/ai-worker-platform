@@ -280,7 +280,7 @@
           </div>
         </section>
 
-        <section class="panel cockpit-card workbench-result-card">
+        <section ref="cancellationPanel" class="panel cockpit-card workbench-result-card">
           <div class="cockpit-card-heading">
             <span>Result Delivery</span>
             <small>{{ outputCount }} output(s)</small>
@@ -323,6 +323,7 @@
                 <label class="field-label" for="cancel-reason">Cancellation reason</label>
                 <select
                   id="cancel-reason"
+                  ref="cancelReasonSelect"
                   class="cockpit-sites-input compact-inline-select"
                   :disabled="cancellingRequest"
                   :value="cancelReasonCode"
