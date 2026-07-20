@@ -50,6 +50,9 @@ setCachedModule(path.join(repoRoot, 'src/services/prevalidationService.js'), {
   }
 });
 
+const prevalidationStub = require('../src/services/prevalidationService');
+prevalidationStub.getPrevalidatedUpload = prevalidationStub.consumePrevalidatedUpload;
+
 setCachedModule(path.join(repoRoot, 'src/workers/ranProjectCatalogService.js'), {
   listRanProjects: () => ['Project Thanos'],
   validateRanRunConfiguration: ({ runMode, selectedProject }) => ({

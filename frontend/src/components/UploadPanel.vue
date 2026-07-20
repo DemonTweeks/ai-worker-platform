@@ -4,10 +4,11 @@
       <h2 class="upload-validate">{{ title }}</h2>
     </div>
 
-    <div v-if="!fileName">
+    <div v-show="!fileName">
       <label class="field-label" :for="inputId">{{ inputLabel }}</label>
       <p class="field-hint">{{ inputHint }}</p>
       <input
+        ref="fileInput"
         :id="inputId"
         class="upload-input"
         type="file"
@@ -18,9 +19,13 @@
     </div>
     
     <div v-if="fileName" class="file-state">
-      <span class="meta-label">Selected file</span>
-      <strong>{{ fileName }}</strong>
-      <button type="button" class="tertiary-action" @click="clearFile">Clear</button>
+      <span class="meta-label">{{ file ? 'Selected file' : 'Reusable validated file' }}</span>
+      <strong class="file-state-name">{{ fileName }}</strong>
+      <span v-if="retainedUntil" class="muted file-state-retention">Available until {{ formattedRetainedUntil }}</span>
+      <div class="workbench-action-row file-state-actions">
+        <button type="button" class="tertiary-action" @click="replaceFile">Replace</button>
+        <button type="button" class="tertiary-action" @click="clearFile">Remove</button>
+      </div>
     </div>
     <p v-else class="muted">Upload is not started. Select a valid file to begin.</p>
 
@@ -61,7 +66,9 @@ export default {
     inputLabel: { type: String, default: 'Source file (iEPMS export)' },
     inputHint: { type: String, default: 'Accepted file types: .xlsx, .xls, .csv. Maximum recommended size: 25 MB.' },
     validateLabel: { type: String, default: 'Validate File' },
-    accept: { type: String, default: '.xlsx,.xls,.csv' }
+    accept: { type: String, default: '.xlsx,.xls,.csv' },
+    retainedFileName: { type: String, default: '' },
+    retainedUntil: { type: String, default: '' }
   },
   data() {
     return {
@@ -70,7 +77,10 @@ export default {
   },
   computed: {
     fileName() {
-      return this.file ? this.file.name : '';
+      return this.file ? this.file.name : this.retainedFileName;
+    },
+    formattedRetainedUntil() {
+      return this.retainedUntil ? new Date(this.retainedUntil).toLocaleString() : '';
     }
   },
   methods: {
@@ -81,7 +91,11 @@ export default {
     },
     clearFile() {
       this.file = null;
+      if (this.$refs.fileInput) this.$refs.fileInput.value = '';
       this.$emit('file-selected', null);
+    },
+    replaceFile() {
+      if (this.$refs.fileInput) this.$refs.fileInput.click();
     }
   }
 };
