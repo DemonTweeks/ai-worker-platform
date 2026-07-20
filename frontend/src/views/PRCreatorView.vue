@@ -44,7 +44,6 @@
               :loading="prevalidating || restoringPrevalidatedUpload"
               :disable-action="workerFormLocked"
               :retained-file-name="prevalidation && prevalidation.reusable ? prevalidation.originalFileName : ''"
-              :retained-until="prevalidation && prevalidation.reusable ? prevalidation.retentionUntil : ''"
               @file-selected="onFileSelected"
               @prevalidate="prevalidate"
             />

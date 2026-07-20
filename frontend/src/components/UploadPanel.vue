@@ -21,7 +21,6 @@
     <div v-if="fileName" class="file-state">
       <span class="meta-label">{{ file ? 'Selected file' : 'Reusable validated file' }}</span>
       <strong class="file-state-name">{{ fileName }}</strong>
-      <span v-if="retainedUntil" class="muted file-state-retention">Available until {{ formattedRetainedUntil }}</span>
       <div class="workbench-action-row file-state-actions">
         <button type="button" class="tertiary-action" @click="replaceFile">Replace</button>
         <button type="button" class="tertiary-action" @click="clearFile">Remove</button>
@@ -67,8 +66,7 @@ export default {
     inputHint: { type: String, default: 'Accepted file types: .xlsx, .xls, .csv. Maximum recommended size: 25 MB.' },
     validateLabel: { type: String, default: 'Validate File' },
     accept: { type: String, default: '.xlsx,.xls,.csv' },
-    retainedFileName: { type: String, default: '' },
-    retainedUntil: { type: String, default: '' }
+    retainedFileName: { type: String, default: '' }
   },
   data() {
     return {
@@ -78,9 +76,6 @@ export default {
   computed: {
     fileName() {
       return this.file ? this.file.name : this.retainedFileName;
-    },
-    formattedRetainedUntil() {
-      return this.retainedUntil ? new Date(this.retainedUntil).toLocaleString() : '';
     }
   },
   methods: {
