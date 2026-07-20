@@ -77,4 +77,28 @@ describe('PRCreatorView', () => {
 
     expect(wrapper.findComponent({ name: 'HomeView' }).exists()).toBe(false);
   });
+
+  it('selects an active job and scrolls to its live output console', async () => {
+    const wrapper = mountView();
+    await wrapper.vm.restoreActiveJobs();
+    await wrapper.setData({
+      activeSessionJobs: [{
+        jobId: 'PR-20260720-001',
+        workerId: 'mw-pr',
+        workerDisplayName: 'MW PR Worker',
+        status: 'generating',
+        createdAt: '2026-07-20T02:14:55.000Z'
+      }]
+    });
+    const selectActiveJob = vi.spyOn(wrapper.vm, 'selectActiveJob').mockResolvedValue();
+    const scrollIntoView = vi.fn();
+    wrapper.vm.$refs.workerConsole.scrollIntoView = scrollIntoView;
+    const viewButton = wrapper.findAll('button').wrappers.find((button) => button.text() === 'View');
+
+    await viewButton.trigger('click');
+    await wrapper.vm.$nextTick();
+
+    expect(selectActiveJob).toHaveBeenCalledWith('PR-20260720-001');
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
+  });
 });

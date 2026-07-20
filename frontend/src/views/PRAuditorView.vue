@@ -183,7 +183,7 @@
                   <td>{{ job.status }}</td>
                   <td>{{ job.createdAt || 'Now' }}</td>
                   <td>
-                    <button type="button" class="secondary-link" @click="selectActiveJob(job.jobId)">
+                    <button type="button" class="secondary-link" @click="viewLiveOutput(job.jobId)">
                       View
                     </button>
                   </td>
@@ -309,7 +309,7 @@
       <p v-if="commandNotice" class="cockpit-note">{{ commandNotice }}</p>
     </form>
 
-    <section id="worker-console" class="cockpit-console-shell">
+    <section id="worker-console" ref="workerConsole" class="cockpit-console-shell">
       <div class="console-title-row">
         <div>
           <p class="eyebrow">Live Output</p>

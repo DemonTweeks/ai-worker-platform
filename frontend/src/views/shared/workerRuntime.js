@@ -385,6 +385,13 @@ export const workerRuntimeMixin = {
       }
       await this.refreshJobDetail();
     },
+    async viewLiveOutput(jobId) {
+      await this.selectActiveJob(jobId);
+      await this.$nextTick();
+      if (this.$refs.workerConsole) {
+        this.$refs.workerConsole.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    },
     upsertActiveSessionJob(job) {
       if (!job || !job.jobId) {
         return;
