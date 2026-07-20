@@ -443,6 +443,13 @@ export const workerRuntimeMixin = {
         await this.selectActiveJob(jobId);
       }
       this.showCancelForm = true;
+      await this.$nextTick();
+      if (this.$refs.cancellationPanel) {
+        this.$refs.cancellationPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      if (this.$refs.cancelReasonSelect) {
+        this.$refs.cancelReasonSelect.focus({ preventScroll: true });
+      }
     },
     async checkHealth() {
       try {
