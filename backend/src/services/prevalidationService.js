@@ -158,6 +158,15 @@ const deleteManifest = async (prevalidatedFileId) => {
   await storageService.deleteFileSafe(getManifestPath(prevalidatedFileId));
 };
 
+const assertUploadOwner = (manifest, browserTabSessionId) => {
+  if (
+    manifest.browserTabSessionId
+    && manifest.browserTabSessionId !== String(browserTabSessionId || '').trim()
+  ) {
+    throw createApiError(403, 'PREVALIDATED_FILE_FORBIDDEN', 'This validated upload belongs to another browser session.');
+  }
+};
+
 const validateUpload = async (file, options = {}) => {
   const uploadConfig = getUploadConfig(options.uploadKind);
   const checklist = [];
@@ -333,6 +342,10 @@ const validateUpload = async (file, options = {}) => {
     fileSize: metadata.fileSize,
     tempFilePath: metadata.filePath,
     passed: true,
+    browserTabSessionId: String(options.browserTabSessionId || '').trim() || null,
+    checklist,
+    workbook: workbookMetadata,
+    workerExplanation: buildWorkerExplanation(true, uploadConfig),
     createdAt: new Date().toISOString(),
     retentionUntil: metadata.retentionUntil ? metadata.retentionUntil.toISOString() : null
   };
@@ -348,6 +361,7 @@ const validateUpload = async (file, options = {}) => {
     uploadKind: uploadConfig.uploadKind,
     originalFileName: safeOriginalFileName,
     fileSize: metadata.fileSize,
+    retentionUntil: manifest.retentionUntil,
     workbook: workbookMetadata,
     checklist,
     passed: true,
@@ -355,8 +369,10 @@ const validateUpload = async (file, options = {}) => {
   };
 };
 
-const getPrevalidatedUpload = async (prevalidatedFileId) => {
+const getPrevalidatedUpload = async (prevalidatedFileId, options = {}) => {
   const manifest = await readManifest(prevalidatedFileId);
+
+  assertUploadOwner(manifest, options.browserTabSessionId);
 
   if (!manifest.passed) {
     throw createApiError(400, 'PREVALIDATION_FAILED', 'The uploaded file did not pass pre-validation.');
@@ -376,6 +392,29 @@ const getPrevalidatedUpload = async (prevalidatedFileId) => {
   };
 };
 
+const getReusablePrevalidatedUpload = async (prevalidatedFileId, options = {}) => {
+  const upload = await getPrevalidatedUpload(prevalidatedFileId, options);
+  return {
+    prevalidatedFileId: upload.prevalidatedFileId,
+    uploadKind: upload.uploadKind,
+    originalFileName: upload.originalFileName,
+    fileSize: upload.fileSize,
+    workbook: upload.workbook || null,
+    checklist: Array.isArray(upload.checklist) ? upload.checklist : [],
+    passed: true,
+    workerExplanation: upload.workerExplanation || buildWorkerExplanation(true, getUploadConfig(upload.uploadKind)),
+    createdAt: upload.createdAt,
+    retentionUntil: upload.retentionUntil || null,
+    reusable: true
+  };
+};
+
+const releasePrevalidatedUpload = async (prevalidatedFileId, options = {}) => {
+  const upload = await getPrevalidatedUpload(prevalidatedFileId, options);
+  await storageService.deleteFileSafe(upload.absolutePath);
+  await deleteManifest(prevalidatedFileId);
+};
+
 const consumePrevalidatedUpload = async (prevalidatedFileId) => {
   const upload = await getPrevalidatedUpload(prevalidatedFileId);
   await deleteManifest(prevalidatedFileId);
@@ -386,7 +425,9 @@ module.exports = {
   ALLOWED_EXTENSIONS,
   UPLOAD_KINDS,
   consumePrevalidatedUpload,
+  getReusablePrevalidatedUpload,
   getPrevalidatedUpload,
   getUploadConfig,
+  releasePrevalidatedUpload,
   validateUpload
 };

@@ -18,9 +18,24 @@ const getRequestedBy = (req) => (
 
 router.post('/prevalidate', upload.single('file'), asyncHandler(async (req, res) => {
   const result = await prevalidationService.validateUpload(req.file, {
-    uploadKind: req.body ? req.body.uploadKind : undefined
+    uploadKind: req.body ? req.body.uploadKind : undefined,
+    browserTabSessionId: req.body ? req.body.browserTabSessionId : undefined
   });
   res.status(result.passed ? 200 : 400).json(result);
+}));
+
+router.get('/prevalidated/:prevalidatedFileId', asyncHandler(async (req, res) => {
+  const result = await prevalidationService.getReusablePrevalidatedUpload(req.params.prevalidatedFileId, {
+    browserTabSessionId: req.query.browserTabSessionId
+  });
+  res.json(result);
+}));
+
+router.delete('/prevalidated/:prevalidatedFileId', asyncHandler(async (req, res) => {
+  await prevalidationService.releasePrevalidatedUpload(req.params.prevalidatedFileId, {
+    browserTabSessionId: req.query.browserTabSessionId
+  });
+  res.status(204).end();
 }));
 
 router.post('/', asyncHandler(async (req, res) => {

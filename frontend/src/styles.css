@@ -1986,6 +1986,32 @@ body:has(.home-cockpit) {
   white-space: nowrap;
 }
 
+.upload-card .file-state .file-state-name {
+  color: #183750;
+  font-size: 13px;
+  font-weight: 650;
+  grid-column: 1 / -1;
+  line-height: 1.35;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.upload-card .file-state .file-state-actions {
+  grid-column: 1 / -1;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.upload-card .file-state .file-state-actions .tertiary-action {
+  flex: 1 1 0;
+  font-size: 12px;
+  justify-content: center;
+  min-width: 0;
+  padding: 6px 8px;
+}
+
 .upload-card .checklist {
   border-radius: 8px;
   font-size: 11px;

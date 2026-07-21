@@ -41,8 +41,9 @@
             <UploadPanel
               class="cockpit-card upload-card workbench-upload-card"
               :result="prevalidation"
-              :loading="prevalidating"
+              :loading="prevalidating || restoringPrevalidatedUpload"
               :disable-action="workerFormLocked"
+              :retained-file-name="prevalidation && prevalidation.reusable ? prevalidation.originalFileName : ''"
               @file-selected="onFileSelected"
               @prevalidate="prevalidate"
             />
@@ -57,8 +58,9 @@
               validate-label="Validate BOM"
               accept=".xlsx,.xls"
               :result="ranBomPrevalidation"
-              :loading="ranBomPrevalidating"
+              :loading="ranBomPrevalidating || restoringRanUploads"
               :disable-action="workerFormLocked"
+              :retained-file-name="ranBomPrevalidation && ranBomPrevalidation.reusable ? ranBomPrevalidation.originalFileName : ''"
               @file-selected="onRanFileSelected('bom', $event)"
               @prevalidate="prevalidateRanUpload('bom', $event)"
             />
@@ -71,8 +73,9 @@
               validate-label="Validate EPMS"
               accept=".xlsx,.xls"
               :result="ranEpmsPrevalidation"
-              :loading="ranEpmsPrevalidating"
+              :loading="ranEpmsPrevalidating || restoringRanUploads"
               :disable-action="workerFormLocked"
+              :retained-file-name="ranEpmsPrevalidation && ranEpmsPrevalidation.reusable ? ranEpmsPrevalidation.originalFileName : ''"
               @file-selected="onRanFileSelected('epms', $event)"
               @prevalidate="prevalidateRanUpload('epms', $event)"
             />
@@ -428,12 +431,22 @@
 import UploadPanel from '../components/UploadPanel.vue';
 import ErrorBanner from '../components/ErrorBanner.vue';
 import LoadingButton from '../components/LoadingButton.vue';
-import { createJob, getErrorMessage, listRanProjects, prevalidateUpload } from '../api/jobApi';
+import {
+  createJob,
+  getErrorMessage,
+  getPrevalidatedUpload,
+  listRanProjects,
+  prevalidateUpload,
+  releasePrevalidatedUpload
+} from '../api/jobApi';
 import {
   buildWorkerIdempotencyStorageKey,
   createIdempotencyKey,
   workerRuntimeMixin
 } from './shared/workerRuntime';
+
+const REUSABLE_MW_UPLOAD_STORAGE_KEY = 'awp.prCreator.reusableMwUpload';
+const REUSABLE_RAN_UPLOADS_STORAGE_KEY = 'awp.prCreator.reusableRanUploads';
 
 export default {
   name: 'PRCreatorView',
@@ -449,6 +462,7 @@ export default {
       selectedFile: null,
       prevalidation: null,
       prevalidating: false,
+      restoringPrevalidatedUpload: false,
       prScope: 'TSS',
       prScopeOptions: ['TSS', 'TI'],
       generationScope: 'site_code',
@@ -464,6 +478,7 @@ export default {
       ranEpmsPrevalidation: null,
       ranBomPrevalidating: false,
       ranEpmsPrevalidating: false,
+      restoringRanUploads: false,
       mwPendingIdempotencyKey: '',
       ranPendingIdempotencyKey: ''
     };
@@ -525,7 +540,7 @@ export default {
 
       if (!this.prevalidation || !this.prevalidation.passed) return false;
       if (this.generationScope === 'site_code' && this.parseSiteCodes().length === 0) return false;
-      if (!this.selectedFile) return false;
+      if (!this.hasReusableMwUpload) return false;
       return true;
     },
     createDisabledReason() {
@@ -539,7 +554,7 @@ export default {
         return '';
       }
 
-      if (!this.selectedFile) return 'Upload a source file to start.';
+      if (!this.hasReusableMwUpload) return 'Upload and validate a source file to start.';
       if (this.prevalidating) return 'Prevalidation is in progress.';
       if (!this.prevalidation) return 'Run validation before creating a Job.';
       if (!this.prevalidation.passed) return 'Validation failed; resolve the listed issues before creating a Job.';
@@ -553,6 +568,12 @@ export default {
     siteCodeCount() {
       return this.parseSiteCodes().length;
     },
+    hasReusableMwUpload() {
+      return Boolean(this.prevalidation && this.prevalidation.passed && this.prevalidation.prevalidatedFileId);
+    },
+    mwUploadFileName() {
+      return this.selectedFile ? this.selectedFile.name : (this.prevalidation ? this.prevalidation.originalFileName : '');
+    },
     consoleItems() {
       const items = [
         {
@@ -565,12 +586,12 @@ export default {
         }
       ];
 
-      if (this.isMwWorker && this.selectedFile) {
+      if (this.isMwWorker && this.mwUploadFileName) {
         items.push({
           id: 'mw-file-selected',
           label: 'Upload',
           title: 'MW source file selected',
-          body: this.selectedFile.name,
+          body: this.mwUploadFileName,
           tone: 'info',
           time: ''
         });
@@ -651,10 +672,16 @@ export default {
     },
     ranRunMode() {
       this.resetPendingIdempotencyKey('ran-pr');
+      this.storeReusableRanUploads();
     },
     ranSelectedProject() {
       this.resetPendingIdempotencyKey('ran-pr');
+      this.storeReusableRanUploads();
     }
+  },
+  mounted() {
+    this.restoreReusableMwUpload();
+    this.restoreReusableRanUploads();
   },
   methods: {
     initializePendingIdempotencyKeys() {
@@ -711,8 +738,6 @@ export default {
       this.dismissErrorMessage();
 
       if (workerId === 'mw-pr') {
-        this.selectedFile = null;
-        this.prevalidation = null;
         return;
       }
 
@@ -734,12 +759,73 @@ export default {
         this.ranProjectLoading = false;
       }
     },
-    onFileSelected(file) {
+    async onFileSelected(file) {
+      if (this.prevalidation && this.prevalidation.prevalidatedFileId) {
+        await this.releaseReusableMwUpload({ silent: true });
+      }
       this.selectedFile = file;
       this.prevalidation = null;
       this.resetPendingIdempotencyKey('mw-pr');
     },
-    onRanFileSelected(kind, file) {
+    storeReusableMwUpload(prevalidation) {
+      if (!prevalidation || !prevalidation.prevalidatedFileId) return;
+      sessionStorage.setItem(REUSABLE_MW_UPLOAD_STORAGE_KEY, JSON.stringify({
+        prevalidatedFileId: prevalidation.prevalidatedFileId
+      }));
+    },
+    clearStoredReusableMwUpload() {
+      sessionStorage.removeItem(REUSABLE_MW_UPLOAD_STORAGE_KEY);
+    },
+    async restoreReusableMwUpload() {
+      const raw = sessionStorage.getItem(REUSABLE_MW_UPLOAD_STORAGE_KEY);
+      if (!raw) return;
+
+      let stored;
+      try {
+        stored = JSON.parse(raw);
+      } catch (_error) {
+        this.clearStoredReusableMwUpload();
+        return;
+      }
+
+      if (!stored || !stored.prevalidatedFileId) {
+        this.clearStoredReusableMwUpload();
+        return;
+      }
+
+      this.restoringPrevalidatedUpload = true;
+      try {
+        this.prevalidation = await getPrevalidatedUpload(
+          stored.prevalidatedFileId,
+          this.browserTabSessionId
+        );
+        this.selectedFile = null;
+      } catch (_error) {
+        this.clearStoredReusableMwUpload();
+        this.prevalidation = null;
+        this.commandNotice = 'The previously validated upload is no longer available. Please select it again.';
+      } finally {
+        this.restoringPrevalidatedUpload = false;
+      }
+    },
+    async releaseReusableMwUpload(options = {}) {
+      const prevalidatedFileId = this.prevalidation && this.prevalidation.prevalidatedFileId;
+      this.clearStoredReusableMwUpload();
+      this.prevalidation = null;
+      this.selectedFile = null;
+
+      if (!prevalidatedFileId) return;
+      try {
+        await releasePrevalidatedUpload(prevalidatedFileId, this.browserTabSessionId);
+      } catch (error) {
+        if (!options.silent) this.showWorkerNotification(getErrorMessage(error));
+      }
+    },
+    async onRanFileSelected(kind, file) {
+      const current = kind === 'bom' ? this.ranBomPrevalidation : this.ranEpmsPrevalidation;
+      if (current && current.prevalidatedFileId) {
+        await this.releaseReusableRanUpload(kind, { silent: true });
+      }
       if (kind === 'bom') {
         this.ranBomFile = file;
         this.ranBomPrevalidation = null;
@@ -748,6 +834,85 @@ export default {
         this.ranEpmsPrevalidation = null;
       }
       this.resetPendingIdempotencyKey('ran-pr');
+    },
+    getStoredReusableRanUploads() {
+      const raw = sessionStorage.getItem(REUSABLE_RAN_UPLOADS_STORAGE_KEY);
+      if (!raw) return {};
+      try {
+        return JSON.parse(raw) || {};
+      } catch (_error) {
+        sessionStorage.removeItem(REUSABLE_RAN_UPLOADS_STORAGE_KEY);
+        return {};
+      }
+    },
+    storeReusableRanUploads() {
+      if (this.restoringRanUploads) return;
+      const stored = this.getStoredReusableRanUploads();
+      const next = {
+        ...stored,
+        bomPrevalidatedFileId: this.ranBomPrevalidation && this.ranBomPrevalidation.prevalidatedFileId,
+        epmsPrevalidatedFileId: this.ranEpmsPrevalidation && this.ranEpmsPrevalidation.prevalidatedFileId,
+        runMode: this.ranRunMode,
+        selectedProject: this.ranSelectedProject
+      };
+      if (!next.bomPrevalidatedFileId && !next.epmsPrevalidatedFileId) {
+        sessionStorage.removeItem(REUSABLE_RAN_UPLOADS_STORAGE_KEY);
+        return;
+      }
+      sessionStorage.setItem(REUSABLE_RAN_UPLOADS_STORAGE_KEY, JSON.stringify(next));
+    },
+    async restoreReusableRanUploads() {
+      const stored = this.getStoredReusableRanUploads();
+      if (!stored.bomPrevalidatedFileId && !stored.epmsPrevalidatedFileId) return;
+
+      this.restoringRanUploads = true;
+      this.ranRunMode = stored.runMode === 'general-item' ? 'general-item' : 'standard-pr';
+      this.ranSelectedProject = stored.selectedProject || '';
+      const restoreKind = async (kind, prevalidatedFileId) => {
+        if (!prevalidatedFileId) return;
+        try {
+          const restored = await getPrevalidatedUpload(prevalidatedFileId, this.browserTabSessionId);
+          restored.reusable = true;
+          if (kind === 'bom') {
+            this.ranBomPrevalidation = restored;
+            this.ranBomFile = null;
+          } else {
+            this.ranEpmsPrevalidation = restored;
+            this.ranEpmsFile = null;
+          }
+        } catch (_error) {
+          if (kind === 'bom') this.ranBomPrevalidation = null;
+          else this.ranEpmsPrevalidation = null;
+        }
+      };
+
+      await Promise.all([
+        restoreKind('bom', stored.bomPrevalidatedFileId),
+        restoreKind('epms', stored.epmsPrevalidatedFileId)
+      ]);
+      this.restoringRanUploads = false;
+      this.storeReusableRanUploads();
+      if (!this.ranBomPrevalidation || !this.ranEpmsPrevalidation) {
+        this.commandNotice = 'One or more previously validated RAN uploads are no longer available. Please select the missing workbook again.';
+      }
+    },
+    async releaseReusableRanUpload(kind, options = {}) {
+      const current = kind === 'bom' ? this.ranBomPrevalidation : this.ranEpmsPrevalidation;
+      const prevalidatedFileId = current && current.prevalidatedFileId;
+      if (kind === 'bom') {
+        this.ranBomPrevalidation = null;
+        this.ranBomFile = null;
+      } else {
+        this.ranEpmsPrevalidation = null;
+        this.ranEpmsFile = null;
+      }
+      this.storeReusableRanUploads();
+      if (!prevalidatedFileId) return;
+      try {
+        await releasePrevalidatedUpload(prevalidatedFileId, this.browserTabSessionId);
+      } catch (error) {
+        if (!options.silent) this.showWorkerNotification(getErrorMessage(error));
+      }
     },
     async prevalidate(file) {
       if (!file) {
@@ -761,6 +926,8 @@ export default {
           workerId: 'mw-pr',
           browserTabSessionId: this.browserTabSessionId
         });
+        this.prevalidation.reusable = true;
+        this.storeReusableMwUpload(this.prevalidation);
       } catch (error) {
         this.prevalidation = this.getSafePrevalidationPayload(error);
         if (!this.isExpectedPrevalidationFailure(error)) {
@@ -794,6 +961,8 @@ export default {
         } else {
           this.ranEpmsPrevalidation = result;
         }
+        result.reusable = true;
+        this.storeReusableRanUploads();
       } catch (error) {
         const fallback = this.getSafePrevalidationPayload(error);
         if (isBom) {
