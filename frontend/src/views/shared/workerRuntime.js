@@ -647,7 +647,11 @@ export const workerRuntimeMixin = {
             title: 'Final worker summary',
             body: finalSummary,
             tone: 'info',
-            time: job.updatedAt || this.updatedAt
+            time: job.updatedAt || this.updatedAt,
+            outputJobId: ['completed', 'completed_with_warning'].includes(job.status)
+              && Number(job.outputFileCount) > 0
+              ? (job.jobId || this.currentJobId)
+              : ''
           });
         }
 

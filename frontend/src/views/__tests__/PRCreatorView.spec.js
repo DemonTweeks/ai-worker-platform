@@ -28,6 +28,10 @@ vi.mock('../../services/websocketClient', () => ({
 
 const mountView = () => mount(PRCreatorView, {
   stubs: {
+    RouterLink: {
+      props: ['to'],
+      template: '<a><slot /></a>'
+    },
     UploadPanel: {
       props: ['title', 'inputLabel', 'validateLabel', 'inputHint'],
       template: `
@@ -76,5 +80,29 @@ describe('PRCreatorView', () => {
     await wrapper.vm.$nextTick();
 
     expect(wrapper.findComponent({ name: 'HomeView' }).exists()).toBe(false);
+  });
+
+  it('links completed output results to the job detail download page', () => {
+    const wrapper = mountView();
+    wrapper.vm.currentJobId = 'PR-20260721-001';
+    wrapper.vm.currentStatus = 'completed';
+    wrapper.vm.jobDetail = {
+      job: {
+        jobId: 'PR-20260721-001',
+        status: 'completed',
+        outputFileCount: 1,
+        updatedAt: '2026-07-21T03:04:20.000Z'
+      },
+      outputs: [{ id: 'output-1' }],
+      finalWorkerSummary: 'Task completed.'
+    };
+
+    const finalSummary = wrapper.vm.buildSharedConsoleItems().find((item) => item.id === 'final-summary');
+    expect(finalSummary.outputJobId).toBe('PR-20260721-001');
+
+    wrapper.vm.jobDetail.job.status = 'failed';
+    wrapper.vm.jobDetail.job.outputFileCount = null;
+    const failedSummary = wrapper.vm.buildSharedConsoleItems().find((item) => item.id === 'final-summary');
+    expect(failedSummary.outputJobId).toBe('');
   });
 });
