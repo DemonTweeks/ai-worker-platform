@@ -105,4 +105,31 @@ describe('PRCreatorView', () => {
     expect(wrapper.vm.hasReusableMwUpload).toBe(true);
     expect(wrapper.vm.selectedFile).toBe(null);
   });
+
+  it('restores reusable RAN BOM and EPMS uploads with the selected run mode', async () => {
+    getPrevalidatedUpload.mockImplementation(async (prevalidatedFileId) => ({
+      prevalidatedFileId,
+      uploadKind: prevalidatedFileId === 'ran-bom-1' ? 'ran-bom' : 'ran-epms',
+      originalFileName: prevalidatedFileId === 'ran-bom-1' ? 'BOM.xlsx' : 'EPMS.xlsx',
+      passed: true,
+      reusable: true,
+      checklist: []
+    }));
+    const wrapper = mountView();
+    sessionStorage.setItem('awp.prCreator.reusableRanUploads', JSON.stringify({
+      bomPrevalidatedFileId: 'ran-bom-1',
+      epmsPrevalidatedFileId: 'ran-epms-1',
+      runMode: 'general-item',
+      selectedProject: 'Project Alpha'
+    }));
+
+    await wrapper.vm.restoreReusableRanUploads();
+
+    expect(getPrevalidatedUpload).toHaveBeenCalledWith('ran-bom-1', wrapper.vm.browserTabSessionId);
+    expect(getPrevalidatedUpload).toHaveBeenCalledWith('ran-epms-1', wrapper.vm.browserTabSessionId);
+    expect(wrapper.vm.ranBomPrevalidation.originalFileName).toBe('BOM.xlsx');
+    expect(wrapper.vm.ranEpmsPrevalidation.originalFileName).toBe('EPMS.xlsx');
+    expect(wrapper.vm.ranRunMode).toBe('general-item');
+    expect(wrapper.vm.ranSelectedProject).toBe('Project Alpha');
+  });
 });
