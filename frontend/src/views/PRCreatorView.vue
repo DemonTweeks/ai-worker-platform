@@ -417,6 +417,13 @@
             <h3>{{ item.title }}</h3>
             <p>{{ item.body }}</p>
             <small v-if="item.meta" class="console-message-meta">{{ item.meta }}</small>
+            <router-link
+              v-if="item.outputJobId"
+              class="workbench-primary-link console-output-link"
+              :to="{ name: 'job-detail', params: { jobId: item.outputJobId } }"
+            >
+              View &amp; Download Outputs
+            </router-link>
           </div>
         </article>
       </div>
