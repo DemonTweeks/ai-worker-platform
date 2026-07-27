@@ -21,6 +21,7 @@ services:
       MONGO_URI: mongodb://mongodb:27017/ai-worker-platform
       STORAGE_ROOT: /app/storage
       CREATE_PR_CD_ROOT: /app/skills/create-pr-cd
+      PR_AUDITOR_ROOT: /app/skills/tx-pr-auditor
       WS_HEARTBEAT_INTERVAL_MS: ${WS_HEARTBEAT_INTERVAL_MS:-5000}
       WS_MAX_PAYLOAD_BYTES: ${WS_MAX_PAYLOAD_BYTES:-16384}
       LLM_ENABLED: ${LLM_ENABLED:-false}
