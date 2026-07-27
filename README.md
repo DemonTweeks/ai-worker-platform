@@ -64,8 +64,12 @@ The PR Auditor engine is a read-only pinned Git submodule:
 
 ```text
 skills/tx-pr-auditor
-approved-cba28b7
-cba28b76716bf68f5fe8b03ac33c7e396c8935ee
+approved-0339ab7
+0339ab7a009bb0de8a43e93941d0fe2b9f018a06
+
+skills/create-pr-cd
+approved-5ea40fe
+5ea40feaad733433ff89e108ebe6a9224376d6e1
 ```
 
 A PR Auditor job accepts a Final PO workbook and EPMS workbook. The platform runs the approved engines in this order:
@@ -76,7 +80,7 @@ A PR Auditor job accepts a Final PO workbook and EPMS workbook. The platform run
 
 `tx-pr-auditor` must not read EPMS or PR Model directly. It owns downstream Final PO comparison, duplicate resolution and report generation; `create-pr-cd` remains the entitlement owner.
 
-The runtime fails closed when the approved engine pin is missing or unverified. Jobs with error code `PR_AUDITOR_ENGINE_PIN_UNAPPROVED` show only this safe message across the live console, History, Job Detail and Re-Ask:
+Backend startup verifies the Git commit when repository metadata is available and always verifies a SHA-256 fingerprint of every approved runtime file. Startup fails closed when either engine differs from its approved pin. Jobs with error code `PR_AUDITOR_ENGINE_PIN_UNAPPROVED` show only this safe message across the live console, History, Job Detail and Re-Ask:
 
 ```text
 PR Auditor runtime is blocked until a safe engine pin is approved and recorded.
