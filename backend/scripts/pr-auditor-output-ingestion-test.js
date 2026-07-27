@@ -24,12 +24,19 @@ const runTests = async () => {
     await fs.promises.writeFile(
       path.join(workspaceOutputRoot, 'pr_audit_summary.json'),
       JSON.stringify({
-        normalCount: 4,
-        invalidPoCount: 1,
-        wrongPoCount: 2,
-        duplicatePoCount: 3,
-        reviewRequiredCount: 5,
-        warnings: ['warning-a', 'warning-b']
+        total_rows: 10,
+        classifications: {
+          Normal: 4,
+          'Abnormal - Invalid PO': 1,
+          'Abnormal - Wrong PO': 2,
+          'Abnormal - Duplicate PO': 3
+        },
+        reason_codes: {
+          NORMAL_FULL: 4,
+          INVALID_SUBCON_CHANGED: 1,
+          WRONG_LINE_ITEM_MAPPING: 2,
+          DUPLICATE_FULL_QUANTITY: 3
+        }
       }, null, 2)
     );
     await fs.promises.writeFile(path.join(workspaceOutputRoot, 'ignore-me.txt'), 'not approved');
@@ -82,8 +89,8 @@ const runTests = async () => {
       invalidPoCount: 1,
       wrongPoCount: 2,
       duplicatePoCount: 3,
-      reviewRequiredCount: 5,
-      warnings: ['warning-a', 'warning-b']
+      reviewRequiredCount: 0,
+      warnings: []
     });
     assert.deepStrictEqual(
       createdFiles.map((file) => file.fileType).sort(),
@@ -94,19 +101,40 @@ const runTests = async () => {
       update: {
         $set: {
           outputFileCount: 1,
-          reviewRequiredCount: 5,
-          warningCount: 2,
+          reviewRequiredCount: 0,
+          warningCount: 0,
           auditSummary: {
             normalCount: 4,
             invalidPoCount: 1,
             wrongPoCount: 2,
             duplicatePoCount: 3,
-            reviewRequiredCount: 5,
-            warnings: ['warning-a', 'warning-b']
+            reviewRequiredCount: 0,
+            warnings: []
           }
         }
       }
     });
+
+    assert.deepStrictEqual(ingestionService.normalizeAuditSummary({
+      normalCount: 1,
+      invalidPoCount: 2,
+      wrongPoCount: 3,
+      duplicatePoCount: 4,
+      reviewRequiredCount: 5,
+      warnings: ['legacy-warning']
+    }), {
+      normalCount: 1,
+      invalidPoCount: 2,
+      wrongPoCount: 3,
+      duplicatePoCount: 4,
+      reviewRequiredCount: 5,
+      warnings: ['legacy-warning']
+    }, 'the previous trusted sidecar contract should remain supported');
+
+    assert.strictEqual(ingestionService.normalizeAuditSummary({
+      total_rows: 1,
+      classifications: { 'Unknown Classification': 1 }
+    }), null, 'unknown current-engine classifications must fail closed');
 
     jobUpdates.length = 0;
     createdFiles.length = 0;

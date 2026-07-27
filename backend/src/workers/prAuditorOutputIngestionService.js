@@ -49,7 +49,60 @@ const normalizeWarningList = (value) => {
   return warnings;
 };
 
+const CURRENT_ENGINE_CLASSIFICATIONS = {
+  'Normal': 'normalCount',
+  'Abnormal - Invalid PO': 'invalidPoCount',
+  'Abnormal - Wrong PO': 'wrongPoCount',
+  'Abnormal - Duplicate PO': 'duplicatePoCount'
+};
+
+const normalizeCurrentEngineSummary = (rawSummary) => {
+  if (
+    !rawSummary
+    || typeof rawSummary !== 'object'
+    || !Object.prototype.hasOwnProperty.call(rawSummary, 'total_rows')
+    || !rawSummary.classifications
+    || typeof rawSummary.classifications !== 'object'
+    || Array.isArray(rawSummary.classifications)
+  ) {
+    return null;
+  }
+
+  const totalRows = coerceNonNegativeInteger(rawSummary.total_rows);
+  if (totalRows === null) {
+    return null;
+  }
+
+  const normalized = {
+    normalCount: 0,
+    invalidPoCount: 0,
+    wrongPoCount: 0,
+    duplicatePoCount: 0,
+    reviewRequiredCount: 0,
+    warnings: []
+  };
+  let classifiedRows = 0;
+
+  for (const [classification, value] of Object.entries(rawSummary.classifications)) {
+    const count = coerceNonNegativeInteger(value);
+    const target = CURRENT_ENGINE_CLASSIFICATIONS[classification];
+    if (count === null || !target) {
+      return null;
+    }
+
+    normalized[target] += count;
+    classifiedRows += count;
+  }
+
+  return classifiedRows === totalRows ? normalized : null;
+};
+
 const normalizeAuditSummary = (rawSummary) => {
+  const currentEngineSummary = normalizeCurrentEngineSummary(rawSummary);
+  if (currentEngineSummary) {
+    return currentEngineSummary;
+  }
+
   const candidate = rawSummary && typeof rawSummary === 'object' && rawSummary.auditSummary
     ? rawSummary.auditSummary
     : rawSummary;
@@ -169,5 +222,6 @@ module.exports = {
   PR_AUDITOR_GENERATED_FILE_TYPES,
   PR_AUDITOR_OUTPUT_DEFINITIONS,
   ingestPrAuditorOutputs,
-  normalizeAuditSummary
+  normalizeAuditSummary,
+  normalizeCurrentEngineSummary
 };
