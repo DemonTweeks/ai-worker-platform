@@ -906,7 +906,9 @@ const createJob = async ({
       browserTabSessionId,
       idempotencyKey,
       workerManifest,
-      normalizedWorkerId
+      normalizedWorkerId,
+      auditYear,
+      auditMonth
     });
   }
 

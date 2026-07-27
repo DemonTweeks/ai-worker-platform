@@ -252,7 +252,9 @@ const runTests = async () => {
       browserTabSessionId: 'pr-auditor-tab-1234',
       idempotencyKey: 'pr-auditor-idem-1234',
       finalPoPrevalidatedFileId: 'pr-auditor-final-po-1',
-      epmsPrevalidatedFileId: 'pr-auditor-epms-1'
+      epmsPrevalidatedFileId: 'pr-auditor-epms-1',
+      auditYear: 2026,
+      auditMonth: 7
     });
 
     assert.strictEqual(prAuditorCreateResult.job.workerId, 'pr-auditor');
@@ -265,6 +267,8 @@ const runTests = async () => {
     assert.strictEqual(createdJobs[0].workerId, 'pr-auditor');
     assert.strictEqual(createdJobs[0].browserTabSessionId, 'pr-auditor-tab-1234');
     assert.strictEqual(createdJobs[0].idempotencyKey, 'pr-auditor-idem-1234');
+    assert.strictEqual(createdJobs[0].auditYear, 2026);
+    assert.strictEqual(createdJobs[0].auditMonth, 7);
     assert.strictEqual(createdJobs[0].requestedSiteCount, 0);
     assert.strictEqual(createdFiles.length, 2);
     assert.deepStrictEqual(
@@ -274,6 +278,8 @@ const runTests = async () => {
     assert(copiedBuffers[0].includes('"workerId": "pr-auditor"'));
     assert(copiedBuffers[0].includes('"finalPoFileName": "final-po.xlsx"'));
     assert(copiedBuffers[0].includes('"epmsFileName": "EPMS.xlsx"'));
+    assert(copiedBuffers[0].includes('"auditYear": 2026'));
+    assert(copiedBuffers[0].includes('"auditMonth": 7'));
 
     const duplicatePrAuditorResult = await jobService.createJob({
       workerId: 'pr-auditor',
