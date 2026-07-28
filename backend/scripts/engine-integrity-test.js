@@ -8,6 +8,7 @@ const {
   computeRuntimeFingerprint,
   resolveGitHead
 } = require('../src/services/engineIntegrityService');
+const prAuditorManifest = require('../src/workers/manifests/prAuditorManifest');
 
 const runTests = async () => {
   console.log('--- Running Engine Integrity Tests ---');
@@ -18,6 +19,11 @@ const runTests = async () => {
     ['mw-pr', 'pr-auditor']
   );
   assert(platformResults.every((result) => result.gitCommitVerified));
+  assert.deepStrictEqual(
+    prAuditorManifest.runtimeFiles,
+    ['config/du_registry.json', 'scripts/audit_final_po.py'],
+    'PR Auditor integrity must cover every executable runtime dependency'
+  );
 
   const tempRoot = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'engine-integrity-'));
   try {

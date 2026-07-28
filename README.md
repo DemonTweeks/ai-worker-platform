@@ -64,8 +64,8 @@ The PR Auditor engine is a read-only pinned Git submodule:
 
 ```text
 skills/tx-pr-auditor
-approved-0339ab7
-0339ab7a009bb0de8a43e93941d0fe2b9f018a06
+approved-abf3316
+abf3316af47ff35ff653f5b680d381a32ae3c49a
 
 skills/create-pr-cd
 approved-5ea40fe
