@@ -8,6 +8,7 @@ const {
   computeRuntimeFingerprint,
   resolveGitHead
 } = require('../src/services/engineIntegrityService');
+const mwPrManifest = require('../src/workers/manifests/mwPrManifest');
 const prAuditorManifest = require('../src/workers/manifests/prAuditorManifest');
 
 const runTests = async () => {
@@ -19,6 +20,13 @@ const runTests = async () => {
     ['mw-pr', 'pr-auditor']
   );
   assert(platformResults.every((result) => result.gitCommitVerified));
+  assert(mwPrManifest.runtimeFiles.includes('scripts/create_pr.py'));
+  assert(mwPrManifest.runtimeFiles.includes('scripts/du_profile_resolver.py'));
+  assert(mwPrManifest.runtimeFiles.includes('config/registries/mw_du_profile_identity_registry.yaml'));
+  assert(
+    mwPrManifest.runtimeFiles.some((file) => file.startsWith('config/du_profiles/')),
+    'MW integrity must cover the DU Profiles used by the official entrypoint'
+  );
   assert.deepStrictEqual(
     prAuditorManifest.runtimeFiles,
     ['config/du_registry.json', 'scripts/audit_final_po.py'],

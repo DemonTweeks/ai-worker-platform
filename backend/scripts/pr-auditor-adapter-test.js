@@ -66,7 +66,7 @@ const runTests = async () => {
   setCachedModule(path.join(repoRoot, 'src/services/childProcessRunner.js'), {
     buildCommand: ({ siteDataPath, outputPath, scope }) => ({
       command: 'C:/Python311/python.exe',
-      args: ['generate_tss_pr_ecc.py', '--site-data', siteDataPath, '--output', outputPath, '--scope', scope, '--all-sites'],
+      args: ['create_pr.py', '--site-data', siteDataPath, '--output', outputPath, '--scope', scope, '--all-sites'],
       cwd: 'C:/mock-skills/create-pr-cd'
     }),
     getExplicitPythonExecutable: () => 'C:/Python311/python.exe',

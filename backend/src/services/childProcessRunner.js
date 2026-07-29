@@ -6,7 +6,7 @@ const config = require('../config/env');
 const storageService = require('./storageService');
 const { assertPathInsideRoot } = require('../utils/pathUtils');
 
-const SCRIPT_RELATIVE_PATH = path.join('scripts', 'generate_tss_pr_ecc.py');
+const SCRIPT_RELATIVE_PATH = path.join('scripts', 'create_pr.py');
 const SUPPORTED_SCOPES = ['TSS', 'TI'];
 const REPO_ROOT = path.resolve(__dirname, '../../..');
 

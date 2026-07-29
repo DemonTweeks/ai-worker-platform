@@ -68,8 +68,8 @@ approved-abf3316
 abf3316af47ff35ff653f5b680d381a32ae3c49a
 
 skills/create-pr-cd
-approved-a2026fd
-a2026fd70ba3a83958422e5a18e93ae5a1dd850d
+approved-98412d7
+98412d7ecab8e1ba6c53e170f3ffea30b75b3443
 ```
 
 A PR Auditor job accepts a Final PO workbook and EPMS workbook. The platform runs the approved engines in this order:
@@ -79,6 +79,11 @@ A PR Auditor job accepts a Final PO workbook and EPMS workbook. The platform run
 3. The platform validates and tracks `PR_Audit_Result.xlsx` and the optional trusted summary JSON.
 
 `tx-pr-auditor` must not read EPMS or PR Model directly. It owns downstream Final PO comparison, duplicate resolution and report generation; `create-pr-cd` remains the entitlement owner.
+
+The MW PR responsibility boundary is strict:
+
+- `create-pr-cd` identifies the DU Profile from the original four-header export, maps exact source fingerprints into canonical fields, validates scope-required canonical evidence, and generates ECC through `scripts/create_pr.py`.
+- `ai-worker-platform` uploads the source file, supplies only scope and site selection, invokes that official entrypoint, and collects its outputs or structured errors. It does not select source columns or DU Profiles.
 
 Backend startup verifies the Git commit when repository metadata is available and always verifies a SHA-256 fingerprint of every approved runtime file. Startup fails closed when either engine differs from its approved pin. Jobs with error code `PR_AUDITOR_ENGINE_PIN_UNAPPROVED` show only this safe message across the live console, History, Job Detail and Re-Ask:
 

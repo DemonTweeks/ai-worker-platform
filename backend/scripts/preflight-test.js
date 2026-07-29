@@ -309,7 +309,7 @@ const runTests = async () => {
 
     await prWorkerService.runPrWorkerJob(jobId);
 
-    assert.strictEqual(runCreatePrCdCalled, false, 'generate_tss_pr_ecc.py (runCreatePrCd) should not be invoked after preflight failure');
+    assert.strictEqual(runCreatePrCdCalled, false, 'create_pr.py (runCreatePrCd) should not be invoked after preflight failure');
     assert.notStrictEqual(recordedError, null, 'An error should be persisted');
     assert.strictEqual(recordedError.code, 'PREFLIGHT_FAILED', 'Error code should be PREFLIGHT_FAILED');
     assert.deepStrictEqual(recordedError.details.missingPackages, ['pandas'], 'Should detail missing package(s)');
