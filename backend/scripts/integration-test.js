@@ -557,7 +557,7 @@ const testFailureClassifications = async (baseUrl) => {
 
   const setupMockScript = async (scriptContent) => {
     await fs.promises.mkdir(path.join(mockRoot, 'scripts'), { recursive: true });
-    await fs.promises.writeFile(path.join(mockRoot, 'scripts', 'generate_tss_pr_ecc.py'), scriptContent, 'utf8');
+    await fs.promises.writeFile(path.join(mockRoot, 'scripts', 'create_pr.py'), scriptContent, 'utf8');
   };
 
   const cleanMockScript = async () => {
