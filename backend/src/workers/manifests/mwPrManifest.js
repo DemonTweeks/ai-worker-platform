@@ -4,9 +4,9 @@ module.exports = {
   workerId: WORKER_IDS.MW_PR,
   displayName: WORKER_DISPLAY_NAMES[WORKER_IDS.MW_PR],
   engineRepository: 'Gumb-D/create-pr-cd',
-  engineVersion: 'approved-5ea40fe',
-  engineCommit: '5ea40feaad733433ff89e108ebe6a9224376d6e1',
-  runtimeFingerprint: '48dc99a99b76371d0a46a85a43b5fb37040a006456c538252aa138bb85b73f6f',
+  engineVersion: 'approved-a2026fd',
+  engineCommit: 'a2026fd70ba3a83958422e5a18e93ae5a1dd850d',
+  runtimeFingerprint: 'ad2748077b0fa4dce192b757e39c89887de28b0241130df20dfa8dbb42ebd0be',
   runtimeFiles: [
     'Info/input/contract_info_reference.md',
     'Info/input/ecc_template.xls',
