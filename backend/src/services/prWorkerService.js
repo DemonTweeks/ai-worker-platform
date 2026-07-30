@@ -216,6 +216,13 @@ const runPrWorkerJob = async (jobId) => {
     }
 
     const parsedWorkbook = parseIepmsWorkbook(inputFile.absolutePath);
+    await Job.updateOne({ jobId }, {
+      $set: {
+        sourceHeaderHash: parsedWorkbook.metadata.headerHash,
+        sourceHeaderRowCount: parsedWorkbook.metadata.headerRowCount,
+        sourceHeaderSheets: parsedWorkbook.metadata.headerSheets
+      }
+    });
     workerStateService.setProgress(jobId, {
       totalRows: parsedWorkbook.rowCount,
       processedRows: 0,
@@ -275,7 +282,10 @@ const runPrWorkerJob = async (jobId) => {
     await setPhaseAndStatus(jobId, 'GENERATION_STARTED', 'Running create-pr-cd child process.');
     const runnerResult = await runCreatePrCd({
       jobId,
-      filteredInputPath: filteringResult.filteredMetadata.absolutePath,
+      // create-pr-cd owns exact source interpretation and site selection.
+      // Preserve the complete workbook (including sheet inventory) at this
+      // boundary; the platform-generated filtered file is UX evidence only.
+      siteDataPath: inputFile.absolutePath,
       generationScope: request.generationScope,
       siteCodes: request.siteCodes,
       prScope: request.prScope || job.prScope || 'TSS',

@@ -6,7 +6,14 @@ const fsPromises = require('fs').promises;
 // Mock dependencies in require.cache before requiring prWorkerService
 const mockIepmsParser = {
   parseIepmsWorkbook: () => {
-    return { rowCount: 1 };
+    return {
+      rowCount: 1,
+      metadata: {
+        headerHash: 'mock-header-hash',
+        headerRowCount: 4,
+        headerSheets: [{ sheetName: 'data', headerColumnCount: 1 }]
+      }
+    };
   }
 };
 require.cache[require.resolve('../src/services/iepmsParser')] = {
