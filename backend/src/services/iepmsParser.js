@@ -1,6 +1,7 @@
 const xlsx = require('xlsx');
 const config = require('../config/env');
 const { createApiError } = require('../utils/apiError');
+const { inspectWorkbookHeader } = require('./engineHeaderHashService');
 
 const SITE_CODE_CANDIDATES = [
   'customer site code',
@@ -52,6 +53,7 @@ const parseIepmsWorkbookObject = (workbook) => {
   }
 
   const sheet = workbook.Sheets[sheetName];
+  const engineHeader = inspectWorkbookHeader(workbook);
   const rows = xlsx.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: false });
   const headerRowIndex = findHeaderRowIndex(rows);
 
@@ -110,7 +112,10 @@ const parseIepmsWorkbookObject = (workbook) => {
       sheetName,
       sheetNames: workbook.SheetNames,
       rowCount: structuredRows.length,
-      siteCodeColumn: siteCodeColumn.name
+      siteCodeColumn: siteCodeColumn.name,
+      headerHash: engineHeader.headerHash,
+      headerRowCount: engineHeader.headerRowCount,
+      headerSheets: engineHeader.sheets
     }
   };
 };
@@ -128,7 +133,10 @@ const inspectIepmsWorkbookBuffer = (buffer) => {
     sheetName: parsed.sheetName,
     sheetNames: parsed.metadata.sheetNames,
     rowCount: parsed.rowCount,
-    siteCodeColumn: parsed.metadata.siteCodeColumn
+    siteCodeColumn: parsed.metadata.siteCodeColumn,
+    headerHash: parsed.metadata.headerHash,
+    headerRowCount: parsed.metadata.headerRowCount,
+    headerSheets: parsed.metadata.headerSheets
   };
 };
 

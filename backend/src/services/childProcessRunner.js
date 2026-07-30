@@ -296,7 +296,7 @@ const runCommand = ({ command, args, cwd, timeoutMs, isCancellationRequested, en
 
 const runCreatePrCd = async ({
   jobId,
-  filteredInputPath,
+  siteDataPath,
   generationScope,
   siteCodes,
   prScope,
@@ -323,7 +323,7 @@ const runCreatePrCd = async ({
     }
 
     const commandSpec = buildCommand({
-      siteDataPath: filteredInputPath,
+      siteDataPath,
       outputPath,
       generationScope,
       siteCodes,
