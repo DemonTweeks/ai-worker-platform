@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import PRCreatorView from '../PRCreatorView.vue';
+import { getPrevalidatedUpload, releasePrevalidatedUpload } from '../../api/jobApi';
 
 vi.mock('../../api/jobApi', () => ({
   cancelJob: vi.fn(),
@@ -9,10 +10,12 @@ vi.mock('../../api/jobApi', () => ({
   getFileDownloadUrl: vi.fn((jobId, fileId) => `/jobs/${jobId}/download/${fileId}`),
   getHealth: vi.fn(async () => ({ status: 'ok' })),
   getJobDetail: vi.fn(),
+  getPrevalidatedUpload: vi.fn(),
   getZipDownloadUrl: vi.fn(() => '/download.zip'),
   listJobs: vi.fn(async () => ({ items: [], total: 0 })),
   listRanProjects: vi.fn(async () => ({ projects: [] })),
-  prevalidateUpload: vi.fn()
+  prevalidateUpload: vi.fn(),
+  releasePrevalidatedUpload: vi.fn()
 }));
 
 vi.mock('../../api/reAskApi', () => ({
@@ -51,6 +54,8 @@ describe('PRCreatorView', () => {
     vi.clearAllMocks();
     localStorage.clear();
     sessionStorage.clear();
+    getPrevalidatedUpload.mockReset();
+    releasePrevalidatedUpload.mockReset();
   });
 
   afterEach(() => {
@@ -128,5 +133,28 @@ describe('PRCreatorView', () => {
     expect(wrapper.vm.$refs.cancellationPanel.textContent).toContain('Result Delivery');
     expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'center' });
     expect(focus).toHaveBeenCalledWith({ preventScroll: true });
+  });
+
+  it('restores a reusable validated MW upload after refresh', async () => {
+    getPrevalidatedUpload.mockResolvedValue({
+      prevalidatedFileId: 'preval-reusable-1',
+      uploadKind: 'mw-export',
+      originalFileName: 'site-export.xlsx',
+      passed: true,
+      reusable: true,
+      retentionUntil: '2027-01-16T00:00:00.000Z',
+      checklist: []
+    });
+    const wrapper = mountView();
+    sessionStorage.setItem('awp.prCreator.reusableMwUpload', JSON.stringify({
+      prevalidatedFileId: 'preval-reusable-1'
+    }));
+
+    await wrapper.vm.restoreReusableMwUpload();
+
+    expect(getPrevalidatedUpload).toHaveBeenCalledWith('preval-reusable-1', wrapper.vm.browserTabSessionId);
+    expect(wrapper.vm.prevalidation.originalFileName).toBe('site-export.xlsx');
+    expect(wrapper.vm.hasReusableMwUpload).toBe(true);
+    expect(wrapper.vm.selectedFile).toBe(null);
   });
 });
