@@ -64,12 +64,12 @@ The PR Auditor engine is a read-only pinned Git submodule:
 
 ```text
 skills/tx-pr-auditor
-approved-abf3316
-abf3316af47ff35ff653f5b680d381a32ae3c49a
+approved-a4b32c8
+a4b32c8a90e76ea7e7c347626b551b19c9a679de
 
 skills/create-pr-cd
-approved-98412d7
-98412d7ecab8e1ba6c53e170f3ffea30b75b3443
+approved-767fbff
+767fbff4e61c177ba751109f88a14e98b81f7e18
 ```
 
 A PR Auditor job accepts a Final PO workbook and EPMS workbook. The platform runs the approved engines in this order:

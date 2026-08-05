@@ -154,8 +154,8 @@ const runTests = async () => {
       $set: {
         workerId: 'pr-auditor',
         workerType: 'pr-worker',
-        engineVersion: 'approved-abf3316',
-        engineCommit: 'abf3316af47ff35ff653f5b680d381a32ae3c49a',
+        engineVersion: 'approved-a4b32c8',
+        engineCommit: 'a4b32c8a90e76ea7e7c347626b551b19c9a679de',
         runMode: null,
         selectedProject: null
       }

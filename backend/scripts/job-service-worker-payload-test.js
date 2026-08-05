@@ -178,11 +178,11 @@ const runTests = async () => {
 
     assert.strictEqual(createResult.job.workerId, 'mw-pr');
     assert.strictEqual(createResult.job.workerDisplayName, 'MW PR Worker');
-    assert.strictEqual(createResult.job.engineVersion, 'approved-98412d7');
-    assert.strictEqual(createResult.job.engineCommit, '98412d7ecab8e1ba6c53e170f3ffea30b75b3443');
+    assert.strictEqual(createResult.job.engineVersion, 'approved-767fbff');
+    assert.strictEqual(createResult.job.engineCommit, '767fbff4e61c177ba751109f88a14e98b81f7e18');
     assert.strictEqual(createdJobs[0].workerId, 'mw-pr');
-    assert.strictEqual(createdJobs[0].engineVersion, 'approved-98412d7');
-    assert.strictEqual(createdJobs[0].engineCommit, '98412d7ecab8e1ba6c53e170f3ffea30b75b3443');
+    assert.strictEqual(createdJobs[0].engineVersion, 'approved-767fbff');
+    assert.strictEqual(createdJobs[0].engineCommit, '767fbff4e61c177ba751109f88a14e98b81f7e18');
     assert.strictEqual(createdJobs[0].browserTabSessionId, 'mw-pr-tab-1234');
     assert.strictEqual(createdJobs[0].idempotencyKey, 'mw-idem-1234');
     assert(copiedBuffers[0].includes('"workerId": "mw-pr"'));
@@ -264,8 +264,8 @@ const runTests = async () => {
 
     assert.strictEqual(prAuditorCreateResult.job.workerId, 'pr-auditor');
     assert.strictEqual(prAuditorCreateResult.job.workerDisplayName, 'PR Auditor');
-    assert.strictEqual(prAuditorCreateResult.job.engineVersion, 'approved-abf3316');
-    assert.strictEqual(prAuditorCreateResult.job.engineCommit, 'abf3316af47ff35ff653f5b680d381a32ae3c49a');
+    assert.strictEqual(prAuditorCreateResult.job.engineVersion, 'approved-a4b32c8');
+    assert.strictEqual(prAuditorCreateResult.job.engineCommit, 'a4b32c8a90e76ea7e7c347626b551b19c9a679de');
     assert.strictEqual(prAuditorCreateResult.job.prScope, null);
     assert.strictEqual(prAuditorCreateResult.job.runMode, null);
     assert.strictEqual(prAuditorCreateResult.job.selectedProject, null);
@@ -372,8 +372,8 @@ const runTests = async () => {
         prScope: null,
         runMode: null,
         selectedProject: null,
-        engineVersion: 'approved-abf3316',
-        engineCommit: 'abf3316af47ff35ff653f5b680d381a32ae3c49a',
+        engineVersion: 'approved-a4b32c8',
+        engineCommit: 'a4b32c8a90e76ea7e7c347626b551b19c9a679de',
         requestedSiteCount: 0,
         matchedSiteCount: 0,
         unmatchedSiteCount: 0,
@@ -414,8 +414,8 @@ const runTests = async () => {
     assert.strictEqual(prAuditorListResult.items.length, 1);
     assert.strictEqual(prAuditorListResult.items[0].workerId, 'pr-auditor');
     assert.strictEqual(prAuditorListResult.items[0].workerDisplayName, 'PR Auditor');
-    assert.strictEqual(prAuditorListResult.items[0].engineVersion, 'approved-abf3316');
-    assert.strictEqual(prAuditorListResult.items[0].engineCommit, 'abf3316af47ff35ff653f5b680d381a32ae3c49a');
+    assert.strictEqual(prAuditorListResult.items[0].engineVersion, 'approved-a4b32c8');
+    assert.strictEqual(prAuditorListResult.items[0].engineCommit, 'a4b32c8a90e76ea7e7c347626b551b19c9a679de');
     assert.strictEqual(prAuditorListResult.items[0].prScope, null);
     assert.strictEqual(prAuditorListResult.items[0].runMode, null);
     assert.strictEqual(prAuditorListResult.items[0].selectedProject, null);
@@ -464,8 +464,8 @@ const runTests = async () => {
     const prAuditorDetailResult = await jobService.getJobDetail('PR-AUDITOR-JOB-001');
     assert.strictEqual(prAuditorDetailResult.job.workerId, 'pr-auditor');
     assert.strictEqual(prAuditorDetailResult.job.workerDisplayName, 'PR Auditor');
-    assert.strictEqual(prAuditorDetailResult.job.engineVersion, 'approved-abf3316');
-    assert.strictEqual(prAuditorDetailResult.job.engineCommit, 'abf3316af47ff35ff653f5b680d381a32ae3c49a');
+    assert.strictEqual(prAuditorDetailResult.job.engineVersion, 'approved-a4b32c8');
+    assert.strictEqual(prAuditorDetailResult.job.engineCommit, 'a4b32c8a90e76ea7e7c347626b551b19c9a679de');
     assert.strictEqual(prAuditorDetailResult.job.prScope, null);
     assert.strictEqual(prAuditorDetailResult.job.runMode, null);
     assert.strictEqual(prAuditorDetailResult.job.selectedProject, null);
