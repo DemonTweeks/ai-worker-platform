@@ -1,6 +1,7 @@
 [submodule "skills/create-pr-cd"]
 	path = skills/create-pr-cd
 	url = https://github.com/Gumb-D/create-pr-cd.git
+	branch = main
 [submodule "agent-guideline/vscode-agent"]
 	path = agent-guideline/vscode-agent
 	url = https://github.com/3-Piggy/vscode-agent.git
@@ -10,3 +11,4 @@
 [submodule "skills/tx-pr-auditor"]
 	path = skills/tx-pr-auditor
 	url = https://github.com/BL2ZteSolution/tx-pr-auditor.git
+	branch = main
