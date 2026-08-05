@@ -29,7 +29,8 @@
     "test:ran-history-reload": "node scripts/ran-history-reload-test.js",
     "test:ran-concurrency": "node scripts/ran-concurrency-test.js",
     "test:ran-invalid-safe-errors": "node scripts/ran-invalid-safe-error-test.js",
-    "test": "npm run smoke && npm run test:llm-provider && npm run test:health-status && npm run test:preflight && npm run test:engine-integrity && npm run test:engine-header-hash && npm run test:integration && node scripts/error-visibility-test.js && npm run test:ran-adapter && npm run test:ran-routes && npm run test:ran-live-runtime && npm run test:ran-worker-service && npm run test:queue-registry && npm run test:job-control-concurrency && npm run test:job-prevalidate-guard && npm run test:job-service-workers"
+    "test": "npm run smoke && npm run test:llm-provider && npm run test:health-status && npm run test:preflight && npm run test:engine-integrity && npm run test:engine-header-hash && npm run test:pr-worker-site-code-handoff && npm run test:integration && node scripts/error-visibility-test.js && npm run test:ran-adapter && npm run test:ran-routes && npm run test:ran-live-runtime && npm run test:ran-worker-service && npm run test:queue-registry && npm run test:job-control-concurrency && npm run test:job-prevalidate-guard && npm run test:job-service-workers",
+    "test:pr-worker-site-code-handoff": "node scripts/pr-worker-site-code-handoff-test.js"
   },
   "dependencies": {
     "archiver": "^7.0.1",

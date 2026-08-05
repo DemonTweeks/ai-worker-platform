@@ -14,6 +14,10 @@ const { saveFinalSummary } = require('./finalSummaryService');
 const { JOB_EVENTS, publishJobEvent } = require('../websocket/eventPublisher');
 const { RUNNING_JOB_STATUSES, appendStatusEvent } = require('./jobControlService');
 
+const resolveEngineSiteCodes = ({ generationScope, requestedSiteCodes = [], matchedSiteCodes = [] }) => (
+  generationScope === 'site_code' ? matchedSiteCodes : requestedSiteCodes
+);
+
 const statusByPhase = {
   VALIDATION_STARTED: 'validating',
   FILTERING_STARTED: 'filtering_sites',
@@ -287,7 +291,11 @@ const runPrWorkerJob = async (jobId) => {
       // boundary; the platform-generated filtered file is UX evidence only.
       siteDataPath: inputFile.absolutePath,
       generationScope: request.generationScope,
-      siteCodes: request.siteCodes,
+      siteCodes: resolveEngineSiteCodes({
+        generationScope: request.generationScope,
+        requestedSiteCodes: request.siteCodes,
+        matchedSiteCodes: filteringResult.matchedSiteCodes
+      }),
       prScope: request.prScope || job.prScope || 'TSS',
       isCancellationRequested: () => workerStateService.isCancellationRequested(jobId)
     });
@@ -390,5 +398,6 @@ const runPrWorkerJob = async (jobId) => {
 };
 
 module.exports = {
-  runPrWorkerJob
+  runPrWorkerJob,
+  resolveEngineSiteCodes
 };

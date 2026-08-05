@@ -35,7 +35,7 @@ let idempotencySequence = 0;
 
 const repoRoot = path.resolve(__dirname, '../..');
 const skillRoot = path.join(repoRoot, 'skills', 'create-pr-cd');
-const sampleInputPath = path.join(skillRoot, 'Info', 'input', 'site_pr_po_view.xlsx');
+const sampleInputPath = path.join(skillRoot, 'tests', 'fixtures', 'tx_mini_du_export_fixture.xlsx');
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const nextIdempotencyKey = (workerId = 'mw-pr') => `${workerId}-${QA_PREFIX}-IDEMP-${++idempotencySequence}`;
