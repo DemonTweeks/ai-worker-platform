@@ -415,8 +415,8 @@ const releasePrevalidatedUpload = async (prevalidatedFileId, options = {}) => {
   await deleteManifest(prevalidatedFileId);
 };
 
-const consumePrevalidatedUpload = async (prevalidatedFileId) => {
-  const upload = await getPrevalidatedUpload(prevalidatedFileId);
+const consumePrevalidatedUpload = async (prevalidatedFileId, options = {}) => {
+  const upload = await getPrevalidatedUpload(prevalidatedFileId, options);
   await deleteManifest(prevalidatedFileId);
   return upload;
 };

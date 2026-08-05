@@ -92,7 +92,7 @@ const waitForJobTerminal = async (baseUrl, jobId, timeoutMs = 30000) => {
 const cleanupArtifacts = async () => {
   for (const prevalidatedFileId of prevalidatedUploadIds) {
     try {
-      const upload = await consumePrevalidatedUpload(prevalidatedFileId);
+      const upload = await consumePrevalidatedUpload(prevalidatedFileId, { browserTabSessionId });
       await storageService.deleteFileSafe(upload.absolutePath).catch(() => {});
     } catch (error) {
       // already consumed or cleaned up
@@ -113,7 +113,10 @@ const cleanupArtifacts = async () => {
 };
 
 const prevalidateWorkbook = async (baseUrl, uploadKind, fileName, rows) => {
-  const result = await uploadBuffer(baseUrl, '/api/jobs/prevalidate', createWorkbookBuffer(rows), fileName, { uploadKind });
+  const result = await uploadBuffer(baseUrl, '/api/jobs/prevalidate', createWorkbookBuffer(rows), fileName, {
+    uploadKind,
+    browserTabSessionId
+  });
   assert.strictEqual(result.response.status, 200, `${uploadKind} should prevalidate`);
   prevalidatedUploadIds.add(result.body.prevalidatedFileId);
   return result.body.prevalidatedFileId;
@@ -151,6 +154,22 @@ const verifyMissingUploadRejected = async (baseUrl) => {
   assert.strictEqual(created.response.status, 400, 'missing EPMS upload should be rejected');
   assert.strictEqual(created.body.error.code, 'VALIDATION_ERROR');
   assert.strictEqual(created.body.error.message, 'epmsPrevalidatedFileId is required for PR Auditor jobs.');
+};
+
+const verifyWrongBrowserSessionRejected = async (baseUrl) => {
+  const finalPoPrevalidatedFileId = await prevalidateWorkbook(baseUrl, 'pr-auditor-final-po', 'Final PO.xlsx', [['PO'], ['1001']]);
+  const epmsPrevalidatedFileId = await prevalidateWorkbook(baseUrl, 'pr-auditor-epms', 'EPMS.xlsx', [['EPMS'], ['2001']]);
+
+  const created = await postJson(baseUrl, '/api/jobs', {
+    workerId: 'pr-auditor',
+    browserTabSessionId: 'QA-PR-AUDITOR-OTHER-TAB',
+    idempotencyKey: nextIdempotencyKey(),
+    finalPoPrevalidatedFileId,
+    epmsPrevalidatedFileId
+  });
+
+  assert.strictEqual(created.response.status, 403, 'another browser session must not consume validated uploads');
+  assert.strictEqual(created.body.error.code, 'PREVALIDATED_FILE_FORBIDDEN');
 };
 
 const verifyHappyPathAndReload = async (baseUrl) => {
@@ -325,6 +344,7 @@ const main = async () => {
     firstServer = await createServer();
     await verifyInvalidWorkbookSafeError(firstServer.baseUrl);
     await verifyMissingUploadRejected(firstServer.baseUrl);
+    await verifyWrongBrowserSessionRejected(firstServer.baseUrl);
     const scenario = await verifyHappyPathAndReload(firstServer.baseUrl);
     await closeServer(firstServer.server);
     firstServer = null;

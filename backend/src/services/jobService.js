@@ -584,8 +584,12 @@ const createRanJob = async ({
       }
 
       const [bomUpload, epmsUpload] = await Promise.all([
-        consumePrevalidatedUpload(bomPrevalidatedFileId),
-        consumePrevalidatedUpload(epmsPrevalidatedFileId)
+        consumePrevalidatedUpload(bomPrevalidatedFileId, {
+          browserTabSessionId: normalizedBrowserTabSessionId
+        }),
+        consumePrevalidatedUpload(epmsPrevalidatedFileId, {
+          browserTabSessionId: normalizedBrowserTabSessionId
+        })
       ]);
       assertUploadKind(bomUpload, UPLOAD_KINDS.RAN_BOM, 'BOM');
       assertUploadKind(epmsUpload, UPLOAD_KINDS.RAN_EPMS, 'EPMS');
@@ -746,8 +750,12 @@ const createPrAuditorJob = async ({
       }
 
       const [finalPoUpload, epmsUpload] = await Promise.all([
-        consumePrevalidatedUpload(finalPoPrevalidatedFileId),
-        consumePrevalidatedUpload(epmsPrevalidatedFileId)
+        consumePrevalidatedUpload(finalPoPrevalidatedFileId, {
+          browserTabSessionId: normalizedBrowserTabSessionId
+        }),
+        consumePrevalidatedUpload(epmsPrevalidatedFileId, {
+          browserTabSessionId: normalizedBrowserTabSessionId
+        })
       ]);
       assertUploadKind(finalPoUpload, UPLOAD_KINDS.PR_AUDITOR_FINAL_PO, 'Final PO');
       assertUploadKind(epmsUpload, UPLOAD_KINDS.PR_AUDITOR_EPMS, 'EPMS');

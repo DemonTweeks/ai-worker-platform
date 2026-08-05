@@ -108,14 +108,16 @@ const testRanRoutes = async (baseUrl) => {
   assert.strictEqual(invalidBom.body.uploadKind, 'ran-bom');
 
   const bomPrevalidation = await uploadFile(baseUrl, '/api/jobs/prevalidate', sampleBomPath, {
-    uploadKind: 'ran-bom'
+    uploadKind: 'ran-bom',
+    browserTabSessionId
   });
   assert.strictEqual(bomPrevalidation.response.status, 200, 'sample ran BOM should prevalidate');
   assert.strictEqual(bomPrevalidation.body.uploadKind, 'ran-bom');
   assert(bomPrevalidation.body.prevalidatedFileId, 'ran BOM prevalidation should return a file id');
 
   const epmsPrevalidation = await uploadFile(baseUrl, '/api/jobs/prevalidate', sampleEpmsPath, {
-    uploadKind: 'ran-epms'
+    uploadKind: 'ran-epms',
+    browserTabSessionId
   });
   assert.strictEqual(epmsPrevalidation.response.status, 200, 'sample ran EPMS should prevalidate');
   assert.strictEqual(epmsPrevalidation.body.uploadKind, 'ran-epms');
@@ -174,7 +176,8 @@ const testRanRoutes = async (baseUrl) => {
     assert.strictEqual(mwUpload.response.status, 200, 'mw export should still prevalidate on the legacy path');
 
     const epmsPrevalidationForWrongKind = await uploadFile(baseUrl, '/api/jobs/prevalidate', sampleEpmsPath, {
-      uploadKind: 'ran-epms'
+      uploadKind: 'ran-epms',
+      browserTabSessionId
     });
     assert.strictEqual(epmsPrevalidationForWrongKind.response.status, 200, 'fresh ran EPMS upload should prevalidate');
 
