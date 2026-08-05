@@ -264,8 +264,8 @@ const runTests = async () => {
 
     assert.strictEqual(prAuditorCreateResult.job.workerId, 'pr-auditor');
     assert.strictEqual(prAuditorCreateResult.job.workerDisplayName, 'PR Auditor');
-    assert.strictEqual(prAuditorCreateResult.job.engineVersion, 'approved-a4b32c8');
-    assert.strictEqual(prAuditorCreateResult.job.engineCommit, 'a4b32c8a90e76ea7e7c347626b551b19c9a679de');
+    assert.strictEqual(prAuditorCreateResult.job.engineVersion, 'approved-af33b5a');
+    assert.strictEqual(prAuditorCreateResult.job.engineCommit, 'af33b5a795af02ae606b0d0f6e742cc09a8f98a2');
     assert.strictEqual(prAuditorCreateResult.job.prScope, null);
     assert.strictEqual(prAuditorCreateResult.job.runMode, null);
     assert.strictEqual(prAuditorCreateResult.job.selectedProject, null);
@@ -372,8 +372,8 @@ const runTests = async () => {
         prScope: null,
         runMode: null,
         selectedProject: null,
-        engineVersion: 'approved-a4b32c8',
-        engineCommit: 'a4b32c8a90e76ea7e7c347626b551b19c9a679de',
+        engineVersion: 'approved-af33b5a',
+        engineCommit: 'af33b5a795af02ae606b0d0f6e742cc09a8f98a2',
         requestedSiteCount: 0,
         matchedSiteCount: 0,
         unmatchedSiteCount: 0,
@@ -414,8 +414,8 @@ const runTests = async () => {
     assert.strictEqual(prAuditorListResult.items.length, 1);
     assert.strictEqual(prAuditorListResult.items[0].workerId, 'pr-auditor');
     assert.strictEqual(prAuditorListResult.items[0].workerDisplayName, 'PR Auditor');
-    assert.strictEqual(prAuditorListResult.items[0].engineVersion, 'approved-a4b32c8');
-    assert.strictEqual(prAuditorListResult.items[0].engineCommit, 'a4b32c8a90e76ea7e7c347626b551b19c9a679de');
+    assert.strictEqual(prAuditorListResult.items[0].engineVersion, 'approved-af33b5a');
+    assert.strictEqual(prAuditorListResult.items[0].engineCommit, 'af33b5a795af02ae606b0d0f6e742cc09a8f98a2');
     assert.strictEqual(prAuditorListResult.items[0].prScope, null);
     assert.strictEqual(prAuditorListResult.items[0].runMode, null);
     assert.strictEqual(prAuditorListResult.items[0].selectedProject, null);
@@ -464,8 +464,8 @@ const runTests = async () => {
     const prAuditorDetailResult = await jobService.getJobDetail('PR-AUDITOR-JOB-001');
     assert.strictEqual(prAuditorDetailResult.job.workerId, 'pr-auditor');
     assert.strictEqual(prAuditorDetailResult.job.workerDisplayName, 'PR Auditor');
-    assert.strictEqual(prAuditorDetailResult.job.engineVersion, 'approved-a4b32c8');
-    assert.strictEqual(prAuditorDetailResult.job.engineCommit, 'a4b32c8a90e76ea7e7c347626b551b19c9a679de');
+    assert.strictEqual(prAuditorDetailResult.job.engineVersion, 'approved-af33b5a');
+    assert.strictEqual(prAuditorDetailResult.job.engineCommit, 'af33b5a795af02ae606b0d0f6e742cc09a8f98a2');
     assert.strictEqual(prAuditorDetailResult.job.prScope, null);
     assert.strictEqual(prAuditorDetailResult.job.runMode, null);
     assert.strictEqual(prAuditorDetailResult.job.selectedProject, null);
