@@ -1,0 +1,79 @@
+name: Temporary PR 59 Integration
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+permissions:
+  contents: write
+
+jobs:
+  integrate-pr59:
+    if: >-
+      github.event.pull_request.head.ref == 'integration/pr-59-resolution' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out integration branch
+        uses: actions/checkout@v4
+        with:
+          ref: integration/pr-59-resolution
+          fetch-depth: 0
+
+      - name: Merge current main and resolve reviewed overlap
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+
+          set +e
+          git merge --no-ff --no-commit origin/main
+          merge_status=$?
+          set -e
+
+          if [ "$merge_status" -ne 0 ]; then
+            if git diff --name-only --diff-filter=U | grep -Fxq 'frontend/src/views/__tests__/PRCreatorView.spec.js'; then
+              git checkout --theirs -- frontend/src/views/__tests__/PRCreatorView.spec.js
+              git add frontend/src/views/__tests__/PRCreatorView.spec.js
+            fi
+
+            if git diff --name-only --diff-filter=U | grep -Fxq 'frontend/src/views/PRCreatorView.vue'; then
+              git checkout --ours -- frontend/src/views/PRCreatorView.vue
+              git add frontend/src/views/PRCreatorView.vue
+            fi
+          fi
+
+          unresolved="$(git diff --name-only --diff-filter=U)"
+          if [ -n "$unresolved" ]; then
+            printf 'Unresolved files remain:\n%s\n' "$unresolved"
+            exit 1
+          fi
+
+          if ! git rev-parse -q --verify MERGE_HEAD >/dev/null; then
+            echo "Integration branch already contains current main."
+            exit 0
+          fi
+
+      - name: Install frontend dependencies
+        run: npm ci --prefix frontend
+
+      - name: Run focused PR Creator tests
+        run: npm --prefix frontend run test:unit -- src/views/__tests__/PRCreatorView.spec.js
+
+      - name: Build frontend
+        run: npm --prefix frontend run build
+
+      - name: Commit and push resolved integration
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add -A
+          git commit -m "merge main into PR 59 integration branch"
+          git push origin HEAD:integration/pr-59-resolution
