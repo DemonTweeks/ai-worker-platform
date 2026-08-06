@@ -2037,7 +2037,66 @@ body:has(.home-cockpit) {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  max-width: 100%;
   min-height: 0;
+  min-width: 0;
+}
+
+.active-jobs-scroll {
+  overflow-x: hidden;
+  width: 100%;
+}
+
+.active-jobs-table {
+  min-width: 0;
+  table-layout: fixed;
+}
+
+.active-jobs-table .active-job-col-id {
+  width: 17%;
+}
+
+.active-jobs-table .active-job-col-worker {
+  width: 16%;
+}
+
+.active-jobs-table .active-job-col-status {
+  width: 12%;
+}
+
+.active-jobs-table .active-job-col-created {
+  width: 23%;
+}
+
+.active-jobs-table .active-job-col-view {
+  width: 18%;
+}
+
+.active-jobs-table .active-job-col-cancel {
+  width: 14%;
+}
+
+.active-jobs-table th,
+.active-jobs-table td {
+  font-size: 12px;
+  overflow-wrap: break-word;
+  padding: 9px 8px;
+  white-space: normal;
+}
+
+.active-jobs-table th {
+  overflow-wrap: normal;
+  word-break: keep-all;
+}
+
+.active-jobs-table .active-job-action {
+  font-size: 12px;
+  line-height: 1.15;
+  max-width: 100%;
+  min-width: 0;
+  padding: 7px 6px;
+  white-space: normal;
+  width: 100%;
 }
 
 .download-progress {
@@ -2593,14 +2652,15 @@ body:has(.home-cockpit) {
 
 .workbench-result-card {
   display: grid;
-  grid-template-columns: minmax(170px, 0.42fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  overflow: hidden;
 }
 
 .workbench-result-card > .cockpit-card-heading {
-  align-content: start;
-  align-items: flex-start;
-  flex-direction: column;
-  justify-content: start;
+  align-items: center;
+  flex-direction: row;
+  justify-content: space-between;
 }
 
 .workbench-result-card .cockpit-empty-card {
