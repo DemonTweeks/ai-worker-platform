@@ -556,7 +556,6 @@ export const workerRuntimeMixin = {
 
       if (isTerminalStatus(message.status)) {
         this.refreshJobDetail();
-        this.restoreActiveJobs();
       }
     },
     async askQuestion(question) {
