@@ -2,6 +2,9 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import PRCreatorView from '../PRCreatorView.vue';
 import { getPrevalidatedUpload } from '../../api/jobApi';
+import applyRanRetentionRestoreGuard, {
+  hasFailedStoredRanUpload
+} from '../../patches/ranRetentionRestoreGuard';
 
 vi.mock('../../api/jobApi', () => ({
   cancelJob: vi.fn(),
@@ -29,6 +32,8 @@ vi.mock('../../services/websocketClient', () => ({
   }))
 }));
 
+applyRanRetentionRestoreGuard(PRCreatorView);
+
 const mountView = () => mount(PRCreatorView, {
   stubs: {
     RouterLink: {
@@ -53,6 +58,22 @@ const restoredUpload = (prevalidatedFileId) => ({
   passed: true,
   reusable: true,
   checklist: []
+});
+
+describe('RAN retained upload restore guard', () => {
+  it('distinguishes intentionally absent uploads from failed stored uploads', () => {
+    expect(hasFailedStoredRanUpload({
+      stored: { bomPrevalidatedFileId: 'ran-bom-1' },
+      ranBomPrevalidation: restoredUpload('ran-bom-1'),
+      ranEpmsPrevalidation: null
+    })).toBe(false);
+
+    expect(hasFailedStoredRanUpload({
+      stored: { epmsPrevalidatedFileId: 'ran-epms-missing' },
+      ranBomPrevalidation: null,
+      ranEpmsPrevalidation: null
+    })).toBe(true);
+  });
 });
 
 describe('PRCreatorView partial RAN retained uploads', () => {
