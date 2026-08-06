@@ -178,11 +178,11 @@ const runTests = async () => {
 
     assert.strictEqual(createResult.job.workerId, 'mw-pr');
     assert.strictEqual(createResult.job.workerDisplayName, 'MW PR Worker');
-    assert.strictEqual(createResult.job.engineVersion, 'approved-8f37ab7');
-    assert.strictEqual(createResult.job.engineCommit, '8f37ab7e795f236a5eb4cba2bfb8787f90c9b5c0');
+    assert.strictEqual(createResult.job.engineVersion, 'approved-237cf60');
+    assert.strictEqual(createResult.job.engineCommit, '237cf6057f37587208a7fcdf497fa9097c0bf95d');
     assert.strictEqual(createdJobs[0].workerId, 'mw-pr');
-    assert.strictEqual(createdJobs[0].engineVersion, 'approved-8f37ab7');
-    assert.strictEqual(createdJobs[0].engineCommit, '8f37ab7e795f236a5eb4cba2bfb8787f90c9b5c0');
+    assert.strictEqual(createdJobs[0].engineVersion, 'approved-237cf60');
+    assert.strictEqual(createdJobs[0].engineCommit, '237cf6057f37587208a7fcdf497fa9097c0bf95d');
     assert.strictEqual(createdJobs[0].browserTabSessionId, 'mw-pr-tab-1234');
     assert.strictEqual(createdJobs[0].idempotencyKey, 'mw-idem-1234');
     assert(copiedBuffers[0].includes('"workerId": "mw-pr"'));
