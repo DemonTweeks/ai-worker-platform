@@ -25,7 +25,7 @@
           <option value="pr-auditor">PR Auditor</option>
         </select>
       </label>
-      <label>
+      <label v-if="showPrScopeFilter">
         <span class="field-label">PR Scope</span>
         <select :value="value.prScope" @change="update('prScope', $event.target.value)">
           <option value="">All scopes</option>
@@ -60,6 +60,8 @@
 <script>
 import { STATUS_LABELS } from '../../utils/jobStatusUtils';
 
+const PR_SCOPE_WORKER_IDS = new Set(['mw-pr', 'ran-pr']);
+
 export default {
   name: 'JobHistoryFilters',
   props: {
@@ -68,14 +70,23 @@ export default {
   computed: {
     statuses() {
       return Object.keys(STATUS_LABELS).map((value) => ({ value, label: STATUS_LABELS[value] }));
+    },
+    showPrScopeFilter() {
+      return !this.value.workerId || PR_SCOPE_WORKER_IDS.has(this.value.workerId);
     }
   },
   methods: {
     update(key, nextValue) {
-      this.$emit('input', {
+      const nextFilters = {
         ...this.value,
         [key]: nextValue
-      });
+      };
+
+      if (key === 'workerId' && nextValue && !PR_SCOPE_WORKER_IDS.has(nextValue)) {
+        nextFilters.prScope = '';
+      }
+
+      this.$emit('input', nextFilters);
     }
   }
 };
