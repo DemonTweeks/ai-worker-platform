@@ -1,7 +1,7 @@
-import { mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import PRCreatorView from '../PRCreatorView.vue';
-import { getPrevalidatedUpload, releasePrevalidatedUpload } from '../../api/jobApi';
+import { getJobDetail, getPrevalidatedUpload, releasePrevalidatedUpload } from '../../api/jobApi';
 
 vi.mock('../../api/jobApi', () => ({
   cancelJob: vi.fn(),
@@ -160,6 +160,57 @@ describe('PRCreatorView', () => {
     expect(wrapper.vm.prevalidation.originalFileName).toBe('site-export.xlsx');
     expect(wrapper.vm.hasReusableMwUpload).toBe(true);
     expect(wrapper.vm.selectedFile).toBe(null);
+  });
+
+  it('keeps a terminal job selected so Result Delivery exposes its completed output', async () => {
+    getJobDetail.mockResolvedValue({
+      job: {
+        jobId: 'PR-20260806-002',
+        workerId: 'mw-pr',
+        workerDisplayName: 'MW PR Worker',
+        status: 'completed_with_warning',
+        requestedSiteCount: 13,
+        matchedSiteCount: 13,
+        unmatchedSiteCount: 0,
+        outputFileCount: 1,
+        warningCount: 3,
+        reviewRequiredCount: 3,
+        updatedAt: '2026-08-06T01:18:40.403Z'
+      },
+      outputs: [{
+        id: 'zip-output-1',
+        fileType: 'zip_package',
+        available: true
+      }],
+      finalWorkerSummary: 'The PR Worker task completed successfully.'
+    });
+    const wrapper = mountView();
+    await flushPromises();
+    await wrapper.setData({
+      currentJobId: 'PR-20260806-002',
+      currentStatus: 'generating',
+      activeSessionJobs: [{
+        jobId: 'PR-20260806-002',
+        workerId: 'mw-pr',
+        workerDisplayName: 'MW PR Worker',
+        status: 'generating',
+        createdAt: '2026-08-06T01:17:40.403Z'
+      }]
+    });
+
+    wrapper.vm.applyRealtimeMessage({
+      type: 'JOB_EVENT',
+      status: 'completed_with_warning',
+      updatedAt: '2026-08-06T01:18:40.403Z'
+    });
+    await flushPromises();
+
+    expect(wrapper.vm.currentJobId).toBe('PR-20260806-002');
+    expect(wrapper.vm.jobDetail.job.status).toBe('completed_with_warning');
+    expect(wrapper.vm.visibleActiveSessionJobs).toHaveLength(0);
+    expect(wrapper.vm.canDownload).toBe(true);
+    expect(wrapper.text()).toContain('Download ZIP');
+    expect(wrapper.text()).not.toContain('Create a Job to enable result delivery.');
   });
 
   it('links completed output results to the job detail download page', () => {
