@@ -5,7 +5,7 @@ const { createApiError } = require('../utils/apiError');
 
 const SCRIPT_NAMES = ['stop-services.bat', 'launcher.bat'];
 const scriptDirectory = path.resolve(
-  process.env.DEPLOY_SCRIPT_DIRECTORY || 'C:\\Development\\ai-worker-platform'
+  process.env.DEPLOY_SCRIPT_DIRECTORY || 'C:\\development\\ai-worker-platform'
 );
 
 let handoffInProgress = false;
