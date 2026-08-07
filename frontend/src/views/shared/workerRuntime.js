@@ -9,6 +9,7 @@ import {
   listJobs
 } from '../../api/jobApi';
 import { askJob } from '../../api/reAskApi';
+import { formatCompactDateTime, formatDateTime } from '../../utils/formatUtils';
 import { displayMessage, isTerminalStatus } from '../../utils/statusUtils';
 import { isIncompleteResult, jobStatusLabel, statusLabel } from '../../utils/jobStatusUtils';
 import { hasAuditReport, prAuditorReportMessage } from '../../utils/prAuditorResultUtils';
@@ -321,6 +322,8 @@ export const workerRuntimeMixin = {
     }
   },
   methods: {
+    formatCompactDateTime,
+    formatDateTime,
     initializeBrowserTabSessionId() {
       const existing = sessionStorage.getItem(BROWSER_TAB_SESSION_STORAGE_KEY);
 
@@ -731,7 +734,7 @@ export const workerRuntimeMixin = {
         tone,
         label,
         meta,
-        timestamp: new Date().toLocaleTimeString()
+        timestamp: new Date().toISOString()
       });
       this.consoleAutoStick = true;
       this.$nextTick(() => {

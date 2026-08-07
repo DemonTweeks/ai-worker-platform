@@ -34,6 +34,10 @@ vi.mock('../../services/websocketClient', () => ({
 
 applyRanRetentionRestoreGuard(PRCreatorView);
 
+const flushPromises = () => new Promise((resolve) => {
+  setTimeout(resolve, 0);
+});
+
 const mountView = () => mount(PRCreatorView, {
   stubs: {
     RouterLink: {

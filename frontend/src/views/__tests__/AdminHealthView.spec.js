@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import AdminHealthView from '../admin/AdminHealthView.vue';
 import { getHealth } from '../../api/jobApi';
 import { triggerDeployment } from '../../api/adminApi';
+import { formatDateTime } from '../../utils/formatUtils';
 
 vi.mock('../../api/jobApi', () => ({
   getHealth: vi.fn(),
@@ -60,6 +61,8 @@ describe('AdminHealthView', () => {
     expect(wrapper.text()).toContain('LLM');
     expect(wrapper.text()).toContain('🟢Healthy');
     expect(wrapper.text()).toContain('agnes · agnes-2.0-flash · configured: yes');
+    expect(wrapper.text()).toContain('Updated ' + formatDateTime('2026-06-30T14:30:00.000Z'));
+    expect(wrapper.text()).not.toContain('2026-06-30T14:30:00.000Z');
   });
 
   it('renders degraded LLM status for incomplete configuration returned by the backend', async () => {
