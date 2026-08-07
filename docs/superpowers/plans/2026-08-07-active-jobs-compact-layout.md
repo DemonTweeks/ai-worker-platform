@@ -24,13 +24,9 @@
 **Files:**
 - Create: `frontend/src/__tests__/responsiveWorkbenchCss.spec.js`
 
-**Interfaces:**
-- Consumes: existing `.workbench-result-card`, `.download-compact`, and `.active-jobs-table` selectors.
-- Produces: regression contracts for desktop overflow, compact typography, and narrow stacked rows.
-
 - [x] **Step 1: Write the stylesheet contract**
 
-The test reads `frontend/src/responsive-workbench.css` and asserts:
+The test verifies:
 
 ```text
 overflow-x: hidden
@@ -45,19 +41,11 @@ no 720px or 640px table minimum width
 
 - [x] **Step 2: Verify RED against the pre-fix stylesheet**
 
-The isolated contract failed on the first expected assertion because the existing container contained:
-
-```css
-overflow-x: auto;
-```
+The isolated contract failed because the existing container contained `overflow-x: auto` and the table retained fixed minimum widths.
 
 - [x] **Step 3: Commit the failing test**
 
-Commit:
-
-```text
-test(ui): cover compact Active Jobs layout
-```
+Commit: `test(ui): cover compact Active Jobs layout`.
 
 ---
 
@@ -66,28 +54,7 @@ test(ui): cover compact Active Jobs layout
 **Files:**
 - Modify: `frontend/src/responsive-workbench.css`
 
-**Interfaces:**
-- Consumes: the existing stable six-column order used by PR Creator and PR Auditor.
-- Produces: compact desktop table styling and a visual narrow-screen label/value layout.
-
 - [x] **Step 1: Remove the horizontal-scroll and fixed-minimum-width contract**
-
-Required desktop rules:
-
-```css
-.workbench-result-card > .download-compact {
-  min-width: 0;
-  overflow-x: hidden;
-  width: 100%;
-}
-
-.workbench-result-card .active-jobs-table {
-  max-width: 100%;
-  min-width: 0;
-  table-layout: fixed;
-  width: 100%;
-}
-```
 
 - [x] **Step 2: Apply compact typography, spacing, and column allocation**
 
@@ -104,67 +71,54 @@ Column allocation: 19 / 15 / 12 / 22 / 12 / 20 percent
 
 - [x] **Step 3: Add the narrow-screen stacked layout**
 
-Below 760px:
+Below 760px, the table header remains available to assistive technology, rows become contained cards, cells become label/value grids, and both actions remain visible.
 
-- keep `thead` in the accessibility tree while visually hiding it;
-- render `tbody` as a grid;
-- render each `tr` as a contained card;
-- render each `td` as a label/value grid;
-- add stable visual labels for all six columns through `nth-child` pseudo-elements;
-- stretch both action buttons within their value column.
+- [x] **Step 4: Verify GREEN with the focused contract**
 
-- [x] **Step 4: Verify GREEN with the same isolated contract**
-
-Result:
+GitHub Actions result:
 
 ```text
-Issue #80 CSS contract passed
+1 test file passed
+3 tests passed
 ```
 
 - [x] **Step 5: Commit the implementation**
 
-Commit:
-
-```text
-fix(ui): compact Active Jobs without horizontal scroll
-```
+Commit: `fix(ui): compact Active Jobs without horizontal scroll`.
 
 ---
 
 ### Task 3: Repository verification and PR
 
-**Files:**
-- Temporary verification workflow: `.github/workflows/issue-80-frontend.yml`
-
-- [x] **Step 1: Add a temporary GitHub Actions gate**
-
-The workflow runs:
-
-```bash
-npm ci
-npm run test:unit -- src/__tests__/responsiveWorkbenchCss.spec.js
-npm test
-```
-
-- [x] **Step 2: Open Draft PR #81**
-
-Title:
+- [x] **Step 1: Run the Issue #80 focused gate**
 
 ```text
-fix(ui): compact Active Jobs without horizontal scrolling
+Focused CSS contract: PASS — 3/3
+Vite production build: PASS — 111 modules transformed
+Route smoke: PASS — 10/10 routes returned successfully
 ```
 
-- [ ] **Step 3: Confirm repository verification**
+- [x] **Step 2: Compare the branch unit suite with current main**
 
-Required results:
+Both the PR branch and current `main` reproduce the same unrelated baseline failures:
 
-```bash
-npm --prefix frontend run test:unit
-npm --prefix frontend run build
-npm --prefix frontend run smoke
+```text
+4 failures: flushPromises is not a function
+- PRCreatorView.spec.js: 1
+- PRCreatorRanRetention.spec.js: 3
 ```
 
-- [ ] **Step 4: Complete browser UAT at the reproduced viewport**
+Issue #80 adds no new unit-test failure. The focused contract passes only on the branch because the test is new.
+
+- [x] **Step 3: Open Draft PR #81**
+
+Title: `fix(ui): compact Active Jobs without horizontal scrolling`.
+
+- [x] **Step 4: Remove the temporary verification workflow after capturing evidence**
+
+The temporary workflow is not part of the intended final diff.
+
+- [ ] **Step 5: Complete browser UAT at the reproduced viewport**
 
 Acceptance checks:
 
@@ -175,7 +129,3 @@ View and Stop/Cancel fully visible
 Text visibly smaller and readable
 Narrow layout stacks rows without hiding actions
 ```
-
-- [ ] **Step 5: Remove the temporary workflow after verification**
-
-Remove `.github/workflows/issue-80-frontend.yml`, confirm the final diff remains scoped, and update PR #81 with exact evidence.
