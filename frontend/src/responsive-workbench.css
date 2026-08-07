@@ -130,6 +130,9 @@
     gap: 8px;
     grid-template-columns: minmax(84px, 32%) minmax(0, 1fr);
     padding: 7px 8px;
+  }
+
+  .workbench-result-card .active-jobs-table td:nth-child(n) {
     width: 100%;
   }
 
