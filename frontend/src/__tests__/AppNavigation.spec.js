@@ -59,5 +59,7 @@ describe('App navigation state', () => {
 
     expect(dashboardLink.classes()).toContain('router-link-exact-active');
     expect(prCreatorLink.classes()).not.toContain('router-link-exact-active');
+    expect(findLinkByText(wrapper, 'Status')).toBeUndefined();
+    expect(wrapper.html()).not.toContain('/jobs/');
   });
 });

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import JobDetailHeader from '../JobDetailHeader.vue';
 import JobDetailFiles from '../JobDetailFiles.vue';
 import JobDetailSummary from '../JobDetailSummary.vue';
+import { formatDateTime } from '../../../utils/formatUtils';
 
 describe('RAN detail metadata rendering', () => {
   it('shows worker identity in the detail header for ran jobs', () => {
@@ -129,8 +130,8 @@ describe('RAN detail metadata rendering', () => {
     expect(filesText).toContain('Download Audit Report');
     expect(filesText).toContain('Generated At');
     expect(filesText).toContain('Expires At');
-    expect(filesText).toContain(new Date(generatedAt).toLocaleString());
-    expect(filesText).toContain(new Date(expiresAt).toLocaleString());
+    expect(filesText).toContain(formatDateTime(generatedAt));
+    expect(filesText).toContain(formatDateTime(expiresAt));
   });
 
   it('shows safe PR Auditor failure summary text', () => {

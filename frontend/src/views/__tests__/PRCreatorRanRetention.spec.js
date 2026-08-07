@@ -1,4 +1,4 @@
-import { flushPromises, mount } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import PRCreatorView from '../PRCreatorView.vue';
 import { getPrevalidatedUpload } from '../../api/jobApi';
@@ -33,6 +33,10 @@ vi.mock('../../services/websocketClient', () => ({
 }));
 
 applyRanRetentionRestoreGuard(PRCreatorView);
+
+const flushPromises = () => new Promise((resolve) => {
+  setTimeout(resolve, 0);
+});
 
 const mountView = () => mount(PRCreatorView, {
   stubs: {

@@ -1,6 +1,8 @@
 import { mount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import DashboardView from '../DashboardView.vue';
+import { listJobs } from '../../api/jobApi';
+import { formatCompactDateTime } from '../../utils/formatUtils';
 
 vi.mock('../../api/jobApi', () => ({
   getErrorMessage: vi.fn((error) => error.userMessage || error.message || 'Request failed.'),
@@ -16,6 +18,33 @@ describe('DashboardView', () => {
 
   afterEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('formats active job creation timestamps in local time', async () => {
+    const createdAt = '2026-08-07T06:29:20.286Z';
+    listJobs.mockResolvedValueOnce({
+      items: [{
+        jobId: 'PR-20260807-007',
+        workerId: 'mw-pr',
+        workerDisplayName: 'MW PR Worker',
+        status: 'validating',
+        createdAt
+      }]
+    });
+    const wrapper = mount(DashboardView, {
+      stubs: {
+        RouterLink: {
+          props: ['to'],
+          template: '<a><slot /></a>'
+        }
+      }
+    });
+
+    await Promise.resolve();
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.text()).toContain(formatCompactDateTime(createdAt));
+    expect(wrapper.text()).not.toContain(createdAt);
   });
 
   it('renders a platform-global dashboard without worker launch controls', async () => {
