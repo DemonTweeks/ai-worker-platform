@@ -5,20 +5,29 @@ const { createApiError } = require('../utils/apiError');
 
 const SCRIPT_NAMES = ['stop-services.bat', 'launcher.bat'];
 const scriptDirectory = path.resolve(
-  process.env.DEPLOY_SCRIPT_DIRECTORY || 'C:\\development\\ai-worker-platform'
+  process.env.DEPLOY_SCRIPT_DIRECTORY || 'C:\\deployment\\ai-worker-platform'
 );
 
 let handoffInProgress = false;
 
-const resolveScripts = () => SCRIPT_NAMES.map((scriptName) => {
-  const scriptPath = path.join(scriptDirectory, scriptName);
-  if (!fs.existsSync(scriptPath)) {
-    throw createApiError(500, 'DEPLOY_SCRIPT_NOT_FOUND', `${scriptName} was not found.`, {
-      scriptDirectory
-    });
-  }
-  return scriptPath;
-});
+const resolveScripts = () => {
+  console.info(`[DEPLOYMENT_PATH] directory=${scriptDirectory}`);
+
+  return SCRIPT_NAMES.map((scriptName) => {
+    const scriptPath = path.join(scriptDirectory, scriptName);
+    const exists = fs.existsSync(scriptPath);
+    console.info(`[DEPLOYMENT_PATH] script=${scriptName} path=${scriptPath} exists=${exists}`);
+
+    if (!exists) {
+      throw createApiError(500, 'DEPLOY_SCRIPT_NOT_FOUND', `${scriptName} was not found.`, {
+        scriptDirectory,
+        scriptPath,
+        scriptName
+      });
+    }
+    return scriptPath;
+  });
+};
 
 const startDeployment = () => {
   if (process.platform !== 'win32') {
@@ -36,6 +45,10 @@ const startDeployment = () => {
   const [stopScriptPath, launcherScriptPath] = resolveScripts();
   const startedAt = new Date().toISOString();
   handoffInProgress = true;
+
+  console.info(
+    `[DEPLOYMENT_HANDOFF] stop=${stopScriptPath} launcher=${launcherScriptPath} startedAt=${startedAt}`
+  );
 
   setImmediate(() => {
     const child = spawn(
