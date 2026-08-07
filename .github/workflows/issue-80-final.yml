@@ -4,6 +4,12 @@ on:
   push:
     branches:
       - fix/issue-80-active-jobs-density
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/issue-80-final.yml'
 
 permissions:
   contents: read
