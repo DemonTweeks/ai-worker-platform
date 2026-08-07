@@ -3,7 +3,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 const { createApiError } = require('../utils/apiError');
 
-const SCRIPT_NAMES = ['stop-service.bat', 'launcher.bat'];
+const SCRIPT_NAMES = ['stop-services.bat', 'launcher.bat'];
 const scriptDirectory = path.resolve(
   process.env.DEPLOY_SCRIPT_DIRECTORY || 'C:\\Development\\ai-worker-platform'
 );

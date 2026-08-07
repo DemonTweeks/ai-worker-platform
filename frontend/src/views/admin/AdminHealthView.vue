@@ -92,7 +92,7 @@ export default {
       if (this.deploymentResult && this.deploymentResult.backendReadyAt) return `Backend available again at ${this.deploymentResult.backendReadyAt}.`;
       return this.deploying
         ? 'Sending deployment request...'
-        : 'Runs stop-service.bat, then launcher.bat';
+        : 'Runs stop-services.bat, then launcher.bat';
     },
     services() {
       return this.health && this.health.services ? this.health.services : {};
