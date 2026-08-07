@@ -9,19 +9,44 @@ $ErrorActionPreference = 'Stop'
 
 $targetPorts = @($FrontendPorts + $BackendPorts | Sort-Object -Unique)
 
+function Get-TargetListeners {
+    try {
+        return @(
+            Get-NetTCPConnection -State Listen -ErrorAction Stop |
+                Where-Object { $_.LocalPort -in $targetPorts }
+        )
+    } catch {
+        Write-Warning "Get-NetTCPConnection is unavailable; using netstat.exe without elevation. $($_.Exception.Message)"
+    }
+
+    $windowsRoot = if ($env:SystemRoot) { $env:SystemRoot } else { 'C:\Windows' }
+    $netstatPath = Join-Path $windowsRoot 'System32\netstat.exe'
+    $netstatLines = @(& $netstatPath -ano -p tcp)
+    if ($LASTEXITCODE -ne 0) {
+        throw "netstat.exe failed with exit code $LASTEXITCODE."
+    }
+
+    return @(
+        foreach ($line in $netstatLines) {
+            if ($line -match '^\s*TCP\s+\S+:(\d+)\s+\S+\s+LISTENING\s+(\d+)\s*$') {
+                $localPort = [int]$Matches[1]
+                if ($localPort -in $targetPorts) {
+                    [PSCustomObject]@{
+                        LocalPort = $localPort
+                        OwningProcess = [int]$Matches[2]
+                    }
+                }
+            }
+        }
+    )
+}
+
 Write-Host 'AI Worker Platform service stop' -ForegroundColor Cyan
 Write-Host "Frontend ports: $($FrontendPorts -join ', ')"
 Write-Host "Backend ports:  $($BackendPorts -join ', ')"
 Write-Host
 
-try {
-    $listeners = @(
-        Get-NetTCPConnection -State Listen -ErrorAction Stop |
-            Where-Object { $_.LocalPort -in $targetPorts }
-    )
-} catch {
-    throw "Unable to inspect listening ports. Run PowerShell as Administrator and try again. $($_.Exception.Message)"
-}
+$listeners = @(Get-TargetListeners)
 
 if ($listeners.Count -eq 0) {
     Write-Host 'No matching frontend or backend listeners are running.' -ForegroundColor Green
@@ -68,10 +93,7 @@ foreach ($listenerGroup in $listenerGroups) {
 
 Start-Sleep -Milliseconds 500
 
-$remaining = @(
-    Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue |
-        Where-Object { $_.LocalPort -in $targetPorts }
-)
+$remaining = @(Get-TargetListeners)
 
 if ($remaining.Count -gt 0) {
     $remainingPorts = @($remaining.LocalPort | Sort-Object -Unique)
