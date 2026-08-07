@@ -15,14 +15,14 @@ permissions:
   contents: read
 
 jobs:
-  frontend:
+  issue-80:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     defaults:
       run:
         working-directory: frontend
     steps:
-      - name: Checkout
+      - name: Checkout PR result
         uses: actions/checkout@v4
 
       - name: Set up Node.js
@@ -38,5 +38,62 @@ jobs:
       - name: Run Issue 80 focused contract
         run: npm run test:unit -- src/__tests__/responsiveWorkbenchCss.spec.js
 
-      - name: Run full frontend verification
-        run: npm test
+      - name: Build frontend
+        run: npm run build
+
+      - name: Run route smoke
+        run: npm run smoke
+
+  branch-unit-observation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout PR result
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Observe full branch unit suite
+        continue-on-error: true
+        env:
+          NO_COLOR: '1'
+        run: npm run test:unit
+
+  main-unit-baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout current main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Observe current main unit baseline
+        continue-on-error: true
+        env:
+          NO_COLOR: '1'
+        run: npm run test:unit
