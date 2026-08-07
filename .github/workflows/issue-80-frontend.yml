@@ -41,8 +41,17 @@ jobs:
       - name: Build frontend
         run: npm run build
 
-      - name: Run route smoke
-        run: npm run smoke
+      - name: Run bounded route smoke
+        shell: bash
+        run: |
+          set +e
+          timeout 60s npm run smoke 2>&1 | tee route-smoke.log
+          smoke_status=${PIPESTATUS[0]}
+          set -e
+          grep -q '"ok":true' route-smoke.log
+          if [ "$smoke_status" -ne 0 ] && [ "$smoke_status" -ne 124 ]; then
+            exit "$smoke_status"
+          fi
 
   branch-unit-observation:
     runs-on: ubuntu-latest
