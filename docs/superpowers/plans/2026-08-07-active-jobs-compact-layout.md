@@ -37,6 +37,7 @@ width: 100%
 760px stacked-row fallback
 Job ID and Stop/Cancel pseudo-labels
 no 720px or 640px table minimum width
+stacked cells override desktop percentage widths
 ```
 
 - [x] **Step 2: Verify RED against the pre-fix stylesheet**
@@ -71,15 +72,15 @@ Column allocation: 19 / 15 / 12 / 22 / 12 / 20 percent
 
 - [x] **Step 3: Add the narrow-screen stacked layout**
 
-Below 760px, the table header remains available to assistive technology, rows become contained cards, cells become label/value grids, and both actions remain visible.
+Below 760px, the table header remains available to assistive technology, rows become contained cards, cells become label/value grids, desktop percentage widths are overridden to `100%`, and both actions remain visible.
 
 - [x] **Step 4: Verify GREEN with the focused contract**
 
-GitHub Actions result:
+Final GitHub Actions result:
 
 ```text
 1 test file passed
-3 tests passed
+4 tests passed
 ```
 
 - [x] **Step 5: Commit the implementation**
@@ -90,10 +91,10 @@ Commit: `fix(ui): compact Active Jobs without horizontal scroll`.
 
 ### Task 3: Repository verification and PR
 
-- [x] **Step 1: Run the Issue #80 focused gate**
+- [x] **Step 1: Run the final Issue #80 gate**
 
 ```text
-Focused CSS contract: PASS — 3/3
+Focused CSS contract: PASS — 4/4
 Vite production build: PASS — 111 modules transformed
 Route smoke: PASS — 10/10 routes returned successfully
 ```
@@ -114,11 +115,22 @@ Issue #80 adds no new unit-test failure. The focused contract passes only on the
 
 Title: `fix(ui): compact Active Jobs without horizontal scrolling`.
 
-- [x] **Step 4: Remove the temporary verification workflow after capturing evidence**
+- [x] **Step 4: Remove temporary verification workflows after capturing evidence**
 
-The temporary workflow is not part of the intended final diff.
+No temporary workflow remains in the final diff.
 
-- [ ] **Step 5: Complete browser UAT at the reproduced viewport**
+- [x] **Step 5: Review final changed-file scope**
+
+Final branch diff contains only:
+
+```text
+frontend/src/responsive-workbench.css
+frontend/src/__tests__/responsiveWorkbenchCss.spec.js
+docs/superpowers/specs/2026-08-07-active-jobs-compact-layout-design.md
+docs/superpowers/plans/2026-08-07-active-jobs-compact-layout.md
+```
+
+- [ ] **Step 6: Complete browser UAT at the reproduced viewport**
 
 Acceptance checks:
 
