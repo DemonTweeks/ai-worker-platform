@@ -47,4 +47,10 @@ describe('responsive Active Jobs layout', () => {
     expect(css).toMatch(/content:\s*"Stop\/Cancel"/);
     expect(css).not.toMatch(/\.active-jobs-table\s*\{[^}]*min-width:\s*(?:640|720)px/s);
   });
+
+  it('overrides desktop percentage widths for every stacked cell', () => {
+    const stackedCell = ruleBody('.workbench-result-card .active-jobs-table td:nth-child(n)');
+
+    expect(stackedCell).toMatch(/width:\s*100%/);
+  });
 });
