@@ -38,10 +38,11 @@ describe('Issue #80 Active Jobs responsive layout contract', () => {
     expect(actionRule).toContain('padding: 6px 4px');
   });
 
-  it('provides a non-scrolling stacked fallback for narrow screens', () => {
+  it('provides a labelled non-scrolling stacked fallback for narrow screens', () => {
     expect(stylesheet).toContain('@media (max-width: 760px)');
     expect(stylesheet).toContain('display: block');
-    expect(stylesheet).toContain('data-label');
+    expect(stylesheet).toContain("content: 'Job ID'");
+    expect(stylesheet).toContain("content: 'Stop/Cancel'");
     expect(stylesheet).not.toContain('min-width: 640px');
   });
 });
