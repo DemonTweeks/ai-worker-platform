@@ -90,7 +90,10 @@ describe('AdminHealthView', () => {
 
   it('triggers deployment from the action card', async () => {
     vi.useFakeTimers();
-    getHealth.mockResolvedValueOnce({ status: 'ok', services: {} });
+    getHealth.mockResolvedValueOnce({
+      status: 'ok',
+      services: { backend: { status: 'ok', platform: 'win32' } }
+    });
     triggerDeployment.mockResolvedValueOnce({
       status: 'accepted',
       startedAt: '2026-07-15T10:00:00.000Z'
@@ -108,23 +111,26 @@ describe('AdminHealthView', () => {
     await vi.advanceTimersByTimeAsync(15000);
     expect(wrapper.find('.deployment-action-card').attributes('disabled')).toBeDefined();
 
-    getHealth.mockResolvedValueOnce({ status: 'ok', services: {} });
+    getHealth.mockResolvedValueOnce({
+      status: 'ok',
+      services: { backend: { status: 'ok', platform: 'win32' } }
+    });
     await vi.advanceTimersByTimeAsync(15000);
     expect(wrapper.find('.deployment-action-card').attributes('disabled')).toBeUndefined();
     expect(wrapper.text()).toContain('Backend available again at');
   });
 
-  it('disables deployment when the backend is running on Windows', async () => {
+  it('disables deployment when the backend is not running on Windows', async () => {
     getHealth.mockResolvedValueOnce({
       status: 'ok',
-      services: { backend: { status: 'ok', platform: 'win32' } }
+      services: { backend: { status: 'ok', platform: 'linux' } }
     });
     const wrapper = await mountView();
     const deploymentCard = wrapper.find('.deployment-action-card');
 
     expect(deploymentCard.attributes('disabled')).toBeDefined();
     expect(deploymentCard.text()).toContain('Unavailable');
-    expect(deploymentCard.text()).toContain('Deployment is unavailable on Windows.');
+    expect(deploymentCard.text()).toContain('Deployment is supported only on Windows.');
 
     await deploymentCard.trigger('click');
     expect(triggerDeployment).not.toHaveBeenCalled();

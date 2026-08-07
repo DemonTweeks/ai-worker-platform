@@ -3,9 +3,9 @@ const path = require('path');
 const { spawn } = require('child_process');
 const { createApiError } = require('../utils/apiError');
 
-const SCRIPT_NAMES = ['stop-services.sh', 'deploy.sh'];
+const SCRIPT_NAMES = ['stop-service.bat', 'launcher.bat'];
 const scriptDirectory = path.resolve(
-  process.env.DEPLOY_SCRIPT_DIRECTORY || '/home/ubuntu/ai-worker-platform'
+  process.env.DEPLOY_SCRIPT_DIRECTORY || 'C:\\Development\\ai-worker-platform'
 );
 
 let handoffInProgress = false;
@@ -21,18 +21,26 @@ const resolveScripts = () => SCRIPT_NAMES.map((scriptName) => {
 });
 
 const startDeployment = () => {
+  if (process.platform !== 'win32') {
+    throw createApiError(
+      501,
+      'DEPLOYMENT_PLATFORM_UNSUPPORTED',
+      'Deployment is supported only on Windows.'
+    );
+  }
+
   if (handoffInProgress) {
     throw createApiError(409, 'DEPLOYMENT_IN_PROGRESS', 'A deployment handoff is already in progress.');
   }
 
-  const [stopScriptPath, deployScriptPath] = resolveScripts();
+  const [stopScriptPath, launcherScriptPath] = resolveScripts();
   const startedAt = new Date().toISOString();
   handoffInProgress = true;
 
   setImmediate(() => {
     const child = spawn(
-      'bash',
-      ['-c', 'bash "$1" && bash "$2"', 'deployment-runner', stopScriptPath, deployScriptPath],
+      process.env.ComSpec || process.env.COMSPEC || 'cmd.exe',
+      ['/d', '/s', '/c', `call "${stopScriptPath}" && call "${launcherScriptPath}"`],
       {
         cwd: scriptDirectory,
         env: process.env,
@@ -55,7 +63,7 @@ const startDeployment = () => {
   return {
     status: 'accepted',
     startedAt,
-    message: 'Deployment scripts were handed off for background execution.'
+    message: 'Windows deployment scripts were handed off for background execution.'
   };
 };
 

@@ -72,7 +72,7 @@ export default {
   },
   computed: {
     deploymentDisabled() {
-      return this.backendPlatform === 'win32';
+      return this.backendPlatform !== 'win32';
     },
     backendPlatform() {
       const backend = this.services.backend;
@@ -85,13 +85,14 @@ export default {
       return this.deploying ? 'warning' : 'neutral';
     },
     deploymentDetail() {
-      if (this.deploymentDisabled) return 'Deployment is unavailable on Windows.';
+      if (!this.backendPlatform) return 'Waiting for backend platform information.';
+      if (this.deploymentDisabled) return 'Deployment is supported only on Windows.';
       if (this.deploymentError) return this.deploymentError;
       if (this.waitingForBackend) return 'Deployment started. Checking backend availability every 15 seconds.';
       if (this.deploymentResult && this.deploymentResult.backendReadyAt) return `Backend available again at ${this.deploymentResult.backendReadyAt}.`;
       return this.deploying
         ? 'Sending deployment request...'
-        : 'Run stop-services.sh, then deploy.sh';
+        : 'Runs stop-service.bat, then launcher.bat';
     },
     services() {
       return this.health && this.health.services ? this.health.services : {};
