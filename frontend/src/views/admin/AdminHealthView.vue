@@ -48,6 +48,7 @@ import DeploymentActionCard from '../../components/admin/DeploymentActionCard.vu
 import ErrorBanner from '../../components/ErrorBanner.vue';
 import { getHealth, getErrorMessage } from '../../api/jobApi';
 import { triggerDeployment, getAdminErrorMessage } from '../../api/adminApi';
+import { formatDateTime } from '../../utils/formatUtils';
 
 const DEPLOYMENT_HEALTH_POLL_INTERVAL_MS = 15000;
 
@@ -88,7 +89,7 @@ export default {
       if (this.deploymentDisabled) return 'Deployment is unavailable on Windows.';
       if (this.deploymentError) return this.deploymentError;
       if (this.waitingForBackend) return 'Deployment started. Checking backend availability every 15 seconds.';
-      if (this.deploymentResult && this.deploymentResult.backendReadyAt) return `Backend available again at ${this.deploymentResult.backendReadyAt}.`;
+      if (this.deploymentResult && this.deploymentResult.backendReadyAt) return `Backend available again at ${formatDateTime(this.deploymentResult.backendReadyAt)}.`;
       return this.deploying
         ? 'Sending deployment request...'
         : 'Run stop-services.sh, then deploy.sh';
@@ -100,7 +101,7 @@ export default {
       return this.services.backend && this.services.backend.status ? this.services.backend.status : this.health && this.health.status ? this.health.status : 'Not available';
     },
     timestamp() {
-      return this.health && this.health.timestamp ? `Updated ${this.health.timestamp}` : '';
+      return this.health && this.health.timestamp ? `Updated ${formatDateTime(this.health.timestamp)}` : '';
     },
     firebaseStatus() {
       return this.services.firebase && this.services.firebase.status ? this.services.firebase.status : 'Not available';

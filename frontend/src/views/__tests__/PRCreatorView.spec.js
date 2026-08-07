@@ -1,4 +1,4 @@
-import { flushPromises, mount } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import PRCreatorView from '../PRCreatorView.vue';
 import { getJobDetail, getPrevalidatedUpload, releasePrevalidatedUpload } from '../../api/jobApi';
@@ -28,6 +28,10 @@ vi.mock('../../services/websocketClient', () => ({
     close: vi.fn()
   }))
 }));
+
+const flushPromises = () => new Promise((resolve) => {
+  setTimeout(resolve, 0);
+});
 
 const mountView = () => mount(PRCreatorView, {
   stubs: {

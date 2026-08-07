@@ -1,6 +1,10 @@
 <template>
   <div id="app" class="app-shell">
-    <header class="app-header">
+    <header
+      class="app-header"
+      :class="{ 'is-hidden': isHeaderHidden }"
+      @focusin="showHeader"
+    >
       <div class="brand-block">
         <span class="brand-mark">ZTE</span>
         <div>
@@ -28,14 +32,6 @@
         >
           Dashboard
         </router-link>
-        <router-link
-          v-if="currentJobId"
-          class="nav-link"
-          :to="`/jobs/${currentJobId}`"
-        >
-          Status
-        </router-link>
-        <span v-else class="nav-link disabled">Status</span>
         <router-link class="nav-link" to="/history">History</router-link>
         <router-link class="nav-link" to="/admin/login">Admin</router-link>
       </nav>
@@ -50,9 +46,6 @@
 import { getHealth } from './api/jobApi';
 import WorkerNavigation from './components/WorkerNavigation.vue';
 
-const SELECTED_JOB_STORAGE_KEY = 'selectedJobId';
-const SELECTED_JOB_CHANGED_EVENT = 'awp:selected-job-changed';
-
 export default {
   name: 'App',
   components: {
@@ -63,7 +56,9 @@ export default {
       health: null,
       healthError: false,
       healthTimer: null,
-      storedSelectedJobId: ''
+      isHeaderHidden: false,
+      lastScrollY: 0,
+      headerScrollFrame: null
     };
   },
   computed: {
@@ -73,44 +68,53 @@ export default {
       if (this.health && this.health.status === 'down') return '🔴Down';
       if (this.healthError) return '⚪Unavailable';
       return '🔵Checking';
-    },
-    currentJobId() {
-      if (this.$route.params.jobId) {
-        return this.$route.params.jobId;
-      }
-      return this.storedSelectedJobId;
     }
   },
   mounted() {
-    this.syncStoredSelectedJobId();
-    if (typeof window !== 'undefined') {
-      window.addEventListener(SELECTED_JOB_CHANGED_EVENT, this.handleSelectedJobChanged);
-    }
     this.checkHealth();
     this.healthTimer = setInterval(this.checkHealth, 30000);
+    this.lastScrollY = Math.max(window.scrollY || 0, 0);
+    window.addEventListener('scroll', this.handleHeaderScroll, { passive: true });
   },
   beforeDestroy() {
-    if (typeof window !== 'undefined') {
-      window.removeEventListener(SELECTED_JOB_CHANGED_EVENT, this.handleSelectedJobChanged);
+    window.removeEventListener('scroll', this.handleHeaderScroll);
+    if (this.headerScrollFrame !== null) {
+      if (typeof window.cancelAnimationFrame === 'function') {
+        window.cancelAnimationFrame(this.headerScrollFrame);
+      } else {
+        window.clearTimeout(this.headerScrollFrame);
+      }
     }
     if (this.healthTimer) {
       clearInterval(this.healthTimer);
     }
   },
   methods: {
-    syncStoredSelectedJobId() {
-      if (typeof window === 'undefined') {
-        this.storedSelectedJobId = '';
+    handleHeaderScroll() {
+      if (this.headerScrollFrame !== null) {
         return;
       }
 
-      this.storedSelectedJobId = window.sessionStorage.getItem(SELECTED_JOB_STORAGE_KEY) || '';
+      const requestFrame = typeof window.requestAnimationFrame === 'function'
+        ? window.requestAnimationFrame.bind(window)
+        : (callback) => window.setTimeout(callback, 16);
+      this.headerScrollFrame = requestFrame(() => {
+        const currentScrollY = Math.max(window.scrollY || 0, 0);
+        const scrollDelta = currentScrollY - this.lastScrollY;
+
+        if (currentScrollY <= 16) {
+          this.isHeaderHidden = false;
+          this.lastScrollY = currentScrollY;
+        } else if (Math.abs(scrollDelta) >= 6) {
+          this.isHeaderHidden = scrollDelta > 0 && currentScrollY > 80;
+          this.lastScrollY = currentScrollY;
+        }
+
+        this.headerScrollFrame = null;
+      });
     },
-    handleSelectedJobChanged(event) {
-      const nextJobId = event && event.detail && typeof event.detail.jobId === 'string'
-        ? event.detail.jobId
-        : '';
-      this.storedSelectedJobId = nextJobId;
+    showHeader() {
+      this.isHeaderHidden = false;
     },
     async checkHealth() {
       try {
