@@ -4,13 +4,16 @@ on:
   push:
     branches:
       - chore/sync-create-pr-cd-65d45a5
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: write
 
 jobs:
   sync-and-verify:
-    if: github.event.head_commit.message == 'ci: prepare create-pr-cd 65d45a5 compatibility sync'
+    if: github.event_name == 'pull_request' || github.event.head_commit.message == 'ci: prepare create-pr-cd 65d45a5 compatibility sync'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
