@@ -1,4 +1,4 @@
-/* Issue #26: keep Active Jobs and Result Delivery inside the workbench viewport. */
+/* Issue #26 and #80: contain workbench results and keep Active Jobs fully visible. */
 .workbench-result-card {
   grid-template-columns: minmax(0, 1fr);
   min-width: 0;
@@ -14,70 +14,135 @@
 
 .workbench-result-card > .download-compact {
   min-width: 0;
-  overflow-x: auto;
+  overflow-x: hidden;
   width: 100%;
 }
 
 .workbench-result-card .active-jobs-table {
-  min-width: 720px;
+  min-width: 0;
   table-layout: fixed;
   width: 100%;
 }
 
 .workbench-result-card .active-jobs-table th,
 .workbench-result-card .active-jobs-table td {
+  font-size: 12px;
+  line-height: 1.25;
   overflow-wrap: anywhere;
-  vertical-align: top;
+  padding: 6px 5px;
+  vertical-align: middle;
   white-space: normal;
+}
+
+.workbench-result-card .active-jobs-table th {
+  font-weight: 600;
 }
 
 .workbench-result-card .active-jobs-table th:nth-child(1),
 .workbench-result-card .active-jobs-table td:nth-child(1) {
-  width: 18%;
+  width: 20%;
 }
 
 .workbench-result-card .active-jobs-table th:nth-child(2),
 .workbench-result-card .active-jobs-table td:nth-child(2) {
-  width: 16%;
+  width: 15%;
 }
 
 .workbench-result-card .active-jobs-table th:nth-child(3),
 .workbench-result-card .active-jobs-table td:nth-child(3) {
-  width: 13%;
+  width: 12%;
 }
 
 .workbench-result-card .active-jobs-table th:nth-child(4),
 .workbench-result-card .active-jobs-table td:nth-child(4) {
-  width: 23%;
+  width: 22%;
 }
 
 .workbench-result-card .active-jobs-table th:nth-child(5),
 .workbench-result-card .active-jobs-table td:nth-child(5) {
-  width: 14%;
+  width: 11%;
 }
 
 .workbench-result-card .active-jobs-table th:nth-child(6),
 .workbench-result-card .active-jobs-table td:nth-child(6) {
-  width: 16%;
+  width: 20%;
 }
 
 .workbench-result-card .active-jobs-table .secondary-link {
-  line-height: 1.2;
+  font-size: 12px;
+  line-height: 1.15;
   max-width: 100%;
   min-width: 0;
-  padding: 7px 6px;
+  padding: 6px 4px;
   white-space: normal;
   width: 100%;
 }
 
 @media (max-width: 760px) {
-  .workbench-result-card .active-jobs-table {
-    min-width: 640px;
+  .workbench-result-card .active-jobs-table,
+  .workbench-result-card .active-jobs-table tbody,
+  .workbench-result-card .active-jobs-table tr,
+  .workbench-result-card .active-jobs-table td {
+    display: block;
+    width: 100%;
   }
 
-  .workbench-result-card .active-jobs-table th,
+  .workbench-result-card .active-jobs-table thead {
+    display: none;
+  }
+
+  .workbench-result-card .active-jobs-table tr {
+    border: 1px solid rgba(15, 49, 77, 0.12);
+    border-radius: 10px;
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+
   .workbench-result-card .active-jobs-table td {
+    align-items: center;
+    border-bottom: 1px solid rgba(15, 49, 77, 0.08);
+    display: grid;
+    gap: 8px;
+    grid-template-columns: minmax(82px, 32%) minmax(0, 1fr);
+    min-width: 0;
+    padding: 7px 8px;
+  }
+
+  .workbench-result-card .active-jobs-table td:last-child {
+    border-bottom: 0;
+  }
+
+  .workbench-result-card .active-jobs-table td::before {
     font-size: 11px;
-    padding: 7px 6px;
+    font-weight: 600;
+  }
+
+  .workbench-result-card .active-jobs-table td:nth-child(1)::before {
+    content: 'Job ID';
+  }
+
+  .workbench-result-card .active-jobs-table td:nth-child(2)::before {
+    content: 'Worker';
+  }
+
+  .workbench-result-card .active-jobs-table td:nth-child(3)::before {
+    content: 'Status';
+  }
+
+  .workbench-result-card .active-jobs-table td:nth-child(4)::before {
+    content: 'Created';
+  }
+
+  .workbench-result-card .active-jobs-table td:nth-child(5)::before {
+    content: 'View';
+  }
+
+  .workbench-result-card .active-jobs-table td:nth-child(6)::before {
+    content: 'Stop/Cancel';
+  }
+
+  .workbench-result-card .active-jobs-table .secondary-link {
+    justify-self: start;
+    width: min(100%, 180px);
   }
 }
