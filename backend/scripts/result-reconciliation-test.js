@@ -56,4 +56,19 @@ assert.throws(
   'unaccounted requested sites must block clean completion'
 );
 
+const falselyClaimedComplete = {
+  ...baseSummary,
+  generatedSiteCount: 8,
+  reviewRequiredSiteCount: 0,
+  approvedIgnoredSiteCount: 0,
+  duplicateBlockedSiteCount: 0,
+  failedSiteCount: 0,
+  unaccountedSiteCount: 0
+};
+assert.throws(
+  () => determineFinalStatus(falselyClaimedComplete),
+  (error) => error && error.code === 'RESULT_RECONCILIATION_INCOMPLETE',
+  'platform must independently reject reconciliation counts that do not add up to requested sites'
+);
+
 console.log('Issue 88 result reconciliation regression tests passed.');
