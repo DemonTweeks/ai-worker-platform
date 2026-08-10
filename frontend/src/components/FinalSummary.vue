@@ -5,7 +5,7 @@
     <div v-else>
       <div class="summary-grid">
         <template v-if="isPrAuditorJob">
-          <span>Status: <strong>{{ detail.job.status || 'Queued' }}</strong></span>
+          <span>Status: <strong>{{ displayStatus }}</strong></span>
           <span>Audit Report: <strong>{{ detail.job.outputFileCount || 0 }}</strong></span>
           <span>Warnings: <strong>{{ detail.job.warningCount || 0 }}</strong></span>
           <span>Review Required: <strong>{{ detail.job.reviewRequiredCount || 0 }}</strong></span>
@@ -15,7 +15,7 @@
           <span v-if="auditSummary">Duplicate PO: <strong>{{ auditSummary.duplicatePoCount }}</strong></span>
         </template>
         <template v-else>
-          <span>Status: <strong>{{ detail.job.status || 'Queued' }}</strong></span>
+          <span>Status: <strong>{{ displayStatus }}</strong></span>
           <span>Scope: <strong>{{ detail.job.prScope || 'TSS' }}</strong></span>
           <span>Requested Sites: <strong>{{ detail.job.requestedSiteCount || 0 }}</strong></span>
           <span>Matched Sites: <strong>{{ detail.job.matchedSiteCount || 0 }}</strong></span>
@@ -38,6 +38,7 @@
 
 <script>
 import { isTerminalStatus } from '../utils/statusUtils';
+import { jobStatusLabel } from '../utils/jobStatusUtils';
 import { prAuditorReportMessage } from '../utils/prAuditorResultUtils';
 
 export default {
@@ -48,6 +49,9 @@ export default {
   computed: {
     isPrAuditorJob() {
       return this.detail && this.detail.job && this.detail.job.workerId === 'pr-auditor';
+    },
+    displayStatus() {
+      return this.detail && this.detail.job ? jobStatusLabel(this.detail.job) : 'Queued';
     },
     auditSummary() {
       return this.detail && this.detail.job ? (this.detail.job.auditSummary || null) : null;
