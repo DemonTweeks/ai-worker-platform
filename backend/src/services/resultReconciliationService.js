@@ -12,6 +12,7 @@ const COUNT_FIELDS = [
   'failedSiteCount',
   'unaccountedSiteCount'
 ];
+const CANONICAL_CONTRACT_FIELDS = ['requestedSiteCount', ...COUNT_FIELDS];
 
 const ENGINE_CONTRACT_FIELDS = [
   ['requested_count', 'requestedSiteCount'],
@@ -101,6 +102,25 @@ const toPersistedReconciliation = (summary = {}) => {
   };
 };
 
+const validateCanonicalReconciliation = (payload) => {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw invalidContractError('INVALID_CONTRACT_OBJECT');
+  }
+
+  const validated = {};
+  for (const field of CANONICAL_CONTRACT_FIELDS) {
+    if (!Object.prototype.hasOwnProperty.call(payload, field)) {
+      throw invalidContractError('MISSING_REQUIRED_COUNT', field);
+    }
+    const value = payload[field];
+    if (!Number.isInteger(value) || value < 0) {
+      throw invalidContractError('INVALID_COUNT', field);
+    }
+    validated[field] = value;
+  }
+  return validated;
+};
+
 const readContractCount = (payload, snakeName, camelName) => {
   const hasSnake = Object.prototype.hasOwnProperty.call(payload, snakeName);
   const hasCamel = Object.prototype.hasOwnProperty.call(payload, camelName);
@@ -124,7 +144,7 @@ const fromEngineContract = (payload = {}) => {
     readContractCount(payload, snakeName, camelName)
   ));
 
-  return {
+  return validateCanonicalReconciliation({
     requestedSiteCount: values[0],
     generatedSiteCount: values[1],
     reviewRequiredSiteCount: values[2],
@@ -132,7 +152,7 @@ const fromEngineContract = (payload = {}) => {
     duplicateBlockedSiteCount: values[4],
     failedSiteCount: values[5],
     unaccountedSiteCount: values[6]
-  };
+  });
 };
 
 const containsMarkerText = (text = '') => RECONCILIATION_MARKERS.some((marker) => text.includes(marker));
@@ -212,5 +232,6 @@ module.exports = {
   fromEngineContract,
   hasExplicitReconciliation,
   normalizeResultReconciliation,
-  toPersistedReconciliation
+  toPersistedReconciliation,
+  validateCanonicalReconciliation
 };
