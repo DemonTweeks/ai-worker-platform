@@ -1,6 +1,7 @@
 const { Job } = require('../models');
 const { buildFinalSummaryWording } = require('../llm/finalSummaryWordingService');
 const { WORKER_IDS } = require('../workers/workerTypes');
+const { normalizeResultReconciliation } = require('./resultReconciliationService');
 
 const buildFinalSummary = ({ job, summary }) => {
   if (job.status === 'failed') {
@@ -56,12 +57,26 @@ const buildFinalSummary = ({ job, summary }) => {
     ].join('\n')
     : '';
 
+  const reconciliation = normalizeResultReconciliation(summary);
+  const reconciliationLines = reconciliation
+    ? [
+      `Generated sites: ${reconciliation.generatedSiteCount}`,
+      `Review-required sites: ${reconciliation.reviewRequiredSiteCount}`,
+      `Approved ignored sites: ${reconciliation.approvedIgnoredSiteCount}`,
+      `Duplicate-blocked sites: ${reconciliation.duplicateBlockedSiteCount}`,
+      `Failed sites: ${reconciliation.failedSiteCount}`,
+      `Accounted sites: ${reconciliation.accountedSiteCount}`,
+      `Unaccounted sites: ${reconciliation.unaccountedSiteCount}`
+    ]
+    : [];
+
   return [
     job.status === 'completed_with_warning' ? 'Task completed with warnings.' : 'Task completed.',
     '',
     `Requested sites: ${summary.requestedSiteCount}`,
     `Matched sites: ${summary.matchedSiteCount}`,
     `Unmatched sites: ${summary.unmatchedSiteCount}`,
+    ...reconciliationLines,
     `Generated output files: ${summary.outputFileCount}`,
     `Review Required items: ${summary.reviewRequiredCount}`,
     `Warnings: ${summary.warningCount}`,
