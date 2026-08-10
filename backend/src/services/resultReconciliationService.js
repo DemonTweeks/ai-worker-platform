@@ -1,3 +1,8 @@
+const fs = require('fs');
+const path = require('path');
+const storageService = require('./storageService');
+
+const MAX_RECONCILIATION_JSON_BYTES = 1024 * 1024;
 const COUNT_FIELDS = [
   'generatedSiteCount',
   'reviewRequiredSiteCount',
@@ -65,7 +70,41 @@ const toPersistedReconciliation = (summary = {}) => {
   };
 };
 
+const fromEngineContract = (payload = {}) => ({
+  requestedSiteCount: payload.requested_count ?? payload.requestedSiteCount,
+  generatedSiteCount: payload.generated_count ?? payload.generatedSiteCount,
+  reviewRequiredSiteCount: payload.review_required_count ?? payload.reviewRequiredSiteCount,
+  approvedIgnoredSiteCount: payload.approved_ignored_count ?? payload.approvedIgnoredSiteCount,
+  duplicateBlockedSiteCount: payload.duplicate_blocked_count ?? payload.duplicateBlockedSiteCount,
+  failedSiteCount: payload.failed_count ?? payload.failedSiteCount,
+  unaccountedSiteCount: payload.unaccounted_count ?? payload.unaccountedSiteCount
+});
+
+const discoverWorkerReconciliation = async (outputCollection = {}) => {
+  const jsonFiles = (outputCollection.outputFiles || []).filter((file) => (
+    String(file.fileName || '').toLowerCase().endsWith('.json') && file.filePath
+  ));
+
+  for (const file of jsonFiles) {
+    const absolutePath = path.join(storageService.getStorageRoot(), file.filePath);
+    try {
+      const stat = await fs.promises.stat(absolutePath);
+      if (!stat.isFile() || stat.size > MAX_RECONCILIATION_JSON_BYTES) continue;
+      const parsed = JSON.parse(await fs.promises.readFile(absolutePath, 'utf8'));
+      const contract = parsed.result_reconciliation || parsed.resultReconciliation || parsed.reconciliation;
+      if (!contract || typeof contract !== 'object' || Array.isArray(contract)) continue;
+      const mapped = fromEngineContract(contract);
+      if (normalizeResultReconciliation(mapped)) return mapped;
+    } catch (error) {
+      // Non-reconciliation JSON output remains a normal worker artifact.
+    }
+  }
+
+  return null;
+};
+
 module.exports = {
+  discoverWorkerReconciliation,
   hasExplicitReconciliation,
   normalizeResultReconciliation,
   toPersistedReconciliation
