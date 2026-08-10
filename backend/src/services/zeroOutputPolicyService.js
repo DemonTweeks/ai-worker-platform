@@ -24,7 +24,7 @@ const determineFinalStatus = (summary) => {
   const reconciliation = normalizeResultReconciliation(summary);
 
   if (reconciliation) {
-    if ((reconciliation.unaccountedSiteCount || 0) > 0) {
+    if (reconciliation.reconciliationConsistent === false || (reconciliation.unaccountedSiteCount || 0) > 0) {
       throw Object.assign(
         new Error('Worker result reconciliation is incomplete. One or more requested sites have no terminal business disposition.'),
         {
