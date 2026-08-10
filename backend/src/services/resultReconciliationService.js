@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const storageService = require('./storageService');
 
 const MAX_RECONCILIATION_JSON_BYTES = 1024 * 1024;
 const COUNT_FIELDS = [
@@ -92,6 +91,7 @@ const fromEngineContract = (payload = {}) => ({
 });
 
 const discoverWorkerReconciliation = async (outputCollection = {}) => {
+  const storageService = require('./storageService');
   const jsonFiles = (outputCollection.outputFiles || []).filter((file) => (
     String(file.fileName || '').toLowerCase().endsWith('.json') && file.filePath
   ));
