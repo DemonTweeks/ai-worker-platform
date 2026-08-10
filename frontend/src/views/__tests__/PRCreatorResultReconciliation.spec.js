@@ -43,7 +43,7 @@ describe('PRCreatorView result reconciliation', () => {
     sessionStorage.clear();
   });
 
-  it('shows reconciled site counts in Result Delivery', async () => {
+  it('shows reconciled site counts in Result Delivery using business wording', async () => {
     const wrapper = mountView();
     await flushPromises();
 
@@ -77,7 +77,8 @@ describe('PRCreatorView result reconciliation', () => {
     expect(resultDelivery.exists()).toBe(true);
     expect(resultDelivery.text()).toContain('Generated sites8');
     expect(resultDelivery.text()).toContain('Accounted sites24');
-    expect(resultDelivery.text()).toContain('Unaccounted sites0');
+    expect(resultDelivery.text()).toContain('Sites without confirmed result0');
+    expect(resultDelivery.text()).not.toContain('Unaccounted');
     expect(resultDelivery.text()).toContain('Review sites16');
   });
 });
