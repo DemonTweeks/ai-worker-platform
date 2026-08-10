@@ -82,11 +82,40 @@ Authorization: Basic basic-secret
     let detailResult = await jobService.getJobDetail('PR-PREFLIGHT-001');
     let jobDetail = detailResult.job;
 
-    // Assert 10: Job Detail output contains no raw error, stdout, stderr, error.message, or error.details
-    assert.strictEqual(jobDetail.error, undefined);
+    // Assert 10: Job Detail may expose only the safe structured error contract, never the persisted raw error.
+    assert.ok(jobDetail.error);
+    assert.strictEqual(jobDetail.error.code, 'PREFLIGHT_FAILED');
+    assert.strictEqual(jobDetail.error.category, 'PREFLIGHT_FAILED');
+    assert.strictEqual(jobDetail.error.title, 'Python worker dependency missing');
+    assert.strictEqual(jobDetail.error.message, 'Dependency missing: pandas');
+    assert.deepStrictEqual(jobDetail.error.details.missingPackages, ['pandas']);
+    assert.ok(jobDetail.error.details.technicalDetails.includes('[redacted]'));
+    assert.strictEqual(Object.prototype.hasOwnProperty.call(jobDetail.error.details, 'stderr'), false);
+    assert.strictEqual(Object.prototype.hasOwnProperty.call(jobDetail.error.details, 'stdout'), false);
+    assert.strictEqual(Object.prototype.hasOwnProperty.call(jobDetail.error.details, 'pythonExecutable'), false);
+    assert.strictEqual(Object.prototype.hasOwnProperty.call(jobDetail.error.details, 'recommendedCommand'), false);
+    assert.strictEqual(Object.prototype.hasOwnProperty.call(jobDetail.error.details, 'arbitraryRawDetail'), false);
     assert.strictEqual(jobDetail.stdout, undefined);
     assert.strictEqual(jobDetail.stderr, undefined);
     assert.strictEqual(jobDetail.message, undefined);
+
+    const safeSerializedError = JSON.stringify(jobDetail.error);
+    const forbiddenSafeErrorSubstrings = [
+      'C:\\Users\\JJ\\uploads\\file.xlsx',
+      'LLM_API_KEY=123',
+      'unauthorized_pkg',
+      '/usr/local/bin/python3',
+      'raw command path',
+      'OPENAI_API_KEY',
+      'SECRET_TOKEN',
+      'super-secret-value',
+      'private-token',
+      'site_pr_po_view.xlsx',
+      'output.zip'
+    ];
+    forbiddenSafeErrorSubstrings.forEach((value) => {
+      assert.strictEqual(safeSerializedError.includes(value), false, `Safe structured error must not contain: ${value}`);
+    });
 
     const diag = jobDetail.failureDiagnosis;
     assert.ok(diag);
@@ -164,6 +193,11 @@ Authorization: Basic basic-secret
     jobDetail = detailResult.job;
     const diag2 = jobDetail.failureDiagnosis;
     assert.strictEqual(diag2.technicalDetails, '', 'technicalDetails must be empty string when stderr is absent');
+    assert.strictEqual(jobDetail.error.code, 'WORKER_PROCESS_FAILED');
+    assert.strictEqual(jobDetail.error.details.scope, 'TSS');
+    assert.strictEqual(jobDetail.error.details.exitCode, 1);
+    assert.strictEqual(JSON.stringify(jobDetail.error).includes('LLM_API_KEY'), false);
+    assert.strictEqual(JSON.stringify(jobDetail.error).includes('C:\\secret\\path.xlsx'), false);
 
     // 3. Unknown persisted codes become WORKER_ERROR
     console.log('Assertion 6: Unknown persisted codes become WORKER_ERROR');
@@ -197,6 +231,10 @@ Authorization: Basic basic-secret
     assert.strictEqual(diag3.title, 'PR Worker execution failed');
     assert.strictEqual(diag3.summary, 'An unexpected error occurred during the PR worker execution process.');
     assert.strictEqual(diag3.technicalDetails.includes('C:\\Users\\JJ\\upload.xlsx'), false);
+    assert.strictEqual(jobDetail.error.category, 'WORKER_ERROR');
+    assert.strictEqual(jobDetail.error.title, 'PR Worker execution failed');
+    assert.strictEqual(JSON.stringify(jobDetail.error).includes('SOMETHING_CRITICAL_DIED'), true);
+    assert.strictEqual(JSON.stringify(jobDetail.error).includes('C:\\Users\\JJ\\upload.xlsx'), false);
 
     // Expected PR Auditor fail-closed condition has specific, diagnostic-free presentation.
     console.log('Assertion 6a: PR Auditor engine-pin block is presented safely');
@@ -230,6 +268,9 @@ Authorization: Basic basic-secret
     assert.strictEqual(jobDetail.failureDiagnosis.title, 'PR Auditor runtime blocked');
     assert.strictEqual(jobDetail.failureDiagnosis.summary, enginePinMessage);
     assert.strictEqual(jobDetail.failureDiagnosis.technicalDetails, '');
+    assert.strictEqual(jobDetail.error.code, 'PR_AUDITOR_ENGINE_PIN_UNAPPROVED');
+    assert.strictEqual(jobDetail.error.message, enginePinMessage);
+    assert.deepStrictEqual(jobDetail.error.details, {});
     assert.deepStrictEqual(sanitizePrAuditorError(mockBlockedAuditorJob.error), {
       code: 'PR_AUDITOR_ENGINE_PIN_UNAPPROVED',
       message: enginePinMessage,
@@ -264,6 +305,7 @@ Authorization: Basic basic-secret
     detailResult = await jobService.getJobDetail('PR-NOPKGS-004');
     jobDetail = detailResult.job;
     assert.strictEqual(jobDetail.failureDiagnosis.missingPackages, undefined, 'missingPackages must be omitted if empty after filtering');
+    assert.strictEqual(Object.prototype.hasOwnProperty.call(jobDetail.error.details, 'missingPackages'), false);
 
     // 5. History safely shows validated package names and valid scope only
     console.log('Assertion 8: History safely shows validated package names and scope only');
@@ -343,9 +385,14 @@ Authorization: Basic basic-secret
     assert.strictEqual(histTimeoutInv.failureSummary, 'PR worker execution timed out.');
     assert.strictEqual(histPreflightPandas.failureSummary, 'Dependency missing: pandas');
     assert.strictEqual(histPreflightEmpty.failureSummary, 'PR worker dependency check failed.');
+    assert.strictEqual(histTimeoutTSS.error.code, 'WORKER_TIMEOUT');
+    assert.strictEqual(histTimeoutTSS.error.details.scope, 'TSS');
+    assert.deepStrictEqual(histTimeoutInv.error.details, {});
+    assert.deepStrictEqual(histPreflightPandas.error.details.missingPackages, ['pandas']);
+    assert.strictEqual(Object.prototype.hasOwnProperty.call(histPreflightEmpty.error.details, 'missingPackages'), false);
 
-    // 6. Successful jobs expose no failureDiagnosis and no raw error
-    console.log('Assertion 9: Successful jobs expose no failureDiagnosis or raw error');
+    // 6. Successful jobs expose no failureDiagnosis and no error object
+    console.log('Assertion 9: Successful jobs expose no failureDiagnosis or error object');
     resetMocks();
 
     const mockSuccessJob = {
@@ -365,7 +412,7 @@ Authorization: Basic basic-secret
     detailResult = await jobService.getJobDetail('PR-SUCCESS-005');
     jobDetail = detailResult.job;
     assert.strictEqual(jobDetail.failureDiagnosis, undefined);
-    assert.strictEqual(jobDetail.error, undefined);
+    assert.strictEqual(jobDetail.error, null);
 
     // 7. RAN failures are worker-aware and expose only sanitized stage names
     console.log('Assertion 10: RAN failure summaries and diagnosis are stage-aware without leaking paths');
@@ -401,6 +448,11 @@ Authorization: Basic basic-secret
     assert.strictEqual(jobDetail.failureDiagnosis.summary.includes('src\\simple_pr_generator.py'), false);
     assert.strictEqual(jobDetail.failureDiagnosis.summary.includes('simple_pr_generator.py'), true);
     assert.strictEqual(jobDetail.failureDiagnosis.technicalDetails.includes('C:\\Users\\JJ\\uploads\\site_pr_po_view.xlsx'), false);
+    assert.strictEqual(jobDetail.error.code, 'WORKER_PROCESS_FAILED');
+    assert.strictEqual(jobDetail.error.details.stage, 'simple_pr_generator.py');
+    assert.strictEqual(jobDetail.error.details.exitCode, 9);
+    assert.strictEqual(JSON.stringify(jobDetail.error).includes('src\\simple_pr_generator.py'), false);
+    assert.strictEqual(JSON.stringify(jobDetail.error).includes('site_pr_po_view.xlsx'), false);
 
     // 8. RAN timeout summaries are rendered in job history with sanitized stage names
     console.log('Assertion 11: RAN timeout history summary uses worker-aware sanitized stage names');
@@ -433,6 +485,8 @@ Authorization: Basic basic-secret
 
     const ranListResult = await jobService.listJobs();
     assert.strictEqual(ranListResult.items[0].failureSummary, 'RAN PR worker execution timed out (simple_ecc_export.py).');
+    assert.strictEqual(ranListResult.items[0].error.code, 'WORKER_TIMEOUT');
+    assert.strictEqual(ranListResult.items[0].error.details.stage, 'simple_ecc_export.py');
 
     console.log('--- Hardened Error Visibility and Security Tests Passed! ---');
   } catch (err) {
