@@ -79,10 +79,10 @@
                     <td>{{ job.workerDisplayName || job.workerId }}</td>
                     <td>{{ job.status }}</td>
                     <td>
-                    <time class="job-created-time" :datetime="job.createdAt || null">
-                      {{ formatCompactDateTime(job.createdAt, 'Just now') }}
-                    </time>
-                  </td>
+                      <time class="job-created-time" :datetime="job.createdAt || null">
+                        {{ formatCompactDateTime(job.createdAt, 'Just now') }}
+                      </time>
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -182,7 +182,7 @@ export default {
 .dashboard-active-jobs-card .download-compact {
   width: 100%;
   min-width: 0;
-  overflow-x: auto;
+  overflow-x: hidden;
 }
 
 .dashboard-active-jobs-card .active-jobs-table {
@@ -197,13 +197,12 @@ export default {
 
 .dashboard-active-jobs-card .active-jobs-table th,
 .dashboard-active-jobs-card .active-jobs-table td {
+  min-width: 0;
   overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
-@media (max-width: 760px) {
-  .dashboard-active-jobs-card .active-jobs-table {
-    min-width: 640px;
-    table-layout: auto;
-  }
+.dashboard-active-jobs-card .job-created-time {
+  white-space: normal;
 }
 </style>
