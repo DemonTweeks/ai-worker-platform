@@ -1,0 +1,37 @@
+name: Issue 84 Rebuild
+
+on:
+  push:
+    branches:
+      - fix/issue-84-dashboard-ui-polish-main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    if: ${{ !contains(github.event.head_commit.message || '', '[rebuild-complete]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Diagnose PR 87 replay
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin refs/pull/87/head:refs/remotes/origin/pr87
+          if git cherry-pick 5158f3b6920186e83a9bf0e18aa86d4dad738f6e; then
+            echo "PR87_REPLAY_CLEAN=true"
+            git cherry-pick --abort 2>/dev/null || true
+            exit 0
+          fi
+          echo "PR87_REPLAY_CLEAN=false"
+          echo "CONFLICT_FILES_BEGIN"
+          git diff --name-only --diff-filter=U
+          echo "CONFLICT_FILES_END"
+          git cherry-pick --abort
+          exit 1
