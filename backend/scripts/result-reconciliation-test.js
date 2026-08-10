@@ -1,5 +1,25 @@
 const assert = require('assert');
 const { determineFinalStatus } = require('../src/services/zeroOutputPolicyService');
+const { fromEngineContract } = require('../src/services/resultReconciliationService');
+
+const mappedContract = fromEngineContract({
+  requested_count: 24,
+  generated_count: 8,
+  review_required_count: 16,
+  approved_ignored_count: 0,
+  duplicate_blocked_count: 0,
+  failed_count: 0,
+  unaccounted_count: 0
+});
+assert.deepStrictEqual(mappedContract, {
+  requestedSiteCount: 24,
+  generatedSiteCount: 8,
+  reviewRequiredSiteCount: 16,
+  approvedIgnoredSiteCount: 0,
+  duplicateBlockedSiteCount: 0,
+  failedSiteCount: 0,
+  unaccountedSiteCount: 0
+});
 
 const baseSummary = {
   requestedSiteCount: 24,
