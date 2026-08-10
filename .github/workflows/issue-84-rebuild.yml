@@ -12,6 +12,7 @@ permissions:
 jobs:
   rebuild:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -32,54 +33,33 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git fetch origin main refs/pull/87/head:refs/remotes/origin/pr87
           git cherry-pick 5158f3b6920186e83a9bf0e18aa86d4dad738f6e
-
-          # App/navigation are the one rejected product change in #87.
-          # Restore current-main Status behavior, then add only sticky-header behavior.
           git checkout HEAD^ -- frontend/src/App.vue frontend/src/__tests__/App.spec.js frontend/src/__tests__/AppNavigation.spec.js
 
           node <<'NODE'
           const fs = require('fs');
           const appPath = 'frontend/src/App.vue';
           let app = fs.readFileSync(appPath, 'utf8');
-
-          app = app.replace(
-            '<header class="app-header">',
-            `<header\n      class="app-header"\n      :class="{ 'is-hidden': isHeaderHidden }"\n      @focusin="showHeader"\n    >`
-          );
-
-          app = app.replace(
-            "      storedSelectedJobId: ''\n",
-            "      storedSelectedJobId: '',\n      isHeaderHidden: false,\n      lastScrollY: 0,\n      headerScrollFrame: null\n"
-          );
-
-          app = app.replace(
-            `    this.checkHealth();\n    this.healthTimer = setInterval(this.checkHealth, 30000);`,
-            `    this.checkHealth();\n    this.healthTimer = setInterval(this.checkHealth, 30000);\n    if (typeof window !== 'undefined') {\n      this.lastScrollY = Math.max(window.scrollY || 0, 0);\n      window.addEventListener('scroll', this.handleHeaderScroll, { passive: true });\n    }`
-          );
-
-          app = app.replace(
-            `    if (typeof window !== 'undefined') {\n      window.removeEventListener(SELECTED_JOB_CHANGED_EVENT, this.handleSelectedJobChanged);\n    }\n    if (this.healthTimer) {`,
-            `    if (typeof window !== 'undefined') {\n      window.removeEventListener(SELECTED_JOB_CHANGED_EVENT, this.handleSelectedJobChanged);\n      window.removeEventListener('scroll', this.handleHeaderScroll);\n      if (this.headerScrollFrame !== null) {\n        if (typeof window.cancelAnimationFrame === 'function') {\n          window.cancelAnimationFrame(this.headerScrollFrame);\n        } else {\n          window.clearTimeout(this.headerScrollFrame);\n        }\n      }\n    }\n    if (this.healthTimer) {`
-          );
-
-          const methodAnchor = `    handleSelectedJobChanged(event) {\n      const nextJobId = event && event.detail && typeof event.detail.jobId === 'string'\n        ? event.detail.jobId\n        : '';\n      this.storedSelectedJobId = nextJobId;\n    },\n`;
-          const stickyMethods = `${methodAnchor}    handleHeaderScroll() {\n      if (this.headerScrollFrame !== null || typeof window === 'undefined') {\n        return;\n      }\n\n      const requestFrame = typeof window.requestAnimationFrame === 'function'\n        ? window.requestAnimationFrame.bind(window)\n        : (callback) => window.setTimeout(callback, 16);\n      this.headerScrollFrame = requestFrame(() => {\n        const currentScrollY = Math.max(window.scrollY || 0, 0);\n        const scrollDelta = currentScrollY - this.lastScrollY;\n\n        if (currentScrollY <= 16) {\n          this.isHeaderHidden = false;\n          this.lastScrollY = currentScrollY;\n        } else if (Math.abs(scrollDelta) >= 6) {\n          this.isHeaderHidden = scrollDelta > 0 && currentScrollY > 80;\n          this.lastScrollY = currentScrollY;\n        }\n\n        this.headerScrollFrame = null;\n      });\n    },\n    showHeader() {\n      this.isHeaderHidden = false;\n    },\n`;
-          if (!app.includes(methodAnchor)) throw new Error('App method anchor not found');
-          app = app.replace(methodAnchor, stickyMethods);
-          fs.writeFileSync(appPath, app);
+          app = app.replace('<header class="app-header">', `<header\n      class="app-header"\n      :class="{ 'is-hidden': isHeaderHidden }"\n      @focusin="showHeader"\n    >`);
+          app = app.replace("      storedSelectedJobId: ''\n", "      storedSelectedJobId: '',\n      isHeaderHidden: false,\n      lastScrollY: 0,\n      headerScrollFrame: null\n");
+          app = app.replace(`    this.checkHealth();\n    this.healthTimer = setInterval(this.checkHealth, 30000);`, `    this.checkHealth();\n    this.healthTimer = setInterval(this.checkHealth, 30000);\n    if (typeof window !== 'undefined') {\n      this.lastScrollY = Math.max(window.scrollY || 0, 0);\n      window.addEventListener('scroll', this.handleHeaderScroll, { passive: true });\n    }`);
+          app = app.replace(`    if (typeof window !== 'undefined') {\n      window.removeEventListener(SELECTED_JOB_CHANGED_EVENT, this.handleSelectedJobChanged);\n    }\n    if (this.healthTimer) {`, `    if (typeof window !== 'undefined') {\n      window.removeEventListener(SELECTED_JOB_CHANGED_EVENT, this.handleSelectedJobChanged);\n      window.removeEventListener('scroll', this.handleHeaderScroll);\n      if (this.headerScrollFrame !== null) {\n        if (typeof window.cancelAnimationFrame === 'function') window.cancelAnimationFrame(this.headerScrollFrame);\n        else window.clearTimeout(this.headerScrollFrame);\n      }\n    }\n    if (this.healthTimer) {`);
+          const anchor = `    handleSelectedJobChanged(event) {\n      const nextJobId = event && event.detail && typeof event.detail.jobId === 'string'\n        ? event.detail.jobId\n        : '';\n      this.storedSelectedJobId = nextJobId;\n    },\n`;
+          const methods = `${anchor}    handleHeaderScroll() {\n      if (this.headerScrollFrame !== null || typeof window === 'undefined') return;\n      const requestFrame = typeof window.requestAnimationFrame === 'function'\n        ? window.requestAnimationFrame.bind(window)\n        : (callback) => window.setTimeout(callback, 16);\n      this.headerScrollFrame = requestFrame(() => {\n        const currentScrollY = Math.max(window.scrollY || 0, 0);\n        const scrollDelta = currentScrollY - this.lastScrollY;\n        if (currentScrollY <= 16) {\n          this.isHeaderHidden = false;\n          this.lastScrollY = currentScrollY;\n        } else if (Math.abs(scrollDelta) >= 6) {\n          this.isHeaderHidden = scrollDelta > 0 && currentScrollY > 80;\n          this.lastScrollY = currentScrollY;\n        }\n        this.headerScrollFrame = null;\n      });\n    },\n    showHeader() {\n      this.isHeaderHidden = false;\n    },\n`;
+          if (!app.includes(anchor)) throw new Error('App method anchor not found');
+          fs.writeFileSync(appPath, app.replace(anchor, methods));
 
           const testPath = 'frontend/src/__tests__/App.spec.js';
           let test = fs.readFileSync(testPath, 'utf8');
           const closing = '\n});\n';
           const idx = test.lastIndexOf(closing);
           if (idx < 0) throw new Error('App.spec closing anchor not found');
-          const stickyTest = `\n  it('hides on downward scroll and reappears on upward scroll', async () => {\n    vi.useFakeTimers();\n    Object.defineProperty(window, 'scrollY', {\n      configurable: true,\n      value: 0,\n      writable: true\n    });\n    const wrapper = mountApp();\n\n    window.scrollY = 120;\n    wrapper.vm.handleHeaderScroll();\n    vi.advanceTimersByTime(16);\n    await wrapper.vm.$nextTick();\n    expect(wrapper.find('.app-header').classes()).toContain('is-hidden');\n\n    window.scrollY = 80;\n    wrapper.vm.handleHeaderScroll();\n    vi.advanceTimersByTime(16);\n    await wrapper.vm.$nextTick();\n    expect(wrapper.find('.app-header').classes()).not.toContain('is-hidden');\n\n    wrapper.destroy();\n    vi.useRealTimers();\n  });\n`;
-          test = test.slice(0, idx) + stickyTest + test.slice(idx);
-          fs.writeFileSync(testPath, test);
+          const stickyTest = `\n  it('hides on downward scroll and reappears on upward scroll', async () => {\n    vi.useFakeTimers();\n    Object.defineProperty(window, 'scrollY', { configurable: true, value: 0, writable: true });\n    const wrapper = mountApp();\n    window.scrollY = 120;\n    wrapper.vm.handleHeaderScroll();\n    vi.advanceTimersByTime(16);\n    await wrapper.vm.$nextTick();\n    expect(wrapper.find('.app-header').classes()).toContain('is-hidden');\n    window.scrollY = 80;\n    wrapper.vm.handleHeaderScroll();\n    vi.advanceTimersByTime(16);\n    await wrapper.vm.$nextTick();\n    expect(wrapper.find('.app-header').classes()).not.toContain('is-hidden');\n    wrapper.destroy();\n    vi.useRealTimers();\n  });\n`;
+          fs.writeFileSync(testPath, test.slice(0, idx) + stickyTest + test.slice(idx));
           NODE
 
           git add frontend
           git commit -m "fix(frontend): preserve global Status with dashboard polish [rebuild-complete]"
+          git push origin HEAD:fix/issue-84-dashboard-ui-polish-main
 
       - name: Install frontend dependencies
         working-directory: frontend
@@ -94,11 +74,6 @@ jobs:
         run: |
           set -euo pipefail
           git diff --check origin/main...HEAD
-          git diff --name-only origin/main...HEAD
           grep -q "Status" frontend/src/App.vue
           grep -q "selectedJobId" frontend/src/App.vue
           grep -q "resultStatus" frontend/src/views/PRCreatorView.vue
-
-      - name: Push rebuilt branch
-        shell: bash
-        run: git push origin HEAD:fix/issue-84-dashboard-ui-polish-main
