@@ -35,16 +35,27 @@ const buildAndSaveSummary = async ({
 
   const shouldDiscoverReconciliation = discoverReconciliation
     && !isCancellationStatus(currentJob && currentJob.status);
+  const needsPreDiscoveryPersistence = shouldDiscoverReconciliation && !workerReconciliation;
+
+  if (needsPreDiscoveryPersistence) {
+    await Job.updateOne({ jobId }, { $set: baseSummary });
+  }
+
   const discoveredReconciliation = workerReconciliation || (
     shouldDiscoverReconciliation ? await discoverWorkerReconciliation(outputCollection) : null
   );
-  const reconciliationSummary = discoveredReconciliation
-    ? {
-      ...discoveredReconciliation,
-      ...baseSummary
-    }
-    : baseSummary;
 
+  if (!discoveredReconciliation) {
+    if (!needsPreDiscoveryPersistence) {
+      await Job.updateOne({ jobId }, { $set: baseSummary });
+    }
+    return baseSummary;
+  }
+
+  const reconciliationSummary = {
+    ...discoveredReconciliation,
+    ...baseSummary
+  };
   const update = {
     ...baseSummary,
     ...toPersistedReconciliation(reconciliationSummary)
