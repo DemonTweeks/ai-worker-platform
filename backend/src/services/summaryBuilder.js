@@ -1,7 +1,8 @@
 const { Job, ReviewRequiredItem, WarningItem } = require('../models');
 const {
   discoverWorkerReconciliation,
-  toPersistedReconciliation
+  toPersistedReconciliation,
+  validateCanonicalReconciliation
 } = require('./resultReconciliationService');
 
 const isCancellationStatus = (status) => (
@@ -33,27 +34,31 @@ const buildAndSaveSummary = async ({
     warningCount
   };
 
-  const shouldDiscoverReconciliation = discoverReconciliation
-    && !isCancellationStatus(currentJob && currentJob.status);
-  const needsPreDiscoveryPersistence = shouldDiscoverReconciliation && !workerReconciliation;
+  const isCancellation = isCancellationStatus(currentJob && currentJob.status);
+  const hasDirectReconciliation = workerReconciliation !== null && workerReconciliation !== undefined;
+  const shouldDiscoverReconciliation = discoverReconciliation && !isCancellation;
+  const shouldProcessReconciliation = !isCancellation && (hasDirectReconciliation || shouldDiscoverReconciliation);
 
-  if (needsPreDiscoveryPersistence) {
+  if (shouldProcessReconciliation) {
     await Job.updateOne({ jobId }, { $set: baseSummary });
   }
 
-  const discoveredReconciliation = workerReconciliation || (
-    shouldDiscoverReconciliation ? await discoverWorkerReconciliation(outputCollection) : null
-  );
+  let resolvedReconciliation = null;
+  if (!isCancellation && hasDirectReconciliation) {
+    resolvedReconciliation = validateCanonicalReconciliation(workerReconciliation);
+  } else if (shouldDiscoverReconciliation) {
+    resolvedReconciliation = await discoverWorkerReconciliation(outputCollection);
+  }
 
-  if (!discoveredReconciliation) {
-    if (!needsPreDiscoveryPersistence) {
+  if (!resolvedReconciliation) {
+    if (!shouldProcessReconciliation) {
       await Job.updateOne({ jobId }, { $set: baseSummary });
     }
     return baseSummary;
   }
 
   const reconciliationSummary = {
-    ...discoveredReconciliation,
+    ...resolvedReconciliation,
     ...baseSummary
   };
   const update = {
