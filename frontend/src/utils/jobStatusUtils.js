@@ -16,6 +16,16 @@ export const STATUS_LABELS = {
 
 export const statusLabel = (status) => STATUS_LABELS[status] || status || 'Unknown';
 
+export const isIncompleteResult = (job = {}) => (
+  job.status === 'failed'
+  && job.error
+  && job.error.code === 'RESULT_RECONCILIATION_INCOMPLETE'
+);
+
+export const jobStatusLabel = (job = {}) => (
+  isIncompleteResult(job) ? 'Incomplete Result' : statusLabel(job.status)
+);
+
 export const generationScopeLabel = (scope) => {
   if (scope === 'all_sites') return 'All sites';
   if (scope === 'site_code') return 'Specific sites';
@@ -42,3 +52,7 @@ export const statusTone = (status) => {
   if (isRunningStatus(value)) return 'active';
   return 'muted';
 };
+
+export const jobStatusTone = (job = {}) => (
+  isIncompleteResult(job) ? 'danger' : statusTone(job.status)
+);
