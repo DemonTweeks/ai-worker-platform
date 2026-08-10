@@ -7,6 +7,7 @@ const {
   fromEngineContract
 } = require('../src/services/resultReconciliationService');
 const { serializeJobSummary } = require('../src/services/jobService');
+const { sanitizeWorkerErrorForLlm } = require('../src/services/jobContextService');
 const storageService = require('../src/services/storageService');
 
 const validEngineContract = {
@@ -52,11 +53,7 @@ const baseSummary = {
   warningCount: 0
 };
 
-assert.strictEqual(
-  determineFinalStatus(baseSummary),
-  'completed',
-  'legacy jobs without reconciliation metadata should retain existing completion behavior'
-);
+assert.strictEqual(determineFinalStatus(baseSummary), 'completed');
 
 const fullyReconciled = {
   ...baseSummary,
@@ -125,7 +122,7 @@ const withPlatformUnmatchedSites = {
 };
 assert.strictEqual(determineFinalStatus(withPlatformUnmatchedSites), 'completed_with_warning');
 
-const apiJob = serializeJobSummary({
+const rawIncompleteJob = {
   jobId: 'PR-ISSUE88-API',
   workerId: 'mw-pr',
   workerType: 'pr-worker',
@@ -152,8 +149,9 @@ const apiJob = serializeJobSummary({
   accountedSiteCount: 8,
   unaccountedSiteCount: 16,
   reconciliationConsistent: false
-});
+};
 
+const apiJob = serializeJobSummary(rawIncompleteJob);
 assert.strictEqual(apiJob.resultStatus, 'incomplete_result');
 assert.strictEqual(apiJob.error.code, 'RESULT_RECONCILIATION_INCOMPLETE');
 assert.strictEqual(apiJob.error.category, 'RESULT_INCOMPLETE');
@@ -174,6 +172,16 @@ assert.deepStrictEqual(apiJob.error.details, {
 assert.ok(!JSON.stringify(apiJob).includes('SECRET_TOKEN'));
 assert.ok(!JSON.stringify(apiJob).includes('arbitraryRawDetail'));
 assert.ok(!JSON.stringify(apiJob).includes('worker.log'));
+
+const llmError = sanitizeWorkerErrorForLlm(rawIncompleteJob);
+assert.strictEqual(llmError.code, 'RESULT_RECONCILIATION_INCOMPLETE');
+assert.strictEqual(llmError.category, 'RESULT_INCOMPLETE');
+assert.strictEqual(llmError.title, 'Incomplete Result');
+assert.strictEqual(llmError.message, '8 of 24 requested sites generated. 16 sites have no confirmed result.');
+assert.deepStrictEqual(llmError.details, apiJob.error.details);
+assert.ok(!JSON.stringify(llmError).includes('SECRET_TOKEN'));
+assert.ok(!JSON.stringify(llmError).includes('arbitraryRawDetail'));
+assert.ok(!JSON.stringify(llmError).includes('worker.log'));
 
 const ordinaryFailure = serializeJobSummary({
   jobId: 'PR-ISSUE88-FAIL',
@@ -223,15 +231,14 @@ const runDiscoveryTests = async () => {
       (error) => error
         && error.code === 'RESULT_RECONCILIATION_INCOMPLETE'
         && error.details
-        && error.details.reason === 'OVERSIZED_CONTRACT_ARTIFACT',
-      'oversized JSON that contains a reconciliation marker must fail closed'
+        && error.details.reason === 'OVERSIZED_CONTRACT_ARTIFACT'
     );
 
     await fs.promises.writeFile(oversizedUnrelatedPath, JSON.stringify({ padding }), 'utf8');
     const unrelated = await discoverWorkerReconciliation({
       outputFiles: [{ fileName: 'oversized-unrelated.json', filePath: path.relative(storageRoot, oversizedUnrelatedPath) }]
     });
-    assert.strictEqual(unrelated, null, 'oversized unrelated JSON should remain a normal artifact');
+    assert.strictEqual(unrelated, null);
   } finally {
     await fs.promises.rm(testRoot, { recursive: true, force: true });
   }
