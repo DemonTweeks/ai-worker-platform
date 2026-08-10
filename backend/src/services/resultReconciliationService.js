@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { assertPathInsideRoot } = require('../utils/pathUtils');
 
 const MAX_RECONCILIATION_JSON_BYTES = 1024 * 1024;
 const COUNT_FIELDS = [
@@ -90,24 +91,46 @@ const fromEngineContract = (payload = {}) => ({
   unaccountedSiteCount: payload.unaccounted_count ?? payload.unaccountedSiteCount
 });
 
+const invalidContractError = (reason) => Object.assign(
+  new Error('Worker result reconciliation contract is invalid.'),
+  {
+    code: 'RESULT_RECONCILIATION_INCOMPLETE',
+    details: { reason }
+  }
+);
+
 const discoverWorkerReconciliation = async (outputCollection = {}) => {
   const storageService = require('./storageService');
+  const storageRoot = storageService.getStorageRoot();
   const jsonFiles = (outputCollection.outputFiles || []).filter((file) => (
     String(file.fileName || '').toLowerCase().endsWith('.json') && file.filePath
   ));
 
   for (const file of jsonFiles) {
-    const absolutePath = path.join(storageService.getStorageRoot(), file.filePath);
+    const absolutePath = assertPathInsideRoot(storageRoot, path.join(storageRoot, file.filePath));
     try {
       const stat = await fs.promises.stat(absolutePath);
       if (!stat.isFile() || stat.size > MAX_RECONCILIATION_JSON_BYTES) continue;
       const parsed = JSON.parse(await fs.promises.readFile(absolutePath, 'utf8'));
-      const contract = parsed.result_reconciliation || parsed.resultReconciliation || parsed.reconciliation;
-      if (!contract || typeof contract !== 'object' || Array.isArray(contract)) continue;
+      const hasSnakeContract = Object.prototype.hasOwnProperty.call(parsed, 'result_reconciliation');
+      const hasCamelContract = Object.prototype.hasOwnProperty.call(parsed, 'resultReconciliation');
+      if (!hasSnakeContract && !hasCamelContract) continue;
+
+      const contract = hasSnakeContract ? parsed.result_reconciliation : parsed.resultReconciliation;
+      if (!contract || typeof contract !== 'object' || Array.isArray(contract)) {
+        throw invalidContractError('INVALID_CONTRACT_OBJECT');
+      }
+
       const mapped = fromEngineContract(contract);
-      if (normalizeResultReconciliation(mapped)) return mapped;
+      if (!normalizeResultReconciliation(mapped)) {
+        throw invalidContractError('MISSING_RECONCILIATION_COUNTS');
+      }
+      return mapped;
     } catch (error) {
-      // Non-reconciliation JSON output remains a normal worker artifact.
+      if (error && error.code === 'RESULT_RECONCILIATION_INCOMPLETE') {
+        throw error;
+      }
+      // Unrelated or malformed non-contract JSON output remains a normal worker artifact.
     }
   }
 
