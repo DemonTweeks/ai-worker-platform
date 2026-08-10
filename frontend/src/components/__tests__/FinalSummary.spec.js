@@ -42,4 +42,27 @@ describe('FinalSummary PR Auditor report wording', () => {
     expect(wrapper.text()).toContain('Audit report generated.');
     expect(wrapper.text()).toContain('workbook download');
   });
+
+  it('shows Incomplete Result instead of raw failed status for reconciliation failures', () => {
+    const wrapper = mount(FinalSummary, {
+      propsData: {
+        detail: {
+          job: {
+            jobId: 'PR-INCOMPLETE-003',
+            workerId: 'mw-pr',
+            status: 'failed',
+            resultStatus: 'incomplete_result',
+            requestedSiteCount: 24,
+            generatedSiteCount: 8,
+            unaccountedSiteCount: 16,
+            outputFileCount: 1
+          },
+          outputs: []
+        }
+      }
+    });
+
+    expect(wrapper.text()).toContain('Status: Incomplete Result');
+    expect(wrapper.text()).not.toContain('Status: failed');
+  });
 });

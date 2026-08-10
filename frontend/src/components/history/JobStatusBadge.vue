@@ -3,19 +3,25 @@
 </template>
 
 <script>
-import { statusLabel, statusTone } from '../../utils/jobStatusUtils';
+import {
+  jobStatusLabel,
+  jobStatusTone,
+  statusLabel,
+  statusTone
+} from '../../utils/jobStatusUtils';
 
 export default {
   name: 'JobStatusBadge',
   props: {
-    status: { type: String, default: '' }
+    status: { type: String, default: '' },
+    job: { type: Object, default: null }
   },
   computed: {
     label() {
-      return statusLabel(this.status);
+      return this.job ? jobStatusLabel(this.job) : statusLabel(this.status);
     },
     tone() {
-      return statusTone(this.status);
+      return this.job ? jobStatusTone(this.job) : statusTone(this.status);
     }
   }
 };

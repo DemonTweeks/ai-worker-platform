@@ -10,6 +10,7 @@ import {
 } from '../../api/jobApi';
 import { askJob } from '../../api/reAskApi';
 import { displayMessage, isTerminalStatus } from '../../utils/statusUtils';
+import { isIncompleteResult, jobStatusLabel, statusLabel } from '../../utils/jobStatusUtils';
 import { hasAuditReport, prAuditorReportMessage } from '../../utils/prAuditorResultUtils';
 import {
   scheduleNotificationDismiss,
@@ -135,6 +136,14 @@ export const workerRuntimeMixin = {
     isPartialCancelledResult() {
       return this.jobDetail && this.jobDetail.job && this.jobDetail.job.status === 'cancelled_with_partial_result';
     },
+    isIncompleteResult() {
+      return Boolean(this.jobDetail && this.jobDetail.job && isIncompleteResult(this.jobDetail.job));
+    },
+    currentStatusDisplayLabel() {
+      return this.jobDetail && this.jobDetail.job
+        ? jobStatusLabel(this.jobDetail.job)
+        : statusLabel(this.currentStatus);
+    },
     jobReady() {
       return this.jobDetail && this.jobDetail.job && ['completed', 'completed_with_warning', 'failed', 'cancelled', 'cancelled_with_partial_result'].includes(this.jobDetail.job.status);
     },
@@ -161,11 +170,14 @@ export const workerRuntimeMixin = {
       if (this.isPrAuditorCurrentJob) {
         return 'Download Audit Report';
       }
-      return this.isPartialCancelledResult ? 'Download Partial ZIP' : 'Download ZIP';
+      return this.isPartialCancelledResult || this.isIncompleteResult ? 'Download Partial ZIP' : 'Download ZIP';
     },
     deliveryWarningMessage() {
       if (this.isPartialCancelledResult) {
         return 'Partial package only. This is not a completed delivery.';
+      }
+      if (this.isIncompleteResult) {
+        return 'Incomplete result package only. This is not a completed delivery.';
       }
       if (this.isCancelledResult) {
         return 'This job was cancelled and is not a completed delivery.';
@@ -192,11 +204,13 @@ export const workerRuntimeMixin = {
     },
     progressStateLabel() {
       if (!this.currentJobId) return 'Idle';
+      if (this.isIncompleteResult) return 'Incomplete Result';
       if (this.jobReady) return 'Complete';
       return this.currentPhase || this.currentStatus || 'Running';
     },
     downloadProgressLabel() {
       if (!this.currentJobId) return 'No active Job';
+      if (this.isIncompleteResult) return 'Result incomplete';
       if (this.jobReady) return 'Result complete';
       return this.currentPhase || this.currentStatus || 'Processing';
     },
@@ -608,7 +622,7 @@ export const workerRuntimeMixin = {
           id: 'job-created',
           label: 'Job',
           title: `Job ${this.currentJobId}`,
-          body: `Status ${this.currentStatus || 'created'} with ${this.activeWorkerLabel} in ${this.activeModeLabel} mode.`,
+          body: `Status ${this.currentStatusDisplayLabel || 'created'} with ${this.activeWorkerLabel} in ${this.activeModeLabel} mode.`,
           tone: 'info',
           time: this.updatedAt
         });
@@ -634,7 +648,9 @@ export const workerRuntimeMixin = {
         items.push({
           id: `event-${event.timestamp || index}-${event.type || 'message'}`,
           label: event.type || 'Event',
-          title: event.status || event.currentPhase || 'Worker event',
+          title: this.isIncompleteResult && event.status === 'failed'
+            ? 'Incomplete Result'
+            : (event.status || event.currentPhase || 'Worker event'),
           body: event.displayText || displayMessage(event),
           tone: event.status && event.status.toLowerCase().includes('fail') ? 'danger' : 'info',
           time: event.updatedAt || event.timestamp || ''
@@ -646,7 +662,7 @@ export const workerRuntimeMixin = {
         items.push({
           id: 'result-state',
           label: 'Result',
-          title: `Result ${job.status || 'available'}`,
+          title: `Result ${jobStatusLabel(job)}`,
           body: this.resultCompletionMessage,
           tone: this.resultTone,
           time: job.updatedAt || this.updatedAt
@@ -661,7 +677,7 @@ export const workerRuntimeMixin = {
             body: finalSummary,
             tone: 'info',
             time: job.updatedAt || this.updatedAt,
-            outputJobId: ['completed', 'completed_with_warning'].includes(job.status)
+            outputJobId: (['completed', 'completed_with_warning'].includes(job.status) || isIncompleteResult(job))
               && Number(job.outputFileCount) > 0
               ? (job.jobId || this.currentJobId)
               : ''
@@ -669,7 +685,7 @@ export const workerRuntimeMixin = {
         }
 
         const failureMessage = job.failureSummary || (job.error && job.error.message ? job.error.message : '');
-        if (failureMessage) {
+        if (failureMessage && !isIncompleteResult(job)) {
           items.push({
             id: 'job-error',
             label: 'Error',

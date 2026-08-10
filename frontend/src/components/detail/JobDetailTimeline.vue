@@ -25,10 +25,10 @@
       </li>
       <li v-if="job.completedAt">
         <div class="timeline-title">
-          <strong>Completed</strong>
+          <strong>{{ terminalStatusLabel }}</strong>
           <span>{{ formatDateTime(job.completedAt) }}</span>
         </div>
-        <p>Job reached status {{ job.status }}.</p>
+        <p>Job reached status {{ terminalStatusLabel }}.</p>
       </li>
       <li v-if="job.cancelledAt">
         <div class="timeline-title">
@@ -52,6 +52,7 @@
 <script>
 import JobEventTimeline from '../JobEventTimeline.vue';
 import { formatDateTime } from '../../utils/formatUtils';
+import { jobStatusLabel } from '../../utils/jobStatusUtils';
 
 export default {
   name: 'JobDetailTimeline',
@@ -61,6 +62,9 @@ export default {
     liveEvents: { type: Array, default: () => [] }
   },
   computed: {
+    terminalStatusLabel() {
+      return jobStatusLabel(this.job);
+    },
     executedSiteCodes() {
       return Array.isArray(this.job.matchedSiteCodes)
         ? this.job.matchedSiteCodes.filter((siteCode) => typeof siteCode === 'string' && siteCode.trim())

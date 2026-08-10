@@ -1,6 +1,6 @@
 <template>
   <section v-if="isFailed && failureDiagnosis" class="panel failure-diagnosis-panel">
-    <h2>Failure Diagnosis</h2>
+    <h2>{{ panelTitle }}</h2>
 
     <!-- PREFLIGHT_FAILED -->
     <div v-if="failureDiagnosis.category === 'PREFLIGHT_FAILED'" class="diagnosis-content">
@@ -30,9 +30,7 @@
     <!-- WORKER_TIMEOUT -->
     <div v-else-if="failureDiagnosis.category === 'WORKER_TIMEOUT'" class="diagnosis-content">
       <h3 class="diagnosis-title text-danger">{{ failureDiagnosis.title }}</h3>
-      <p class="explanation-text">
-        {{ failureDiagnosis.summary }}
-      </p>
+      <p class="explanation-text">{{ failureDiagnosis.summary }}</p>
       <p class="instruction-text">
         Please check the Job History / Job Detail state to verify if resources or limits need adjustment.
       </p>
@@ -41,9 +39,7 @@
     <!-- WORKER_PROCESS_FAILED -->
     <div v-else-if="failureDiagnosis.category === 'WORKER_PROCESS_FAILED'" class="diagnosis-content">
       <h3 class="diagnosis-title text-danger">{{ failureDiagnosis.title }}</h3>
-      <p class="explanation-text">
-        {{ failureDiagnosis.summary }}
-      </p>
+      <p class="explanation-text">{{ failureDiagnosis.summary }}</p>
       <div v-if="failureDiagnosis.scope" class="diagnosis-item">
         <span class="label">Execution Scope:</span>
         <strong class="value">{{ failureDiagnosis.scope }}</strong>
@@ -54,13 +50,12 @@
       </div>
     </div>
 
-    <!-- Generic Error -->
+    <!-- Generic / result-integrity explanation -->
     <div v-else class="diagnosis-content">
-      <h3 class="diagnosis-title text-danger">{{ failureDiagnosis.title }}</h3>
+      <h3 class="diagnosis-title" :class="{ 'text-danger': !isIncompleteResult }">{{ failureDiagnosis.title }}</h3>
       <p class="explanation-text">{{ failureDiagnosis.summary }}</p>
     </div>
 
-    <!-- Technical details section for any failure with stderr -->
     <div v-if="failureDiagnosis.technicalDetails" class="technical-details-wrapper">
       <details class="tech-details">
         <summary class="tech-details-summary">Technical details</summary>
@@ -73,6 +68,8 @@
 </template>
 
 <script>
+import { isIncompleteResult } from '../../utils/jobStatusUtils';
+
 export default {
   name: 'FailureDiagnosis',
   props: {
@@ -89,6 +86,12 @@ export default {
   computed: {
     isFailed() {
       return this.job && this.job.status === 'failed';
+    },
+    isIncompleteResult() {
+      return isIncompleteResult(this.job);
+    },
+    panelTitle() {
+      return this.isIncompleteResult ? 'Incomplete Result Details' : 'Failure Diagnosis';
     },
     failureDiagnosis() {
       return this.job && this.job.failureDiagnosis ? this.job.failureDiagnosis : null;

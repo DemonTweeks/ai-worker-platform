@@ -1,4 +1,4 @@
-import { flushPromises, mount } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import PRCreatorView from '../PRCreatorView.vue';
 import { getPrevalidatedUpload } from '../../api/jobApi';
@@ -104,7 +104,8 @@ describe('PRCreatorView partial RAN retained uploads', () => {
   }) => {
     getPrevalidatedUpload.mockResolvedValue(restoredUpload(prevalidatedFileId));
     const wrapper = mountView();
-    await flushPromises();
+    await Promise.resolve();
+    await wrapper.vm.$nextTick();
     sessionStorage.setItem('awp.prCreator.reusableRanUploads', JSON.stringify({
       [storedKey]: prevalidatedFileId,
       runMode: 'standard-pr',
@@ -126,7 +127,8 @@ describe('PRCreatorView partial RAN retained uploads', () => {
       return restoredUpload(prevalidatedFileId);
     });
     const wrapper = mountView();
-    await flushPromises();
+    await Promise.resolve();
+    await wrapper.vm.$nextTick();
     sessionStorage.setItem('awp.prCreator.reusableRanUploads', JSON.stringify({
       bomPrevalidatedFileId: 'ran-bom-available',
       epmsPrevalidatedFileId: 'ran-epms-missing',

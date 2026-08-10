@@ -1,4 +1,4 @@
-import { flushPromises, mount } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import PRCreatorView from '../PRCreatorView.vue';
 import { getJobDetail, getPrevalidatedUpload, releasePrevalidatedUpload } from '../../api/jobApi';
@@ -185,7 +185,8 @@ describe('PRCreatorView', () => {
       finalWorkerSummary: 'The PR Worker task completed successfully.'
     });
     const wrapper = mountView();
-    await flushPromises();
+    await Promise.resolve();
+    await wrapper.vm.$nextTick();
     await wrapper.setData({
       currentJobId: 'PR-20260806-002',
       currentStatus: 'generating',
@@ -203,7 +204,8 @@ describe('PRCreatorView', () => {
       status: 'completed_with_warning',
       updatedAt: '2026-08-06T01:18:40.403Z'
     });
-    await flushPromises();
+    await Promise.resolve();
+    await wrapper.vm.$nextTick();
 
     expect(wrapper.vm.currentJobId).toBe('PR-20260806-002');
     expect(wrapper.vm.jobDetail.job.status).toBe('completed_with_warning');

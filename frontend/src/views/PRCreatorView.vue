@@ -311,6 +311,19 @@
                 <dd>{{ item.value }}</dd>
               </div>
             </dl>
+            <dl
+              v-if="jobDetail && jobDetail.job && jobDetail.job.generatedSiteCount !== null && jobDetail.job.generatedSiteCount !== undefined"
+              class="download-summary-grid"
+              aria-label="Result reconciliation"
+            >
+              <div><dt>Generated sites</dt><dd>{{ jobDetail.job.generatedSiteCount || 0 }}</dd></div>
+              <div><dt>Accounted sites</dt><dd>{{ jobDetail.job.accountedSiteCount || 0 }}</dd></div>
+              <div><dt>Sites without confirmed result</dt><dd>{{ jobDetail.job.unaccountedSiteCount || 0 }}</dd></div>
+              <div><dt>Review sites</dt><dd>{{ jobDetail.job.reviewRequiredSiteCount || 0 }}</dd></div>
+              <div><dt>Ignored sites</dt><dd>{{ jobDetail.job.approvedIgnoredSiteCount || 0 }}</dd></div>
+              <div><dt>Duplicate-blocked</dt><dd>{{ jobDetail.job.duplicateBlockedSiteCount || 0 }}</dd></div>
+              <div><dt>Failed sites</dt><dd>{{ jobDetail.job.failedSiteCount || 0 }}</dd></div>
+            </dl>
             <p v-if="jobReady" class="completion-message" :class="resultTone">{{ resultCompletionMessage }}</p>
             <div v-if="hasActiveWorkerJob" class="workbench-create-row">
               <button

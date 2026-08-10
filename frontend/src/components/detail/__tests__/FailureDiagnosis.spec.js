@@ -23,6 +23,7 @@ describe('FailureDiagnosis.vue Component', () => {
     });
 
     const text = wrapper.text();
+    expect(text).toContain('Failure Diagnosis');
     expect(text).toContain('Python worker dependency missing');
     expect(text).toContain('pandas, openpyxl');
     expect(text).toContain('/usr/bin/python3');
@@ -30,7 +31,6 @@ describe('FailureDiagnosis.vue Component', () => {
     expect(text).toContain('Technical details');
     expect(wrapper.find('pre').text()).toContain('ImportError: pandas missing');
 
-    // Check that native <details> element has no open attribute by default
     const detailsEl = wrapper.find('details');
     expect(detailsEl.attributes('open')).toBeUndefined();
   });
@@ -148,17 +148,36 @@ describe('FailureDiagnosis.vue Component', () => {
     });
 
     const html = wrapper.html();
-    // Assert native <details> has no open attribute by default
     const detailsEl = wrapper.find('details');
     expect(detailsEl.attributes('open')).toBeUndefined();
 
-    // Assert rendered HTML contains none of the hostile job.error values
     expect(html).not.toContain('C:\\Users\\JJ\\private\\uploads\\secret.xlsx');
     expect(html).not.toContain('LLM_API_KEY=another-secret');
     expect(html).not.toContain('bearer-secret-value');
     expect(html).not.toContain('Authorization: Bearer');
-
-    // Assert safe technical details are present
     expect(html).toContain('Safe redacted technical details [redacted]');
+  });
+
+  it('uses result-integrity wording instead of Failure Diagnosis for incomplete results', () => {
+    const job = {
+      jobId: 'PR-INCOMPLETE-107',
+      status: 'failed',
+      resultStatus: 'incomplete_result',
+      failureDiagnosis: {
+        category: 'RESULT_RECONCILIATION_INCOMPLETE',
+        title: 'Incomplete Result',
+        summary: '8 of 24 requested sites generated. 16 sites have no confirmed result.',
+        technicalDetails: ''
+      }
+    };
+
+    const wrapper = mount(FailureDiagnosis, {
+      propsData: { job }
+    });
+
+    const text = wrapper.text();
+    expect(text).toContain('Incomplete Result Details');
+    expect(text).toContain('8 of 24 requested sites generated. 16 sites have no confirmed result.');
+    expect(text).not.toContain('Failure Diagnosis');
   });
 });

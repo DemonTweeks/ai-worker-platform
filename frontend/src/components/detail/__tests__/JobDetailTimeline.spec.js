@@ -43,4 +43,17 @@ describe('JobDetailTimeline', () => {
 
     expect(wrapper.text()).not.toContain('Sites executed');
   });
+
+  it('uses Incomplete Result throughout the terminal timeline entry', () => {
+    const wrapper = mountTimeline({
+      status: 'failed',
+      resultStatus: 'incomplete_result',
+      createdAt: '2026-07-15T08:21:18.000Z',
+      completedAt: '2026-07-15T08:21:49.000Z'
+    });
+
+    expect(wrapper.text()).toContain('Incomplete Result');
+    expect(wrapper.text()).toContain('Job reached status Incomplete Result.');
+    expect(wrapper.text()).not.toContain('Job reached status failed.');
+  });
 });

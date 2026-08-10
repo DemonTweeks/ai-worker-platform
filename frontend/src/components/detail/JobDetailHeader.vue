@@ -5,7 +5,7 @@
       <h1>{{ job.jobId }}</h1>
     </div>
     <div class="badge-row">
-      <JobStatusBadge :status="job.status" />
+      <JobStatusBadge :status="job.status" :job="job" />
       <JobScopeBadge v-if="showScopeBadge" :scope="job.prScope" />
     </div>
   </section>

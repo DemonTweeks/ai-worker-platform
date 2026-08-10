@@ -6,7 +6,7 @@
         <h2>{{ job.jobId }}</h2>
       </div>
       <div class="badge-row">
-        <JobStatusBadge :status="job.status" />
+        <JobStatusBadge :status="job.status" :job="job" />
         <JobScopeBadge v-if="showScopeBadge" :scope="job.prScope" />
       </div>
     </div>
@@ -15,6 +15,7 @@
       <span v-for="item in metadataItems" :key="item.label"><strong>{{ item.value }}</strong><small>{{ item.label }}</small></span>
     </div>
 
+    <p v-if="reconciliationPreview" class="summary-preview">{{ reconciliationPreview }}</p>
     <p class="summary-preview">{{ summaryPreview }}</p>
 
     <div class="job-card-footer">
@@ -38,13 +39,14 @@
       <span v-else class="muted">ZIP not ready</span>
     </div>
     <p v-if="job.status === 'cancelled_with_partial_result'" class="muted">Partial cancelled result only. This package is not a completed delivery.</p>
+    <p v-else-if="isIncompleteResultJob" class="muted">Incomplete result package only. This is not a completed delivery.</p>
   </article>
 </template>
 
 <script>
 import { getFileDownloadUrl, getZipDownloadUrl } from '../../api/jobApi';
 import { formatDateTime } from '../../utils/formatUtils';
-import { generationScopeLabel } from '../../utils/jobStatusUtils';
+import { generationScopeLabel, isIncompleteResult } from '../../utils/jobStatusUtils';
 import {
   findAvailableAuditReport,
   hasAuditReport,
@@ -65,6 +67,12 @@ export default {
   computed: {
     isPrAuditorJob() {
       return this.job.workerId === 'pr-auditor';
+    },
+    isIncompleteResultJob() {
+      return isIncompleteResult(this.job);
+    },
+    hasReconciliation() {
+      return !this.isPrAuditorJob && this.job.generatedSiteCount !== null && this.job.generatedSiteCount !== undefined;
     },
     showScopeBadge() {
       return Boolean(this.job.prScope);
@@ -90,6 +98,14 @@ export default {
         ];
       }
 
+      const reconciliation = this.hasReconciliation
+        ? [
+          { label: 'Generated', value: this.job.generatedSiteCount || 0 },
+          { label: 'Accounted', value: this.job.accountedSiteCount || 0 },
+          { label: 'Sites Without Confirmed Result', value: this.job.unaccountedSiteCount || 0 }
+        ]
+        : [];
+
       return [
         { label: 'Worker', value: this.workerLabel },
         { label: 'Run Mode', value: this.runModeLabel },
@@ -98,6 +114,7 @@ export default {
         { label: 'Requested', value: this.job.requestedSiteCount || 0 },
         { label: 'Matched', value: this.job.matchedSiteCount || 0 },
         { label: 'Unmatched', value: this.job.unmatchedSiteCount || 0 },
+        ...reconciliation,
         { label: 'Outputs', value: this.job.outputFileCount || 0 },
         { label: 'Review', value: this.job.reviewRequiredCount || 0 },
         { label: 'Warnings', value: this.job.warningCount || 0 }
@@ -127,9 +144,28 @@ export default {
         return 'Download Audit Report';
       }
 
-      return this.job.status === 'cancelled_with_partial_result' ? 'Download Partial ZIP' : 'Download ZIP';
+      return this.job.status === 'cancelled_with_partial_result' || this.isIncompleteResultJob
+        ? 'Download Partial ZIP'
+        : 'Download ZIP';
+    },
+    reconciliationPreview() {
+      if (!this.hasReconciliation) return '';
+      const requested = this.job.requestedSiteCount || 0;
+      const generated = this.job.generatedSiteCount || 0;
+      const unaccounted = this.job.unaccountedSiteCount || 0;
+      if (unaccounted > 0) {
+        return `${generated} of ${requested} requested sites generated. ${unaccounted} sites have no confirmed result.`;
+      }
+      if (this.job.status === 'completed_with_warning') {
+        return `Result reconciled: ${generated}/${requested} generated • ${this.job.accountedSiteCount || 0}/${requested} accounted.`;
+      }
+      return `Result reconciled: ${this.job.accountedSiteCount || 0}/${requested} requested sites accounted.`;
     },
     summaryPreview() {
+      if (isIncompleteResult(this.job)) {
+        return 'Incomplete Result — review the sites without a confirmed result before using this delivery as complete.';
+      }
+
       if (this.job.status === 'failed') {
         return this.job.failureSummary || 'PR Worker execution failed.';
       }
@@ -160,7 +196,7 @@ export default {
         return Boolean(this.auditReportFile);
       }
 
-      return ['completed', 'completed_with_warning', 'cancelled_with_partial_result'].includes(this.job.status)
+      return (['completed', 'completed_with_warning', 'cancelled_with_partial_result'].includes(this.job.status) || this.isIncompleteResultJob)
         && ((this.job.outputFileCount || 0) > 0 || (this.job.reviewRequiredCount || 0) > 0 || (this.job.warningCount || 0) > 0);
     }
   },
