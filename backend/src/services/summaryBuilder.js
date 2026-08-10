@@ -23,8 +23,8 @@ const buildAndSaveSummary = async ({ jobId, filteringResult, outputCollection, w
   const discoveredReconciliation = workerReconciliation || await discoverWorkerReconciliation(outputCollection);
   const reconciliationSummary = discoveredReconciliation
     ? {
-      ...baseSummary,
-      ...discoveredReconciliation
+      ...discoveredReconciliation,
+      ...baseSummary
     }
     : baseSummary;
 
