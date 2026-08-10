@@ -14,6 +14,7 @@
     </div>
     <p v-else-if="isPrAuditorJob" class="muted">{{ auditSummaryUnavailableMessage }}</p>
     <p v-if="auditReportNotice" class="completion-message" :class="auditReportTone">{{ auditReportNotice }}</p>
+    <p v-if="reconciliationNotice" class="completion-message" :class="reconciliationTone">{{ reconciliationNotice }}</p>
     <p v-if="zeroOutputNotice" class="completion-message" :class="zeroOutputTone">{{ zeroOutputNotice }}</p>
     <p v-if="failureMessage" class="error-text">{{ failureMessage }}</p>
   </section>
@@ -33,6 +34,9 @@ export default {
   computed: {
     isPrAuditorJob() {
       return this.job.workerId === 'pr-auditor';
+    },
+    hasReconciliation() {
+      return !this.isPrAuditorJob && this.job.generatedSiteCount !== null && this.job.generatedSiteCount !== undefined;
     },
     auditSummary() {
       return this.job.auditSummary || null;
@@ -78,6 +82,18 @@ export default {
         return common;
       }
 
+      const reconciliation = this.hasReconciliation
+        ? [
+          { label: 'Generated Sites', value: this.job.generatedSiteCount || 0 },
+          { label: 'Accounted Sites', value: this.job.accountedSiteCount || 0 },
+          { label: 'Unaccounted Sites', value: this.job.unaccountedSiteCount || 0 },
+          { label: 'Review Sites', value: this.job.reviewRequiredSiteCount || 0 },
+          { label: 'Ignored Sites', value: this.job.approvedIgnoredSiteCount || 0 },
+          { label: 'Duplicate-blocked', value: this.job.duplicateBlockedSiteCount || 0 },
+          { label: 'Failed Sites', value: this.job.failedSiteCount || 0 }
+        ]
+        : [];
+
       return [
         common[0],
         common[1],
@@ -91,8 +107,25 @@ export default {
         { label: 'Requested', value: this.job.requestedSiteCount || 0 },
         { label: 'Matched', value: this.job.matchedSiteCount || 0 },
         { label: 'Unmatched', value: this.job.unmatchedSiteCount || 0 },
+        ...reconciliation,
         ...common.slice(5)
       ];
+    },
+    reconciliationNotice() {
+      if (!this.hasReconciliation) return '';
+      const requested = this.job.requestedSiteCount || 0;
+      const generated = this.job.generatedSiteCount || 0;
+      const unaccounted = this.job.unaccountedSiteCount || 0;
+      if (unaccounted > 0) {
+        return `Result integrity warning: ${generated}/${requested} requested sites generated and ${unaccounted} site(s) are unaccounted for.`;
+      }
+      if (this.job.status === 'completed_with_warning') {
+        return `Result reconciled: ${generated}/${requested} requested sites generated; remaining sites have explicit review, ignored, duplicate-blocked, or failed dispositions.`;
+      }
+      return `Result reconciled: ${this.job.accountedSiteCount || 0}/${requested} requested sites are accounted for.`;
+    },
+    reconciliationTone() {
+      return (this.job.unaccountedSiteCount || 0) > 0 ? 'danger' : (this.job.status === 'completed_with_warning' ? 'warning' : 'success');
     },
     zeroOutputNotice() {
       if (this.isPrAuditorJob) return '';
