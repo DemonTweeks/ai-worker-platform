@@ -9,7 +9,7 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
         with:
@@ -25,9 +25,30 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      - name: Frontend full gate
+      - name: Targeted App navigation and sticky-header tests
         working-directory: frontend
-        run: npm test
+        timeout-minutes: 2
+        run: npx vitest run src/__tests__/App.spec.js --reporter=verbose
+
+      - name: Targeted Dashboard layout tests
+        working-directory: frontend
+        timeout-minutes: 2
+        run: npx vitest run src/views/__tests__/DashboardView.spec.js --reporter=verbose
+
+      - name: Frontend unit suite
+        working-directory: frontend
+        timeout-minutes: 4
+        run: npm run test:unit
+
+      - name: Frontend production build
+        working-directory: frontend
+        timeout-minutes: 2
+        run: npm run build
+
+      - name: Route smoke
+        working-directory: frontend
+        timeout-minutes: 2
+        run: npm run smoke
 
       - name: Compatibility assertions
         shell: bash
