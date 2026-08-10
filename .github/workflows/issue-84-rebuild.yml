@@ -8,8 +8,8 @@ on:
 
 jobs:
   validate:
-    runs-on: ubuntu-latest
-    timeout-minutes: 12
+    runs-on: windows-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -51,15 +51,17 @@ jobs:
         run: npm run smoke
 
       - name: Compatibility assertions
-        shell: bash
+        shell: pwsh
         run: |
-          set -euo pipefail
           git fetch origin main
           git diff --check origin/main...HEAD
-          grep -q "Status" frontend/src/App.vue
-          grep -q "selectedJobId" frontend/src/App.vue
-          grep -q "awp:selected-job-changed" frontend/src/App.vue
-          grep -q "resultStatus" frontend/src/views/PRCreatorView.vue
-          grep -q "overflow-x: hidden" frontend/src/views/DashboardView.vue
-          ! grep -q "overflow-x: auto" frontend/src/views/DashboardView.vue
-          ! grep -q "min-width: 640px" frontend/src/views/DashboardView.vue
+          $App = Get-Content 'frontend/src/App.vue' -Raw
+          $Creator = Get-Content 'frontend/src/views/PRCreatorView.vue' -Raw
+          $Dashboard = Get-Content 'frontend/src/views/DashboardView.vue' -Raw
+          if ($App -notmatch 'Status') { throw 'Global Status navigation missing.' }
+          if ($App -notmatch 'selectedJobId') { throw 'Selected-job navigation plumbing missing.' }
+          if ($App -notmatch 'awp:selected-job-changed') { throw 'Selected-job event plumbing missing.' }
+          if ($Creator -notmatch 'resultStatus') { throw 'Issue #88 reconciliation presentation missing.' }
+          if ($Dashboard -notmatch 'overflow-x: hidden') { throw 'Active Jobs no-scroll guard missing.' }
+          if ($Dashboard -match 'overflow-x: auto') { throw 'Active Jobs horizontal scrolling regression detected.' }
+          if ($Dashboard -match 'min-width: 640px') { throw 'Active Jobs forced-width scrolling regression detected.' }
