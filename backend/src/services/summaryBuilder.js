@@ -1,4 +1,5 @@
 const { Job, ReviewRequiredItem, WarningItem } = require('../models');
+const workerStateService = require('./workerStateService');
 const {
   discoverWorkerReconciliation,
   toPersistedReconciliation,
@@ -46,7 +47,8 @@ const buildAndSaveSummary = async ({
     warningCount
   };
 
-  const isCancellation = isCancellationStatus(currentJob && currentJob.status);
+  const isCancellation = isCancellationStatus(currentJob && currentJob.status)
+    || workerStateService.isCancellationRequested(jobId);
   const hasDirectReconciliation = workerReconciliation !== null && workerReconciliation !== undefined;
   const shouldDiscoverReconciliation = discoverReconciliation && !isCancellation;
   const shouldProcessReconciliation = !isCancellation && (hasDirectReconciliation || shouldDiscoverReconciliation);
