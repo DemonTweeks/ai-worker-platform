@@ -6,7 +6,7 @@
         <h2>{{ job.jobId }}</h2>
       </div>
       <div class="badge-row">
-        <JobStatusBadge :status="job.status" />
+        <JobStatusBadge :status="job.status" :job="job" />
         <JobScopeBadge v-if="showScopeBadge" :scope="job.prScope" />
       </div>
     </div>
@@ -45,7 +45,7 @@
 <script>
 import { getFileDownloadUrl, getZipDownloadUrl } from '../../api/jobApi';
 import { formatDateTime } from '../../utils/formatUtils';
-import { generationScopeLabel } from '../../utils/jobStatusUtils';
+import { generationScopeLabel, isIncompleteResult } from '../../utils/jobStatusUtils';
 import {
   findAvailableAuditReport,
   hasAuditReport,
@@ -98,7 +98,7 @@ export default {
         ? [
           { label: 'Generated', value: this.job.generatedSiteCount || 0 },
           { label: 'Accounted', value: this.job.accountedSiteCount || 0 },
-          { label: 'Unaccounted', value: this.job.unaccountedSiteCount || 0 }
+          { label: 'Sites Without Confirmed Result', value: this.job.unaccountedSiteCount || 0 }
         ]
         : [];
 
@@ -148,7 +148,7 @@ export default {
       const generated = this.job.generatedSiteCount || 0;
       const unaccounted = this.job.unaccountedSiteCount || 0;
       if (unaccounted > 0) {
-        return `Result integrity warning: ${generated}/${requested} generated • ${unaccounted} unaccounted.`;
+        return `${generated} of ${requested} requested sites generated. ${unaccounted} sites have no confirmed result.`;
       }
       if (this.job.status === 'completed_with_warning') {
         return `Result reconciled: ${generated}/${requested} generated • ${this.job.accountedSiteCount || 0}/${requested} accounted.`;
@@ -156,6 +156,10 @@ export default {
       return `Result reconciled: ${this.job.accountedSiteCount || 0}/${requested} requested sites accounted.`;
     },
     summaryPreview() {
+      if (isIncompleteResult(this.job)) {
+        return 'Incomplete Result — review the sites without a confirmed result before using this delivery as complete.';
+      }
+
       if (this.job.status === 'failed') {
         return this.job.failureSummary || 'PR Worker execution failed.';
       }
