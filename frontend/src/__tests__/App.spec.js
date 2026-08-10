@@ -1,34 +1,60 @@
 import { mount } from '@vue/test-utils';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../App.vue';
 
 vi.mock('../api/jobApi', () => ({
   getHealth: vi.fn(async () => ({ status: 'ok' }))
 }));
 
-const mountedWrappers = [];
-
-const mountApp = () => {
-  const wrapper = mount(App, {
-    stubs: {
-      RouterLink: {
-        props: ['to'],
-        template: `<a :href="typeof to === 'string' ? to : to.path"><slot /></a>`
-      },
-      RouterView: {
-        template: '<div />'
-      }
+const mountApp = (routeParams = {}) => mount(App, {
+  stubs: {
+    RouterLink: {
+      props: ['to'],
+      template: '<a :href="typeof to === \'string\' ? to : to.path"><slot /></a>'
+    },
+    RouterView: {
+      template: '<div />'
     }
-  });
-  mountedWrappers.push(wrapper);
-  return wrapper;
-};
+  },
+  mocks: {
+    $route: {
+      params: routeParams
+    }
+  }
+});
 
-describe('App navigation', () => {
+describe('App selected job navigation', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+  });
+
   afterEach(() => {
-    mountedWrappers.splice(0).forEach((wrapper) => wrapper.destroy());
-    vi.useRealTimers();
     vi.clearAllMocks();
+  });
+
+  it('reads the selected job from same-tab session storage instead of cross-tab local storage', async () => {
+    sessionStorage.setItem('selectedJobId', 'JOB-TAB-A');
+    localStorage.setItem('currentJobId', 'JOB-OTHER-TAB');
+
+    const wrapper = mountApp();
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.vm.currentJobId).toBe('JOB-TAB-A');
+    expect(wrapper.html()).toContain('/jobs/JOB-TAB-A');
+    expect(wrapper.html()).not.toContain('/jobs/JOB-OTHER-TAB');
+  });
+
+  it('updates the Status link when the selected-job event is dispatched in the same tab', async () => {
+    const wrapper = mountApp();
+    window.dispatchEvent(new CustomEvent('awp:selected-job-changed', {
+      detail: { jobId: 'JOB-LIVE-1' }
+    }));
+
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.vm.currentJobId).toBe('JOB-LIVE-1');
+    expect(wrapper.html()).toContain('/jobs/JOB-LIVE-1');
   });
 
   it('renders top-level worker navigation links separately from global navigation', async () => {
@@ -43,32 +69,6 @@ describe('App navigation', () => {
     expect(wrapper.text()).toContain('Dashboard');
     expect(wrapper.text()).toContain('History');
     expect(wrapper.text()).toContain('Admin');
-    expect(wrapper.text()).not.toContain('Status');
-    expect(wrapper.html()).not.toContain('/jobs/');
-  });
-
-  it('hides on downward scroll and reappears on upward scroll', async () => {
-    vi.useFakeTimers();
-    Object.defineProperty(window, 'scrollY', {
-      configurable: true,
-      value: 0,
-      writable: true
-    });
-    const wrapper = mountApp();
-
-    window.scrollY = 120;
-    wrapper.vm.handleHeaderScroll();
-    vi.advanceTimersByTime(16);
-    await wrapper.vm.$nextTick();
-
-    expect(wrapper.find('.app-header').classes()).toContain('is-hidden');
-
-    window.scrollY = 80;
-    wrapper.vm.handleHeaderScroll();
-    vi.advanceTimersByTime(16);
-    await wrapper.vm.$nextTick();
-
-    expect(wrapper.find('.app-header').classes()).not.toContain('is-hidden');
   });
 
   it('links Dashboard to the platform-global dashboard route', async () => {
@@ -78,4 +78,22 @@ describe('App navigation', () => {
     expect(wrapper.html()).toContain('href="/dashboard"');
     expect(wrapper.html()).not.toContain('href="/workers/pr-creator">Dashboard<');
   });
+  it('hides on downward scroll and reappears on upward scroll', async () => {
+    vi.useFakeTimers();
+    Object.defineProperty(window, 'scrollY', { configurable: true, value: 0, writable: true });
+    const wrapper = mountApp();
+    window.scrollY = 120;
+    wrapper.vm.handleHeaderScroll();
+    vi.advanceTimersByTime(16);
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find('.app-header').classes()).toContain('is-hidden');
+    window.scrollY = 80;
+    wrapper.vm.handleHeaderScroll();
+    vi.advanceTimersByTime(16);
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find('.app-header').classes()).not.toContain('is-hidden');
+    wrapper.destroy();
+    vi.useRealTimers();
+  });
+
 });
