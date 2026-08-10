@@ -71,4 +71,22 @@ assert.throws(
   'platform must independently reject reconciliation counts that do not add up to requested sites'
 );
 
+const withPlatformUnmatchedSites = {
+  ...baseSummary,
+  matchedSiteCount: 22,
+  unmatchedSiteCount: 2,
+  generatedSiteCount: 22,
+  reviewRequiredSiteCount: 0,
+  approvedIgnoredSiteCount: 0,
+  duplicateBlockedSiteCount: 0,
+  failedSiteCount: 0,
+  unaccountedSiteCount: 0,
+  warningCount: 2
+};
+assert.strictEqual(
+  determineFinalStatus(withPlatformUnmatchedSites),
+  'completed_with_warning',
+  'platform-known unmatched sites must count as explicit accounted outcomes instead of false unaccounted work'
+);
+
 console.log('Issue 88 result reconciliation regression tests passed.');
