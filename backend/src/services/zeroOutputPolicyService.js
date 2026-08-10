@@ -1,3 +1,5 @@
+const { normalizeResultReconciliation } = require('./resultReconciliationService');
+
 const getNoEccExplanation = (summary) => {
   if ((summary.outputFileCount || 0) > 0 || (summary.matchedSiteCount || 0) === 0) {
     return '';
@@ -19,6 +21,31 @@ const getNoEccExplanation = (summary) => {
 };
 
 const determineFinalStatus = (summary) => {
+  const reconciliation = normalizeResultReconciliation(summary);
+
+  if (reconciliation) {
+    if ((reconciliation.unaccountedSiteCount || 0) > 0) {
+      throw Object.assign(
+        new Error('Worker result reconciliation is incomplete. One or more requested sites have no terminal business disposition.'),
+        {
+          code: 'RESULT_RECONCILIATION_INCOMPLETE',
+          details: reconciliation
+        }
+      );
+    }
+
+    const hasNonGeneratedDisposition = (
+      (reconciliation.reviewRequiredSiteCount || 0) > 0
+      || (reconciliation.approvedIgnoredSiteCount || 0) > 0
+      || (reconciliation.duplicateBlockedSiteCount || 0) > 0
+      || (reconciliation.failedSiteCount || 0) > 0
+    );
+
+    if (hasNonGeneratedDisposition) {
+      return 'completed_with_warning';
+    }
+  }
+
   if ((summary.matchedSiteCount || 0) > 0 && (summary.outputFileCount || 0) === 0) {
     if ((summary.reviewRequiredCount || 0) > 0 || (summary.warningCount || 0) > 0) {
       return 'completed_with_warning';
