@@ -27,21 +27,35 @@ const reconciledWarningJob = {
   finalWorkerSummary: 'Task completed with warnings.'
 };
 
+const incompleteResultJob = {
+  ...reconciledWarningJob,
+  jobId: 'PR-ISSUE88-INCOMPLETE',
+  status: 'failed',
+  reviewRequiredCount: 0,
+  reviewRequiredSiteCount: 0,
+  accountedSiteCount: 8,
+  unaccountedSiteCount: 16,
+  error: {
+    code: 'RESULT_RECONCILIATION_INCOMPLETE',
+    message: 'Worker result reconciliation is incomplete.'
+  }
+};
+
 describe('result reconciliation rendering', () => {
-  it('shows generated/accounted/unaccounted counts in Job Detail', () => {
+  it('shows generated/accounted/business-readable missing-result counts in Job Detail', () => {
     const wrapper = mount(JobDetailSummary, {
       propsData: { job: reconciledWarningJob, outputs: [] }
     });
 
     expect(wrapper.text()).toContain('Generated Sites');
     expect(wrapper.text()).toContain('Accounted Sites');
-    expect(wrapper.text()).toContain('Unaccounted Sites');
+    expect(wrapper.text()).toContain('Sites Without Confirmed Result');
     expect(wrapper.text()).toContain('8');
     expect(wrapper.text()).toContain('24');
     expect(wrapper.text()).toContain('remaining sites have explicit review');
   });
 
-  it('shows result reconciliation in History without changing PR Auditor logic', () => {
+  it('shows result reconciliation in History without technical unaccounted wording', () => {
     const wrapper = mount(JobHistoryCard, {
       propsData: { job: reconciledWarningJob },
       stubs: {
@@ -51,27 +65,45 @@ describe('result reconciliation rendering', () => {
 
     expect(wrapper.text()).toContain('Generated');
     expect(wrapper.text()).toContain('Accounted');
-    expect(wrapper.text()).toContain('Unaccounted');
+    expect(wrapper.text()).toContain('Sites Without Confirmed Result');
+    expect(wrapper.text()).not.toContain('Unaccounted');
     expect(wrapper.text()).toContain('Result reconciled: 8/24 generated');
   });
 
-  it('surfaces unaccounted work as a result-integrity warning', () => {
+  it('presents reconciliation-integrity failure as Incomplete Result', () => {
+    const detailWrapper = mount(JobDetailSummary, {
+      propsData: { job: incompleteResultJob, outputs: [] }
+    });
+    const historyWrapper = mount(JobHistoryCard, {
+      propsData: { job: incompleteResultJob },
+      stubs: {
+        RouterLink: { template: '<a><slot /></a>' }
+      }
+    });
+
+    expect(detailWrapper.text()).toContain('Incomplete Result');
+    expect(detailWrapper.text()).toContain('8 of 24 requested sites generated. 16 sites have no confirmed result.');
+    expect(detailWrapper.text()).not.toContain('Unaccounted Sites');
+    expect(historyWrapper.text()).toContain('Incomplete Result');
+    expect(historyWrapper.text()).toContain('8 of 24 requested sites generated. 16 sites have no confirmed result.');
+  });
+
+  it('keeps ordinary failures labelled Failed', () => {
     const wrapper = mount(JobDetailSummary, {
       propsData: {
         job: {
           ...reconciledWarningJob,
-          jobId: 'PR-ISSUE88-INCOMPLETE',
           status: 'failed',
-          reviewRequiredCount: 0,
-          reviewRequiredSiteCount: 0,
-          accountedSiteCount: 8,
-          unaccountedSiteCount: 16,
-          error: { message: 'Worker result reconciliation is incomplete.' }
+          generatedSiteCount: null,
+          accountedSiteCount: null,
+          unaccountedSiteCount: null,
+          error: { code: 'WORKER_PROCESS_FAILED', message: 'Worker process failed.' }
         },
         outputs: []
       }
     });
 
-    expect(wrapper.text()).toContain('Result integrity warning: 8/24 requested sites generated and 16 site(s) are unaccounted for.');
+    expect(wrapper.text()).toContain('Failed');
+    expect(wrapper.text()).not.toContain('Incomplete Result');
   });
 });
