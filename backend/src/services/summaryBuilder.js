@@ -11,6 +11,18 @@ const isCancellationStatus = (status) => (
   || status === 'cancelled_with_partial_result'
 );
 
+const requestedCountMismatchError = ({ platformRequestedSiteCount, workerRequestedSiteCount }) => Object.assign(
+  new Error('Worker result reconciliation requested-site count does not match the platform request.'),
+  {
+    code: 'RESULT_RECONCILIATION_INCOMPLETE',
+    details: {
+      reason: 'REQUESTED_COUNT_MISMATCH',
+      platformRequestedSiteCount,
+      workerRequestedSiteCount
+    }
+  }
+);
+
 const buildAndSaveSummary = async ({
   jobId,
   filteringResult,
@@ -55,6 +67,17 @@ const buildAndSaveSummary = async ({
       await Job.updateOne({ jobId }, { $set: baseSummary });
     }
     return baseSummary;
+  }
+
+  if (
+    Number.isInteger(resolvedReconciliation.requestedSiteCount)
+    && Number.isInteger(baseSummary.requestedSiteCount)
+    && resolvedReconciliation.requestedSiteCount !== baseSummary.requestedSiteCount
+  ) {
+    throw requestedCountMismatchError({
+      platformRequestedSiteCount: baseSummary.requestedSiteCount,
+      workerRequestedSiteCount: resolvedReconciliation.requestedSiteCount
+    });
   }
 
   const reconciliationSummary = {
