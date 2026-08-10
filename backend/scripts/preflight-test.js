@@ -264,7 +264,7 @@ const runTests = async () => {
       prScope: 'TSS'
     }), 'utf8');
 
-    // Mock DB queries with custom thenables to bypass mongoose buffering
+    // Mock DB queries with custom thenables to preserve the model query contract.
     Job.findOne = () => {
       const mockResult = {
         jobId: jobId,

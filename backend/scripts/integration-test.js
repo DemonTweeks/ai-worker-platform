@@ -206,7 +206,7 @@ const runJobFlow = async ({ baseUrl, prScope, siteCodes, allowExplainedZeroOutpu
 const testApiAndWorker = async (baseUrl) => {
   const health = await request(baseUrl, '/health');
   assert(health.response.ok || health.response.status === 503, 'health endpoint should respond');
-  assert(health.body.services && (health.body.services.firebase || health.body.services.mongodb), 'health should include structured services');
+  assert(health.body.services && health.body.services.firebase, 'health should include structured Firebase status');
 
   const list = await request(baseUrl, '/api/jobs');
   assert(list.response.ok, 'job list should load');
