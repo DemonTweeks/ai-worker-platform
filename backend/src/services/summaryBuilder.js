@@ -1,5 +1,8 @@
 const { Job, ReviewRequiredItem, WarningItem } = require('../models');
-const { toPersistedReconciliation } = require('./resultReconciliationService');
+const {
+  discoverWorkerReconciliation,
+  toPersistedReconciliation
+} = require('./resultReconciliationService');
 
 const buildAndSaveSummary = async ({ jobId, filteringResult, outputCollection, workerReconciliation = null }) => {
   const [reviewRequiredCount, warningCount] = await Promise.all([
@@ -17,10 +20,11 @@ const buildAndSaveSummary = async ({ jobId, filteringResult, outputCollection, w
     warningCount
   };
 
-  const reconciliationSummary = workerReconciliation
+  const discoveredReconciliation = workerReconciliation || await discoverWorkerReconciliation(outputCollection);
+  const reconciliationSummary = discoveredReconciliation
     ? {
       ...baseSummary,
-      ...workerReconciliation
+      ...discoveredReconciliation
     }
     : baseSummary;
 
