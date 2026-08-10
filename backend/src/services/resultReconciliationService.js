@@ -12,11 +12,30 @@ const COUNT_FIELDS = [
   'unaccountedSiteCount'
 ];
 
-const normalizeCount = (value) => {
-  if (!Number.isFinite(value)) return null;
-  const normalized = Math.trunc(value);
-  return normalized >= 0 ? normalized : null;
-};
+const ENGINE_CONTRACT_FIELDS = [
+  ['requested_count', 'requestedSiteCount'],
+  ['generated_count', 'generatedSiteCount'],
+  ['review_required_count', 'reviewRequiredSiteCount'],
+  ['approved_ignored_count', 'approvedIgnoredSiteCount'],
+  ['duplicate_blocked_count', 'duplicateBlockedSiteCount'],
+  ['failed_count', 'failedSiteCount'],
+  ['unaccounted_count', 'unaccountedSiteCount']
+];
+
+const invalidContractError = (reason, field) => Object.assign(
+  new Error('Worker result reconciliation contract is invalid.'),
+  {
+    code: 'RESULT_RECONCILIATION_INCOMPLETE',
+    details: {
+      reason,
+      ...(field ? { field } : {})
+    }
+  }
+);
+
+const normalizeCount = (value) => (
+  Number.isInteger(value) && value >= 0 ? value : null
+);
 
 const hasExplicitReconciliation = (summary = {}) => COUNT_FIELDS.some((field) => (
   summary[field] !== undefined && summary[field] !== null
@@ -81,23 +100,39 @@ const toPersistedReconciliation = (summary = {}) => {
   };
 };
 
-const fromEngineContract = (payload = {}) => ({
-  requestedSiteCount: payload.requested_count ?? payload.requestedSiteCount,
-  generatedSiteCount: payload.generated_count ?? payload.generatedSiteCount,
-  reviewRequiredSiteCount: payload.review_required_count ?? payload.reviewRequiredSiteCount,
-  approvedIgnoredSiteCount: payload.approved_ignored_count ?? payload.approvedIgnoredSiteCount,
-  duplicateBlockedSiteCount: payload.duplicate_blocked_count ?? payload.duplicateBlockedSiteCount,
-  failedSiteCount: payload.failed_count ?? payload.failedSiteCount,
-  unaccountedSiteCount: payload.unaccounted_count ?? payload.unaccountedSiteCount
-});
-
-const invalidContractError = (reason) => Object.assign(
-  new Error('Worker result reconciliation contract is invalid.'),
-  {
-    code: 'RESULT_RECONCILIATION_INCOMPLETE',
-    details: { reason }
+const readContractCount = (payload, snakeName, camelName) => {
+  const hasSnake = Object.prototype.hasOwnProperty.call(payload, snakeName);
+  const hasCamel = Object.prototype.hasOwnProperty.call(payload, camelName);
+  if (!hasSnake && !hasCamel) {
+    throw invalidContractError('MISSING_REQUIRED_COUNT', snakeName);
   }
-);
+
+  const value = hasSnake ? payload[snakeName] : payload[camelName];
+  if (!Number.isInteger(value) || value < 0) {
+    throw invalidContractError('INVALID_COUNT', snakeName);
+  }
+  return value;
+};
+
+const fromEngineContract = (payload = {}) => {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw invalidContractError('INVALID_CONTRACT_OBJECT');
+  }
+
+  const values = ENGINE_CONTRACT_FIELDS.map(([snakeName, camelName]) => (
+    readContractCount(payload, snakeName, camelName)
+  ));
+
+  return {
+    requestedSiteCount: values[0],
+    generatedSiteCount: values[1],
+    reviewRequiredSiteCount: values[2],
+    approvedIgnoredSiteCount: values[3],
+    duplicateBlockedSiteCount: values[4],
+    failedSiteCount: values[5],
+    unaccountedSiteCount: values[6]
+  };
+};
 
 const discoverWorkerReconciliation = async (outputCollection = {}) => {
   const storageService = require('./storageService');
@@ -117,10 +152,6 @@ const discoverWorkerReconciliation = async (outputCollection = {}) => {
       if (!hasSnakeContract && !hasCamelContract) continue;
 
       const contract = hasSnakeContract ? parsed.result_reconciliation : parsed.resultReconciliation;
-      if (!contract || typeof contract !== 'object' || Array.isArray(contract)) {
-        throw invalidContractError('INVALID_CONTRACT_OBJECT');
-      }
-
       const mapped = fromEngineContract(contract);
       if (!normalizeResultReconciliation(mapped)) {
         throw invalidContractError('MISSING_RECONCILIATION_COUNTS');
