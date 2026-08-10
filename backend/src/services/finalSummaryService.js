@@ -5,6 +5,9 @@ const { normalizeResultReconciliation } = require('./resultReconciliationService
 
 const buildFinalSummary = ({ job, summary }) => {
   if (job.status === 'failed') {
+    if (job.error && job.error.code === 'RESULT_RECONCILIATION_INCOMPLETE') {
+      return `Incomplete Result. ${job.error.message || 'One or more requested sites have no confirmed result.'}`;
+    }
     return `Task failed. ${job.error && job.error.message ? job.error.message : 'Please review the job error details before retrying.'}`;
   }
 
@@ -66,7 +69,7 @@ const buildFinalSummary = ({ job, summary }) => {
       `Duplicate-blocked sites: ${reconciliation.duplicateBlockedSiteCount}`,
       `Failed sites: ${reconciliation.failedSiteCount}`,
       `Accounted sites: ${reconciliation.accountedSiteCount}`,
-      `Unaccounted sites: ${reconciliation.unaccountedSiteCount}`
+      `Sites without confirmed result: ${reconciliation.unaccountedSiteCount}`
     ]
     : [];
 
