@@ -78,8 +78,12 @@ const incomplete = {
 };
 assert.throws(
   () => determineFinalStatus(incomplete),
-  (error) => error && error.code === 'RESULT_RECONCILIATION_INCOMPLETE',
-  'unaccounted requested sites must block clean completion'
+  (error) => (
+    error
+    && error.code === 'RESULT_RECONCILIATION_INCOMPLETE'
+    && error.message === '8 of 24 requested sites generated. 16 sites have no confirmed result.'
+  ),
+  'unaccounted requested sites must block clean completion with business-facing wording'
 );
 
 const falselyClaimedComplete = {
