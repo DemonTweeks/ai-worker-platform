@@ -1,0 +1,86 @@
+name: Issue 88 Current Head Validation
+
+on:
+  push:
+    branches:
+      - fix/issue-88-result-reconciliation
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Issue 88 reconciliation gate
+        working-directory: backend
+        run: npm run test:result-reconciliation
+
+      - name: Safe error visibility
+        working-directory: backend
+        run: node scripts/error-visibility-test.js
+
+      - name: Job API payload
+        working-directory: backend
+        run: npm run test:job-service-workers
+
+      - name: Cancellation and concurrency
+        working-directory: backend
+        run: npm run test:job-control-concurrency
+
+      - name: Backend compatibility gate
+        working-directory: backend
+        shell: pwsh
+        run: |
+          npm run smoke
+          npm run test:llm-provider
+          npm run test:health-status
+          npm run test:preflight
+          npm run test:engine-integrity
+          npm run test:engine-header-hash
+          npm run test:ran-adapter
+          npm run test:ran-routes
+          npm run test:ran-live-runtime
+          npm run test:ran-worker-service
+          npm run test:queue-registry
+          npm run test:job-prevalidate-guard
+          Get-ChildItem .\scripts -File |
+            Where-Object { $_.Name -match '^pr-auditor.*test\.js$' } |
+            Sort-Object Name |
+            ForEach-Object {
+              Write-Host "--- $($_.Name) ---"
+              node $_.FullName
+              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            }
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Frontend full gate
+        working-directory: frontend
+        run: npm test
+
+      - name: Diff whitespace check
+        shell: pwsh
+        run: |
+          git fetch origin main
+          git diff --check origin/main...HEAD
