@@ -84,33 +84,25 @@ Candidate models are not runtime inputs. `scripts/analyze_pr_model_change.py` co
 
 The implemented CLI supports TSS and TI. Planning and Operation Backoffice are documented future scopes and must not be advertised as current runtime capabilities.
 
-## Current Platform Coupling
+## Platform Coupling
 
-The current backend contains worker-specific integration:
+The active product route uses only the generic runner. The previous MW-specific launch page, registry adapter, and worker lifecycle service have been removed. Historical jobs remain readable and downloadable but are not dispatched through retired code.
 
-- `mwPrManifest.js` lists internal engine files and a pinned fingerprint.
-- `childProcessRunner.js` knows the entry script, supported scopes and flags.
-- `prWorkerService.js` implements an MW-specific lifecycle.
-- Node services parse the workbook, filter rows, interpret TI reports and decide zero-output behavior.
-- The frontend builds an MW-specific request.
-
-These are migration targets. Domain interpretation must move behind the skill contract before the generic runner replaces them.
-
-## Target Runtime Architecture
+## Implemented Runtime Architecture
 
 ```text
-POST /skills/create-pr-cd/jobs
+POST /api/skills/create-pr-cd/jobs
   -> generic request validation
   -> isolated workspace
-  -> input/input.json
-  -> python <entrypoint> --input-manifest input/input.json
+  -> skill-input.json
+  -> python src/main.py --input-manifest skill-input.json
   -> NDJSON progress events
   -> output/*
   -> result.json
   -> generic result validation and delivery
 ```
 
-The target Python entrypoint should be a thin contract adapter around the existing internal pipeline. Rewriting proven business logic is not required.
+`src/main.py` is the thin contract adapter around the existing internal pipeline. It supervises `scripts/create_pr.py` as a child so cancellation can preserve an authoritative terminal result without rewriting proven business logic.
 
 ## Safety Invariants
 

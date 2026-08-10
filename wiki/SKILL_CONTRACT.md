@@ -1,5 +1,7 @@
 # AI Worker Platform — Skill Contract
 
+> Status: implemented for `create-pr-cd` 4.0.0 and `tx-pr-auditor` 1.0.0.
+
 ## 1. Purpose
 
 This contract allows AI Worker Platform to run independent Python skills without owning their technical or business logic.

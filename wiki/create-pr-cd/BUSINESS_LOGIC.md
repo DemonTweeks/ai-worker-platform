@@ -14,6 +14,8 @@ Sources reviewed:
 
 Where documentation and current execution differ, this document identifies the difference instead of treating planned behavior as implemented behavior.
 
+The standard contract is now implemented in `src/main.py`. This did not move or duplicate any rule below into the platform.
+
 ## Current Capability Boundary
 
 | Scope | Current CLI status | Notes |

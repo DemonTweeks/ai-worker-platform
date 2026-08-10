@@ -1,23 +1,24 @@
-const mwPrManifest = require('./manifests/mwPrManifest');
-const prAuditorManifest = require('./manifests/prAuditorManifest');
-const ranPrManifest = require('./manifests/ranPrManifest');
-const mwPrAdapter = require('./adapters/mwPrAdapter');
-const prAuditorJobAdapter = require('./adapters/prAuditorJobAdapter');
-const ranPrJobAdapter = require('./adapters/ranPrJobAdapter');
-const { WORKER_IDS } = require('./workerTypes');
-
 const registry = new Map([
-  [WORKER_IDS.MW_PR, {
-    manifest: mwPrManifest,
-    adapterFactory: () => mwPrAdapter
+  ['create-pr-cd', {
+    manifestFactory: () => {
+      const skill = require('../skills/skillPackageService').loadApprovedSkill('create-pr-cd');
+      return { ...skill.manifest, workerId: skill.manifest.skillId, engineVersion: skill.manifest.version, engineCommit: null };
+    },
+    adapterFactory: () => ({ run: require('../skills/genericSkillRunner').runGenericSkillJob })
   }],
-  [WORKER_IDS.PR_AUDITOR, {
-    manifest: prAuditorManifest,
-    adapterFactory: () => prAuditorJobAdapter
+  ['tx-pr-auditor', {
+    manifestFactory: () => {
+      const skill = require('../skills/skillPackageService').loadApprovedSkill('tx-pr-auditor');
+      return { ...skill.manifest, workerId: skill.manifest.skillId, engineVersion: skill.manifest.version, engineCommit: null };
+    },
+    adapterFactory: () => ({ run: require('../skills/genericSkillRunner').runGenericSkillJob })
   }],
-  [WORKER_IDS.RAN_PR, {
-    manifest: ranPrManifest,
-    adapterFactory: () => ranPrJobAdapter
+  ['create-pr-cd-ran', {
+    manifestFactory: () => {
+      const skill = require('../skills/skillPackageService').loadApprovedSkill('create-pr-cd-ran');
+      return { ...skill.manifest, workerId: skill.manifest.skillId, engineVersion: skill.manifest.version, engineCommit: null };
+    },
+    adapterFactory: () => ({ run: require('../skills/genericSkillRunner').runGenericSkillJob })
   }]
 ]);
 
@@ -33,7 +34,10 @@ const assertRegisteredWorker = (workerId) => {
   return entry;
 };
 
-const getWorkerManifest = (workerId) => assertRegisteredWorker(workerId).manifest;
+const getWorkerManifest = (workerId) => {
+  const entry = assertRegisteredWorker(workerId);
+  return entry.manifestFactory ? entry.manifestFactory() : entry.manifest;
+};
 
 const getWorkerAdapter = (workerId) => {
   const entry = assertRegisteredWorker(workerId);
@@ -46,7 +50,7 @@ const getWorkerAdapter = (workerId) => {
   return entry.adapterFactory();
 };
 
-const listWorkers = () => Array.from(registry.values()).map(({ manifest }) => manifest);
+const listWorkers = () => Array.from(registry.keys()).map(getWorkerManifest);
 
 module.exports = {
   getWorkerAdapter,

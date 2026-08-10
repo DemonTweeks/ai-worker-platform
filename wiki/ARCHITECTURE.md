@@ -1,319 +1,103 @@
-# AI Worker Platform — Target Architecture
+# AI Worker Platform — Architecture
 
-## 1. Architecture Intent
+## Purpose
 
-AI Worker Platform is a thin server-side wrapper around standalone Python skills.
+AI Worker Platform is an HTTP(S) control plane for standalone Python skills. It owns transport, safe storage, execution, durable lifecycle state, progress delivery, and downloads. It does not own workbook interpretation, technical calculations, or business decisions.
 
-The platform is a control plane. It receives HTTP(S) requests, authenticates and validates the transport contract, stores job metadata and files, invokes a selected skill, reads the skill's standard result envelope, and returns status or downloadable results to the client.
-
-The platform does not own technical processing logic or business logic. Every skill owns its domain validation, calculations, transformations, templates, and output correctness and must remain independently runnable with Python.
+## Implemented Flow
 
 ```text
-Client
-  |
-  | HTTPS
-  v
-AI Worker Platform
-  |-- API and authentication
-  |-- generic request validation
-  |-- skill registry and manifest reader
-  |-- generic job lifecycle
-  |-- safe Python process runner
-  |-- metadata and file storage
-  |-- event and result delivery
-  |
-  `--> Standalone Python skill
-         |-- domain input validation
-         |-- technical processing
-         |-- business rules
-         |-- output generation
-         `-- standard platform result envelope
+Manifest-driven Vue form
+  -> GET /api/skills
+  -> POST /api/skills/:skillId/jobs (multipart)
+  -> generic manifest/file/parameter validation
+  -> isolated storage/jobs/<jobId> workspace
+  -> Firebase job + durable queue record
+  -> atomic runtime lease claim
+  -> python <skill-entrypoint> --input-manifest <skill-input.json>
+  -> NDJSON progress relay
+  -> structural validation of result.json
+  -> opaque output registration and download
 ```
 
-## 2. Core Boundary
+Approved packages are declared in `backend/src/skills/approvedSkills.json`. `backend/src/skills/skillPackageService.js` verifies the skill version, manifest, runtime files, and package SHA-256 before catalog exposure or execution.
 
-### Platform owns
+## Ownership Boundary
 
-- HTTP(S) endpoints and request routing
-- Authentication and authorization
-- Generic request-schema validation
-- Upload transport, size limits, hashing, retention, and safe paths
-- Skill discovery and manifest validation
-- Job identifiers, idempotency, state transitions, timeout, and cancellation
-- Generic process invocation and resource controls
-- Reading standard progress events and result envelopes
-- Metadata persistence and file delivery
-- Safe error presentation, audit logs, and health status
+| Concern | Platform | Skill |
+| --- | --- | --- |
+| HTTP(S), auth, routing | Owns | — |
+| Upload size, extension, checksum, safe path | Owns | Declares constraints |
+| Workbook/domain parsing | Must not own | Owns |
+| Technical and business logic | Must not own | Owns |
+| Job ID, idempotency, status, timeout | Owns | Cooperates |
+| Queue ownership and restart recovery | Owns in Firebase | — |
+| Progress | Relays NDJSON | Emits safe events |
+| Output correctness | Checks contract and file identity only | Owns content |
+| Downloads and retention | Owns | Declares outputs |
 
-### Each skill owns
+## Durable Queue
 
-- Domain file parsing
-- Required worksheet, column, and field validation
-- Technical algorithms and transformations
-- Business rules and decisions
-- Domain configurations, templates, and reference assets
-- Domain-specific warnings and review-required decisions
-- Output naming within the skill contract
-- Output content and correctness
-- Skill-level unit, integration, and golden tests
+Firebase is authoritative. Process-local arrays, sets, and phase maps are rebuildable execution caches.
 
-### Platform must not own
+Each claimed job stores:
 
-- Worker-specific workbook parsers
-- Worker-specific calculation services
-- Copies of skill configuration or mapping tables
-- Business-rule branching by worker ID
-- Domain-specific output interpretation
-- Domain-specific corrections or fallback calculations
-
-The platform may validate only the standard contract around a skill result. It must not determine whether a domain result is commercially or technically correct.
-
-## 3. Architectural Style
-
-The target is a modular control-plane monolith with contract-driven skill plug-ins.
-
-```text
-Frontend or API client
-        |
-        v
-HTTP(S) API
-        |
-        v
-Generic Job Service
-        |
-        +--> Skill Registry ----> skill manifest
-        |
-        +--> Job Repository ----> Firebase metadata
-        |
-        +--> File Store --------> inputs and outputs
-        |
-        `--> Skill Runner ------> Python entrypoint
-                                   |
-                                   `--> events + result.json
+```json
+{
+  "queueState": "queued|running|cancelling|terminal",
+  "machineId": "stable-host-id|null",
+  "runtimeInstanceId": "per-start-id|null",
+  "claimedAt": "timestamp|null",
+  "heartbeatAt": "timestamp|null",
+  "leaseExpiresAt": "timestamp|null",
+  "reconciliationState": "pending|recovered|failed|null",
+  "cancellationRequested": false
+}
 ```
 
-Adding a new skill should normally require:
+Claims and renewals use Firebase ETag transactions. A valid foreign lease rejects a competing runtime. Startup reconciles all non-terminal records before listening for HTTP traffic:
 
-1. Adding the skill package.
-2. Providing a valid manifest and standalone Python entrypoint.
-3. Passing the platform contract tests.
-4. Registering or discovering the skill.
+- `queued`: recover and requeue after an expired ownership record.
+- Running phases: leave a valid lease alone; fail safely after lease expiry because current skills do not declare continuation.
+- `cancelling`: finish cancellation after lease expiry.
+- Terminal: never re-execute.
 
-It should not require new platform routes, services, parsers, database models, or UI lifecycle code.
+The same `machineId` with a different `runtimeInstanceId` is not considered the same owner.
 
-## 4. Functional Request Flow
+## Skill Contract
 
-```text
-1. Client requests the available skill catalog.
-2. Platform reads validated skill manifests.
-3. Client submits a job request and input files for a skill ID.
-4. Platform validates only the generic transport contract.
-5. Platform stores opaque input files and creates a job record.
-6. Generic runner prepares an isolated job workspace.
-7. Platform invokes the skill's Python entrypoint.
-8. Skill validates domain inputs and performs all domain processing.
-9. Skill emits standard progress events.
-10. Skill writes output files and a standard result envelope.
-11. Platform validates the envelope and safe output paths.
-12. Platform persists metadata and exposes status and downloads.
-```
+A production skill provides:
 
-Domain inputs are opaque to the platform. The platform may read file metadata and the standard JSON envelope, but it must not parse domain workbook contents.
+- `skill.json` using schema `1.0`.
+- A Python entrypoint accepting `--input-manifest`.
+- Workspace-relative inputs and outputs.
+- Safe NDJSON events.
+- An authoritative `result.json` using contract `1.0`.
+- Standalone, integration, domain, and golden tests.
 
-## 5. HTTP(S) API
+The platform validates identity, status, paths, checksums, output existence, and optional reconciliation arithmetic. It does not interpret warning codes, workbook sheets, classification names, or business metrics.
 
-The target API is generic rather than worker-specific.
+## Implemented Skills
 
-```text
-GET    /health
-GET    /api/skills
-GET    /api/skills/:skillId
-POST   /api/jobs
-GET    /api/jobs
-GET    /api/jobs/:jobId
-POST   /api/jobs/:jobId/cancel
-POST   /api/jobs/:jobId/rerun
-GET    /api/jobs/:jobId/files/:fileId
-GET    /api/jobs/:jobId/download
-WS     /ws
-```
+| Skill | Version | Contract entrypoint | Public inputs |
+| --- | --- | --- | --- |
+| `create-pr-cd` | `4.0.0` | `src/main.py` | `site_data` + TSS/TI selection parameters |
+| `tx-pr-auditor` | `1.0.0` | `src/main.py` | one `final_po`, one or more `expected_ecc` |
+| `create-pr-cd-ran` | `1.1.0` | `src/main.py` | one `bom`, one `epms`, run mode, optional project |
 
-`POST /api/jobs` uses a standard request envelope containing the skill ID, contract version, idempotency key, generic parameters, and uploaded-file references.
+The generator and auditor skills are separate product jobs. The platform does not generate ECC as an implicit auditor step. A future composite workflow must be another standalone skill.
 
-HTTPS termination may be handled by the Windows host or an approved reverse proxy, but TLS configuration remains a platform/deployment responsibility.
+## Storage and Persistence
 
-## 6. Skill Registry
+- Firebase: job lifecycle, queue ownership, status history, warnings, and file metadata.
+- Local isolated workspace: uploaded files, input manifest, cancellation sentinel, result envelope, outputs, and protected logs.
+- Result paths are checked against the job workspace before publication.
+- Output SHA-256 is verified or calculated before metadata persistence.
 
-The registry reads and validates skill manifests. It must not contain business logic.
+## Cancellation and Progress
 
-Registry responsibilities:
+The runner writes `temp/cancel.requested` and allows cooperative cleanup before terminating the process. All current skill wrappers emit phase events and a 30-second progress heartbeat. The auditor checks cancellation every 250 rows in long loops; both creators supervise their existing domain processes so cancellation can terminate child work and still produce an authoritative result envelope.
 
-- Discover approved skill directories
-- Validate manifest schema and contract version
-- Resolve a skill ID to its entrypoint and execution limits
-- Expose safe catalog metadata to clients
-- Reject missing, disabled, incompatible, or unapproved skills
-- Verify an approved version or runtime fingerprint when required
+## Historical Compatibility Boundary
 
-The detailed package and runtime contract is defined in [SKILL_CONTRACT.md](SKILL_CONTRACT.md).
-
-## 7. Generic Skill Runner
-
-The runner is the only platform component that starts Python skills.
-
-It owns:
-
-- Isolated workspace creation
-- Input manifest creation
-- Entrypoint resolution
-- Python interpreter resolution
-- Environment allowlisting
-- Timeout and cancellation
-- Standard output/event capture
-- Exit-code capture
-- Result-envelope discovery and schema validation
-- Process and workspace cleanup
-
-It does not interpret domain messages, calculate fallback results, or repair skill output.
-
-### Generic result reconciliation
-
-When a skill declares item-level reconciliation counts, the platform may validate only the generic arithmetic contract:
-
-```text
-requested = generated + review_required + approved_ignored
-          + duplicate_blocked + failed + unaccounted
-```
-
-The skill owns the classification of every item and the meaning of its reason codes. The platform verifies that counts are non-negative and internally consistent, prevents clean success while `unaccounted` is non-zero, and exposes the declared counts consistently in status and history. This is contract enforcement, not domain output interpretation.
-
-The current compatibility path can discover `result_reconciliation` in a worker JSON artifact. The target generic runner reads the same information directly from the standard `result.json` envelope and does not scan domain artifacts.
-
-## 8. Job State
-
-The platform owns generic lifecycle states:
-
-```text
-accepted
-  -> queued
-  -> running
-  -> succeeded
-  -> succeeded_with_warning
-  -> failed
-  -> cancelling
-  -> cancelled
-```
-
-Progress phases inside a skill are represented as opaque event codes plus safe display messages. The platform records and relays them without implementing their meaning.
-
-Clean `succeeded` requires a structurally valid result and, when reconciliation is supplied, zero unaccounted items. Valid review-required, approved-ignored, duplicate-blocked, or failed dispositions produce `succeeded_with_warning` according to the generic contract; the platform does not decide which disposition applies.
-
-Queue durability and restart reconciliation remain pending in [PENDING.md](PENDING.md#p-001--durable-queue-and-restart-reconciliation).
-
-## 9. Data and Storage
-
-### Metadata
-
-Firebase stores generic platform records:
-
-- Skill identity and version used by a job
-- Job status and timestamps
-- Durable queue eligibility and ordering metadata
-- Runtime ownership leases (`machineId` plus per-start `runtimeInstanceId`), lease expiry and reconciliation state
-- Request idempotency metadata
-- Standard progress events
-- File metadata
-- Standard warnings and errors
-- Audit records
-
-Firebase is the authoritative source for queue and job lifecycle state. Every claim records the stable backend host `machineId` and a new `runtimeInstanceId` generated for each backend start. Any in-process queue, active-job set or phase map is a rebuildable cache only. On startup, the backend reconstructs its runnable view from Firebase and reconciles every non-terminal job before accepting new work.
-
-The persisted queue record exposes `machineId` directly: it is `null` while unclaimed, set to the claiming host when execution is claimed, and retained as execution history after completion. The lease also carries `runtimeInstanceId` to distinguish two backend starts on the same machine.
-
-### File content
-
-Platform storage contains opaque inputs, skill outputs, and result envelopes:
-
-```text
-storage/jobs/<job-id>/
-|-- input/
-|-- work/
-|-- output/
-|-- result.json
-`-- logs/
-```
-
-The platform verifies root containment, file existence, size, checksum, retention, and download authorization. It does not validate domain output content.
-
-## 10. Frontend
-
-The target frontend is schema- and manifest-driven where practical.
-
-Shared UI owns:
-
-- Skill selection and catalog display
-- Generic file upload controls
-- Parameter fields described by the skill manifest
-- Job submission and idempotency
-- Progress, cancellation, history, and downloads
-- Display of standard summaries, warnings, and errors
-
-A skill may declare presentation metadata, but it must not require platform business logic. Highly specialized user experiences should live with the skill as contract data or a separately versioned extension, not as business processing in the core platform.
-
-## 11. Error Boundary
-
-The skill returns a standard safe error object. Technical tracebacks remain in protected logs and are never returned directly to normal users.
-
-The platform distinguishes only generic failure classes:
-
-- Invalid platform request
-- Skill unavailable or incompatible
-- Skill rejected domain input
-- Skill process failed
-- Skill timed out
-- Skill cancelled
-- Result contract invalid
-- Storage or persistence failed
-
-Domain-specific error codes and safe messages originate from the skill.
-
-## 12. Security Boundary
-
-The platform owns:
-
-- TLS and trusted proxy configuration
-- Authentication and authorization
-- Request and upload limits
-- Safe path enforcement
-- Process environment allowlisting
-- Secret isolation
-- Download authorization
-- Audit logs and error redaction
-
-Skills must not receive platform secrets unless explicitly declared and approved. Skills run with the smallest practical filesystem and environment access.
-
-## 13. Standalone Skill Requirement
-
-Every skill must run without the web platform through its documented Python CLI.
-
-A standalone execution must accept the same input manifest, create the same result envelope, and follow the same exit-code contract used by the platform. This guarantees that skill development and domain testing do not depend on the frontend, Express, Firebase, or WebSocket layers.
-
-## 14. Current-to-Target Gap
-
-The current code contains worker-specific platform logic that conflicts with the target boundary, including:
-
-- Worker-specific request branches in `jobService.js`
-- Platform workbook parsing and domain prevalidation
-- MW, RAN, and PR Auditor-specific worker services
-- Worker-specific output ingestion and validation
-- Worker-specific frontend workbenches and payload construction
-
-These areas should be migrated behind the standard skill contract, then removed from the platform only after equivalent standalone skill behavior and contract tests are proven.
-
-## 15. Target Quality Test
-
-For any proposed platform code, ask:
-
-> Would this code still be required if every existing skill were replaced by a new, unrelated Python skill following the same contract?
-
-If the answer is no, the code probably belongs inside the dedicated skill rather than in AI Worker Platform.
+The active registry and all launch routes are generic. Historical job detail and retained downloads remain supported. Generic jobs rerun from their stored contract inputs; legacy jobs return a safe compatibility explanation and are never dispatched to removed adapters.

@@ -2,8 +2,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const config = require('../config/env');
-const mwPrManifest = require('../workers/manifests/mwPrManifest');
-const prAuditorManifest = require('../workers/manifests/prAuditorManifest');
+const { listApprovedSkills } = require('../skills/skillPackageService');
 
 const SHA1_PATTERN = /^[a-f0-9]{40}$/i;
 const SHA256_PATTERN = /^[a-f0-9]{64}$/i;
@@ -189,16 +188,14 @@ const assertManifestEngineIntegrity = ({ engineRoot, manifest }) => {
   };
 };
 
-const assertPlatformEngineIntegrity = () => ([
-  assertManifestEngineIntegrity({
-    engineRoot: config.createPrCdRoot,
-    manifest: mwPrManifest
-  }),
-  assertManifestEngineIntegrity({
-    engineRoot: config.prAuditorRoot,
-    manifest: prAuditorManifest
-  })
-]);
+const assertPlatformEngineIntegrity = () => listApprovedSkills().map((skill) => ({
+  workerId: skill.manifest.skillId,
+  engineCommit: null,
+  runtimeFingerprint: skill.packageSha256,
+  gitCommitVerified: false,
+  packageVersion: skill.manifest.version,
+  runtimeFileCount: skill.runtimeFiles.length
+}));
 
 module.exports = {
   assertManifestEngineIntegrity,

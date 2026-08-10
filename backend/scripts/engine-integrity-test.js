@@ -8,8 +8,7 @@ const {
   computeRuntimeFingerprint,
   resolveGitHead
 } = require('../src/services/engineIntegrityService');
-const mwPrManifest = require('../src/workers/manifests/mwPrManifest');
-const prAuditorManifest = require('../src/workers/manifests/prAuditorManifest');
+const { loadApprovedSkill } = require('../src/skills/skillPackageService');
 
 const runTests = async () => {
   console.log('--- Running Engine Integrity Tests ---');
@@ -17,21 +16,13 @@ const runTests = async () => {
   const platformResults = assertPlatformEngineIntegrity();
   assert.deepStrictEqual(
     platformResults.map((result) => result.workerId),
-    ['mw-pr', 'pr-auditor']
+    ['create-pr-cd', 'tx-pr-auditor', 'create-pr-cd-ran']
   );
-  assert(platformResults.every((result) => result.gitCommitVerified));
-  assert(mwPrManifest.runtimeFiles.includes('scripts/create_pr.py'));
-  assert(mwPrManifest.runtimeFiles.includes('scripts/du_profile_resolver.py'));
-  assert(mwPrManifest.runtimeFiles.includes('config/registries/mw_du_profile_identity_registry.yaml'));
-  assert(
-    mwPrManifest.runtimeFiles.some((file) => file.startsWith('config/du_profiles/')),
-    'MW integrity must cover the DU Profiles used by the official entrypoint'
-  );
-  assert.deepStrictEqual(
-    prAuditorManifest.runtimeFiles,
-    ['config/du_registry.json', 'scripts/audit_final_po.py'],
-    'PR Auditor integrity must cover every executable runtime dependency'
-  );
+  assert(platformResults.every((result) => /^[a-f0-9]{64}$/.test(result.runtimeFingerprint)));
+  assert(loadApprovedSkill('create-pr-cd').runtimeFiles.includes('src/main.py'));
+  assert(loadApprovedSkill('create-pr-cd').runtimeFiles.includes('config/pr_model_baseline.yaml'));
+  assert(loadApprovedSkill('tx-pr-auditor').runtimeFiles.includes('config/du_registry.json'));
+  assert(loadApprovedSkill('create-pr-cd-ran').runtimeFiles.includes('src/main.py'));
 
   const tempRoot = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'engine-integrity-'));
   try {

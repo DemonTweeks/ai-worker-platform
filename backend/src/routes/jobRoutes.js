@@ -1,8 +1,5 @@
 const express = require('express');
-const { upload } = require('../middleware/uploadMiddleware');
-const prevalidationService = require('../services/prevalidationService');
 const jobService = require('../services/jobService');
-const { listRanProjects } = require('../workers/ranProjectCatalogService');
 
 const router = express.Router();
 
@@ -16,28 +13,6 @@ const getRequestedBy = (req) => (
   || null
 );
 
-router.post('/prevalidate', upload.single('file'), asyncHandler(async (req, res) => {
-  const result = await prevalidationService.validateUpload(req.file, {
-    uploadKind: req.body ? req.body.uploadKind : undefined,
-    browserTabSessionId: req.body ? req.body.browserTabSessionId : undefined
-  });
-  res.status(result.passed ? 200 : 400).json(result);
-}));
-
-router.get('/prevalidated/:prevalidatedFileId', asyncHandler(async (req, res) => {
-  const result = await prevalidationService.getReusablePrevalidatedUpload(req.params.prevalidatedFileId, {
-    browserTabSessionId: req.query.browserTabSessionId
-  });
-  res.json(result);
-}));
-
-router.delete('/prevalidated/:prevalidatedFileId', asyncHandler(async (req, res) => {
-  await prevalidationService.releasePrevalidatedUpload(req.params.prevalidatedFileId, {
-    browserTabSessionId: req.query.browserTabSessionId
-  });
-  res.status(204).end();
-}));
-
 router.post('/', asyncHandler(async (req, res) => {
   const result = await jobService.createJob(req.body);
   res.status(result.created === false ? 200 : 201).json(result);
@@ -46,12 +21,6 @@ router.post('/', asyncHandler(async (req, res) => {
 router.get('/', asyncHandler(async (req, res) => {
   const result = await jobService.listJobs(req.query);
   res.json(result);
-}));
-
-router.get('/ran-projects', asyncHandler(async (_req, res) => {
-  res.json({
-    projects: listRanProjects()
-  });
 }));
 
 router.get('/:jobId', asyncHandler(async (req, res) => {

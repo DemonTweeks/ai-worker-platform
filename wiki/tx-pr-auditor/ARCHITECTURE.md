@@ -84,29 +84,20 @@ Only otherwise-valid claims consume expected quantity. Consumption is ordered by
 
 The skill fails closed for missing entitlement, unknown/conflicting identity and unresolved ambiguity.
 
-## Current Platform Coupling
+## Platform Coupling
 
-The current platform does more than run the focused auditor:
+The active product route uses only the generic focused auditor. The previous composite Node workflow, fixed output discovery, workspace adapter, and lifecycle service have been removed. Generator-to-auditor sequencing remains outside the platform core.
 
-- Accepts Final PO and iEPMS uploads in one job.
-- Hardcodes `create-pr-cd` TSS and TI execution.
-- Stages intermediate ECC files.
-- Builds auditor-specific CLI flags.
-- Defines domain-specific progress stages.
-- Discovers fixed output names and normalizes audit classifications.
-
-This is a convenient composite product workflow, but the orchestration is not appropriate for a generic platform core.
-
-## Target Runtime Architecture
+## Implemented Runtime Architecture
 
 Focused auditor execution:
 
 ```text
-POST /skills/tx-pr-auditor/jobs
+POST /api/skills/tx-pr-auditor/jobs
   -> Final PO + ECC uploads
   -> generic isolated workspace
-  -> input/input.json
-  -> python <entrypoint> --input-manifest input/input.json
+  -> skill-input.json
+  -> python src/main.py --input-manifest skill-input.json
   -> NDJSON progress
   -> PR audit outputs + result.json
   -> generic validation and delivery

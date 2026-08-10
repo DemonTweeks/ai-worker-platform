@@ -3,6 +3,7 @@ const cors = require('cors');
 const healthRouter = require('./routes/health');
 const jobRouter = require('./routes/jobRoutes');
 const adminRouter = require('./routes/adminRoutes');
+const skillRouter = require('./routes/skillRoutes');
 const errorHandler = require('./middleware/errorHandler');
 const { createApiError } = require('./utils/apiError');
 
@@ -17,6 +18,7 @@ app.use((req, res, next) => {
 
 app.use('/health', healthRouter);
 app.use('/api/jobs', jobRouter);
+app.use('/api/skills', skillRouter);
 app.use('/api/admin', adminRouter);
 
 app.use((req, res) => {

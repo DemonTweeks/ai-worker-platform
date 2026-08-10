@@ -1,137 +1,49 @@
 # create-pr-cd — Skill Contract
 
-## Contract Status
-
-This is the proposed skill-specific contract for the future generic runner. The current CLI remains authoritative until the migration is implemented and validated.
-
-The shared platform contract is defined in [../SKILL_CONTRACT.md](../SKILL_CONTRACT.md).
-
 ## Identity
 
 | Field | Value |
 | --- | --- |
 | Skill ID | `create-pr-cd` |
-| Runtime | Python |
-| Current entrypoint | `scripts/create_pr.py` |
-| Target entrypoint | `src/main.py` or an equivalent thin adapter |
-| Current scopes | `TSS`, `TI` |
-| Result contract | `1.0` target |
+| Version | `4.0.0` |
+| Entrypoint | `src/main.py` |
+| Manifest schema | `1.0` |
+| Result contract | `1.0` |
+| Timeout | 3,600 seconds |
+| Cancellation | `control/cancel.requested` plus supervised child termination |
 
-## Proposed Manifest
+## Input
 
-```json
-{
-  "schemaVersion": "1.0",
-  "skillId": "create-pr-cd",
-  "displayName": "Create TX PR ECC",
-  "version": "<skill-release>",
-  "runtime": {
-    "type": "python",
-    "entrypoint": "src/main.py",
-    "minimumPython": "3.11"
-  },
-  "inputs": {
-    "files": [
-      {
-        "name": "site_data",
-        "required": true,
-        "multiple": false,
-        "acceptedExtensions": [".xlsx", ".xlsm"]
-      }
-    ],
-    "parametersSchema": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["scope", "selectionMode"],
-      "properties": {
-        "scope": { "type": "string", "enum": ["TSS", "TI"] },
-        "selectionMode": { "type": "string", "enum": ["all_sites", "site_codes"] },
-        "siteCodes": { "type": "array", "items": { "type": "string" } },
-        "nonProductionUat": { "type": "boolean", "default": false }
-      }
-    }
-  },
-  "execution": {
-    "timeoutSeconds": 3600,
-    "supportsCancellation": true
-  },
-  "resultContractVersion": "1.0"
-}
-```
+File declaration:
 
-## Input Rules
+- `site_data`: exactly one `.xlsx`, maximum 100 MiB.
 
-The platform validates only declared file presence, extension, size, checksum and safe path. The skill validates:
+Parameters:
 
-- Workbook structure and supported layout.
-- Project and DU-profile identity.
-- Selection-mode consistency.
-- Scope eligibility.
-- Business reference compatibility.
-- Production/UAT lifecycle rules.
+- `scope`: required `TSS` or `TI`.
+- `allSites`: boolean.
+- `siteCodes`: unique string array.
+- `nonProductionUat`: boolean.
 
-`siteCodes` is required when `selectionMode` is `site_codes` and must be absent or ignored when the mode is `all_sites`. That cross-field meaning belongs to Python.
+Exactly one of `allSites=true` or a non-empty `siteCodes` list is required.
 
-Reference assets should be packaged with the skill by default. The production PR model is not a caller-selectable file: Python resolves the single current baseline from `config/pr_model_baseline.yaml` and validates its path and SHA-256 before processing. Candidate analysis and promotion are maintenance workflows, not job inputs. ECC template, mapping and policy overrides must be declared explicitly if they remain supported; the platform must not silently inject them.
+PR-model, template, mapping, profile, and policy overrides are not public inputs.
 
-## Invocation
+## Output
+
+`result.json` declares every generated ECC workbook and domain report. It includes safe summary metrics and the standard reconciliation counts:
 
 ```text
-python src/main.py --input-manifest <path-to-input.json>
+requested = generated + review-required + approved-ignored
+          + duplicate-blocked + failed + unaccounted
 ```
 
-The skill reads only workspace-relative paths from the envelope and writes only under the declared output directory.
+Review, ignore, or duplicate outcomes produce `succeeded_with_warning`. Failed or unaccounted engine outcomes cannot produce success.
 
-## Progress Events
+## Standalone Command
 
-Recommended stable phases:
+```text
+python src/main.py --input-manifest <workspace>/input.json
+```
 
-- `domain_validation`
-- `source_discovery`
-- `canonicalization`
-- `profile_resolution`
-- `eligibility`
-- `line_item_matching`
-- `ecc_generation`
-- `result_finalization`
-
-Phase names describe skill work. The platform stores and relays them without business interpretation.
-
-## Result Outputs
-
-The result envelope may declare multiple files:
-
-- `ecc_workbook`
-- `review_required_report`
-- `ignored_or_duplicate_report`
-- `contract_review_report`
-- `execution_summary`
-
-Each declared path must exist, remain inside the workspace and include a media type and display name.
-
-The result also declares the validated PR-model baseline identity (`baselineId`, version and SHA-256) and authoritative reconciliation counts for requested, generated, review-required, approved-ignored, duplicate-blocked, failed and unaccounted sites. The platform validates only the generic count contract; Python owns each site disposition and reason.
-
-## Warning and Error Ownership
-
-The skill owns stable warning and error codes, including `PR_MODEL_BASELINE_MISMATCH`, `PR_SITE_RECONCILIATION_FAILED`, lifecycle, invalid-input, ambiguous-data and review-required explanations. Platform categories remain generic:
-
-- `domain_input`
-- `domain_processing`
-- `dependency`
-- `cancelled`
-- `internal`
-
-## Standalone Compliance
-
-The contract is accepted only when the same invocation works without AI Worker Platform and tests cover:
-
-- Valid TSS and TI generation.
-- Selected-site and all-site modes.
-- Invalid workbook rejection.
-- Production and UAT gates.
-- Review-required output.
-- Result schema and output declarations.
-- Cancellation and safe-path enforcement.
-- Golden ECC parity.
-- PR-model baseline mismatch, analyzer and controlled-promotion rollback.
-- Complete requested-site reconciliation.
+The shared rules in [../SKILL_CONTRACT.md](../SKILL_CONTRACT.md) also apply.

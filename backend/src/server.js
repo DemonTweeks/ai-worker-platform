@@ -5,36 +5,34 @@ const { checkFirebaseConnection } = require('./db/firebase');
 const { assertPlatformEngineIntegrity } = require('./services/engineIntegrityService');
 const { ensureBaseStorage } = require('./services/storageService');
 const { closeWebSocketServer, initWebSocketServer } = require('./websocket/server');
+const { initializeQueue, shutdownQueue } = require('./queue/jobQueue');
 
 let server = null;
 
-const startServer = () => {
+const startServer = async () => {
   const integrityResults = assertPlatformEngineIntegrity();
   integrityResults.forEach((result) => {
     console.log(
-      `Engine integrity verified for ${result.workerId} at ${result.engineCommit}`
-      + `${result.gitCommitVerified ? ' (Git + runtime fingerprint).' : ' (runtime fingerprint).'}`
+      `Skill package integrity verified for ${result.workerId}`
+      + `${result.packageVersion ? ` v${result.packageVersion}` : ''}`
+      + ` (${result.runtimeFingerprint}).`
     );
   });
 
   server = http.createServer(app);
   initWebSocketServer(server);
 
-  ensureBaseStorage()
-    .then((status) => {
-      console.log(`Storage initialized at ${status.root}`);
-    })
-    .catch((error) => {
-      console.error(`Storage initialization failed: ${error.message}`);
-    });
-
-  checkFirebaseConnection().then((res) => {
-    if (res.connected) {
-      console.log(`Firebase Realtime Database successfully reachable (Latency: ${res.latencyMs}ms)`);
-    } else {
-      console.error(`Firebase Realtime Database connection failed: ${res.error}`);
-    }
-  });
+  const storageStatus = await ensureBaseStorage();
+  console.log(`Storage initialized at ${storageStatus.root}`);
+  const firebaseStatus = await checkFirebaseConnection();
+  if (!firebaseStatus.connected) {
+    const error = new Error(`Firebase Realtime Database connection failed: ${firebaseStatus.error}`);
+    error.code = 'FIREBASE_STARTUP_UNAVAILABLE';
+    throw error;
+  }
+  console.log(`Firebase Realtime Database successfully reachable (Latency: ${firebaseStatus.latencyMs}ms)`);
+  const reconciliation = await initializeQueue();
+  console.log(`Queue reconciliation completed for ${reconciliation.inspectedCount} non-terminal jobs.`);
 
   server.listen(config.port, () => {
     console.log(`AI Worker Platform backend listening on port ${config.port}`);
@@ -48,17 +46,16 @@ process.on('SIGTERM', () => {
   }
 
   server.close(async () => {
+    await shutdownQueue();
     await closeWebSocketServer();
     process.exit(0);
   });
 });
 
-try {
-  startServer();
-} catch (error) {
-  console.error(`Engine integrity verification failed [${error.code || 'ENGINE_INTEGRITY_ERROR'}]: ${error.message}`);
+startServer().catch((error) => {
+  console.error(`Backend startup failed [${error.code || 'STARTUP_ERROR'}]: ${error.message}`);
   process.exitCode = 1;
-}
+});
 
 module.exports = {
   startServer

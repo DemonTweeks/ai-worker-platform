@@ -1,6 +1,5 @@
 import api from '../api';
 
-const PREVALIDATION_TIMEOUT_MS = 120000;
 const JOB_CREATION_TIMEOUT_MS = 120000;
 
 const unwrapError = (error) => {
@@ -18,47 +17,24 @@ export const getHealth = async () => {
   return response.data;
 };
 
-export const prevalidateUpload = async (file, uploadKind = null, requestScope = {}) => {
+export const listSkills = async () => {
+  const response = await api.get('/api/skills');
+  return response.data;
+};
+
+export const createSkillJob = async (skillId, { files = {}, parameters = {}, browserTabSessionId, idempotencyKey }) => {
   const formData = new FormData();
-  formData.append('file', file);
-  if (uploadKind) {
-    formData.append('uploadKind', uploadKind);
-  }
-  if (requestScope.workerId) {
-    formData.append('workerId', requestScope.workerId);
-  }
-  if (requestScope.browserTabSessionId) {
-    formData.append('browserTabSessionId', requestScope.browserTabSessionId);
-  }
-  const response = await api.post('/api/jobs/prevalidate', formData, {
+  formData.append('browserTabSessionId', browserTabSessionId);
+  formData.append('idempotencyKey', idempotencyKey);
+  formData.append('parameters', JSON.stringify(parameters));
+  Object.entries(files).forEach(([name, selected]) => {
+    const values = Array.isArray(selected) ? selected : [selected];
+    values.filter(Boolean).forEach((file) => formData.append(name, file));
+  });
+  const response = await api.post(`/api/skills/${encodeURIComponent(skillId)}/jobs`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
-    timeout: PREVALIDATION_TIMEOUT_MS
-  });
-  return response.data;
-};
-
-export const getPrevalidatedUpload = async (prevalidatedFileId, browserTabSessionId) => {
-  const response = await api.get(`/api/jobs/prevalidated/${encodeURIComponent(prevalidatedFileId)}`, {
-    params: { browserTabSessionId }
-  });
-  return response.data;
-};
-
-export const releasePrevalidatedUpload = async (prevalidatedFileId, browserTabSessionId) => {
-  await api.delete(`/api/jobs/prevalidated/${encodeURIComponent(prevalidatedFileId)}`, {
-    params: { browserTabSessionId }
-  });
-};
-
-export const createJob = async (payload) => {
-  const response = await api.post('/api/jobs', payload, {
     timeout: JOB_CREATION_TIMEOUT_MS
   });
-  return response.data;
-};
-
-export const listRanProjects = async () => {
-  const response = await api.get('/api/jobs/ran-projects');
   return response.data;
 };
 

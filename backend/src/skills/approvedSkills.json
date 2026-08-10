@@ -1,0 +1,45 @@
+{
+  "create-pr-cd": {
+    "rootConfigKey": "createPrCdRoot",
+    "approvedVersion": "4.0.0",
+    "approvedPackageSha256": "a398d62baa06721fe7100713af625d9b0e572cf8bdf2a252e2e3a967f15351a4",
+    "include": [
+      "skill.json",
+      "requirements.txt",
+      "src/**/*.py",
+      "scripts/**/*.py",
+      "config/**/*.json",
+      "config/**/*.yaml",
+      "config/**/*.yml",
+      "Info/input/pr_model.xlsx",
+      "Info/input/ecc_template.xls",
+      "Info/input/contract_info_reference.md"
+    ]
+  },
+  "tx-pr-auditor": {
+    "rootConfigKey": "prAuditorRoot",
+    "approvedVersion": "1.0.0",
+    "approvedPackageSha256": "09b07349bc4955aae0cae2d306e20f47288ba4991602b2c19f03c19e05133a85",
+    "include": [
+      "skill.json",
+      "requirements.txt",
+      "src/**/*.py",
+      "scripts/**/*.py",
+      "config/**/*.json",
+      "config/**/*.yaml",
+      "config/**/*.yml"
+    ]
+  },
+  "create-pr-cd-ran": {
+    "rootConfigKey": "ranCreatePrCdRoot",
+    "approvedVersion": "1.1.0",
+    "approvedPackageSha256": "1fa23049053b2c21b57fc0f18cc3c063c6071062712844ee0fb8be62f40444ed",
+    "include": [
+      "skill.json",
+      "requirements.txt",
+      "src/**/*.py",
+      "config/**/*.xlsx",
+      "config/**/*.xls"
+    ]
+  }
+}

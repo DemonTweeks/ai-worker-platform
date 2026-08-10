@@ -1,90 +1,34 @@
 # tx-pr-auditor — Handover
 
-## Assignment
+## Current State
 
-Refactor `tx-pr-auditor` into a standalone, contract-compliant Python skill and migrate AI Worker Platform away from audit-specific execution and output interpretation.
+- Branch: `agent/align-du-registry`.
+- Contract changes are uncommitted.
+- Direct domain CLI remains `scripts/audit_final_po.py`.
+- Platform contract CLI is `src/main.py --input-manifest`.
+- Manifest version is `1.0.0` and result contract is `1.0`.
 
-Preserve the strict boundary: the auditor consumes Final PO and generated ECC only. It must not consume iEPMS or the PR model.
+## Important Files
 
-## Read First
+- `skill.json`: public inputs, limits, cancellation, and DU compatibility declaration.
+- `src/main.py`: contract and authoritative result adapter.
+- `scripts/audit_final_po.py`: focused Final PO-versus-ECC business pipeline.
+- `config/du_registry.json`: nine identities, registry version, source registry SHA, promotion policy.
+- `tests/benchmark_large_workbook.py`: capacity evidence.
 
-1. [ARCHITECTURE.md](ARCHITECTURE.md)
-2. [BUSINESS_LOGIC.md](BUSINESS_LOGIC.md)
-3. [SKILL_CONTRACT.md](SKILL_CONTRACT.md)
-4. [PLAN.md](PLAN.md)
-5. [PENDING.md](PENDING.md)
-6. [../SKILL_CONTRACT.md](../SKILL_CONTRACT.md)
-7. The skill repository's `SKILL.md`, `references/architecture.md`, `references/business-logic.md` and tests.
+## Decisions Already Made
 
-## Current Entry Points and Integration
+- The auditor consumes Final PO and generated ECC only.
+- It does not consume iEPMS or the PR model.
+- Generator and auditor are separate jobs.
+- Any composite workflow is a separate standalone skill.
+- Registry compatibility is a skill release gate, not a platform domain comparison.
+- Final PO workload limit is 10,000 rows until new evidence supports promotion.
 
-- Python entrypoint: `skills/tx-pr-auditor/scripts/audit_final_po.py`
-- Skill-owned DU registry: `skills/tx-pr-auditor/config/du_registry.json`
-- Platform manifest: `backend/src/workers/manifests/prAuditorManifest.js`
-- Composite adapter: `backend/src/workers/adapters/prAuditorAdapter.js`
-- Workspace setup: `backend/src/workers/prAuditorWorkspaceService.js`
-- Output ingestion: `backend/src/workers/prAuditorOutputIngestionService.js`
-- Frontend: `frontend/src/views/PRAuditorView.vue`
+## Evidence
 
-## Non-Negotiable Boundaries
-
-- `create-pr-cd` output is the entitlement source.
-- Do not pass iEPMS or the PR model to the focused auditor.
-- Final PO mappings and reason codes remain in Python.
-- Invalid and Wrong rows never consume quantity.
-- Source workbooks are not modified.
-- The platform validates contracts and paths, not audit meaning.
-- A composite workflow, if needed, is a separately versioned standalone Python skill.
-
-## Recommended Delegation Packages
-
-### Package A — Focused skill contract
-
-Add `skill.json`, `--input-manifest`, result writing and standalone contract tests.
-
-### Package B — Progress and cancellation
-
-Expose existing batch stages as safe NDJSON events and add cooperative cancellation.
-
-### Package C — Golden parity
-
-Cover classification, quantity, ambiguity, identity, multilingual headers and annotated ECC behavior.
-
-### Package D — Product composition
-
-Decide separate jobs versus a composite skill. If composite, pin dependencies and keep all sequencing outside platform core.
-
-### Package E — Generic platform migration
-
-Register approved skill versions, route through the generic runner, then remove audit-specific Node and frontend branches after parity.
-
-## Validation Commands
-
-Use commands supported at the checked-out skill revision. At minimum:
-
-```text
-python <target-entrypoint> --input-manifest <fixture-input.json>
-python -m pytest
-```
-
-Platform tests should use synthetic skills for generic runner behavior. Real audit fixtures belong to a separate compatibility suite owned with the skill integration.
-
-## Completion Evidence
-
-Provide:
-
-- Approved focused-skill manifest and version.
-- Decision record for separate versus composite execution.
-- Standalone contract test results.
-- Golden audit parity report.
-- Proof that source workbooks remain unchanged.
-- Platform generic-runner test results.
-- List of removed audit-specific platform files or branches.
-- Rollback procedure.
-
-## Known Risks
-
-- Current UX relies on platform-owned `create-pr-cd` composition.
-- DU registry compatibility with upstream output needs explicit versioning.
-- Multilingual and mojibake header aliases require regression coverage.
-- Large workbooks may affect memory, progress cadence and cancellation latency.
+- 31 focused unit and contract tests passed.
+- Real workbook standalone contract integration passed.
+- Nine DU identities and profile/view/status parity passed.
+- 10,000-row benchmark: 6.708 seconds and 33.63 MiB traced peak.
+- Cooperative cancellation is checked every 250 rows in long loops.

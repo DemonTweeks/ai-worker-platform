@@ -11,6 +11,8 @@ Sources reviewed:
 - `skills/tx-pr-auditor/references/current-inputs.md`
 - Current `scripts/audit_final_po.py` pipeline
 
+The standard contract is now implemented in `src/main.py`. The platform validates only the declared transport and result structure; every rule below remains in Python.
+
 ## Business Boundary
 
 The auditor answers one question:
@@ -231,7 +233,7 @@ Source workbooks must never be modified. An ECC row without an exact Final PO it
 
 The current platform generates TSS and TI ECC from iEPMS before invoking the auditor. That sequence is product orchestration, not auditor business logic.
 
-In the target architecture:
+In the implemented generic architecture:
 
 - The focused `tx-pr-auditor` continues to accept Final PO + ECC only.
 - Separate jobs may provide ECC outputs to the auditor; or

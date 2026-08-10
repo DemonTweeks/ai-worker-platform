@@ -34,6 +34,7 @@
               <p>Open the dedicated worker route that matches the task you want to run.</p>
               <div class="workbench-action-row">
                 <router-link class="workbench-primary-link" to="/workers/pr-creator">PR Creator</router-link>
+                <router-link class="workbench-secondary-link" to="/workers/ran-pr-creator">RAN PR Creator</router-link>
                 <router-link class="workbench-secondary-link" to="/workers/pr-auditor">PR Auditor</router-link>
               </div>
             </div>

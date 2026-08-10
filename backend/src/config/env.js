@@ -56,6 +56,11 @@ const config = {
     maxOutputFiles: numberFromEnv('MAX_OUTPUT_FILES', 200),
     fileRetentionDays: numberFromEnv('FILE_RETENTION_DAYS', 180)
   },
+  queue: {
+    leaseDurationMs: Math.max(10000, numberFromEnv('QUEUE_LEASE_DURATION_MS', 45000)),
+    heartbeatIntervalMs: Math.max(1000, numberFromEnv('QUEUE_HEARTBEAT_INTERVAL_MS', 15000)),
+    reconciliationIntervalMs: Math.max(5000, numberFromEnv('QUEUE_RECONCILIATION_INTERVAL_MS', 30000))
+  },
   websocket: {
     heartbeatIntervalMs: numberFromEnv('WS_HEARTBEAT_INTERVAL_MS', 5000),
     maxPayloadBytes: numberFromEnv('WS_MAX_PAYLOAD_BYTES', 16 * 1024)
