@@ -28,13 +28,20 @@ const safeStage = (value) => {
   return /^[A-Za-z0-9 _-]{1,80}$/.test(stage) ? stage : undefined;
 };
 
+const knownCountOrNull = (value) => Number.isInteger(value) && value >= 0 ? value : null;
+
 const buildIncompleteResultMessage = (job) => {
-  const requested = Number.isInteger(job.requestedSiteCount) ? job.requestedSiteCount : 0;
-  const generated = Number.isInteger(job.generatedSiteCount) ? job.generatedSiteCount : 0;
-  const missing = Number.isInteger(job.unaccountedSiteCount)
-    ? job.unaccountedSiteCount
-    : Math.max(requested - generated, 0);
-  return `${generated} of ${requested} requested sites generated. ${missing} sites have no confirmed result.`;
+  const requested = knownCountOrNull(job.requestedSiteCount);
+  const generated = knownCountOrNull(job.generatedSiteCount);
+  const missing = knownCountOrNull(job.unaccountedSiteCount);
+
+  if (requested !== null && generated !== null && missing !== null) {
+    return `${generated} of ${requested} requested sites generated. ${missing} sites have no confirmed result.`;
+  }
+  if (requested !== null && generated !== null) {
+    return `${generated} of ${requested} requested sites generated. The number of sites without confirmed result could not be determined.`;
+  }
+  return 'Result reconciliation could not be completed. The number of sites without confirmed result could not be determined.';
 };
 
 const sanitizeWorkerErrorForLlm = (job) => {
@@ -69,13 +76,13 @@ const sanitizeWorkerErrorForLlm = (job) => {
     title = 'Incomplete Result';
     message = buildIncompleteResultMessage(job);
     Object.assign(details, {
-      requestedSiteCount: Number.isInteger(job.requestedSiteCount) ? job.requestedSiteCount : 0,
-      generatedSiteCount: Number.isInteger(job.generatedSiteCount) ? job.generatedSiteCount : 0,
-      reviewRequiredSiteCount: Number.isInteger(job.reviewRequiredSiteCount) ? job.reviewRequiredSiteCount : 0,
-      approvedIgnoredSiteCount: Number.isInteger(job.approvedIgnoredSiteCount) ? job.approvedIgnoredSiteCount : 0,
-      duplicateBlockedSiteCount: Number.isInteger(job.duplicateBlockedSiteCount) ? job.duplicateBlockedSiteCount : 0,
-      failedSiteCount: Number.isInteger(job.failedSiteCount) ? job.failedSiteCount : 0,
-      sitesWithoutConfirmedResultCount: Number.isInteger(job.unaccountedSiteCount) ? job.unaccountedSiteCount : 0
+      requestedSiteCount: knownCountOrNull(job.requestedSiteCount),
+      generatedSiteCount: knownCountOrNull(job.generatedSiteCount),
+      reviewRequiredSiteCount: knownCountOrNull(job.reviewRequiredSiteCount),
+      approvedIgnoredSiteCount: knownCountOrNull(job.approvedIgnoredSiteCount),
+      duplicateBlockedSiteCount: knownCountOrNull(job.duplicateBlockedSiteCount),
+      failedSiteCount: knownCountOrNull(job.failedSiteCount),
+      sitesWithoutConfirmedResultCount: knownCountOrNull(job.unaccountedSiteCount)
     });
   } else if (code === 'WORKER_TIMEOUT') {
     title = 'Worker timeout';
