@@ -199,6 +199,7 @@ const runDiscoveryTests = async () => {
   const testRoot = path.join(storageRoot, 'temp', 'issue-88-reconciliation-test');
   const validPath = path.join(testRoot, 'valid-summary.json');
   const invalidPath = path.join(testRoot, 'invalid-summary.json');
+  const conflictingAliasesPath = path.join(testRoot, 'conflicting-aliases.json');
   const malformedContractPath = path.join(testRoot, 'malformed-contract.json');
   const malformedUnrelatedPath = path.join(testRoot, 'malformed-unrelated.json');
   const oversizedContractPath = path.join(testRoot, 'oversized-contract.json');
@@ -218,6 +219,24 @@ const runDiscoveryTests = async () => {
         outputFiles: [{ fileName: 'invalid-summary.json', filePath: path.relative(storageRoot, invalidPath) }]
       }),
       (error) => error && error.code === 'RESULT_RECONCILIATION_INCOMPLETE'
+    );
+
+    await fs.promises.writeFile(
+      conflictingAliasesPath,
+      JSON.stringify({
+        result_reconciliation: validEngineContract,
+        resultReconciliation: { ...validEngineContract, generated_count: 24, review_required_count: 0 }
+      }),
+      'utf8'
+    );
+    await assert.rejects(
+      () => discoverWorkerReconciliation({
+        outputFiles: [{ fileName: 'conflicting-aliases.json', filePath: path.relative(storageRoot, conflictingAliasesPath) }]
+      }),
+      (error) => error
+        && error.code === 'RESULT_RECONCILIATION_INCOMPLETE'
+        && error.details
+        && error.details.reason === 'DUPLICATE_RECONCILIATION_ALIASES'
     );
 
     await fs.promises.writeFile(malformedContractPath, '{"result_reconciliation":{"requested_count":24,', 'utf8');
