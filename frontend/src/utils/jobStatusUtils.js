@@ -18,8 +18,10 @@ export const statusLabel = (status) => STATUS_LABELS[status] || status || 'Unkno
 
 export const isIncompleteResult = (job = {}) => (
   job.status === 'failed'
-  && job.error
-  && job.error.code === 'RESULT_RECONCILIATION_INCOMPLETE'
+  && (
+    job.resultStatus === 'incomplete_result'
+    || (job.error && job.error.code === 'RESULT_RECONCILIATION_INCOMPLETE')
+  )
 );
 
 export const jobStatusLabel = (job = {}) => (
