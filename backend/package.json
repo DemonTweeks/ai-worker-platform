@@ -15,7 +15,7 @@
     "test:engine-integrity": "node scripts/engine-integrity-test.js",
     "test:engine-header-hash": "node scripts/engine-header-hash-test.js",
     "test:integration": "node scripts/integration-test.js",
-    "test:result-reconciliation": "node scripts/result-reconciliation-test.js && node scripts/summary-builder-persistence-test.js && node scripts/incomplete-result-unknown-count-test.js",
+    "test:result-reconciliation": "node scripts/result-reconciliation-test.js && node scripts/summary-builder-persistence-test.js && node scripts/incomplete-result-unknown-count-test.js && node scripts/zero-output-reconciliation-test.js",
     "test:job-service-workers": "node scripts/job-service-worker-payload-test.js",
     "test:ran-worker-service": "node scripts/ran-worker-service-test.js",
     "test:ran-routes": "node scripts/ran-job-route-test.js",
