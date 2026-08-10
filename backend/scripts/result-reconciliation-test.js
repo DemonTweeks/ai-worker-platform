@@ -199,6 +199,8 @@ const runDiscoveryTests = async () => {
   const testRoot = path.join(storageRoot, 'temp', 'issue-88-reconciliation-test');
   const validPath = path.join(testRoot, 'valid-summary.json');
   const invalidPath = path.join(testRoot, 'invalid-summary.json');
+  const malformedContractPath = path.join(testRoot, 'malformed-contract.json');
+  const malformedUnrelatedPath = path.join(testRoot, 'malformed-unrelated.json');
   const oversizedContractPath = path.join(testRoot, 'oversized-contract.json');
   const oversizedUnrelatedPath = path.join(testRoot, 'oversized-unrelated.json');
 
@@ -217,6 +219,23 @@ const runDiscoveryTests = async () => {
       }),
       (error) => error && error.code === 'RESULT_RECONCILIATION_INCOMPLETE'
     );
+
+    await fs.promises.writeFile(malformedContractPath, '{"result_reconciliation":{"requested_count":24,', 'utf8');
+    await assert.rejects(
+      () => discoverWorkerReconciliation({
+        outputFiles: [{ fileName: 'malformed-contract.json', filePath: path.relative(storageRoot, malformedContractPath) }]
+      }),
+      (error) => error
+        && error.code === 'RESULT_RECONCILIATION_INCOMPLETE'
+        && error.details
+        && error.details.reason === 'MALFORMED_CONTRACT_ARTIFACT'
+    );
+
+    await fs.promises.writeFile(malformedUnrelatedPath, '{"worker_note":"truncated"', 'utf8');
+    const malformedUnrelated = await discoverWorkerReconciliation({
+      outputFiles: [{ fileName: 'malformed-unrelated.json', filePath: path.relative(storageRoot, malformedUnrelatedPath) }]
+    });
+    assert.strictEqual(malformedUnrelated, null);
 
     const padding = 'x'.repeat(1024 * 1024 + 4096);
     await fs.promises.writeFile(
