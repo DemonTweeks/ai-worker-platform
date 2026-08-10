@@ -135,6 +135,8 @@ const fromEngineContract = (payload = {}) => {
   };
 };
 
+const containsMarkerText = (text = '') => RECONCILIATION_MARKERS.some((marker) => text.includes(marker));
+
 const containsReconciliationMarker = (absolutePath) => new Promise((resolve, reject) => {
   const maxMarkerLength = Math.max(...RECONCILIATION_MARKERS.map((marker) => marker.length));
   let carry = '';
@@ -142,7 +144,7 @@ const containsReconciliationMarker = (absolutePath) => new Promise((resolve, rej
 
   stream.on('data', (chunk) => {
     const searchable = carry + chunk;
-    if (RECONCILIATION_MARKERS.some((marker) => searchable.includes(marker))) {
+    if (containsMarkerText(searchable)) {
       stream.destroy();
       resolve(true);
       return;
@@ -173,7 +175,17 @@ const discoverWorkerReconciliation = async (outputCollection = {}) => {
         continue;
       }
 
-      const parsed = JSON.parse(await fs.promises.readFile(absolutePath, 'utf8'));
+      const rawJson = await fs.promises.readFile(absolutePath, 'utf8');
+      let parsed;
+      try {
+        parsed = JSON.parse(rawJson);
+      } catch (parseError) {
+        if (containsMarkerText(rawJson)) {
+          throw invalidContractError('MALFORMED_CONTRACT_ARTIFACT');
+        }
+        continue;
+      }
+
       const hasSnakeContract = Object.prototype.hasOwnProperty.call(parsed, 'result_reconciliation');
       const hasCamelContract = Object.prototype.hasOwnProperty.call(parsed, 'resultReconciliation');
       if (!hasSnakeContract && !hasCamelContract) continue;
@@ -188,7 +200,7 @@ const discoverWorkerReconciliation = async (outputCollection = {}) => {
       if (error && error.code === 'RESULT_RECONCILIATION_INCOMPLETE') {
         throw error;
       }
-      // Unrelated or malformed non-contract JSON output remains a normal worker artifact.
+      // Unrelated unreadable/non-contract JSON output remains a normal worker artifact.
     }
   }
 
