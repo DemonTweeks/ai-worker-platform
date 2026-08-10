@@ -15,6 +15,7 @@
       <span v-for="item in metadataItems" :key="item.label"><strong>{{ item.value }}</strong><small>{{ item.label }}</small></span>
     </div>
 
+    <p v-if="reconciliationPreview" class="summary-preview">{{ reconciliationPreview }}</p>
     <p class="summary-preview">{{ summaryPreview }}</p>
 
     <div class="job-card-footer">
@@ -66,6 +67,9 @@ export default {
     isPrAuditorJob() {
       return this.job.workerId === 'pr-auditor';
     },
+    hasReconciliation() {
+      return !this.isPrAuditorJob && this.job.generatedSiteCount !== null && this.job.generatedSiteCount !== undefined;
+    },
     showScopeBadge() {
       return Boolean(this.job.prScope);
     },
@@ -90,6 +94,14 @@ export default {
         ];
       }
 
+      const reconciliation = this.hasReconciliation
+        ? [
+          { label: 'Generated', value: this.job.generatedSiteCount || 0 },
+          { label: 'Accounted', value: this.job.accountedSiteCount || 0 },
+          { label: 'Unaccounted', value: this.job.unaccountedSiteCount || 0 }
+        ]
+        : [];
+
       return [
         { label: 'Worker', value: this.workerLabel },
         { label: 'Run Mode', value: this.runModeLabel },
@@ -98,6 +110,7 @@ export default {
         { label: 'Requested', value: this.job.requestedSiteCount || 0 },
         { label: 'Matched', value: this.job.matchedSiteCount || 0 },
         { label: 'Unmatched', value: this.job.unmatchedSiteCount || 0 },
+        ...reconciliation,
         { label: 'Outputs', value: this.job.outputFileCount || 0 },
         { label: 'Review', value: this.job.reviewRequiredCount || 0 },
         { label: 'Warnings', value: this.job.warningCount || 0 }
@@ -128,6 +141,19 @@ export default {
       }
 
       return this.job.status === 'cancelled_with_partial_result' ? 'Download Partial ZIP' : 'Download ZIP';
+    },
+    reconciliationPreview() {
+      if (!this.hasReconciliation) return '';
+      const requested = this.job.requestedSiteCount || 0;
+      const generated = this.job.generatedSiteCount || 0;
+      const unaccounted = this.job.unaccountedSiteCount || 0;
+      if (unaccounted > 0) {
+        return `Result integrity warning: ${generated}/${requested} generated • ${unaccounted} unaccounted.`;
+      }
+      if (this.job.status === 'completed_with_warning') {
+        return `Result reconciled: ${generated}/${requested} generated • ${this.job.accountedSiteCount || 0}/${requested} accounted.`;
+      }
+      return `Result reconciled: ${this.job.accountedSiteCount || 0}/${requested} requested sites accounted.`;
     },
     summaryPreview() {
       if (this.job.status === 'failed') {
