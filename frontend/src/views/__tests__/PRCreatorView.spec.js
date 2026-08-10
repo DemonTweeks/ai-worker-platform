@@ -29,6 +29,10 @@ vi.mock('../../services/websocketClient', () => ({
   }))
 }));
 
+const flushPromises = () => new Promise((resolve) => {
+  setTimeout(resolve, 0);
+});
+
 const mountView = () => mount(PRCreatorView, {
   stubs: {
     RouterLink: {

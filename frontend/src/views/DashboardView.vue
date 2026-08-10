@@ -55,7 +55,7 @@
             </div>
           </section>
 
-          <section class="panel cockpit-card workbench-result-card">
+          <section class="panel cockpit-card workbench-result-card dashboard-active-jobs-card">
             <div class="cockpit-card-heading">
               <span>Active Jobs</span>
               <small>{{ activeJobs.length }} active</small>
@@ -78,7 +78,11 @@
                     <td>{{ job.jobId }}</td>
                     <td>{{ job.workerDisplayName || job.workerId }}</td>
                     <td>{{ job.status }}</td>
-                    <td>{{ job.createdAt || 'Now' }}</td>
+                    <td>
+                      <time class="job-created-time" :datetime="job.createdAt || null">
+                        {{ formatCompactDateTime(job.createdAt, 'Just now') }}
+                      </time>
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -92,6 +96,7 @@
 
 <script>
 import { getHealth, getErrorMessage, listJobs } from '../api/jobApi';
+import { formatCompactDateTime } from '../utils/formatUtils';
 import { isTerminalStatus } from '../utils/statusUtils';
 
 const SELECTED_JOB_STORAGE_KEY = 'selectedJobId';
@@ -130,6 +135,7 @@ export default {
     this.loadDashboardSummary();
   },
   methods: {
+    formatCompactDateTime,
     async loadDashboardSummary() {
       await Promise.all([
         this.loadHealth(),
@@ -163,3 +169,40 @@ export default {
   }
 };
 </script>
+<style scoped>
+.dashboard-active-jobs-card {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.dashboard-active-jobs-card .cockpit-empty-card {
+  min-height: 0;
+}
+
+.dashboard-active-jobs-card .download-compact {
+  width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.dashboard-active-jobs-card .active-jobs-table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.dashboard-active-jobs-card .active-jobs-table th:nth-child(1) { width: 24%; }
+.dashboard-active-jobs-card .active-jobs-table th:nth-child(2) { width: 28%; }
+.dashboard-active-jobs-card .active-jobs-table th:nth-child(3) { width: 20%; }
+.dashboard-active-jobs-card .active-jobs-table th:nth-child(4) { width: 28%; }
+
+.dashboard-active-jobs-card .active-jobs-table th,
+.dashboard-active-jobs-card .active-jobs-table td {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.dashboard-active-jobs-card .job-created-time {
+  white-space: normal;
+}
+</style>

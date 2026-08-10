@@ -261,7 +261,11 @@
                   <td>{{ job.jobId }}</td>
                   <td>{{ job.workerDisplayName || job.workerId }}</td>
                   <td>{{ job.status }}</td>
-                  <td>{{ job.createdAt || 'Now' }}</td>
+                  <td>
+                    <time class="job-created-time" :datetime="job.createdAt || null">
+                      {{ formatCompactDateTime(job.createdAt, 'Just now') }}
+                    </time>
+                  </td>
                   <td>
                     <button type="button" class="secondary-link" @click="viewLiveOutput(job.jobId)">
                       View
@@ -411,7 +415,7 @@
         </div>
         <div class="console-meta">
           <span>{{ connectionStatus }}</span>
-          <span>{{ updatedAt || 'No live update yet' }}</span>
+          <span>{{ formatDateTime(updatedAt, 'No live update yet') }}</span>
         </div>
       </div>
 
@@ -428,7 +432,7 @@
         >
           <div class="console-entry-meta">
             <span>{{ item.label }}</span>
-            <time>{{ item.time || 'Current session' }}</time>
+            <time :datetime="item.time || null">{{ formatDateTime(item.time, 'Current session') }}</time>
           </div>
           <div class="console-message-bubble">
             <h3>{{ item.title }}</h3>

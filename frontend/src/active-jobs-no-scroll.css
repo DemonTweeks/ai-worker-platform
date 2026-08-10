@@ -1,0 +1,4 @@
+/* Active Jobs must remain readable inside fixed-width workbench cards without horizontal scrolling. */
+.workbench-result-card .job-created-time {
+  white-space: normal;
+}

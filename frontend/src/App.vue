@@ -1,6 +1,10 @@
 <template>
   <div id="app" class="app-shell">
-    <header class="app-header">
+    <header
+      class="app-header"
+      :class="{ 'is-hidden': isHeaderHidden }"
+      @focusin="showHeader"
+    >
       <div class="brand-block">
         <span class="brand-mark">ZTE</span>
         <div>
@@ -63,7 +67,10 @@ export default {
       health: null,
       healthError: false,
       healthTimer: null,
-      storedSelectedJobId: ''
+      storedSelectedJobId: '',
+      isHeaderHidden: false,
+      lastScrollY: 0,
+      headerScrollFrame: null
     };
   },
   computed: {
@@ -88,10 +95,19 @@ export default {
     }
     this.checkHealth();
     this.healthTimer = setInterval(this.checkHealth, 30000);
+    if (typeof window !== 'undefined') {
+      this.lastScrollY = Math.max(window.scrollY || 0, 0);
+      window.addEventListener('scroll', this.handleHeaderScroll, { passive: true });
+    }
   },
   beforeDestroy() {
     if (typeof window !== 'undefined') {
       window.removeEventListener(SELECTED_JOB_CHANGED_EVENT, this.handleSelectedJobChanged);
+      window.removeEventListener('scroll', this.handleHeaderScroll);
+      if (this.headerScrollFrame !== null) {
+        if (typeof window.cancelAnimationFrame === 'function') window.cancelAnimationFrame(this.headerScrollFrame);
+        else window.clearTimeout(this.headerScrollFrame);
+      }
     }
     if (this.healthTimer) {
       clearInterval(this.healthTimer);
@@ -111,6 +127,27 @@ export default {
         ? event.detail.jobId
         : '';
       this.storedSelectedJobId = nextJobId;
+    },
+    handleHeaderScroll() {
+      if (this.headerScrollFrame !== null || typeof window === 'undefined') return;
+      const requestFrame = typeof window.requestAnimationFrame === 'function'
+        ? window.requestAnimationFrame.bind(window)
+        : (callback) => window.setTimeout(callback, 16);
+      this.headerScrollFrame = requestFrame(() => {
+        const currentScrollY = Math.max(window.scrollY || 0, 0);
+        const scrollDelta = currentScrollY - this.lastScrollY;
+        if (currentScrollY <= 16) {
+          this.isHeaderHidden = false;
+          this.lastScrollY = currentScrollY;
+        } else if (Math.abs(scrollDelta) >= 6) {
+          this.isHeaderHidden = scrollDelta > 0 && currentScrollY > 80;
+          this.lastScrollY = currentScrollY;
+        }
+        this.headerScrollFrame = null;
+      });
+    },
+    showHeader() {
+      this.isHeaderHidden = false;
     },
     async checkHealth() {
       try {

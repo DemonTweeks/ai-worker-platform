@@ -78,4 +78,22 @@ describe('App selected job navigation', () => {
     expect(wrapper.html()).toContain('href="/dashboard"');
     expect(wrapper.html()).not.toContain('href="/workers/pr-creator">Dashboard<');
   });
+  it('hides on downward scroll and reappears on upward scroll', async () => {
+    vi.useFakeTimers();
+    Object.defineProperty(window, 'scrollY', { configurable: true, value: 0, writable: true });
+    const wrapper = mountApp();
+    window.scrollY = 120;
+    wrapper.vm.handleHeaderScroll();
+    vi.advanceTimersByTime(16);
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find('.app-header').classes()).toContain('is-hidden');
+    window.scrollY = 80;
+    wrapper.vm.handleHeaderScroll();
+    vi.advanceTimersByTime(16);
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find('.app-header').classes()).not.toContain('is-hidden');
+    wrapper.destroy();
+    vi.useRealTimers();
+  });
+
 });
