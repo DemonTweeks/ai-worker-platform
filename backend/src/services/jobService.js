@@ -124,11 +124,20 @@ const redactTechnicalDetails = (text) => {
   return clean;
 };
 
+const knownCountOrNull = (value) => Number.isInteger(value) && value >= 0 ? value : null;
+
 const getIncompleteResultMessage = (job = {}) => {
-  const requested = Number.isInteger(job.requestedSiteCount) ? job.requestedSiteCount : 0;
-  const generated = Number.isInteger(job.generatedSiteCount) ? job.generatedSiteCount : 0;
-  const missing = Number.isInteger(job.unaccountedSiteCount) ? job.unaccountedSiteCount : Math.max(requested - generated, 0);
-  return `${generated} of ${requested} requested sites generated. ${missing} sites have no confirmed result.`;
+  const requested = knownCountOrNull(job.requestedSiteCount);
+  const generated = knownCountOrNull(job.generatedSiteCount);
+  const missing = knownCountOrNull(job.unaccountedSiteCount);
+
+  if (requested !== null && generated !== null && missing !== null) {
+    return `${generated} of ${requested} requested sites generated. ${missing} sites have no confirmed result.`;
+  }
+  if (requested !== null && generated !== null) {
+    return `${generated} of ${requested} requested sites generated. The number of sites without confirmed result could not be determined.`;
+  }
+  return 'Result reconciliation could not be completed. The number of sites without confirmed result could not be determined.';
 };
 
 const getFailureSummary = (job) => {
@@ -308,13 +317,13 @@ const serializeSafeError = (job = {}) => {
 
   if (code === RESULT_RECONCILIATION_INCOMPLETE) {
     Object.assign(details, {
-      requestedSiteCount: Number.isInteger(job.requestedSiteCount) ? job.requestedSiteCount : 0,
-      generatedSiteCount: Number.isInteger(job.generatedSiteCount) ? job.generatedSiteCount : 0,
-      reviewRequiredSiteCount: Number.isInteger(job.reviewRequiredSiteCount) ? job.reviewRequiredSiteCount : 0,
-      approvedIgnoredSiteCount: Number.isInteger(job.approvedIgnoredSiteCount) ? job.approvedIgnoredSiteCount : 0,
-      duplicateBlockedSiteCount: Number.isInteger(job.duplicateBlockedSiteCount) ? job.duplicateBlockedSiteCount : 0,
-      failedSiteCount: Number.isInteger(job.failedSiteCount) ? job.failedSiteCount : 0,
-      sitesWithoutConfirmedResultCount: Number.isInteger(job.unaccountedSiteCount) ? job.unaccountedSiteCount : 0
+      requestedSiteCount: knownCountOrNull(job.requestedSiteCount),
+      generatedSiteCount: knownCountOrNull(job.generatedSiteCount),
+      reviewRequiredSiteCount: knownCountOrNull(job.reviewRequiredSiteCount),
+      approvedIgnoredSiteCount: knownCountOrNull(job.approvedIgnoredSiteCount),
+      duplicateBlockedSiteCount: knownCountOrNull(job.duplicateBlockedSiteCount),
+      failedSiteCount: knownCountOrNull(job.failedSiteCount),
+      sitesWithoutConfirmedResultCount: knownCountOrNull(job.unaccountedSiteCount)
     });
   }
 
@@ -562,7 +571,7 @@ const rerunJob = async (sourceJobId, { browserTabSessionId } = {}) => {
     const job = await Job.create({ jobId, workerId: sourceJob.workerId || WORKER_IDS.MW_PR, engineVersion: workerManifest.engineVersion, engineCommit: workerManifest.engineCommit, workerType: sourceJob.workerType || 'pr-worker', status: 'queued', browserTabSessionId: normalizedBrowserTabSessionId, idempotencyKey: null, generationScope: sourceJob.generationScope, prScope: sourceJob.prScope, runMode: sourceJob.runMode, selectedProject: sourceJob.selectedProject, auditYear: sourceJob.auditYear || null, auditMonth: sourceJob.auditMonth || null, requestedSiteCount: sourceJob.requestedSiteCount || 0, rerunSourceJobId: sourceJobId, fileRetentionUntil: retentionUntil });
     const jobFiles = await JobFile.insertMany(copiedFiles.map(({ source, metadata }) => ({ jobId, fileType: source.fileType, fileName: source.fileName, filePath: metadata.filePath, fileSize: metadata.fileSize, retentionUntil })));
     const queueState = await jobQueue.enqueueJob(jobId);
-    return { created: true, job: serializeJobSummary(job), jobFiles: jobFiles.map((file) => ({ id: file._id.toString(), fileType: file.fileType, fileName: file.fileName, fileSize: file.fileSize, retentionUntil })), queue: queueState, message: `Job ${sourceJobId} was copied and queued with a new job ID.` };
+    return { created: true, job: serializeJobSummary(job), jobFiles: jobFiles.map((file) => ({ id: file._id.toString(), fileType: file.fileType, fileName: file.fileName, fileSize: file.fileSize, retentionUntil: file.retentionUntil })), queue: queueState, message: `Job ${sourceJobId} was copied and queued with a new job ID.` };
   } catch (error) {
     if (jobId) await Promise.all([Job.deleteMany({ jobId }), JobFile.deleteMany({ jobId }), storageService.deleteFolderSafe(storageService.getJobRootPath(jobId)).catch(() => {})]).catch(() => {});
     throw error;
