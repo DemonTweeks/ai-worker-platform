@@ -26,16 +26,18 @@ const normalizeResultReconciliation = (summary = {}) => {
   if (!hasExplicitReconciliation(summary)) return null;
 
   const requestedSiteCount = normalizeCount(summary.requestedSiteCount);
+  const unmatchedSiteCount = normalizeCount(summary.unmatchedSiteCount) || 0;
   const generatedSiteCount = normalizeCount(summary.generatedSiteCount) || 0;
   const reviewRequiredSiteCount = normalizeCount(summary.reviewRequiredSiteCount) || 0;
   const approvedIgnoredSiteCount = normalizeCount(summary.approvedIgnoredSiteCount) || 0;
   const duplicateBlockedSiteCount = normalizeCount(summary.duplicateBlockedSiteCount) || 0;
   const failedSiteCount = normalizeCount(summary.failedSiteCount) || 0;
-  const accountedSiteCount = generatedSiteCount
+  const workerAccountedSiteCount = generatedSiteCount
     + reviewRequiredSiteCount
     + approvedIgnoredSiteCount
     + duplicateBlockedSiteCount
     + failedSiteCount;
+  const accountedSiteCount = workerAccountedSiteCount + unmatchedSiteCount;
 
   const explicitUnaccountedSiteCount = normalizeCount(summary.unaccountedSiteCount);
   const derivedUnaccountedSiteCount = requestedSiteCount !== null
@@ -51,11 +53,13 @@ const normalizeResultReconciliation = (summary = {}) => {
 
   return {
     requestedSiteCount,
+    unmatchedSiteCount,
     generatedSiteCount,
     reviewRequiredSiteCount,
     approvedIgnoredSiteCount,
     duplicateBlockedSiteCount,
     failedSiteCount,
+    workerAccountedSiteCount,
     accountedSiteCount,
     unaccountedSiteCount,
     reconciliationConsistent
