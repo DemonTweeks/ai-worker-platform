@@ -209,6 +209,9 @@ const discoverWorkerReconciliation = async (outputCollection = {}) => {
       const hasSnakeContract = Object.prototype.hasOwnProperty.call(parsed, 'result_reconciliation');
       const hasCamelContract = Object.prototype.hasOwnProperty.call(parsed, 'resultReconciliation');
       if (!hasSnakeContract && !hasCamelContract) continue;
+      if (hasSnakeContract && hasCamelContract) {
+        throw invalidContractError('DUPLICATE_RECONCILIATION_ALIASES');
+      }
 
       const contract = hasSnakeContract ? parsed.result_reconciliation : parsed.resultReconciliation;
       const mapped = fromEngineContract(contract);
