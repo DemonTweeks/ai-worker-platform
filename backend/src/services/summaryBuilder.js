@@ -4,6 +4,12 @@ const {
   toPersistedReconciliation
 } = require('./resultReconciliationService');
 
+const isCancellationStatus = (status) => (
+  status === 'cancelling'
+  || status === 'cancelled'
+  || status === 'cancelled_with_partial_result'
+);
+
 const buildAndSaveSummary = async ({
   jobId,
   filteringResult,
@@ -11,9 +17,10 @@ const buildAndSaveSummary = async ({
   workerReconciliation = null,
   discoverReconciliation = true
 }) => {
-  const [reviewRequiredCount, warningCount] = await Promise.all([
+  const [reviewRequiredCount, warningCount, currentJob] = await Promise.all([
     ReviewRequiredItem.countDocuments({ jobId }),
-    WarningItem.countDocuments({ jobId })
+    WarningItem.countDocuments({ jobId }),
+    Job.findOne({ jobId }).lean().catch(() => null)
   ]);
 
   const baseSummary = {
@@ -26,8 +33,10 @@ const buildAndSaveSummary = async ({
     warningCount
   };
 
+  const shouldDiscoverReconciliation = discoverReconciliation
+    && !isCancellationStatus(currentJob && currentJob.status);
   const discoveredReconciliation = workerReconciliation || (
-    discoverReconciliation ? await discoverWorkerReconciliation(outputCollection) : null
+    shouldDiscoverReconciliation ? await discoverWorkerReconciliation(outputCollection) : null
   );
   const reconciliationSummary = discoveredReconciliation
     ? {
