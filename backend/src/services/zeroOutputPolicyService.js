@@ -57,6 +57,19 @@ const determineFinalStatus = (summary) => {
       );
     }
 
+    if ((reconciliation.generatedSiteCount || 0) === 0 && (summary.outputFileCount || 0) > 0) {
+      throw Object.assign(
+        new Error('ECC output files were collected even though result reconciliation reports zero generated sites.'),
+        {
+          code: 'RESULT_RECONCILIATION_INCOMPLETE',
+          details: {
+            ...reconciliation,
+            outputFileCount: summary.outputFileCount || 0
+          }
+        }
+      );
+    }
+
     const hasNonGeneratedDisposition = (
       (reconciliation.reviewRequiredSiteCount || 0) > 0
       || (reconciliation.approvedIgnoredSiteCount || 0) > 0
