@@ -4,7 +4,13 @@ const {
   toPersistedReconciliation
 } = require('./resultReconciliationService');
 
-const buildAndSaveSummary = async ({ jobId, filteringResult, outputCollection, workerReconciliation = null }) => {
+const buildAndSaveSummary = async ({
+  jobId,
+  filteringResult,
+  outputCollection,
+  workerReconciliation = null,
+  discoverReconciliation = true
+}) => {
   const [reviewRequiredCount, warningCount] = await Promise.all([
     ReviewRequiredItem.countDocuments({ jobId }),
     WarningItem.countDocuments({ jobId })
@@ -20,7 +26,9 @@ const buildAndSaveSummary = async ({ jobId, filteringResult, outputCollection, w
     warningCount
   };
 
-  const discoveredReconciliation = workerReconciliation || await discoverWorkerReconciliation(outputCollection);
+  const discoveredReconciliation = workerReconciliation || (
+    discoverReconciliation ? await discoverWorkerReconciliation(outputCollection) : null
+  );
   const reconciliationSummary = discoveredReconciliation
     ? {
       ...discoveredReconciliation,
