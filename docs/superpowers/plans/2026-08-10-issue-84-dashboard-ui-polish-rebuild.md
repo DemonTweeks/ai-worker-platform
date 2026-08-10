@@ -13,6 +13,7 @@
 - Preserve platform-global Health / Dashboard / Status / History / Admin navigation.
 - Preserve same-tab `selectedJobId` behavior and `awp:selected-job-changed` event handling.
 - Preserve current-main Issue #88 reconciliation UI.
+- Preserve Active Jobs no-horizontal-scroll behavior; content, including timestamps, must wrap safely within fixed-width cards when needed.
 - No worker business-rule changes.
 - Browser-local timestamp formatting must use shared formatter utilities.
 
@@ -28,10 +29,10 @@
 
 ### Task 2: Replay dashboard and date formatting polish
 
-**Files:** `frontend/src/views/DashboardView.vue`, `frontend/src/views/__tests__/DashboardView.spec.js`, `frontend/src/utils/formatUtils.js`, `frontend/src/utils/__tests__/formatUtils.spec.js`, `frontend/src/components/detail/__tests__/JobDetailMetadata.spec.js`, `frontend/src/views/PRAuditorView.vue`
+**Files:** `frontend/src/views/DashboardView.vue`, `frontend/src/views/__tests__/DashboardView.spec.js`, `frontend/src/utils/formatUtils.js`, `frontend/src/utils/__tests__/formatUtils.spec.js`, `frontend/src/components/detail/__tests__/JobDetailMetadata.spec.js`, `frontend/src/views/PRAuditorView.vue`, `frontend/src/active-jobs-no-scroll.css`
 
 - [ ] Replay PR #87 changes onto current main.
-- [ ] Preserve responsive Active Jobs layout and compact non-wrapping timestamps.
+- [ ] Preserve responsive Active Jobs layout with no horizontal scrolling; keep timestamps compact but allow safe wrapping in narrow fixed columns.
 
 ### Task 3: Apply minimal timestamp/test deltas to files changed by PR #89
 
