@@ -318,7 +318,7 @@
             >
               <div><dt>Generated sites</dt><dd>{{ jobDetail.job.generatedSiteCount || 0 }}</dd></div>
               <div><dt>Accounted sites</dt><dd>{{ jobDetail.job.accountedSiteCount || 0 }}</dd></div>
-              <div><dt>Unaccounted sites</dt><dd>{{ jobDetail.job.unaccountedSiteCount || 0 }}</dd></div>
+              <div><dt>Sites without confirmed result</dt><dd>{{ jobDetail.job.unaccountedSiteCount || 0 }}</dd></div>
               <div><dt>Review sites</dt><dd>{{ jobDetail.job.reviewRequiredSiteCount || 0 }}</dd></div>
               <div><dt>Ignored sites</dt><dd>{{ jobDetail.job.approvedIgnoredSiteCount || 0 }}</dd></div>
               <div><dt>Duplicate-blocked</dt><dd>{{ jobDetail.job.duplicateBlockedSiteCount || 0 }}</dd></div>
