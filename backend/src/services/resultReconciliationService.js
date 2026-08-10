@@ -128,6 +128,10 @@ const readContractCount = (payload, snakeName, camelName) => {
     throw invalidContractError('MISSING_REQUIRED_COUNT', snakeName);
   }
 
+  if (hasSnake && hasCamel && payload[snakeName] !== payload[camelName]) {
+    throw invalidContractError('CONFLICTING_COUNT_ALIASES', snakeName);
+  }
+
   const value = hasSnake ? payload[snakeName] : payload[camelName];
   if (!Number.isInteger(value) || value < 0) {
     throw invalidContractError('INVALID_COUNT', snakeName);
@@ -176,12 +180,17 @@ const containsReconciliationMarker = (absolutePath) => new Promise((resolve, rej
   stream.on('error', reject);
 });
 
+const canonicalContractsEqual = (left, right) => CANONICAL_CONTRACT_FIELDS.every((field) => (
+  left[field] === right[field]
+));
+
 const discoverWorkerReconciliation = async (outputCollection = {}) => {
   const storageService = require('./storageService');
   const storageRoot = storageService.getStorageRoot();
   const jsonFiles = (outputCollection.outputFiles || []).filter((file) => (
     String(file.fileName || '').toLowerCase().endsWith('.json') && file.filePath
   ));
+  let discoveredContract = null;
 
   for (const file of jsonFiles) {
     const absolutePath = assertPathInsideRoot(storageRoot, path.join(storageRoot, file.filePath));
@@ -218,7 +227,11 @@ const discoverWorkerReconciliation = async (outputCollection = {}) => {
       if (!normalizeResultReconciliation(mapped)) {
         throw invalidContractError('MISSING_RECONCILIATION_COUNTS');
       }
-      return mapped;
+
+      if (discoveredContract && !canonicalContractsEqual(discoveredContract, mapped)) {
+        throw invalidContractError('CONFLICTING_RECONCILIATION_ARTIFACTS');
+      }
+      discoveredContract = discoveredContract || mapped;
     } catch (error) {
       if (error && error.code === 'RESULT_RECONCILIATION_INCOMPLETE') {
         throw error;
@@ -227,7 +240,7 @@ const discoverWorkerReconciliation = async (outputCollection = {}) => {
     }
   }
 
-  return null;
+  return discoveredContract;
 };
 
 module.exports = {
