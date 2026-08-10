@@ -20,6 +20,15 @@ const JOB_STATUSES = [
 
 const GENERATION_SCOPES = ['site_code', 'all_sites'];
 const PR_SCOPES = ['TSS', 'TI'];
+const RECONCILIATION_FIELDS = [
+  'generatedSiteCount',
+  'reviewRequiredSiteCount',
+  'approvedIgnoredSiteCount',
+  'duplicateBlockedSiteCount',
+  'failedSiteCount',
+  'accountedSiteCount',
+  'unaccountedSiteCount'
+];
 
 class Job {
   constructor(data) {
@@ -42,6 +51,9 @@ class Job {
       if (typeof this.outputFileCount === 'undefined') this.outputFileCount = null;
       if (typeof this.reviewRequiredCount === 'undefined') this.reviewRequiredCount = null;
       if (typeof this.warningCount === 'undefined') this.warningCount = null;
+      for (const field of RECONCILIATION_FIELDS) {
+        if (typeof this[field] === 'undefined') this[field] = null;
+      }
     }
   }
 
@@ -84,6 +96,13 @@ class Job {
       outputFileCount: payload.outputFileCount || 0,
       reviewRequiredCount: payload.reviewRequiredCount || 0,
       warningCount: payload.warningCount || 0,
+      generatedSiteCount: payload.generatedSiteCount ?? null,
+      reviewRequiredSiteCount: payload.reviewRequiredSiteCount ?? null,
+      approvedIgnoredSiteCount: payload.approvedIgnoredSiteCount ?? null,
+      duplicateBlockedSiteCount: payload.duplicateBlockedSiteCount ?? null,
+      failedSiteCount: payload.failedSiteCount ?? null,
+      accountedSiteCount: payload.accountedSiteCount ?? null,
+      unaccountedSiteCount: payload.unaccountedSiteCount ?? null,
       finalWorkerSummary: payload.finalWorkerSummary || '',
       auditSummary: payload.auditSummary || null,
       auditYear: payload.auditYear || null,
