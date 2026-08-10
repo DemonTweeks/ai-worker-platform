@@ -256,6 +256,9 @@ Start with [wiki/SUMMARIZE.md](wiki/SUMMARIZE.md).
 
 Current operational references:
 
+- [Platform Architecture](wiki/ARCHITECTURE.md)
+- [Skill Integration Contract](wiki/SKILL_CONTRACT.md)
+- [Pending Architecture Items](wiki/PENDING.md)
 - [Analysis Summary](wiki/SUMMARIZE.md)
 - [Implementation Handover](wiki/HANDOVER.md)
 - [Overall Remediation Plan](wiki/PLAN.md)

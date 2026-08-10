@@ -1,454 +1,331 @@
-# AI Worker Platform — Overall Analysis and Remediation Plan
+# AI Worker Platform — Thin Skill Wrapper Plan
 
-> Status: analysis baseline, pending detailed discussion
-> This plan records current architecture and proposed work. It is not authorization to implement every phase.
+## 1. Target Outcome
 
-## 1. Goals
+Refactor AI Worker Platform into a thin, contract-driven wrapper for standalone Python skills.
 
-1. Restore a known and approved worker-engine baseline.
-2. Make local and Windows host behavior consistent with the supported deployment scope.
-3. Make job lifecycle transitions reliable across errors and process restarts.
-4. Make outputs atomic, verifiable, and safe to download.
-5. Establish a clean-checkout test gate covering all worker families.
-6. Harden secrets, uploads, persistence access, and network boundaries.
-7. Reduce coupling in the largest backend and frontend modules.
+The platform will handle server concerns, HTTP(S) requests, authentication, generic input transport, skill invocation, job metadata, progress delivery, and result downloads. It will not contain technical processing logic or business logic.
 
-## 2. Current System Responsibilities
+Skills will follow the platform's manifest, invocation, event, and result contracts while remaining independently executable and testable through Python.
 
-### Platform responsibilities
+## 2. Design Principles
 
-- Browser navigation and worker-specific input forms
-- Workbook upload and prevalidation
-- Job creation, idempotency, queueing, cancellation, and rerun
-- Worker selection and adapter dispatch
-- Per-job input, temporary, report, and output storage
-- Progress events and WebSocket subscriptions
-- Job history, details, summaries, warnings, and review-required items
-- ZIP packaging and file downloads
-- Admin login, auditing, health, and deployment handoff
-- Optional LLM wording and re-ask responses
+1. Skills are the only owners of domain and technical logic.
+2. The platform treats domain files as opaque content.
+3. The platform validates contracts, not business correctness.
+4. New skills integrate through manifests and a generic runner.
+5. A new skill should not require a new platform route or service.
+6. Every skill must work standalone without Express, Firebase, or the frontend.
+7. Platform lifecycle and security behavior must remain consistent across all skills.
 
-### Worker-engine responsibilities
+## 3. Functional Ownership
 
-- Business rules and configuration
-- Input normalization and transformation
-- TSS/TI/RAN/audit calculations
-- Domain-owned templates and reference assets
-- Domain output generation
+| Concern | Platform | Skill |
+| --- | --- | --- |
+| HTTP(S), auth, routing | Owns | Does not own |
+| Upload transport and safe storage | Owns | Consumes declared paths |
+| Generic request schema | Owns | Declares parameters |
+| Workbook/domain parsing | Must not own | Owns |
+| Technical calculations | Must not own | Owns |
+| Business decisions | Must not own | Owns |
+| Job ID, status, timeout, cancellation | Owns | Cooperates through contract |
+| Progress events | Relays and stores | Produces |
+| Output content | Treats as opaque | Owns |
+| Output metadata and download | Owns | Declares through result envelope |
+| Domain tests and golden files | Must not duplicate | Owns |
+| Platform contract tests | Owns | Must pass |
 
-The platform must keep the adapter boundary and must not reimplement domain calculations.
-
-## 3. Folder Structure
+## 4. Target Flow
 
 ```text
-ai-worker-platform/
-|-- backend/
-|   |-- scripts/                  # executable backend and worker regression tests
-|   `-- src/
-|       |-- config/               # environment and runtime path resolution
-|       |-- db/                   # Firebase REST persistence
-|       |-- llm/                  # optional provider, fallback, wording, and re-ask
-|       |-- middleware/           # admin auth, uploads, and error mapping
-|       |-- models/               # Firebase-backed model compatibility API
-|       |-- queue/                # in-memory job scheduling
-|       |-- routes/               # health, jobs, and admin HTTP contracts
-|       |-- services/             # orchestration, storage, reporting, execution
-|       |-- websocket/            # subscriptions, heartbeat, and job events
-|       `-- workers/
-|           |-- adapters/         # job payload to engine invocation
-|           |-- manifests/        # approved engine version and capability contract
-|           `-- workerRegistry.js # worker lookup and adapter factory
-|-- frontend/
-|   |-- scripts/                  # route smoke test
-|   `-- src/
-|       |-- api/                   # job, admin, and re-ask HTTP clients
-|       |-- components/            # shared, detail, history, and admin UI
-|       |-- config/                # worker navigation
-|       |-- services/              # auth state and WebSocket client
-|       |-- utils/                 # status, formatting, and result helpers
-|       `-- views/                 # worker, history, detail, dashboard, admin pages
+Client
+  -> HTTPS request with skill ID, parameters and files
+  -> platform validates generic request contract
+  -> platform stores opaque inputs and creates job
+  -> registry resolves validated skill manifest
+  -> generic runner creates isolated workspace
+  -> runner invokes standalone Python entrypoint
+  -> skill validates domain inputs
+  -> skill executes all technical and business logic
+  -> skill emits standard events and result.json
+  -> platform validates only result contract and safe paths
+  -> platform stores metadata and exposes outputs
+  -> client reads status and downloads results
+```
+
+## 5. Target Components
+
+```text
+backend/src/
+|-- api/
+|   |-- skillRoutes.js
+|   `-- jobRoutes.js
 |-- skills/
-|   |-- create-pr-cd/              # MW engine submodule
-|   |-- create-pr-cd-ran/          # RAN engine submodule
-|   `-- tx-pr-auditor/             # PR Auditor engine submodule
-|-- storage/                        # ignored runtime job and output data
-|-- README.md
-`-- wiki/
-    |-- SUMMARIZE.md
-    |-- HANDOVER.md
-    `-- PLAN.md
+|   |-- skillRegistry.js
+|   |-- manifestSchema.js
+|   |-- contractSchema.js
+|   `-- skillRunner.js
+|-- jobs/
+|   |-- jobService.js
+|   |-- jobRepository.js
+|   |-- jobQueue.js
+|   `-- jobReconciliationService.js
+|-- storage/
+|   |-- workspaceService.js
+|   `-- fileService.js
+|-- events/
+|   |-- skillEventParser.js
+|   `-- eventPublisher.js
+|-- security/
+|-- health/
+`-- server.js
+
+skills/<skill-id>/
+|-- skill.json
+|-- SKILL.md
+|-- requirements.txt or pyproject.toml
+|-- src/main.py
+|-- config/
+|-- assets/
+`-- tests/
 ```
 
-## 4. Main Runtime Functions
+This is a target responsibility map. Physical movement should occur incrementally after contract tests exist.
 
-### 4.1 Startup
+## 6. Target Platform Functions
 
-File: `backend/src/server.js`
+### `listSkills()`
 
-- `startServer()` verifies approved engine integrity before opening the HTTP server.
-- It initializes WebSocket handling and storage.
-- It checks Firebase reachability asynchronously.
-- It currently has no persisted-job reconciliation step.
+- Reads approved manifests.
+- Returns safe catalog metadata.
+- Does not import or inspect skill implementation modules.
 
-Planned changes:
+### `getSkill(skillId)`
 
-- Add configuration validation before integrity checks.
-- Add persistence health requirements based on environment.
-- Reconcile interrupted jobs before accepting new work.
-- Add graceful shutdown coordination for queue, workers, streams, and WebSockets.
+- Resolves a validated manifest.
+- Rejects disabled, missing, unapproved, or incompatible skills.
 
-### 4.2 Configuration
+### `createJob(request, files)`
 
-File: `backend/src/config/env.js`
+- Validates the generic request envelope.
+- Enforces authentication, idempotency, file limits, and declared inputs.
+- Stores files without domain parsing.
+- Persists a generic job record.
+- Enqueues the job using its skill ID and version.
 
-- Resolves repo-relative engine and storage paths.
-- Parses limits, WebSocket settings, LLM settings, and admin credentials.
-- Uses a hard-coded Firebase URL when none is supplied.
+### `runSkill(job)`
 
-Planned changes:
+- Resolves the manifest and entrypoint.
+- Creates an isolated workspace and input envelope.
+- Starts the Python process.
+- Applies timeout, cancellation, environment, and path controls.
+- Captures standard events and the final result envelope.
+- Does not contain branches for MW, RAN, Auditor, or future domains.
 
-- Separate development defaults from required production configuration.
-- Validate absolute Windows paths.
-- Add all worker roots to `.env.example`.
-- Fail production startup for missing persistence or insecure secrets.
+### `ingestResult(job, resultEnvelope)`
 
-### 4.3 Worker registration and integrity
+- Validates standard JSON schema.
+- Verifies job/skill identity, safe paths, file existence, size, and checksum.
+- Persists standard output metadata, warnings, summary, and error information.
+- Does not parse or validate domain output content.
 
-Files:
+### `getJob()` and `listJobs()`
 
-- `backend/src/workers/workerRegistry.js`
-- `backend/src/workers/manifests/*.js`
-- `backend/src/services/engineIntegrityService.js`
+- Read generic job metadata and events.
+- Return skill ID, version, lifecycle status, summary, warnings, and file metadata.
 
-Functions:
+### `cancelJob()` and `rerunJob()`
 
-- `getWorkerManifest(workerId)` returns the declared contract.
-- `getWorkerAdapter(workerId)` returns the execution adapter.
-- `assertPlatformEngineIntegrity()` verifies approved commits and runtime files.
+- Apply generic lifecycle rules.
+- Signal the running process without skill-specific cancellation logic.
+- Preserve request and version provenance.
 
-Planned changes:
+## 7. Skill Contract
 
-- Resolve the MW commit decision.
-- Make integrity requirements explicit and consistent for all three engines.
-- Provide a documented promotion procedure that includes business regression evidence.
+The mandatory contract is documented in [SKILL_CONTRACT.md](SKILL_CONTRACT.md).
 
-### 4.4 Prevalidation
+It covers:
 
-Files:
+- `skill.json` manifest
+- Standard input envelope
+- Python CLI invocation
+- NDJSON progress events
+- `result.json` envelope
+- Output path rules
+- Warning and error objects
+- Exit codes
+- Standalone compliance
+- Compatibility and versioning
 
-- `backend/src/routes/jobRoutes.js`
-- `backend/src/services/prevalidationService.js`
-- `backend/src/middleware/uploadMiddleware.js`
+## 8. Migration From Current Architecture
 
-Functions:
+The migration must preserve behavior while moving ownership into skills.
 
-- `validateUpload()` validates and stores a reusable uploaded workbook.
-- `getPrevalidatedUpload()` resolves the stored upload contract.
-- `consumePrevalidatedUpload()` consumes its manifest for job creation.
-- `releasePrevalidatedUpload()` deletes unused retained input.
+### Current platform logic to relocate or replace
 
-Planned changes:
-
-- Stream or spool large uploads instead of buffering the maximum size in memory.
-- Validate MIME signature as well as file extension.
-- Add rate and concurrency limits at the intended access boundary.
-- Make test doubles export the complete module contract.
-
-### 4.5 Job orchestration
-
-File: `backend/src/services/jobService.js`
-
-Current responsibilities include:
-
-- MW, RAN, and PR Auditor job creation
-- Idempotency and browser-tab ownership
-- Input copying and metadata creation
-- Queue insertion
-- Cancellation and rerun
-- Job history/detail serialization
-- Download resolution and re-ask
-
-Planned decomposition:
-
-```text
-services/jobs/
-|-- jobCreationService.js         # shared creation transaction and idempotency
-|-- mwJobPayloadService.js        # MW request contract
-|-- ranJobPayloadService.js       # RAN request contract
-|-- auditorJobPayloadService.js   # PR Auditor request contract
-|-- jobQueryService.js            # list and detail reads
-|-- jobControlService.js          # cancel and rerun
-|-- jobDownloadService.js         # file and ZIP lookup
-`-- jobSerializationService.js    # API response contracts
-```
-
-Do this only after integration tests protect existing behavior.
-
-### 4.6 Queue and worker execution
-
-Files:
-
-- `backend/src/queue/jobQueue.js`
-- `backend/src/services/workerStateService.js`
-- `backend/src/workers/adapters/*.js`
-- `backend/src/services/childProcessRunner.js`
-
-Functions:
-
-- `enqueueJob()` records a job in the in-memory queue and drains available slots.
-- `drainQueue()` resolves the worker adapter and runs it.
-- `cancelQueuedJob()` cancels queued work or requests active cancellation.
-- Worker state functions publish phase transitions and cancellation state.
-
-Planned changes:
-
-- Persist queue ownership or rebuild it from authoritative job records.
-- Add startup reconciliation according to the selected restart semantics.
-- Add shutdown draining and child-process termination.
-- Add lease/owner metadata if more than one backend instance may run.
-
-### 4.7 Output collection and packaging
-
-Files:
-
-- `backend/src/services/outputCollector.js`
-- `backend/src/services/reportGenerator.js`
-- `backend/src/services/storageService.js`
-
-Functions:
-
-- `collectOutputs()` discovers engine output and registers metadata.
-- `generateReportsAndPackage()` creates reports, summary, and ZIP.
-- `createZipPackage()` currently streams an archive directly to its final path.
-- Storage helpers constrain paths to the storage root.
-
-Planned changes:
-
-- Write to `<job>.zip.part` and rename only after successful close.
-- Listen to errors from the archive, source streams, and output stream.
-- Remove partial files on failure.
-- Coordinate packaging with cleanup and cancellation.
-- Register `JobFile` only after the final file exists and its metadata is verified.
-
-### 4.8 Persistence
-
-Files:
-
-- `backend/src/db/firebaseClient.js`
-- `backend/src/models/compatibility.js`
-- `backend/src/models/*.js`
-
-Current behavior:
-
-- Models expose a query-chain compatibility interface over Firebase operations.
-- Reads and writes are translated to Firebase REST calls.
-- The client currently sends no Firebase authentication credential.
-
-Firebase is the authoritative persistence backend. Avoid expanding the compatibility layer; instead, formalize authenticated access, namespace isolation, backup, recovery, and migration behavior.
-
-### 4.9 Frontend runtime
-
-Files:
-
-- `frontend/src/router.js`
-- `frontend/src/views/PRCreatorView.vue`
-- `frontend/src/views/PRAuditorView.vue`
-- `frontend/src/views/shared/workerRuntime.js`
-- `frontend/src/services/websocketClient.js`
-
-Current behavior:
-
-- Worker pages share upload, selected-job, idempotency, notification, and WebSocket lifecycle logic.
-- Browser session storage separates tabs.
-- History and detail views recover persisted state through REST.
-
-Planned decomposition:
-
-```text
-frontend/src/features/workers/
-|-- shared/
-|   |-- useWorkerJobRuntime.js
-|   |-- usePrevalidatedUploads.js
-|   `-- workerSessionStore.js
-|-- mw-pr/
-|-- ran-pr/
-`-- pr-auditor/
-```
-
-Vue 2 does not have native Composition API in this project, so use mixins/services or plan a framework migration separately. Do not combine a behavior refactor with a Vue migration.
-
-## 5. Detailed Phases
-
-### Phase 0 — Confirm decisions and freeze baseline
-
-Tasks:
-
-- Resolve D1–D5 from `HANDOVER.md`.
-- Record expected deployment topology and job-restart behavior.
-- Capture submodule commits and representative golden input/output evidence.
-- Define which tests are hermetic versus live/golden.
-
-Exit criteria:
-
-- No implementation depends on an unanswered architecture choice.
-
-### Phase 1 — Restore engine integrity
-
-Tasks:
-
-- Restore or promote the MW engine.
-- Verify declared runtime files and fingerprint.
-- Run MW engine and platform regression flows.
-- Update README and technical references.
-
-Exit criteria:
-
-- Clean checkout passes the integrity test and backend startup integrity gate.
-
-### Phase 2 — Align configuration and deployment
-
-Tasks:
-
-- Fix RAN and Auditor Windows roots.
-- Configure `RAN_WORKSPACE_ROOT` under platform storage.
-- Configure Firebase explicitly for every supported runtime environment.
-- Add production configuration validation.
-- Add health checks for backend and frontend.
-
-Exit criteria:
-
-- Selected deployment targets start from documented clean commands.
-
-### Phase 3 — Stabilize tests before deeper changes
-
-Tasks:
-
-- Create unique test storage roots.
-- Default unit/integration tests to mock persistence.
-- Fix Node shutdown and incomplete stubs.
-- Include all backend suites in named aggregate gates.
-- Restore frontend dependency install and test execution.
-- Add CI.
-
-Proposed commands:
-
-```text
-npm run test:unit
-npm run test:integration
-npm run test:workers
-npm run test:live
-npm test                 # unit + hermetic integration + worker contract tests
-```
-
-Exit criteria:
-
-- The hermetic default gate passes from a clean checkout.
-- Live/golden tests are explicit and documented.
-
-### Phase 4 — Make lifecycle restart-safe
-
-Tasks:
-
-- Implement the chosen job reconciliation policy.
-- Persist runtime owner/lease metadata if needed.
-- Add graceful shutdown and interrupted-job events.
-- Test queued, running, cancelling, packaging, and exporting states across restart.
-
-Exit criteria:
-
-- Every persisted non-terminal state has deterministic startup handling.
-
-### Phase 5 — Make outputs atomic
-
-Tasks:
-
-- Harden ZIP streams and temporary output handling.
-- Coordinate cleanup and worker completion.
-- Add disk-error and missing-path tests.
-- Verify download availability only for complete files.
-
-Exit criteria:
-
-- Output failures become terminal job failures or safe warnings, never process crashes.
-
-### Phase 6 — Security hardening
-
-Tasks:
-
-- Remove default admin password/JWT secret.
-- Select and enforce CORS origins.
-- Apply the agreed user authentication boundary.
-- Authenticate Firebase or constrain it through trusted infrastructure.
-- Add rate, upload, and request limits.
-- Review logging and error redaction.
-
-Exit criteria:
-
-- Production cannot start with known placeholder credentials.
-- Threat-boundary tests cover unauthorized admin and job operations.
-
-### Phase 7 — Decompose large modules
-
-Tasks:
-
-- Split `jobService.js` by lifecycle responsibility and worker payload.
-- Split frontend runtime/session/upload concerns.
-- Extract worker-specific forms and result presentation.
-- Remove obsolete persistence compatibility naming after Firebase contracts are settled.
-
-Exit criteria:
-
-- Route and UI behavior remains unchanged.
-- Each module has one clear responsibility and focused tests.
-
-## 6. Testing Matrix
-
-| Layer | Required coverage |
+| Current area | Target treatment |
 | --- | --- |
-| Configuration | local and Windows paths; missing secrets; invalid limits |
-| Integrity | approved commit, dirty engine, fingerprint mismatch, missing engine |
-| Prevalidation | type, extension, limits, retained uploads, tab ownership |
-| Job API | all worker payloads, idempotency, rerun, cancellation, history |
-| Queue | concurrency, duplicate enqueue, restart, shutdown, cancellation race |
-| Workers | MW TSS/TI, RAN standard/general, Auditor audit/summary |
-| Storage | traversal, missing files, cleanup, retention, atomic ZIP |
-| Persistence | mock contract plus explicit live integration |
-| WebSocket | subscribe, reconnect, heartbeat, terminal status recovery |
-| Frontend | routes, worker forms, retained uploads, detail/history, responsive UI |
-| Deployment | Windows service health, engine paths, startup, writable storage |
+| `prevalidationService.js` domain workbook checks | Move into each skill; retain only generic upload checks |
+| `iepmsParser.js` | Move to the skills that understand IEPMS |
+| `siteCodeParser.js` and `siteFilteringService.js` | Move into the relevant skill |
+| `prWorkerService.js` | Replace with generic `skillRunner.js` |
+| `ranWorkerService.js` | Replace with generic `skillRunner.js` |
+| `prAuditorWorkerService.js` | Replace with generic `skillRunner.js` |
+| Worker-specific output-ingestion services | Skills produce standard result envelopes |
+| Worker-specific output validators | Move into each skill |
+| Worker-specific branches in `jobService.js` | Replace with manifest-driven generic job creation |
+| Worker-specific frontend payload code | Replace with manifest/schema-driven inputs where practical |
 
-## 7. Risks and Controls
+Do not delete existing platform behavior until the owning skill provides equivalent standalone behavior and passes golden tests.
 
-| Risk | Control |
-| --- | --- |
-| New engine changes business output | Golden comparison and business approval before manifest update |
-| Restart duplicates work | Idempotency plus persisted reconciliation/lease |
-| Cleanup races packaging | Active operation guard and atomic temporary files |
-| Live tests mutate shared Firebase | Unique namespace or isolated test database |
-| Refactor changes behavior | Complete hermetic tests before decomposition |
-| Developer and Windows service environments diverge | Explicit environment matrix and path tests |
-| Default credentials reach production | Startup validation and secret injection |
+## 9. Implementation Phases
 
-## 8. Documentation Deliverables
+### Phase 0 — Approve the contract
 
-Keep these documents current as decisions are made:
+Tasks:
 
-- `wiki/SUMMARIZE.md` — short current-state summary
-- `wiki/HANDOVER.md` — coordination context, decisions, workstreams, and guardrails
-- `wiki/PLAN.md` — detailed architecture and staged remediation plan
-- `README.md` — supported setup, test, and deployment commands
-- ADR updates — persistence, restart semantics, access boundary, and engine promotion
-- Verification log — commands, versions, results, and skipped live checks
+- Review `SKILL_CONTRACT.md` with platform and skill maintainers.
+- Confirm manifest fields, input envelope, event protocol, result schema, exit codes, and version policy.
+- Decide whether the platform discovers skills automatically or uses an approval registry.
+- Decide how Python dependencies are installed and isolated.
 
-## 9. Next Discussion
+Exit criteria:
 
-Before implementation, discuss:
+- Contract version `1.0` is approved and frozen for implementation.
 
-1. The exact goal for the next milestone.
-2. Whether the new MW engine checkout is intentional.
-3. The production persistence and deployment topology.
-4. Expected job behavior after restart or deployment.
-5. Authentication and network exposure requirements.
-6. Which test data and golden outputs are approved for validation.
+### Phase 1 — Build the generic contract layer
 
-After these are answered, revise this plan into a committed execution sequence with scoped acceptance criteria.
+Tasks:
+
+- Implement manifest and result JSON schemas.
+- Implement registry discovery and compatibility validation.
+- Add `/api/skills` catalog endpoints.
+- Add contract fixtures and negative tests.
+
+Exit criteria:
+
+- A synthetic example skill is discovered and validated without worker-specific code.
+
+### Phase 2 — Build the generic runner
+
+Tasks:
+
+- Create isolated workspaces and standard input envelopes.
+- Invoke the manifest entrypoint.
+- Parse NDJSON progress events.
+- Apply timeout and cancellation.
+- Validate `result.json` and register output metadata.
+- Make output publication atomic.
+
+Exit criteria:
+
+- The synthetic example skill completes, fails, times out, and cancels through the same runner.
+
+### Phase 3 — Make job APIs generic
+
+Tasks:
+
+- Replace worker-specific job creation payloads with a standard envelope.
+- Persist skill ID, skill version, and contract version.
+- Remove worker-specific routing from generic job lifecycle functions.
+- Keep backward-compatible routes only as temporary adapters if required.
+
+Exit criteria:
+
+- Generic endpoints can run any compliant synthetic skill.
+
+### Phase 4 — Migrate existing skills
+
+For each of MW PR, RAN PR, and PR Auditor:
+
+1. Add a compliant manifest and Python entrypoint.
+2. Move missing platform-owned domain validation into the skill.
+3. Produce standard events and result envelopes.
+4. Prove standalone execution.
+5. Run skill-owned unit, integration, and golden tests.
+6. Run shared platform contract tests.
+7. Switch the platform registration to the generic runner.
+
+Migrate one skill at a time. Do not combine all three migrations into one unreviewable change.
+
+### Phase 5 — Simplify the platform
+
+Tasks:
+
+- Delete replaced worker-specific parsers, services, adapters, and output ingestors.
+- Reduce `jobService.js` to generic lifecycle orchestration.
+- Replace worker-specific frontend runtime logic with manifest-driven forms where practical.
+- Remove models and fields that exist only for one domain, or move them into generic JSON metadata.
+
+Exit criteria:
+
+- Core platform code has no MW, RAN, or PR Auditor business branching.
+
+### Phase 6 — Durability and production hardening
+
+Tasks:
+
+- Implement queue restart reconciliation from [PENDING.md](PENDING.md).
+- Require authenticated Firebase configuration.
+- Validate Windows HTTP(S) deployment and service supervision.
+- Add rate limits, authorization, resource controls, and audit coverage.
+- Establish complete CI gates for platform contract tests and each skill's standalone tests.
+
+Exit criteria:
+
+- A restart cannot silently lose job ownership.
+- Production configuration is explicit and secure.
+
+## 10. Testing Strategy
+
+### Platform tests
+
+- Manifest schema and compatibility
+- Generic request validation
+- Safe file transport and workspace containment
+- Process start, timeout, cancellation, and exit handling
+- Progress-event parsing
+- Result-envelope validation
+- Output metadata and downloads
+- Authentication, authorization, and audit
+- Queue durability and restart behavior
+
+Platform tests use synthetic skills and must not require MW, RAN, or Auditor business fixtures.
+
+### Skill tests
+
+- Domain input validation
+- Technical transformations
+- Business rules
+- Templates and configuration
+- Domain warnings and errors
+- Output correctness
+- Golden comparisons
+- Standalone Python execution
+- Platform contract compliance
+
+## 11. Definition of Done
+
+The refactor is complete when:
+
+- All production skills run through one generic runner.
+- Every skill runs standalone with the same input and result contracts.
+- The platform does not parse domain workbooks.
+- The platform contains no domain calculations or business-rule decisions.
+- Adding a compliant skill requires no new platform lifecycle service.
+- Platform tests use synthetic skills for generic behavior.
+- Skill repositories own domain tests and golden evidence.
+- HTTP(S), security, job state, storage, and result delivery remain platform-owned.
+- Queue restart behavior and production Firebase controls are implemented.
+
+## 12. Review Questions
+
+The following choices should be confirmed before coding:
+
+1. Should skills be auto-discovered or explicitly approved in a registry?
+2. Should job execution remain queued/asynchronous, or may short skills run synchronously?
+3. How are per-skill Python dependencies isolated on Windows?
+4. Are manifest-driven generic forms sufficient, or are versioned UI extensions allowed?
+5. Which metadata belongs in the standard result envelope versus skill-specific `details`?
+6. What compatibility period is required for the current worker-specific APIs?
+7. May more than one backend instance claim jobs?

@@ -5,11 +5,11 @@
 
 ## Objective
 
-Bring the current repository from a functional MVP baseline to a reproducible, restart-safe, and deployable release without moving business rules out of the worker engines.
+Refactor the current MVP into a reproducible, restart-safe, contract-driven HTTP(S) wrapper for standalone Python skills. Move worker-specific technical and business processing out of the platform and keep it in the owning skills.
 
 ## Repository State at Handover
 
-- Branch: `main`, aligned with `origin/main` at the parent repository level.
+- Branch: `refactor/all`, based on `main` at the parent repository level.
 - Pre-existing modification: `skills/create-pr-cd` is checked out at `048931a5` instead of the parent repository's approved `7971f90` gitlink.
 - Do not discard, reset, or overwrite that submodule change without explicit user direction.
 - The backend is intentionally blocked by engine integrity verification in this state.
@@ -19,11 +19,12 @@ Bring the current repository from a functional MVP baseline to a reproducible, r
 ## Non-Negotiable Boundaries
 
 1. Worker engines own business rules, configurations, templates, and transformations.
-2. Platform code may validate contracts and orchestrate engines, but must not duplicate engine-owned rules.
+2. Platform code may validate only generic transport and runtime contracts; domain parsing, validation, calculations, and output correctness belong to skills.
 3. Preserve user changes and unrelated dirty worktree state.
 4. Never solve an integrity mismatch by blindly replacing the approved hash.
 5. Tests must use isolated storage and mock persistence unless a live integration environment is explicitly requested.
 6. Do not expose secrets, uploaded workbooks, generated outputs, or raw worker tracebacks.
+7. Every production skill must remain runnable through its documented Python CLI without the platform.
 
 ## Decisions Required From the User
 
@@ -56,6 +57,8 @@ Docker support has been removed. Confirm the supported Windows host topology, pr
 ## Suggested Workstreams
 
 The main agent may delegate these after D1–D5 are settled. Workstreams A and B are blocking; C–F can be developed in parallel once their contracts are agreed.
+
+Before these workstreams, approve and implement `wiki/SKILL_CONTRACT.md`: manifest discovery, a standard input envelope, generic Python invocation, progress events, and a standard result envelope. Use a synthetic skill to prove the platform without importing any existing worker's domain logic.
 
 ### Workstream A — Engine Baseline and Integrity
 
@@ -187,6 +190,9 @@ D5 access decision
 - `frontend/src/views/shared/workerRuntime.js` — shared browser job lifecycle
 - `.env.example` — supported runtime configuration contract
 - `backend/package.json` — incomplete default backend test gate
+- `wiki/ARCHITECTURE.md` — current architecture and ownership boundaries
+- `wiki/SKILL_CONTRACT.md` — mandatory standalone Python skill interface
+- `wiki/PENDING.md` — unresolved architecture decisions and implementation gaps
 
 ## Verification Commands
 
