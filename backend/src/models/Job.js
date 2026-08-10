@@ -27,7 +27,8 @@ const RECONCILIATION_FIELDS = [
   'duplicateBlockedSiteCount',
   'failedSiteCount',
   'accountedSiteCount',
-  'unaccountedSiteCount'
+  'unaccountedSiteCount',
+  'reconciliationConsistent'
 ];
 
 class Job {
@@ -103,6 +104,7 @@ class Job {
       failedSiteCount: payload.failedSiteCount ?? null,
       accountedSiteCount: payload.accountedSiteCount ?? null,
       unaccountedSiteCount: payload.unaccountedSiteCount ?? null,
+      reconciliationConsistent: payload.reconciliationConsistent ?? null,
       finalWorkerSummary: payload.finalWorkerSummary || '',
       auditSummary: payload.auditSummary || null,
       auditYear: payload.auditYear || null,
