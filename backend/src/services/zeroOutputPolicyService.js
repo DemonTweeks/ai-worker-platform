@@ -37,6 +37,26 @@ const determineFinalStatus = (summary) => {
       );
     }
 
+    if ((reconciliation.generatedSiteCount || 0) > 0 && (summary.outputFileCount || 0) === 0) {
+      throw Object.assign(
+        new Error('Result reconciliation reports generated sites, but no ECC output files were collected.'),
+        {
+          code: 'ZERO_OUTPUT_WITHOUT_EXPLANATION',
+          details: {
+            matchedSiteCount: summary.matchedSiteCount || 0,
+            outputFileCount: summary.outputFileCount || 0,
+            reviewRequiredCount: summary.reviewRequiredCount || 0,
+            warningCount: summary.warningCount || 0,
+            generatedSiteCount: reconciliation.generatedSiteCount,
+            reviewRequiredSiteCount: reconciliation.reviewRequiredSiteCount,
+            approvedIgnoredSiteCount: reconciliation.approvedIgnoredSiteCount,
+            duplicateBlockedSiteCount: reconciliation.duplicateBlockedSiteCount,
+            failedSiteCount: reconciliation.failedSiteCount
+          }
+        }
+      );
+    }
+
     const hasNonGeneratedDisposition = (
       (reconciliation.reviewRequiredSiteCount || 0) > 0
       || (reconciliation.approvedIgnoredSiteCount || 0) > 0
