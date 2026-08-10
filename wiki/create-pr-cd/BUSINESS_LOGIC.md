@@ -10,6 +10,7 @@ Sources reviewed:
 - `skills/create-pr-cd/BUSINESS_RULES.md`
 - Current Python entrypoint and generation modules
 - Current configuration, profile and safety-control structure
+- `config/pr_model_baseline.yaml` and PR-model promotion tooling
 
 Where documentation and current execution differ, this document identifies the difference instead of treating planned behavior as implemented behavior.
 
@@ -38,8 +39,10 @@ Resolve source workbook and canonical records
   -> apply canonical input readiness
   -> apply scope eligibility and duplicate rules
   -> resolve approved contract data
+  -> validate the single approved PR-model baseline
   -> select mandatory PR-model items
   -> partition eligible, ignored, duplicate and review-required records
+  -> reconcile every requested site to one terminal disposition
   -> generate ECC and evidence reports
 ```
 
@@ -117,6 +120,12 @@ This current TI behavior is explicit in the record partitioning logic.
 `Tx SOW` is normalized through the skill-owned registry. When a source value contains multiple recognizable SOWs, the documented rule selects the first recognized primary SOW and does not generate secondary SOWs automatically.
 
 Unknown, unapproved or ambiguous normalization must not be guessed. It becomes no-output or review-required according to the registry decision.
+
+## 5A. PR-model Baseline Governance
+
+The runtime has one authoritative production PR model: version `4.0` at `Info/input/pr_model.xlsx`, pinned by SHA-256 in `config/pr_model_baseline.yaml`. The official entrypoint validates the configuration status, declared path and workbook bytes before domain processing. Any mismatch fails closed with `PR_MODEL_BASELINE_MISMATCH`.
+
+Historical versions are audit history, not selectable runtime alternatives. A candidate is analyzed for removed rows, added rows and new SOW meaning before promotion. Compatible candidates still require the full regression gate. A `REVIEW_REQUIRED` candidate also requires approval evidence bound to its exact version and SHA-256 and covering every analyzer reason code. Candidate `4.1` is currently blocked because it removes Jendela-specific rows from the approved model.
 
 ## 6. TSS Model Matching
 
@@ -230,6 +239,8 @@ Typical review-required conditions:
 
 Current runtime separates review-required records from generation candidates and writes review evidence. Older/general documentation also describes writing incomplete rows into ECC with `REVIEW_REQUIRED` remarks. This difference must be settled through golden current behavior before contract migration; the platform must not choose between the policies.
 
+After rendering, every requested site is reconciled to exactly one terminal disposition: `GENERATED`, `REVIEW_REQUIRED`, `IGNORED_WITH_APPROVED_REASON`, `DUPLICATE_BLOCKED`, or `FAILED`. Review, ignored, and duplicate outcomes are valid accounted results. A renderer omission becomes `FAILED`, and any failed or unaccounted result raises `PR_SITE_RECONCILIATION_FAILED`; clean completion is prohibited.
+
 ## 11. ECC Output Rules
 
 For generated candidate rows:
@@ -258,6 +269,8 @@ The thin-wrapper refactor is correct only if:
 - TSS/TI candidate, ignored, duplicate and review populations remain equivalent.
 - Scenario-specific PBOM and quantities remain equivalent.
 - Ambiguous cases remain fail-closed.
+- The approved PR-model version and SHA gate remain fail-closed.
+- Requested-site disposition counts remain complete and arithmetically consistent.
 - ECC content, grouping, splitting and naming remain equivalent.
 - The platform does not parse or reinterpret any of these rules.
 

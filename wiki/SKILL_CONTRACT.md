@@ -150,6 +150,15 @@ Every completed invocation writes `result.json`:
     "message": "Processing completed.",
     "metrics": {}
   },
+  "reconciliation": {
+    "requestedCount": 10,
+    "generatedCount": 8,
+    "reviewRequiredCount": 1,
+    "approvedIgnoredCount": 1,
+    "duplicateBlockedCount": 0,
+    "failedCount": 0,
+    "unaccountedCount": 0
+  },
   "outputs": [
     {
       "name": "result",
@@ -171,6 +180,8 @@ Allowed result statuses:
 - `cancelled`
 
 The platform validates the JSON schema, job and skill identity, allowed status, safe paths, and file existence. It does not inspect domain output content.
+
+`reconciliation` is optional. When present, every field is a non-negative integer and the declared dispositions plus `unaccountedCount` must equal `requestedCount`. The skill determines each item's disposition. The platform only enforces arithmetic consistency and rejects clean completion when `unaccountedCount` is non-zero. A non-zero review, ignored, duplicate, or failed count cannot be represented as clean `succeeded`; it is surfaced as `succeeded_with_warning` unless the result itself is failed.
 
 ## 8. Warning Contract
 

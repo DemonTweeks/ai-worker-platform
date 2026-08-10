@@ -9,9 +9,10 @@ Refactor the current MVP into a reproducible, restart-safe, contract-driven HTTP
 
 ## Repository State at Handover
 
-- Branch: `refactor/all`, based on `main` at the parent repository level.
-- Pre-existing modification: `skills/create-pr-cd` is checked out at `048931a5` instead of the parent repository's approved `7971f90` gitlink.
-- Do not discard, reset, or overwrite that submodule change without explicit user direction.
+- Branch: `refactor/thin-skill-wrapper-foundation`, with platform `origin/main` through `11bb63d` merged.
+- `skills/create-pr-cd/main` is checked out at `3954cc0` instead of the parent repository's approved `7971f90` gitlink.
+- `skills/tx-pr-auditor` is aligned at `aa98b9e` on `agent/align-du-registry`, with the platform integrity pin updated to the same runtime.
+- Do not discard, reset, or overwrite either submodule update without explicit user direction.
 - The backend is intentionally blocked by engine integrity verification in this state.
 - No `AGENTS.md` was found during the analysis.
 - Frontend dependencies are not installed in the current workspace.
@@ -33,7 +34,7 @@ These choices affect the implementation direction and should be resolved first:
 ### D1 — MW engine baseline
 
 - Restore `skills/create-pr-cd` to approved `7971f90`; or
-- Promote `048931a5` after business regression validation.
+- Promote `3954cc0` after business regression and PR-model baseline-governance validation.
 
 ### D2 — Firebase persistence controls
 
@@ -96,7 +97,7 @@ Acceptance:
 
 Scope:
 
-- Define persisted queue ownership and interrupted-job behavior.
+- Store authoritative queue state and runtime ownership leases in Firebase, keyed by stable `machineId` and per-start `runtimeInstanceId`, then define interrupted-job behavior.
 - Reconcile `queued`, active, cancelling, and exporting jobs at startup.
 - Make enqueue/cancel/rerun idempotent across restart boundaries.
 - Ensure worker child processes are terminated cleanly on shutdown.
@@ -184,6 +185,8 @@ D5 access decision
 - `backend/src/workers/manifests/` — approved engine contracts
 - `backend/src/workers/adapters/` — platform-to-worker execution boundary
 - `backend/src/services/jobService.js` — job API orchestration
+- `backend/src/services/resultReconciliationService.js` — current generic reconciliation normalization and compatibility artifact discovery
+- `backend/src/services/zeroOutputPolicyService.js` — current terminal-status enforcement for reconciled results
 - `backend/src/queue/jobQueue.js` — in-memory queue
 - `backend/src/services/outputCollector.js` — output discovery, reports, and ZIPs
 - `backend/src/db/firebaseClient.js` — persistence transport

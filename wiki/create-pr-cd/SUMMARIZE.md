@@ -11,7 +11,11 @@ It is the sole owner of entitlement generation, including:
 - Subcontractor, contract and geography resolution.
 - Duplicate prevention and review-required decisions.
 - Production/UAT lifecycle safety.
+- Single-current PR-model baseline validation and controlled promotion.
+- Requested-site terminal reconciliation.
 - ECC workbook generation and domain reports.
+
+The current production PR model is version `4.0`, pinned by SHA-256 in `config/pr_model_baseline.yaml`. Runtime validation fails closed with `PR_MODEL_BASELINE_MISMATCH` if the workbook differs. Candidate `4.1` is not selectable and remains `REVIEW_REQUIRED` because it removes current Jendela-specific model rows.
 
 Current direct entrypoint:
 

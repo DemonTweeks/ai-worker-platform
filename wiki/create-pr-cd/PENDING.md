@@ -2,6 +2,10 @@
 
 This file tracks work deferred until the thin skill-wrapper refactor begins.
 
+## Implemented Baseline — PR-model Governance and Site Reconciliation
+
+Current `main` now enforces one production PR model through `config/pr_model_baseline.yaml`, validates its SHA-256 before generation, provides candidate analysis and rollback-safe promotion tooling, and fails closed on an invalid baseline. It also reconciles every requested site to a terminal disposition and fails on engine-unaccounted results. These controls are established skill behavior and must be preserved during the wrapper refactor.
+
 ## P-001 — Add the Standard Contract Entrypoint
 
 Status: Pending
@@ -39,12 +43,13 @@ Files currently involved include:
 
 Status: Pending
 
-The platform currently recognizes TI review and duplicate reports and reconstructs summaries. Replace this with authoritative result outputs, warnings and metrics from Python.
+The platform currently recognizes TI review and duplicate reports, discovers `result_reconciliation` from output JSON, and reconstructs summaries. Replace this compatibility ingestion with authoritative outputs, warnings, metrics and reconciliation directly in the standard Python `result.json`.
 
 Files currently involved include:
 
 - `backend/src/services/tiResultIngestionService.js`
 - `backend/src/services/zeroOutputPolicyService.js`
+- `backend/src/services/resultReconciliationService.js`
 - `backend/src/services/outputCollector.js`
 - `backend/src/services/summaryBuilder.js`
 
@@ -60,6 +65,8 @@ Status: Pending
 
 The current platform manifest pins a commit, fingerprint and internal runtime-file list while the submodule can drift independently. Replace this with one approved skill package/version and fail clearly on mismatch.
 
+The approved package must include `config/pr_model_baseline.yaml`, `scripts/pr_model_baseline.py`, and the pinned production workbook. Platform skill approval and PR-model approval are distinct gates: the platform verifies package identity, while Python verifies its internal model baseline.
+
 ## P-007 — Prove Golden Parity
 
 Status: Pending
@@ -72,6 +79,8 @@ Before removing the current worker adapter, compare current and contract-entrypo
 - Site selection.
 - Review-required and duplicate-skipped cases.
 - Workbook values, sheets, naming, grouping and 30-site splitting.
+- PR-model baseline mismatch and controlled-promotion safety.
+- Requested-site reconciliation across every terminal disposition.
 
 ## P-008 — Remove MW-Specific Platform Branches
 

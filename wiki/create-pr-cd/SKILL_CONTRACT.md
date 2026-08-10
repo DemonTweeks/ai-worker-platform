@@ -72,7 +72,7 @@ The platform validates only declared file presence, extension, size, checksum an
 
 `siteCodes` is required when `selectionMode` is `site_codes` and must be absent or ignored when the mode is `all_sites`. That cross-field meaning belongs to Python.
 
-Reference assets should be packaged with the skill by default. PR model, ECC template, mapping and policy overrides must be declared explicitly if they remain supported; the platform must not silently inject them.
+Reference assets should be packaged with the skill by default. The production PR model is not a caller-selectable file: Python resolves the single current baseline from `config/pr_model_baseline.yaml` and validates its path and SHA-256 before processing. Candidate analysis and promotion are maintenance workflows, not job inputs. ECC template, mapping and policy overrides must be declared explicitly if they remain supported; the platform must not silently inject them.
 
 ## Invocation
 
@@ -109,9 +109,11 @@ The result envelope may declare multiple files:
 
 Each declared path must exist, remain inside the workspace and include a media type and display name.
 
+The result also declares the validated PR-model baseline identity (`baselineId`, version and SHA-256) and authoritative reconciliation counts for requested, generated, review-required, approved-ignored, duplicate-blocked, failed and unaccounted sites. The platform validates only the generic count contract; Python owns each site disposition and reason.
+
 ## Warning and Error Ownership
 
-The skill owns stable warning and error codes, including lifecycle, invalid-input, ambiguous-data and review-required explanations. Platform categories remain generic:
+The skill owns stable warning and error codes, including `PR_MODEL_BASELINE_MISMATCH`, `PR_SITE_RECONCILIATION_FAILED`, lifecycle, invalid-input, ambiguous-data and review-required explanations. Platform categories remain generic:
 
 - `domain_input`
 - `domain_processing`
@@ -131,3 +133,5 @@ The contract is accepted only when the same invocation works without AI Worker P
 - Result schema and output declarations.
 - Cancellation and safe-path enforcement.
 - Golden ECC parity.
+- PR-model baseline mismatch, analyzer and controlled-promotion rollback.
+- Complete requested-site reconciliation.

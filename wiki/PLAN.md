@@ -126,6 +126,7 @@ This is a target responsibility map. Physical movement should occur incrementall
 
 - Validates standard JSON schema.
 - Verifies job/skill identity, safe paths, file existence, size, and checksum.
+- Validates optional generic reconciliation counts and prevents clean completion with unaccounted work.
 - Persists standard output metadata, warnings, summary, and error information.
 - Does not parse or validate domain output content.
 
@@ -215,6 +216,7 @@ Tasks:
 - Parse NDJSON progress events.
 - Apply timeout and cancellation.
 - Validate `result.json` and register output metadata.
+- Persist and display optional standard reconciliation without scanning domain artifacts.
 - Make output publication atomic.
 
 Exit criteria:
@@ -265,7 +267,7 @@ Exit criteria:
 
 Tasks:
 
-- Implement queue restart reconciliation from [PENDING.md](PENDING.md).
+- Implement a Firebase-backed durable queue and restart reconciliation from [PENDING.md](PENDING.md); process-local queue structures remain rebuildable caches only.
 - Require authenticated Firebase configuration.
 - Validate Windows HTTP(S) deployment and service supervision.
 - Add rate limits, authorization, resource controls, and audit coverage.

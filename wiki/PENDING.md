@@ -4,13 +4,36 @@ This file tracks unresolved architecture work that requires a decision or implem
 
 ## P-001 — Durable Queue and Restart Reconciliation
 
-- Status: pending
+- Status: persistence decision approved; implementation pending
 - Priority: high
 - Area: backend job lifecycle
 
 ### Limitation
 
 Queue ownership exists only in memory. Restarting the backend loses queued and active runtime state even though job records remain in Firebase.
+
+### Approved persistence decision
+
+Firebase is the authoritative store for both job lifecycle state and queue runtime state. Persist queue eligibility, ownership or lease data, the stable `machineId` of the claiming backend host, a per-start `runtimeInstanceId`, lease expiry, reconciliation status and the transitions required to recover a non-terminal job. Process-local arrays, sets and maps may be used as performance caches, but they must be rebuildable from Firebase and must never be the source of truth.
+
+Queue claims, lease renewal and terminal transitions must use Firebase concurrency controls so that two backend instances cannot successfully own the same job. A matching `machineId` alone does not prove ownership after restart; the active lease must match both `machineId` and `runtimeInstanceId`.
+
+Minimum persisted queue ownership shape:
+
+```json
+{
+  "jobId": "job-id",
+  "queueState": "queued|claimed|running|cancelling|terminal",
+  "machineId": "stable-host-id",
+  "runtimeInstanceId": "per-backend-start-id",
+  "claimedAt": "timestamp|null",
+  "heartbeatAt": "timestamp|null",
+  "leaseExpiresAt": "timestamp|null",
+  "reconciliationState": "pending|recovered|failed|null"
+}
+```
+
+`machineId` is required once a job is claimed and remains attached to its execution history after the lease ends. Before a claim, it is `null`. This makes the owning or last-owning machine directly queryable in Firebase.
 
 ### Current implementation
 
@@ -27,21 +50,21 @@ Queue ownership exists only in memory. Restarting the backend loses queued and a
 - Users may see jobs permanently stuck in a non-terminal state.
 - Starting multiple backend instances would allow each instance to maintain an independent and conflicting queue.
 
-### Decision required
+### Remaining decisions
 
-Choose the authoritative restart behavior:
+Choose the restart behavior for Firebase-persisted non-terminal jobs:
 
 1. Requeue interrupted jobs automatically when their inputs remain valid.
 2. Mark interrupted jobs failed and require an explicit rerun.
 3. Resume only workers with a proven continuation contract and fail the others safely.
 
-The decision must also establish whether more than one backend instance may execute jobs concurrently.
+The recovery policy must also establish whether more than one backend instance may execute jobs concurrently and define the lease and heartbeat timing.
 
 ### Proposed design direction
 
-- Persist a runtime owner or lease with a bounded expiry.
+- Persist queue state and a runtime owner lease containing `machineId`, `runtimeInstanceId`, claim time, heartbeat time and bounded expiry in Firebase.
 - Reconcile all non-terminal jobs before accepting new work at startup.
-- Use an atomic claim operation so only one runtime can own a job.
+- Use a Firebase-backed atomic claim operation so only one runtime can own a job.
 - Record every restart transition as a job event.
 - Ensure reconciliation is idempotent across repeated startup attempts.
 - Preserve the existing request idempotency and rerun contracts.
@@ -49,6 +72,9 @@ The decision must also establish whether more than one backend instance may exec
 ### Completion criteria
 
 - Every persisted non-terminal status has deterministic startup handling.
+- Firebase contains sufficient durable queue state to rebuild runtime ownership after a restart.
+- Every active claim identifies its owning machine and runtime instance.
+- Removing all process-local queue caches and restarting produces the same recoverable queue state.
 - Queued jobs cannot be silently lost.
 - Running jobs cannot remain active without a valid runtime owner.
 - Restart behavior is covered for queued, running, cancelling, exporting, and packaging phases.
@@ -73,6 +99,7 @@ The decision must also establish whether more than one backend instance may exec
 - Restart during output packaging
 - Repeated reconciliation without duplicate execution
 - Competing runtime ownership attempt
+- Restart on the same `machineId` with a new `runtimeInstanceId`
 - Job Detail and History correctly explaining the recovered terminal state
 
 ## P-002 — Current Structure to Thin Skill Wrapper Refactor
@@ -128,7 +155,7 @@ Generic skill request
 | Workspace | RAN and Auditor have specialized workspace services | One isolated workspace contract for every skill |
 | Progress | Platform and worker services define worker phases | Skill emits standard events with skill-owned phase codes |
 | Output validation | Platform contains RAN and worker-specific validators | Skill validates its own output before writing `result.json` |
-| Output ingestion | Platform understands domain filenames and report types | Platform reads generic output entries from `result.json` |
+| Output ingestion | Platform understands domain filenames and report types; the MW compatibility path now also discovers a generic `result_reconciliation` object from JSON artifacts | Platform reads output entries and optional reconciliation directly from `result.json` |
 | Reports | Platform generates some domain-facing reports | Skill generates every domain report |
 | Persistence | Job model contains worker/domain-specific fields | Generic job fields plus versioned skill metadata/details |
 | Frontend | Dedicated MW/RAN and Auditor payload logic | Manifest/schema-driven inputs where practical |
@@ -147,6 +174,8 @@ backend/src/
 |   |-- siteCodeParser.js
 |   |-- siteFilteringService.js
 |   |-- prWorkerService.js
+|   |-- resultReconciliationService.js
+|   |-- zeroOutputPolicyService.js
 |   |-- ranWorkerService.js
 |   `-- prAuditorWorkerService.js
 |-- workers/

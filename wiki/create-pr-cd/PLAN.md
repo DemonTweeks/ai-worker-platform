@@ -47,6 +47,8 @@ Existing domain functions remain behind `adapt_generation_request()` and retain 
 ## Phase 0 — Freeze the Baseline
 
 - Record the approved skill commit and runtime dependencies.
+- Treat `config/pr_model_baseline.yaml` as the sole production PR-model identity and capture its version and SHA-256.
+- Preserve the analyzer, approval-evidence and rollback-safe promotion gates for future PR-model candidates.
 - Select representative TSS/TI and DU-profile fixtures.
 - Capture ECC, review, warning and summary golden outputs.
 - Record current production/UAT rejection behavior.
@@ -67,6 +69,7 @@ Exit: standalone contract invocation works without platform code.
 
 - Enumerate all ECC and report outputs in `result.json`.
 - Promote safe skill-owned metrics into `summary.metrics`.
+- Emit the authoritative requested/generated/review/ignored/duplicate/failed/unaccounted reconciliation in the standard result envelope.
 - Emit structured warnings rather than requiring CSV interpretation.
 - Keep detailed review files as downloadable outputs.
 
@@ -115,6 +118,8 @@ Exit: only the generic contract path is active.
 | Contract | Manifest, input and result schema tests |
 | Paths | Traversal, missing file and output escape tests |
 | Domain | Existing unit and integration suite |
+| PR-model governance | Baseline identity, mismatch failure, change analysis, approval evidence, promotion rollback and full regression gate |
+| Reconciliation | Every requested site has one terminal disposition and no clean result contains unaccounted work |
 | Golden | Workbook content, names, grouping and review artefacts |
 | Lifecycle | Production/UAT allow and deny cases |
 | Runtime | Timeout, cancellation and abnormal process exit |

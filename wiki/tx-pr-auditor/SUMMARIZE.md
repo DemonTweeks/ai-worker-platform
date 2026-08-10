@@ -13,6 +13,8 @@ It owns:
 
 It must not read iEPMS or the PR model. Those belong to `create-pr-cd`.
 
+The current registry contains nine unique Project + DU Model identities. Its profile statuses, IDs and accepted view IDs are aligned with the checked-out `create-pr-cd` registry, and the auditor's parity guard reports `MATCHED`. A formal cross-skill release/version compatibility policy remains pending.
+
 Current direct entrypoint:
 
 ```text

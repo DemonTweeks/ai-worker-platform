@@ -4,9 +4,9 @@ module.exports = {
   workerId: WORKER_IDS.PR_AUDITOR,
   displayName: WORKER_DISPLAY_NAMES[WORKER_IDS.PR_AUDITOR],
   engineRepository: 'BL2ZteSolution/tx-pr-auditor',
-  engineVersion: 'approved-af33b5a',
-  engineCommit: 'af33b5a795af02ae606b0d0f6e742cc09a8f98a2',
-  runtimeFingerprint: '71764a7ff07c02c23408200aa732f11bf9a3759c73d29654f29534f079131f8e',
+  engineVersion: 'approved-aa98b9e',
+  engineCommit: 'aa98b9ea760a9f37d0add41596af204fdee8095c',
+  runtimeFingerprint: '4eda6bc62ca53614b3b7816f2dab6f85d3e52df1273eaeb712a63fe59837f830',
   runtimeFiles: [
     'config/du_registry.json',
     'scripts/audit_final_po.py'

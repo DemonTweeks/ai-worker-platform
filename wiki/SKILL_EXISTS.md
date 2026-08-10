@@ -69,6 +69,9 @@ It owns:
 - Subcontractor, contract, geography and purchasing-area resolution.
 - Existing-PR and duplicate prevention.
 - Production/UAT lifecycle gates.
+- Single-current PR-model version and SHA-256 enforcement.
+- Candidate PR-model analysis, approval evidence and rollback-safe promotion.
+- Requested-site terminal reconciliation.
 - `REVIEW_REQUIRED` decisions.
 - ECC grouping, splitting, naming and workbook content.
 - Domain reports, warnings and metrics.
@@ -92,7 +95,8 @@ Current parameters include:
 - Required site-data and output paths.
 - Scope: `TSS` or `TI`.
 - Exactly one site-selection mode: all sites or comma-separated site codes.
-- Optional PR model, template, contract mapping and subcontractor policy overrides.
+- Optional path alias for the approved current PR model, plus template, contract mapping and subcontractor policy overrides. An arbitrary or candidate PR model fails baseline validation.
+- The official production PR model is resolved from the skill-owned baseline; candidate workbooks are not normal runtime inputs.
 - Optional explicit non-production UAT mode.
 
 ## Current Inputs and Assets
@@ -117,11 +121,13 @@ These assets change domain behavior and must remain versioned with the skill.
 iEPMS workbook
   -> source discovery
   -> canonical records
+  -> approved PR-model baseline validation
   -> project/DU profile resolution
   -> lifecycle gate
   -> site and scope eligibility
   -> model/subcontractor/contract resolution
   -> eligible, ignored and review partitions
+  -> requested-site reconciliation
   -> ECC and report generation
 ```
 

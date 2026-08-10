@@ -53,9 +53,9 @@ Emit NDJSON events for the existing pipeline stages and define cooperative cance
 
 ## P-007 — Define DU Registry Compatibility
 
-Status: Pending
+Status: Runtime snapshot aligned; release policy pending
 
-Specify how `config/du_registry.json` is versioned against `create-pr-cd` identity/profile/view output. Drift must fail clearly without making the platform compare domain registries.
+The current nine identity/profile/view records and lifecycle statuses match the checked-out `create-pr-cd` source registry, and the existing auditor parity guard fails closed on drift. Still specify how this compatibility is versioned and promoted across independent skill releases without making the platform compare domain registries.
 
 ## P-008 — Prove Golden Parity
 

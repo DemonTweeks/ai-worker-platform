@@ -32,6 +32,7 @@ The platform may know that an input is a declared file. It must not know what an
 
 ```text
 scripts/create_pr.py
+  -> single-current PR-model baseline validation
   -> dependency synchronization and safety wrapper
   -> scripts/create_pr_impl.py
      -> canonical input pipeline
@@ -46,6 +47,7 @@ scripts/create_pr.py
 Important supporting modules include:
 
 - `canonical_input_pipeline.py`
+- `pr_model_baseline.py`
 - `du_export_adapter.py`
 - `du_profile_loader.py`
 - `du_profile_resolver.py`
@@ -61,6 +63,7 @@ Domain configuration and reference assets remain inside the skill under `config/
 
 ```text
 iEPMS workbook
+  + approved PR-model baseline
   -> source-layout discovery
   -> canonical site records
   -> project and DU-profile resolution
@@ -69,8 +72,15 @@ iEPMS workbook
   -> TSS/TI eligibility
   -> model, subcontractor and contract resolution
   -> eligible/review/ignored partitions
+  -> requested-site reconciliation
   -> ECC workbooks and domain reports
 ```
+
+### PR-model baseline boundary
+
+`config/pr_model_baseline.yaml` is the authoritative identity of the one selectable production PR model. It declares model version `4.0`, `Info/input/pr_model.xlsx`, and the approved workbook SHA-256. `scripts/create_pr.py` validates that identity before DU processing or ECC rendering and fails closed with `PR_MODEL_BASELINE_MISMATCH` when the configured file, status, or bytes do not match.
+
+Candidate models are not runtime inputs. `scripts/analyze_pr_model_change.py` compares a candidate with the current model, and `scripts/promote_pr_model.py` performs controlled replacement only after compatibility, required business approval evidence, and the full regression gate pass. A failed promotion restores the prior production baseline.
 
 The implemented CLI supports TSS and TI. Planning and Operation Backoffice are documented future scopes and must not be advertised as current runtime capabilities.
 
@@ -105,8 +115,10 @@ The target Python entrypoint should be a thin contract adapter around the existi
 ## Safety Invariants
 
 - Production ECC requires a `PRODUCTION` profile.
+- Production execution requires the single approved PR-model version and SHA-256.
 - UAT output remains visibly marked and isolated.
 - Ambiguous data fails closed or becomes review-required.
+- Every requested site must have exactly one terminal disposition; failed or unaccounted reconciliation fails closed.
 - Source and reference workbooks are not modified.
 - Generated paths stay inside the declared workspace.
 - A platform refactor must preserve workbook content and safety behavior through golden tests.

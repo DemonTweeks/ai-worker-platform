@@ -20,6 +20,9 @@ Do not redesign business logic during the wrapper refactor. Preserve current TSS
 
 - Python entrypoint: `skills/create-pr-cd/scripts/create_pr.py`
 - Main implementation: `skills/create-pr-cd/scripts/create_pr_impl.py`
+- PR-model baseline: `skills/create-pr-cd/config/pr_model_baseline.yaml`
+- Baseline validation: `skills/create-pr-cd/scripts/pr_model_baseline.py`
+- Candidate analysis/promotion: `skills/create-pr-cd/scripts/analyze_pr_model_change.py`, `skills/create-pr-cd/scripts/promote_pr_model.py`
 - Platform manifest: `backend/src/workers/manifests/mwPrManifest.js`
 - Process adapter: `backend/src/services/childProcessRunner.js`
 - Job orchestration: `backend/src/services/prWorkerService.js`
@@ -31,8 +34,10 @@ Do not redesign business logic during the wrapper refactor. Preserve current TSS
 - All TSS/TI, SOW, PBOM, DU, contract and lifecycle logic remain in the skill.
 - The platform validates contract structure and paths only.
 - Skill-owned reference assets are versioned with the skill.
+- Preserve the single-current PR-model version/SHA gate and rollback-safe promotion workflow.
+- Preserve complete requested-site terminal reconciliation and fail-closed unaccounted behavior.
 - Outputs are authoritative only when declared by `result.json`.
-- Do not include the pre-existing submodule working-tree change in a platform commit unless explicitly authorized.
+- Treat every submodule-pointer and platform integrity-pin update as an explicit promotion with recorded regression evidence.
 
 ## Recommended Delegation Packages
 
@@ -65,6 +70,7 @@ Use the commands supported by the skill repository at the checked-out revision. 
 ```text
 python <target-entrypoint> --input-manifest <fixture-input.json>
 python -m pytest
+python -m unittest tests.test_pr_model_baseline tests.test_pr_model_change_analyzer tests.test_pr_model_promotion
 ```
 
 Platform validation must include its backend tests, contract schema tests and a synthetic-skill runner test. Do not make platform tests depend on real MW business fixtures except for an explicitly separated end-to-end compatibility suite.
@@ -85,6 +91,8 @@ Provide:
 ## Known Risks
 
 - Submodule checkout and platform-approved fingerprint may drift.
+- The checked-out skill is newer than the platform-approved engine pin; do not promote the pin without full business and baseline-governance regression evidence.
+- PR-model candidate `4.1` remains review-required and must not replace current `4.0` without exact approval evidence and regression success.
 - Production/UAT lifecycle behavior is safety-critical.
 - Current Node output ingestion contains user-visible explanations that must be emitted safely by Python before removal.
 - Planning and Operation Backoffice are not current CLI capabilities.

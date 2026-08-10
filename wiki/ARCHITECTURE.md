@@ -176,6 +176,19 @@ It owns:
 
 It does not interpret domain messages, calculate fallback results, or repair skill output.
 
+### Generic result reconciliation
+
+When a skill declares item-level reconciliation counts, the platform may validate only the generic arithmetic contract:
+
+```text
+requested = generated + review_required + approved_ignored
+          + duplicate_blocked + failed + unaccounted
+```
+
+The skill owns the classification of every item and the meaning of its reason codes. The platform verifies that counts are non-negative and internally consistent, prevents clean success while `unaccounted` is non-zero, and exposes the declared counts consistently in status and history. This is contract enforcement, not domain output interpretation.
+
+The current compatibility path can discover `result_reconciliation` in a worker JSON artifact. The target generic runner reads the same information directly from the standard `result.json` envelope and does not scan domain artifacts.
+
 ## 8. Job State
 
 The platform owns generic lifecycle states:
@@ -193,6 +206,8 @@ accepted
 
 Progress phases inside a skill are represented as opaque event codes plus safe display messages. The platform records and relays them without implementing their meaning.
 
+Clean `succeeded` requires a structurally valid result and, when reconciliation is supplied, zero unaccounted items. Valid review-required, approved-ignored, duplicate-blocked, or failed dispositions produce `succeeded_with_warning` according to the generic contract; the platform does not decide which disposition applies.
+
 Queue durability and restart reconciliation remain pending in [PENDING.md](PENDING.md#p-001--durable-queue-and-restart-reconciliation).
 
 ## 9. Data and Storage
@@ -203,11 +218,17 @@ Firebase stores generic platform records:
 
 - Skill identity and version used by a job
 - Job status and timestamps
+- Durable queue eligibility and ordering metadata
+- Runtime ownership leases (`machineId` plus per-start `runtimeInstanceId`), lease expiry and reconciliation state
 - Request idempotency metadata
 - Standard progress events
 - File metadata
 - Standard warnings and errors
 - Audit records
+
+Firebase is the authoritative source for queue and job lifecycle state. Every claim records the stable backend host `machineId` and a new `runtimeInstanceId` generated for each backend start. Any in-process queue, active-job set or phase map is a rebuildable cache only. On startup, the backend reconstructs its runnable view from Firebase and reconciles every non-terminal job before accepting new work.
+
+The persisted queue record exposes `machineId` directly: it is `null` while unclaimed, set to the claiming host when execution is claimed, and retained as execution history after completion. The lease also carries `runtimeInstanceId` to distinguish two backend starts on the same machine.
 
 ### File content
 
