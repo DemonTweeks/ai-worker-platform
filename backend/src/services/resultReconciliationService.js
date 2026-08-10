@@ -116,6 +116,7 @@ const discoverWorkerReconciliation = async (outputCollection = {}) => {
 
 module.exports = {
   discoverWorkerReconciliation,
+  fromEngineContract,
   hasExplicitReconciliation,
   normalizeResultReconciliation,
   toPersistedReconciliation
