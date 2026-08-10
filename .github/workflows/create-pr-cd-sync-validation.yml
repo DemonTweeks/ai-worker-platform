@@ -1,16 +1,17 @@
 name: create-pr-cd sync validation
 
 on:
-  push:
+  pull_request:
     branches:
-      - chore/sync-create-pr-cd-3954cc0
+      - main
+    types:
+      - opened
 
 permissions:
   contents: write
 
 jobs:
   validate-and-sync:
-    if: ${{ !contains(github.event.head_commit.message, '[sync-generated]') }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
