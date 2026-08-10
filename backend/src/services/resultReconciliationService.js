@@ -37,12 +37,17 @@ const normalizeResultReconciliation = (summary = {}) => {
     + duplicateBlockedSiteCount
     + failedSiteCount;
 
-  const explicitUnaccounted = normalizeCount(summary.unaccountedSiteCount);
-  const unaccountedSiteCount = explicitUnaccounted !== null
-    ? explicitUnaccounted
-    : requestedSiteCount !== null
-      ? Math.max(requestedSiteCount - accountedSiteCount, 0)
-      : null;
+  const explicitUnaccountedSiteCount = normalizeCount(summary.unaccountedSiteCount);
+  const derivedUnaccountedSiteCount = requestedSiteCount !== null
+    ? Math.max(requestedSiteCount - accountedSiteCount, 0)
+    : null;
+  const unaccountedSiteCount = requestedSiteCount !== null
+    ? Math.max(derivedUnaccountedSiteCount, explicitUnaccountedSiteCount || 0)
+    : explicitUnaccountedSiteCount;
+  const reconciliationConsistent = requestedSiteCount === null
+    ? null
+    : accountedSiteCount <= requestedSiteCount
+      && (explicitUnaccountedSiteCount === null || accountedSiteCount + explicitUnaccountedSiteCount === requestedSiteCount);
 
   return {
     requestedSiteCount,
@@ -52,7 +57,8 @@ const normalizeResultReconciliation = (summary = {}) => {
     duplicateBlockedSiteCount,
     failedSiteCount,
     accountedSiteCount,
-    unaccountedSiteCount
+    unaccountedSiteCount,
+    reconciliationConsistent
   };
 };
 
@@ -66,7 +72,8 @@ const toPersistedReconciliation = (summary = {}) => {
     duplicateBlockedSiteCount: reconciliation.duplicateBlockedSiteCount,
     failedSiteCount: reconciliation.failedSiteCount,
     accountedSiteCount: reconciliation.accountedSiteCount,
-    unaccountedSiteCount: reconciliation.unaccountedSiteCount
+    unaccountedSiteCount: reconciliation.unaccountedSiteCount,
+    reconciliationConsistent: reconciliation.reconciliationConsistent
   };
 };
 
