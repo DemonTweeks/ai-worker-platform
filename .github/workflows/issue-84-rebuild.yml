@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - fix/issue-84-dashboard-ui-polish-main
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
