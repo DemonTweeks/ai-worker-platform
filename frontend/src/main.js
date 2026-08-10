@@ -5,6 +5,7 @@ import PRCreatorView from './views/PRCreatorView.vue';
 import applyRanRetentionRestoreGuard from './patches/ranRetentionRestoreGuard';
 import './styles.css';
 import './responsive-workbench.css';
+import './active-jobs-no-scroll.css';
 
 applyRanRetentionRestoreGuard(PRCreatorView);
 
