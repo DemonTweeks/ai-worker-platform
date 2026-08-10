@@ -22,7 +22,7 @@
 
 <script>
 import { formatDateTime } from '../../utils/formatUtils';
-import { generationScopeLabel, statusLabel } from '../../utils/jobStatusUtils';
+import { generationScopeLabel, jobStatusLabel } from '../../utils/jobStatusUtils';
 import { hasAuditReport, prAuditorReportMessage } from '../../utils/prAuditorResultUtils';
 
 export default {
@@ -57,7 +57,7 @@ export default {
     },
     summaryItems() {
       const common = [
-        { label: 'Status', value: statusLabel(this.job.status) },
+        { label: 'Status', value: jobStatusLabel(this.job) },
         { label: 'Worker', value: this.job.workerDisplayName || this.job.workerType || 'pr-worker' },
         { label: 'Worker ID', value: this.job.workerId || 'mw-pr' },
         { label: 'Engine Version', value: this.job.engineVersion || 'N/A' },
@@ -86,7 +86,7 @@ export default {
         ? [
           { label: 'Generated Sites', value: this.job.generatedSiteCount || 0 },
           { label: 'Accounted Sites', value: this.job.accountedSiteCount || 0 },
-          { label: 'Unaccounted Sites', value: this.job.unaccountedSiteCount || 0 },
+          { label: 'Sites Without Confirmed Result', value: this.job.unaccountedSiteCount || 0 },
           { label: 'Review Sites', value: this.job.reviewRequiredSiteCount || 0 },
           { label: 'Ignored Sites', value: this.job.approvedIgnoredSiteCount || 0 },
           { label: 'Duplicate-blocked', value: this.job.duplicateBlockedSiteCount || 0 },
@@ -117,7 +117,7 @@ export default {
       const generated = this.job.generatedSiteCount || 0;
       const unaccounted = this.job.unaccountedSiteCount || 0;
       if (unaccounted > 0) {
-        return `Result integrity warning: ${generated}/${requested} requested sites generated and ${unaccounted} site(s) are unaccounted for.`;
+        return `${generated} of ${requested} requested sites generated. ${unaccounted} sites have no confirmed result.`;
       }
       if (this.job.status === 'completed_with_warning') {
         return `Result reconciled: ${generated}/${requested} requested sites generated; remaining sites have explicit review, ignored, duplicate-blocked, or failed dispositions.`;
@@ -143,13 +143,14 @@ export default {
     },
     failureMessage() {
       if (this.job.status !== 'failed') return '';
+      if (this.job.error && this.job.error.code === 'RESULT_RECONCILIATION_INCOMPLETE') return '';
       return this.job.failureSummary || (this.job.error && this.job.error.message ? this.job.error.message : '');
     }
   },
   methods: {
     formatDateTime,
     generationScopeLabel,
-    statusLabel
+    jobStatusLabel
   }
 };
 </script>
