@@ -26,7 +26,10 @@ const determineFinalStatus = (summary) => {
   if (reconciliation) {
     if (reconciliation.reconciliationConsistent === false || (reconciliation.unaccountedSiteCount || 0) > 0) {
       throw Object.assign(
-        new Error('Worker result reconciliation is incomplete. One or more requested sites have no terminal business disposition.'),
+        new Error(
+          `${reconciliation.generatedSiteCount} of ${reconciliation.requestedSiteCount} requested sites generated. `
+          + `${reconciliation.unaccountedSiteCount || 0} sites have no confirmed result.`
+        ),
         {
           code: 'RESULT_RECONCILIATION_INCOMPLETE',
           details: reconciliation
