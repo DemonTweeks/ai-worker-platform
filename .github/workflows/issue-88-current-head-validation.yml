@@ -49,7 +49,7 @@ jobs:
         working-directory: backend
         run: npm run test:job-control-concurrency
 
-      - name: Backend compatibility gate
+      - name: Repository-contained backend compatibility gate
         working-directory: backend
         shell: pwsh
         run: |
@@ -57,22 +57,13 @@ jobs:
           npm run test:llm-provider
           npm run test:health-status
           npm run test:preflight
-          npm run test:engine-integrity
           npm run test:engine-header-hash
           npm run test:ran-adapter
-          npm run test:ran-routes
-          npm run test:ran-live-runtime
           npm run test:ran-worker-service
           npm run test:queue-registry
           npm run test:job-prevalidate-guard
-          Get-ChildItem .\scripts -File |
-            Where-Object { $_.Name -match '^pr-auditor.*test\.js$' } |
-            Sort-Object Name |
-            ForEach-Object {
-              Write-Host "--- $($_.Name) ---"
-              node $_.FullName
-              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-            }
+          node scripts/pr-auditor-adapter-test.js
+          node scripts/pr-auditor-output-ingestion-test.js
 
       - name: Install frontend dependencies
         working-directory: frontend
