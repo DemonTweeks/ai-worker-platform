@@ -1,6 +1,12 @@
 const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
 const { determineFinalStatus } = require('../src/services/zeroOutputPolicyService');
-const { fromEngineContract } = require('../src/services/resultReconciliationService');
+const {
+  discoverWorkerReconciliation,
+  fromEngineContract
+} = require('../src/services/resultReconciliationService');
+const storageService = require('../src/services/storageService');
 
 const mappedContract = fromEngineContract({
   requested_count: 24,
@@ -109,4 +115,58 @@ assert.strictEqual(
   'platform-known unmatched sites must count as explicit accounted outcomes instead of false unaccounted work'
 );
 
-console.log('Issue 88 result reconciliation regression tests passed.');
+const runDiscoveryTests = async () => {
+  const storageRoot = storageService.getStorageRoot();
+  const testRoot = path.join(storageRoot, 'temp', 'issue-88-reconciliation-test');
+  const validPath = path.join(testRoot, 'valid-summary.json');
+  const invalidPath = path.join(testRoot, 'invalid-summary.json');
+
+  await fs.promises.mkdir(testRoot, { recursive: true });
+  try {
+    await fs.promises.writeFile(validPath, JSON.stringify({
+      result_reconciliation: {
+        requested_count: 24,
+        generated_count: 8,
+        review_required_count: 16,
+        approved_ignored_count: 0,
+        duplicate_blocked_count: 0,
+        failed_count: 0,
+        unaccounted_count: 0
+      }
+    }), 'utf8');
+
+    const discovered = await discoverWorkerReconciliation({
+      outputFiles: [{
+        fileName: 'valid-summary.json',
+        filePath: path.relative(storageRoot, validPath)
+      }]
+    });
+    assert.deepStrictEqual(discovered, mappedContract, 'worker JSON contract should be discovered and mapped');
+
+    await fs.promises.writeFile(invalidPath, JSON.stringify({
+      result_reconciliation: {}
+    }), 'utf8');
+
+    await assert.rejects(
+      () => discoverWorkerReconciliation({
+        outputFiles: [{
+          fileName: 'invalid-summary.json',
+          filePath: path.relative(storageRoot, invalidPath)
+        }]
+      }),
+      (error) => error && error.code === 'RESULT_RECONCILIATION_INCOMPLETE',
+      'present-but-invalid reconciliation contract must fail closed'
+    );
+  } finally {
+    await fs.promises.rm(testRoot, { recursive: true, force: true });
+  }
+};
+
+runDiscoveryTests()
+  .then(() => {
+    console.log('Issue 88 result reconciliation regression tests passed.');
+  })
+  .catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
