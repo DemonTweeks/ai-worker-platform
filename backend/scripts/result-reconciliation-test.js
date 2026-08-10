@@ -36,6 +36,12 @@ const baseSummary = {
   warningCount: 0
 };
 
+assert.strictEqual(
+  determineFinalStatus(baseSummary),
+  'completed',
+  'legacy jobs without reconciliation metadata should retain existing completion behavior'
+);
+
 const fullyReconciled = {
   ...baseSummary,
   generatedSiteCount: 24,

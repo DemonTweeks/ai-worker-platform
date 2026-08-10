@@ -1,6 +1,8 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import JobDetailSummary from '../detail/JobDetailSummary.vue';
+import JobDetailFiles from '../detail/JobDetailFiles.vue';
+import JobDetailHeader from '../detail/JobDetailHeader.vue';
 import JobHistoryCard from '../history/JobHistoryCard.vue';
 
 const reconciledWarningJob = {
@@ -88,6 +90,44 @@ describe('result reconciliation rendering', () => {
     expect(historyWrapper.text()).toContain('8 of 24 requested sites generated. 16 sites have no confirmed result.');
   });
 
+  it('uses Incomplete Result in the Job Detail header', () => {
+    const wrapper = mount(JobDetailHeader, {
+      propsData: { job: incompleteResultJob }
+    });
+
+    expect(wrapper.text()).toContain('Incomplete Result');
+    expect(wrapper.text()).not.toContain('Failed');
+  });
+
+  it('keeps valid partial output downloadable without presenting it as complete', () => {
+    const historyWrapper = mount(JobHistoryCard, {
+      propsData: { job: incompleteResultJob },
+      stubs: {
+        RouterLink: { template: '<a><slot /></a>' }
+      }
+    });
+    const filesWrapper = mount(JobDetailFiles, {
+      propsData: {
+        jobId: incompleteResultJob.jobId,
+        job: incompleteResultJob,
+        workerId: incompleteResultJob.workerId,
+        status: incompleteResultJob.status,
+        outputs: [{
+          id: 'partial-zip',
+          fileType: 'zip_package',
+          fileName: 'partial.zip',
+          available: true,
+          exists: true
+        }]
+      }
+    });
+
+    expect(historyWrapper.text()).toContain('Download Partial ZIP');
+    expect(historyWrapper.text()).toContain('not a completed delivery');
+    expect(filesWrapper.text()).toContain('Download Partial ZIP');
+    expect(filesWrapper.text()).toContain('not a completed delivery');
+  });
+
   it('keeps ordinary failures labelled Failed', () => {
     const wrapper = mount(JobDetailSummary, {
       propsData: {
@@ -98,6 +138,25 @@ describe('result reconciliation rendering', () => {
           accountedSiteCount: null,
           unaccountedSiteCount: null,
           error: { code: 'WORKER_PROCESS_FAILED', message: 'Worker process failed.' }
+        },
+        outputs: []
+      }
+    });
+
+    expect(wrapper.text()).toContain('Failed');
+    expect(wrapper.text()).not.toContain('Incomplete Result');
+  });
+
+  it('keeps worker timeouts labelled Failed', () => {
+    const wrapper = mount(JobDetailSummary, {
+      propsData: {
+        job: {
+          ...reconciledWarningJob,
+          status: 'failed',
+          generatedSiteCount: null,
+          accountedSiteCount: null,
+          unaccountedSiteCount: null,
+          error: { code: 'WORKER_TIMEOUT', message: 'Worker execution timed out.' }
         },
         outputs: []
       }

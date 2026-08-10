@@ -39,6 +39,7 @@
       <span v-else class="muted">ZIP not ready</span>
     </div>
     <p v-if="job.status === 'cancelled_with_partial_result'" class="muted">Partial cancelled result only. This package is not a completed delivery.</p>
+    <p v-else-if="isIncompleteResultJob" class="muted">Incomplete result package only. This is not a completed delivery.</p>
   </article>
 </template>
 
@@ -66,6 +67,9 @@ export default {
   computed: {
     isPrAuditorJob() {
       return this.job.workerId === 'pr-auditor';
+    },
+    isIncompleteResultJob() {
+      return isIncompleteResult(this.job);
     },
     hasReconciliation() {
       return !this.isPrAuditorJob && this.job.generatedSiteCount !== null && this.job.generatedSiteCount !== undefined;
@@ -140,7 +144,9 @@ export default {
         return 'Download Audit Report';
       }
 
-      return this.job.status === 'cancelled_with_partial_result' ? 'Download Partial ZIP' : 'Download ZIP';
+      return this.job.status === 'cancelled_with_partial_result' || this.isIncompleteResultJob
+        ? 'Download Partial ZIP'
+        : 'Download ZIP';
     },
     reconciliationPreview() {
       if (!this.hasReconciliation) return '';
@@ -190,7 +196,7 @@ export default {
         return Boolean(this.auditReportFile);
       }
 
-      return ['completed', 'completed_with_warning', 'cancelled_with_partial_result'].includes(this.job.status)
+      return (['completed', 'completed_with_warning', 'cancelled_with_partial_result'].includes(this.job.status) || this.isIncompleteResultJob)
         && ((this.job.outputFileCount || 0) > 0 || (this.job.reviewRequiredCount || 0) > 0 || (this.job.warningCount || 0) > 0);
     }
   },
