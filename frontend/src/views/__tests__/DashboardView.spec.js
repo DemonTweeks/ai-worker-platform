@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import { mount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import DashboardView from '../DashboardView.vue';
@@ -45,6 +47,19 @@ describe('DashboardView', () => {
 
     expect(wrapper.text()).toContain(formatCompactDateTime(createdAt));
     expect(wrapper.text()).not.toContain(createdAt);
+  });
+
+  it('keeps Active Jobs fitted to the card without horizontal scrolling', () => {
+    const source = fs.readFileSync(
+      path.resolve(process.cwd(), 'src/views/DashboardView.vue'),
+      'utf8'
+    );
+
+    expect(source).toContain('grid-column: 1 / -1');
+    expect(source).toContain('table-layout: fixed');
+    expect(source).toContain('overflow-x: hidden');
+    expect(source).not.toContain('overflow-x: auto');
+    expect(source).not.toContain('min-width: 640px');
   });
 
   it('renders a platform-global dashboard without worker launch controls', async () => {
