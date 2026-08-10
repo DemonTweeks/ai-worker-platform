@@ -39,4 +39,19 @@ assert.strictEqual(
   'zero output remains valid when reconciliation confirms no site was generated and every site has an explicit review disposition'
 );
 
+const allReviewWithContradictoryCollectedOutput = {
+  ...allReviewNoGeneratedOutput,
+  outputFileCount: 1
+};
+
+assert.throws(
+  () => determineFinalStatus(allReviewWithContradictoryCollectedOutput),
+  (error) => error
+    && error.code === 'RESULT_RECONCILIATION_INCOMPLETE'
+    && error.details
+    && error.details.generatedSiteCount === 0
+    && error.details.outputFileCount === 1,
+  'collected ECC output must fail closed when reconciliation reports zero generated sites'
+);
+
 console.log('Issue 88 zero-output reconciliation regression tests passed.');
