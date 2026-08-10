@@ -52,6 +52,8 @@ const failJob = async (jobId, error) => {
     if (safeError.details && typeof safeError.details.exitCode !== 'undefined') {
       safeError.exitCode = safeError.details.exitCode;
     }
+  } else if (safeError.code === 'RESULT_RECONCILIATION_INCOMPLETE') {
+    safeError.failureType = 'result_reconciliation_incomplete';
   } else if (safeError.code === 'ZERO_OUTPUT_WITHOUT_EXPLANATION') {
     safeError.failureType = 'summary_missing';
   } else if (safeError.code === 'SUMMARY_PARSE_FAILED') {
@@ -72,14 +74,19 @@ const failJob = async (jobId, error) => {
     'output_generation_failed'
   ].includes(safeError.failureType);
 
-  // For execution failures, do not default unknown metrics to zero — use null to indicate unknown
+  // For execution failures, do not default unknown metrics to zero — use null to indicate unknown.
+  // Result-reconciliation failures occur after summary persistence, so preserve those known metrics.
   const summaryForFinal = {
     requestedSiteCount: failedJob ? (typeof failedJob.requestedSiteCount === 'number' ? failedJob.requestedSiteCount : null) : null,
     matchedSiteCount: isFailure ? null : (failedJob ? failedJob.matchedSiteCount || 0 : 0),
     unmatchedSiteCount: isFailure ? null : (failedJob ? failedJob.unmatchedSiteCount || 0 : 0),
     outputFileCount: isFailure ? null : (failedJob ? failedJob.outputFileCount || 0 : 0),
     reviewRequiredCount: failedJob ? failedJob.reviewRequiredCount || 0 : 0,
-    warningCount: failedJob ? failedJob.warningCount || 0 : 0
+    warningCount: failedJob ? failedJob.warningCount || 0 : 0,
+    generatedSiteCount: failedJob ? failedJob.generatedSiteCount ?? null : null,
+    accountedSiteCount: failedJob ? failedJob.accountedSiteCount ?? null : null,
+    unaccountedSiteCount: failedJob ? failedJob.unaccountedSiteCount ?? null : null,
+    reconciliationConsistent: failedJob ? failedJob.reconciliationConsistent ?? null : null
   };
 
   await setJobStatus(jobId, 'failed', {
@@ -93,7 +100,11 @@ const failJob = async (jobId, error) => {
     unmatchedSiteCount: summaryForFinal.unmatchedSiteCount,
     outputFileCount: summaryForFinal.outputFileCount,
     reviewRequiredCount: summaryForFinal.reviewRequiredCount,
-    warningCount: summaryForFinal.warningCount
+    warningCount: summaryForFinal.warningCount,
+    generatedSiteCount: summaryForFinal.generatedSiteCount,
+    accountedSiteCount: summaryForFinal.accountedSiteCount,
+    unaccountedSiteCount: summaryForFinal.unaccountedSiteCount,
+    reconciliationConsistent: summaryForFinal.reconciliationConsistent
   });
   workerStateService.setError(jobId, safeError);
   await publishJobEvent(jobId, JOB_EVENTS.JOB_FAILED, {
@@ -105,7 +116,10 @@ const failJob = async (jobId, error) => {
       warningCount: summaryForFinal.warningCount,
       reviewRequiredCount: summaryForFinal.reviewRequiredCount,
       matchedSiteCount: summaryForFinal.matchedSiteCount,
-      unmatchedSiteCount: summaryForFinal.unmatchedSiteCount
+      unmatchedSiteCount: summaryForFinal.unmatchedSiteCount,
+      generatedSiteCount: summaryForFinal.generatedSiteCount,
+      accountedSiteCount: summaryForFinal.accountedSiteCount,
+      unaccountedSiteCount: summaryForFinal.unaccountedSiteCount
     }
   });
 
