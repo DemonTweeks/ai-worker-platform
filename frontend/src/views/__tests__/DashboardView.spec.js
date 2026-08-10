@@ -62,9 +62,13 @@ describe('DashboardView', () => {
     expect(source).not.toContain('min-width: 640px');
   });
 
-  it('allows Active Jobs timestamps to wrap instead of clipping in narrow fixed columns', () => {
-    const globalStyles = fs.readFileSync(
-      path.resolve(process.cwd(), 'src/styles.css'),
+  it('allows worker Active Jobs timestamps to wrap instead of clipping in narrow fixed columns', () => {
+    const mainSource = fs.readFileSync(
+      path.resolve(process.cwd(), 'src/main.js'),
+      'utf8'
+    );
+    const noScrollStyles = fs.readFileSync(
+      path.resolve(process.cwd(), 'src/active-jobs-no-scroll.css'),
       'utf8'
     );
     const dashboardSource = fs.readFileSync(
@@ -72,7 +76,8 @@ describe('DashboardView', () => {
       'utf8'
     );
 
-    expect(globalStyles).not.toMatch(/\.job-created-time\s*\{[^}]*white-space:\s*nowrap/s);
+    expect(mainSource).toContain("import './active-jobs-no-scroll.css';");
+    expect(noScrollStyles).toMatch(/\.workbench-result-card \.job-created-time\s*\{[^}]*white-space:\s*normal/s);
     expect(dashboardSource).toMatch(/\.dashboard-active-jobs-card \.job-created-time\s*\{[^}]*white-space:\s*normal/s);
   });
 
