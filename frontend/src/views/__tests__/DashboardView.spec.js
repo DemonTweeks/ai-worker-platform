@@ -62,6 +62,20 @@ describe('DashboardView', () => {
     expect(source).not.toContain('min-width: 640px');
   });
 
+  it('allows Active Jobs timestamps to wrap instead of clipping in narrow fixed columns', () => {
+    const globalStyles = fs.readFileSync(
+      path.resolve(process.cwd(), 'src/styles.css'),
+      'utf8'
+    );
+    const dashboardSource = fs.readFileSync(
+      path.resolve(process.cwd(), 'src/views/DashboardView.vue'),
+      'utf8'
+    );
+
+    expect(globalStyles).not.toMatch(/\.job-created-time\s*\{[^}]*white-space:\s*nowrap/s);
+    expect(dashboardSource).toMatch(/\.dashboard-active-jobs-card \.job-created-time\s*\{[^}]*white-space:\s*normal/s);
+  });
+
   it('renders a platform-global dashboard without worker launch controls', async () => {
     const wrapper = mount(DashboardView, {
       stubs: {
