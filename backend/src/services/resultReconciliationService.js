@@ -3,6 +3,7 @@ const path = require('path');
 const { assertPathInsideRoot } = require('../utils/pathUtils');
 
 const MAX_RECONCILIATION_JSON_BYTES = 1024 * 1024;
+const RECONCILIATION_MARKERS = ['"result_reconciliation"', '"resultReconciliation"'];
 const COUNT_FIELDS = [
   'generatedSiteCount',
   'reviewRequiredSiteCount',
@@ -134,6 +135,25 @@ const fromEngineContract = (payload = {}) => {
   };
 };
 
+const containsReconciliationMarker = (absolutePath) => new Promise((resolve, reject) => {
+  const maxMarkerLength = Math.max(...RECONCILIATION_MARKERS.map((marker) => marker.length));
+  let carry = '';
+  const stream = fs.createReadStream(absolutePath, { encoding: 'utf8' });
+
+  stream.on('data', (chunk) => {
+    const searchable = carry + chunk;
+    if (RECONCILIATION_MARKERS.some((marker) => searchable.includes(marker))) {
+      stream.destroy();
+      resolve(true);
+      return;
+    }
+    carry = searchable.slice(-(maxMarkerLength - 1));
+  });
+  stream.on('end', () => resolve(false));
+  stream.on('close', () => {});
+  stream.on('error', reject);
+});
+
 const discoverWorkerReconciliation = async (outputCollection = {}) => {
   const storageService = require('./storageService');
   const storageRoot = storageService.getStorageRoot();
@@ -145,7 +165,14 @@ const discoverWorkerReconciliation = async (outputCollection = {}) => {
     const absolutePath = assertPathInsideRoot(storageRoot, path.join(storageRoot, file.filePath));
     try {
       const stat = await fs.promises.stat(absolutePath);
-      if (!stat.isFile() || stat.size > MAX_RECONCILIATION_JSON_BYTES) continue;
+      if (!stat.isFile()) continue;
+      if (stat.size > MAX_RECONCILIATION_JSON_BYTES) {
+        if (await containsReconciliationMarker(absolutePath)) {
+          throw invalidContractError('OVERSIZED_CONTRACT_ARTIFACT');
+        }
+        continue;
+      }
+
       const parsed = JSON.parse(await fs.promises.readFile(absolutePath, 'utf8'));
       const hasSnakeContract = Object.prototype.hasOwnProperty.call(parsed, 'result_reconciliation');
       const hasCamelContract = Object.prototype.hasOwnProperty.call(parsed, 'resultReconciliation');
