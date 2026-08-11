@@ -12,6 +12,22 @@
 - Environment-specific Git branches are no longer part of the runtime design. Both profiles launch from the current `main` checkout.
 - All backend and frontend environment values are centralized in `config/env/`; real profile files are intentionally untracked.
 
+### RAN repository topology
+
+The platform resolves `skills/create-pr-cd-ran` from [BL2ZteSolution/create-pr-cd-ran](https://github.com/BL2ZteSolution/create-pr-cd-ran) and follows `refactor/standard-skill-contract`, the branch containing the standard thin-wrapper contract and manifest-driven workbench metadata. The submodule checkout uses these remotes:
+
+- `origin`: `https://github.com/BL2ZteSolution/create-pr-cd-ran.git`
+- `upstream`: `https://github.com/ammarofficial11/create-pr-cd-ran.git`
+
+RAN development commits are pushed to both remotes with explicit commands so a failed upstream push cannot be mistaken for a successful mirror:
+
+```powershell
+git -C skills/create-pr-cd-ran push origin refactor/standard-skill-contract
+git -C skills/create-pr-cd-ran push upstream refactor/standard-skill-contract
+```
+
+The `BL2ZteSolution` account currently lacks direct push permission to `ammarofficial11/create-pr-cd-ran`; until that permission is granted, the second command returns HTTP 403 and upstream promotion continues through [PR #1](https://github.com/ammarofficial11/create-pr-cd-ran/pull/1).
+
 ## Implemented Components
 
 - `backend/src/skills/skillPackageService.js`: manifest and runtime-package approval.
