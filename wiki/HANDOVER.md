@@ -18,7 +18,7 @@
 - `backend/src/skills/genericSkillJobService.js`: generic multipart submission and input envelopes.
 - `backend/src/skills/genericSkillRunner.js`: process supervision and authoritative result ingestion.
 - `backend/src/queue/jobQueue.js`: Firebase leases, heartbeats, cancellation state, and restart reconciliation.
-- `frontend/src/views/GenericSkillView.vue`: manifest-driven launch form for all active skills.
+- `frontend/src/views/GenericSkillView.vue`: manifest-driven launch form for all active skills using the productized workbench visual structure from baseline `4d4148d7`; do not reintroduce legacy domain logic to preserve that appearance.
 - `skills/*/skill.json` and `skills/*/src/main.py`: standalone contracts.
 - `launcher.ps1` and `deploy.sh`: production-only launch entrypoints without branch mutation; local development runs backend and Vite directly.
 - `frontend/nginx.conf`: production-only same-origin proxy for `/fe/`, `/api/`, and `/ws`; health is available only through `/api/health`.

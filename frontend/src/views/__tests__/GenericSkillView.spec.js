@@ -33,7 +33,8 @@ describe('GenericSkillView', () => {
     const push = vi.fn(async () => {});
     const wrapper = mount(GenericSkillView, {
       propsData: { skillId: 'create-pr-cd' },
-      mocks: { $router: { push } }
+      mocks: { $router: { push } },
+      stubs: { RouterLink: { template: '<a><slot /></a>' } }
     });
     await new Promise((resolve) => setTimeout(resolve, 0));
     await wrapper.vm.$nextTick();
@@ -41,6 +42,11 @@ describe('GenericSkillView', () => {
     expect(wrapper.text()).toContain('Create PR CD');
     expect(wrapper.text()).toContain('Site data');
     expect(wrapper.text()).toContain('Scope');
+    expect(wrapper.find('.home-cockpit').exists()).toBe(true);
+    expect(wrapper.find('.workbench-hero').exists()).toBe(true);
+    expect(wrapper.find('.workbench-surface').exists()).toBe(true);
+    expect(wrapper.find('.workbench-upload-card').exists()).toBe(true);
+    expect(wrapper.find('.workbench-config-card').exists()).toBe(true);
     wrapper.vm.$set(wrapper.vm.selectedFiles, 'site_data', new File(['x'], 'sites.xlsx'));
     wrapper.vm.parameterValues.scope = 'TI';
     wrapper.vm.parameterValues.siteCodes = 'SITE-1\nSITE-2';

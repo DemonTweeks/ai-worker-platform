@@ -1,56 +1,178 @@
 <template>
-  <main class="page-shell">
-    <section class="panel skill-runner-panel">
-      <p class="eyebrow">Standalone Python skill</p>
-      <h1>{{ skill ? skill.displayName : 'Loading skill…' }}</h1>
-      <p class="muted">The platform validates transport and runs the approved package. Workbook and business validation stay inside the skill.</p>
+  <div class="home-cockpit">
+    <ErrorBanner
+      :message="error"
+      :dismissible="Boolean(error)"
+      @dismiss="error = ''"
+    />
 
-      <div v-if="loading" class="status-banner">Loading the approved skill contract…</div>
-      <div v-else-if="error" class="error-banner">{{ error }}</div>
+    <section class="workbench-hero" :aria-label="`${skillDisplayName} workbench`">
+      <div class="workbench-hero-copy">
+        <p class="workbench-kicker">ZTE AI Worker</p>
+        <h2>{{ heroTitle }}</h2>
+        <p class="workbench-subtitle">{{ heroSubtitle }}</p>
 
-      <form v-else-if="skill" class="skill-form" @submit.prevent="submit">
-        <fieldset>
-          <legend>Input files</legend>
-          <label v-for="input in skill.inputs.files" :key="input.name" class="skill-field">
-            <span>{{ labelFor(input.name) }}<strong v-if="input.required"> *</strong></span>
-            <input
-              type="file"
-              :accept="input.acceptedExtensions.join(',')"
-              :multiple="input.multiple"
-              :required="input.required"
-              @change="selectFiles(input, $event)"
-            >
-            <small>{{ input.multiple ? 'Select one or more files.' : 'Select one file.' }} Accepted: {{ input.acceptedExtensions.join(', ') }}</small>
-          </label>
-        </fieldset>
+        <div class="workbench-chip-row" aria-label="Workflow status">
+          <span class="workbench-chip">{{ skillDisplayName }}</span>
+          <span class="workbench-chip">Approved package</span>
+          <span class="workbench-chip">Standalone Python</span>
+          <span class="workbench-chip">{{ statusLabel }}</span>
+        </div>
 
-        <fieldset v-if="parameterEntries.length">
-          <legend>Parameters</legend>
-          <label v-for="entry in parameterEntries" :key="entry.name" class="skill-field">
-            <span>{{ labelFor(entry.name) }}<strong v-if="entry.required"> *</strong></span>
-            <select v-if="entry.rule.enum" v-model="parameterValues[entry.name]" :required="entry.required">
-              <option v-for="option in entry.rule.enum" :key="option" :value="option">{{ option }}</option>
-            </select>
-            <input v-else-if="entry.rule.type === 'boolean'" v-model="parameterValues[entry.name]" type="checkbox">
-            <textarea v-else-if="entry.rule.type === 'array'" v-model="parameterValues[entry.name]" rows="3" placeholder="One value per line"></textarea>
-            <input
-              v-else
-              v-model="parameterValues[entry.name]"
-              :type="entry.rule.type === 'integer' ? 'number' : 'text'"
-              :min="entry.rule.minimum"
-              :max="entry.rule.maximum"
-              :required="entry.required"
-            >
-          </label>
-        </fieldset>
+        <div class="workbench-action-row" aria-label="Primary actions">
+          <a class="workbench-primary-link" href="#worker-workbench" @click.prevent="scrollToWorkbench">Configure Job</a>
+          <router-link class="workbench-secondary-link" to="/history">View Job History</router-link>
+        </div>
+      </div>
 
-        <button type="submit" :disabled="submitting">{{ submitting ? 'Submitting…' : 'Start skill job' }}</button>
-      </form>
+      <section id="worker-workbench" ref="workbench" class="workbench-surface" :aria-label="`${skillDisplayName} workflow`">
+        <div class="workbench-surface-header">
+          <div>
+            <p class="eyebrow">Operational Workflow</p>
+            <h3>{{ skillDisplayName }}</h3>
+          </div>
+          <span class="workbench-status-pill">{{ statusLabel }}</span>
+        </div>
+
+        <div v-if="loading" class="status-banner">Loading the approved skill contract...</div>
+
+        <form v-else-if="skill" class="workbench-form" @submit.prevent="submit">
+          <div class="workbench-main-grid">
+            <div class="workbench-upload-stack">
+              <section
+                v-for="input in skill.inputs.files"
+                :key="input.name"
+                class="panel cockpit-card upload-card workbench-upload-card"
+              >
+                <div class="panel-heading">
+                  <h2 class="upload-validate">{{ uploadTitle(input.name) }}</h2>
+                </div>
+
+                <div v-if="!hasSelectedFile(input.name)">
+                  <label class="field-label" :for="inputId(input.name)">
+                    {{ labelFor(input.name) }}<strong v-if="input.required"> *</strong>
+                  </label>
+                  <p class="field-hint">
+                    {{ input.multiple ? 'Select one or more source files.' : 'Select the source file.' }}
+                    Accepted: {{ input.acceptedExtensions.join(', ') }}
+                  </p>
+                  <input
+                    :id="inputId(input.name)"
+                    :key="`${input.name}-${inputResetKeys[input.name] || 0}`"
+                    class="upload-input"
+                    type="file"
+                    :accept="input.acceptedExtensions.join(',')"
+                    :multiple="input.multiple"
+                    :required="input.required"
+                    :disabled="submitting"
+                    @change="selectFiles(input, $event)"
+                  >
+                </div>
+
+                <div v-else class="file-state">
+                  <span class="meta-label">Selected file{{ input.multiple ? 's' : '' }}</span>
+                  <strong class="file-state-name">{{ selectedFileLabel(input.name) }}</strong>
+                  <div class="workbench-action-row file-state-actions">
+                    <button type="button" class="tertiary-action" :disabled="submitting" @click="clearFiles(input.name)">
+                      Remove
+                    </button>
+                  </div>
+                </div>
+
+                <p v-if="!hasSelectedFile(input.name)" class="muted">
+                  Upload is not started. Validation runs inside the approved skill after submission.
+                </p>
+              </section>
+            </div>
+
+            <section class="panel cockpit-card workbench-config-card">
+              <div class="cockpit-card-heading">
+                <span>Launch Configuration</span>
+                <small>Manifest-defined</small>
+              </div>
+
+              <div v-if="parameterEntries.length" class="workbench-config-grid">
+                <div v-for="entry in parameterEntries" :key="entry.name" class="cockpit-field-group">
+                  <span class="field-label">
+                    {{ labelFor(entry.name) }}<strong v-if="entry.required"> *</strong>
+                  </span>
+
+                  <div v-if="entry.rule.enum" class="segmented compact-segmented">
+                    <button
+                      v-for="option in entry.rule.enum"
+                      :key="option"
+                      type="button"
+                      :class="{ active: parameterValues[entry.name] === option }"
+                      :disabled="submitting"
+                      @click="$set(parameterValues, entry.name, option)"
+                    >
+                      {{ labelFor(option) }}
+                    </button>
+                  </div>
+
+                  <label v-else-if="entry.rule.type === 'boolean'" class="cockpit-empty-card">
+                    <input v-model="parameterValues[entry.name]" type="checkbox" :disabled="submitting">
+                    {{ parameterValues[entry.name] ? 'Enabled' : 'Disabled' }}
+                  </label>
+
+                  <textarea
+                    v-else-if="entry.rule.type === 'array'"
+                    v-model="parameterValues[entry.name]"
+                    class="cockpit-sites-input"
+                    rows="5"
+                    placeholder="One value per line"
+                    :required="entry.required"
+                    :disabled="submitting"
+                  ></textarea>
+
+                  <input
+                    v-else
+                    v-model="parameterValues[entry.name]"
+                    class="cockpit-sites-input"
+                    :type="entry.rule.type === 'integer' ? 'number' : 'text'"
+                    :min="entry.rule.minimum"
+                    :max="entry.rule.maximum"
+                    :required="entry.required"
+                    :disabled="submitting"
+                  >
+                </div>
+              </div>
+
+              <div v-else class="cockpit-empty-card">
+                This package does not require launch parameters.
+              </div>
+
+              <div class="cockpit-empty-card">
+                The platform transports these inputs without interpreting workbook or business content.
+              </div>
+
+              <div class="workbench-create-row">
+                <button type="submit" class="action-button" :disabled="submitting || !canSubmit">
+                  {{ submitting ? 'Creating...' : 'Create Job' }}
+                </button>
+                <p v-if="!canSubmit" class="cockpit-note">Select every required input before creating the Job.</p>
+                <p v-else class="cockpit-ready">Ready to create Job</p>
+              </div>
+            </section>
+          </div>
+
+          <section class="panel cockpit-card workbench-result-card">
+            <div class="cockpit-card-heading">
+              <span>Execution Handoff</span>
+              <small>Thin wrapper</small>
+            </div>
+            <div class="cockpit-empty-card">
+              The server validates the package contract, queues the request, and starts its Python entrypoint. The skill owns technical validation, business rules, and output generation.
+            </div>
+          </section>
+        </form>
+      </section>
     </section>
-  </main>
+  </div>
 </template>
 
 <script>
+import ErrorBanner from '../components/ErrorBanner.vue';
 import { createSkillJob, getErrorMessage, listSkills } from '../api/jobApi';
 
 const randomId = (prefix) => {
@@ -60,8 +182,32 @@ const randomId = (prefix) => {
   return `${prefix}-${random}`;
 };
 
+const HERO_CONTENT = {
+  'create-pr-cd': {
+    title: 'Launch PR Creator jobs with controlled source inputs.',
+    subtitle: 'Configure the approved MW PR skill, submit its source workbook, and continue to dedicated Job progress and result delivery.'
+  },
+  'create-pr-cd-ran': {
+    title: 'Launch PR Creator jobs for RAN workflows.',
+    subtitle: 'Submit BOM and EPMS inputs to the approved RAN package while its Python runtime owns project validation, calculation, and workbook generation.'
+  },
+  'tx-pr-auditor': {
+    title: 'Run controlled PR audits from approved inputs.',
+    subtitle: 'Submit Final PO and expected ECC workbooks to the standalone auditor, then review progress and evidence through the shared Job workflow.'
+  }
+};
+
+const UPLOAD_TITLES = {
+  site_data: 'Source Data Upload',
+  bom: 'BOM Upload',
+  epms: 'EPMS Upload',
+  final_po: 'Final PO Upload',
+  expected_ecc: 'Expected ECC Upload'
+};
+
 export default {
   name: 'GenericSkillView',
+  components: { ErrorBanner },
   props: {
     skillId: { type: String, required: true }
   },
@@ -72,16 +218,36 @@ export default {
       submitting: false,
       error: '',
       selectedFiles: {},
+      inputResetKeys: {},
       parameterValues: {},
       browserTabSessionId: randomId('skill-tab')
     };
   },
   computed: {
+    skillDisplayName() {
+      return this.skill ? this.skill.displayName : 'Loading skill...';
+    },
+    heroTitle() {
+      return HERO_CONTENT[this.skillId]?.title || `Launch ${this.skillDisplayName} jobs.`;
+    },
+    heroSubtitle() {
+      return HERO_CONTENT[this.skillId]?.subtitle || 'Submit approved inputs through the shared Job workflow.';
+    },
+    statusLabel() {
+      if (this.loading) return 'Loading';
+      if (this.error) return 'Unavailable';
+      if (this.submitting) return 'Creating';
+      return 'Ready';
+    },
     parameterEntries() {
       if (!this.skill) return [];
       const schema = this.skill.inputs.parametersSchema || {};
       const required = new Set(schema.required || []);
       return Object.entries(schema.properties || {}).map(([name, rule]) => ({ name, rule, required: required.has(name) }));
+    },
+    canSubmit() {
+      if (!this.skill) return false;
+      return this.skill.inputs.files.every((input) => !input.required || this.hasSelectedFile(input.name));
     }
   },
   watch: {
@@ -91,8 +257,32 @@ export default {
     this.loadSkill();
   },
   methods: {
+    scrollToWorkbench() {
+      if (this.$refs.workbench && typeof this.$refs.workbench.scrollIntoView === 'function') {
+        this.$refs.workbench.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    },
     labelFor(value) {
-      return String(value).replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (letter) => letter.toUpperCase());
+      return String(value).replace(/_/g, ' ').replace(/-/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (letter) => letter.toUpperCase());
+    },
+    uploadTitle(name) {
+      return UPLOAD_TITLES[name] || `${this.labelFor(name)} Upload`;
+    },
+    inputId(name) {
+      return `skill-input-${this.skillId}-${name}`;
+    },
+    hasSelectedFile(name) {
+      const selected = this.selectedFiles[name];
+      return Array.isArray(selected) ? selected.length > 0 : Boolean(selected);
+    },
+    selectedFileLabel(name) {
+      const selected = this.selectedFiles[name];
+      const values = Array.isArray(selected) ? selected : [selected];
+      return values.filter(Boolean).map((file) => file.name).join(', ');
+    },
+    clearFiles(name) {
+      this.$set(this.selectedFiles, name, null);
+      this.$set(this.inputResetKeys, name, (this.inputResetKeys[name] || 0) + 1);
     },
     async loadSkill() {
       this.loading = true;
@@ -111,6 +301,7 @@ export default {
         });
         this.parameterValues = values;
         this.selectedFiles = {};
+        this.inputResetKeys = {};
       } catch (error) {
         this.error = getErrorMessage(error);
       } finally {
@@ -137,6 +328,7 @@ export default {
       return result;
     },
     async submit() {
+      if (!this.canSubmit) return;
       this.submitting = true;
       this.error = '';
       try {
@@ -156,14 +348,3 @@ export default {
   }
 };
 </script>
-
-<style scoped>
-.skill-runner-panel { max-width: 880px; margin: 0 auto; }
-.skill-form, fieldset { display: grid; gap: 1rem; }
-fieldset { margin: 1.5rem 0 0; padding: 1.25rem; border: 1px solid var(--border-color, #d8dee8); border-radius: 12px; }
-.skill-field { display: grid; gap: 0.45rem; }
-.skill-field input:not([type='checkbox']), .skill-field select, .skill-field textarea { width: 100%; box-sizing: border-box; padding: 0.7rem; }
-.skill-field small, .muted { color: #64748b; }
-.error-banner { margin: 1rem 0; color: #9f1239; }
-button { justify-self: start; margin-top: 1.25rem; padding: 0.75rem 1.2rem; }
-</style>
