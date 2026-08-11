@@ -28,16 +28,18 @@ const run = async () => {
   try {
     const sourcePath = path.resolve(__dirname, '../../skills/create-pr-cd/Info/input/site_pr_po_view.xlsx');
     const buffer = await fs.promises.readFile(sourcePath);
-    const created = await createSkillJob('create-pr-cd', {
-      browserTabSessionId: 'generic-live-tab-001',
-      idempotencyKey: 'generic-live-create-001',
-      parameters: JSON.stringify({ scope: 'TSS', allSites: true, nonProductionUat: false })
-    }, [{
+    const upload = () => [{
       fieldname: 'site_data',
       originalname: 'site_pr_po_view.xlsx',
       size: buffer.length,
       buffer
-    }]);
+    }];
+
+    const created = await createSkillJob('create-pr-cd', {
+      browserTabSessionId: 'generic-live-tab-001',
+      idempotencyKey: 'generic-live-create-001',
+      parameters: JSON.stringify({ scope: 'TSS', allSites: true, nonProductionUat: false })
+    }, upload());
     const completed = await waitForTerminal(created.job.jobId);
     assert.notStrictEqual(completed.status, 'failed', JSON.stringify(completed.error || {}));
     assert(completed.skillResult, 'generic runner must persist the authoritative result envelope');
@@ -45,11 +47,40 @@ const run = async () => {
     assert.strictEqual(completed.reconciliationConsistent, true);
     const files = await JobFile.find({ jobId: completed.jobId }).lean();
     assert(files.some((file) => file.fileType === 'skill_output'));
+
+    const missingCreated = await createSkillJob('create-pr-cd', {
+      browserTabSessionId: 'generic-live-tab-002',
+      idempotencyKey: 'generic-live-create-002',
+      parameters: JSON.stringify({
+        scope: 'TSS',
+        allSites: false,
+        siteCodes: ['QA15_UNMATCHED'],
+        nonProductionUat: false
+      })
+    }, upload());
+    const failed = await waitForTerminal(missingCreated.job.jobId);
+    assert.strictEqual(failed.status, 'failed');
+    assert(failed.skillResult, 'failed generic runner must persist the authoritative result envelope');
+    assert.strictEqual(failed.skillResult.status, 'failed');
+    assert.strictEqual(failed.skillResult.error.code, 'SITE_CODES_NOT_FOUND');
+    assert.deepStrictEqual(failed.skillResult.error.details.missing_site_codes, ['QA15_UNMATCHED']);
+    assert(failed.error, 'platform job must persist the safe skill error');
+    assert.strictEqual(failed.error.code, 'SITE_CODES_NOT_FOUND');
+    assert.deepStrictEqual(failed.error.details.missing_site_codes, ['QA15_UNMATCHED']);
+
     console.log(JSON.stringify({
-      jobId: completed.jobId,
-      status: completed.status,
-      outputFileCount: completed.outputFileCount,
-      reconciliation: completed.skillResult.reconciliation
+      successJob: {
+        jobId: completed.jobId,
+        status: completed.status,
+        outputFileCount: completed.outputFileCount,
+        reconciliation: completed.skillResult.reconciliation
+      },
+      missingSiteJob: {
+        jobId: failed.jobId,
+        status: failed.status,
+        errorCode: failed.error.code,
+        missingSiteCodes: failed.error.details.missing_site_codes
+      }
     }, null, 2));
   } finally {
     await shutdownQueue();
