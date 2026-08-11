@@ -83,7 +83,7 @@ const routes = [
 ];
 
 const router = new VueRouter({
-  mode: import.meta.env.VITE_ROUTER_MODE === 'hash' ? 'hash' : 'history',
+  mode: 'hash',
   routes
 });
 

@@ -10,4 +10,4 @@ Legacy MW/auditor launch pages and execution adapters have been retired. No refa
 
 The Node control plane no longer depends on workbook parsing or archive-generation libraries. Those concerns are package-owned Python behavior.
 
-Local and production deployment are now runtime profiles of the same `main` code line. A centralized `config/env/` contract supplies both backend and frontend values, launchers no longer mutate Git branches, production uses a same-origin Nginx `/fe/` deployment, and the stable machine ID remains part of Firebase queue ownership.
+Local and production deployment are runtime profiles of the same `main` code line. A centralized `config/env/` contract supplies both backend and frontend values, launchers do not mutate Git branches, both profiles use hash routing, `VITE_APP_BASE` selects `/` locally or `/fe/` in production, and only production uses same-origin Nginx. The stable machine ID remains part of Firebase queue ownership.

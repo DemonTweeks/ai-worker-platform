@@ -16,6 +16,9 @@ const routes = [
   '/admin/health'
 ];
 
+const runtimeProfile = String(process.env.AI_WORKER_PROFILE || 'local').toLowerCase();
+const appBase = process.env.VITE_APP_BASE || (runtimeProfile === 'production' ? '/fe/' : '/');
+
 const waitForRoute = async (url, timeoutMs = 30000) => {
   const started = Date.now();
   let lastError = null;
@@ -58,15 +61,20 @@ const main = async () => {
   });
 
   try {
-    await waitForRoute(`http://127.0.0.1:${port}/`);
+    const origin = `http://127.0.0.1:${port}`;
+    const entryUrl = `${origin}${appBase}`;
+    const entryResponse = await waitForRoute(entryUrl);
+    const entryHtml = await entryResponse.text();
+    assert(entryHtml.includes(`${appBase}assets/`), `Built assets should use VITE_APP_BASE=${appBase}`);
 
     const checked = [];
     for (const route of routes) {
-      const response = await fetch(`http://127.0.0.1:${port}${route}`);
-      assert(response.ok, `${route} should return HTTP 200`);
+      const hashUrl = `${entryUrl}#${route}`;
+      const response = await fetch(hashUrl);
+      assert(response.ok, `${hashUrl} should return HTTP 200`);
       const text = await response.text();
-      assert(!text.includes('LLM_API_KEY'), `${route} should not expose LLM_API_KEY text`);
-      checked.push(route);
+      assert(!text.includes('LLM_API_KEY'), `${hashUrl} should not expose LLM_API_KEY text`);
+      checked.push(`${appBase}#${route}`);
     }
 
     console.log(JSON.stringify({ ok: true, routes: checked }));

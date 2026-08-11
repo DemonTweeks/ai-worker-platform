@@ -2,11 +2,11 @@
 
 set -euo pipefail
 
-profile="${1:-local}"
-install_dependencies="${2:-}"
+profile="production"
+install_dependencies="${1:-}"
 
-if [[ "$profile" != "local" && "$profile" != "production" ]]; then
-  echo "Usage: ./deploy.sh [local|production] [--install]" >&2
+if [[ -n "$install_dependencies" && "$install_dependencies" != "--install" ]]; then
+  echo "Usage: ./deploy.sh [--install]" >&2
   exit 2
 fi
 
@@ -47,15 +47,9 @@ fi
 screen -S backend-server -X quit 2>/dev/null || true
 screen -S frontend-server -X quit 2>/dev/null || true
 
-if [[ "$profile" == "production" ]]; then
-  npm --prefix frontend run build
-  screen -dmS backend-server bash -lc "cd '$repo_root' && export AI_WORKER_PROFILE=production && npm --prefix backend start"
-  screen -dmS frontend-server bash -lc "cd '$repo_root' && export AI_WORKER_PROFILE=production && npm --prefix frontend run preview"
-  echo "Production services started. Configure Nginx with frontend/nginx.conf and open /fe/."
-else
-  screen -dmS backend-server bash -lc "cd '$repo_root' && export AI_WORKER_PROFILE=local && npm --prefix backend run dev"
-  screen -dmS frontend-server bash -lc "cd '$repo_root' && export AI_WORKER_PROFILE=local && npm --prefix frontend run dev"
-  echo "Local services started at http://localhost:3000."
-fi
+npm --prefix frontend run build
+screen -dmS backend-server bash -lc "cd '$repo_root' && export AI_WORKER_PROFILE=production && npm --prefix backend start"
+screen -dmS frontend-server bash -lc "cd '$repo_root' && export AI_WORKER_PROFILE=production && npm --prefix frontend run preview"
+echo "Production services started. Configure Nginx with frontend/nginx.conf and open /fe/."
 
 echo "Attach with: screen -r backend-server or screen -r frontend-server"

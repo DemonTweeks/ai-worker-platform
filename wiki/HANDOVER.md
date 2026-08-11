@@ -20,8 +20,8 @@
 - `backend/src/queue/jobQueue.js`: Firebase leases, heartbeats, cancellation state, and restart reconciliation.
 - `frontend/src/views/GenericSkillView.vue`: manifest-driven launch form for all active skills.
 - `skills/*/skill.json` and `skills/*/src/main.py`: standalone contracts.
-- `launcher.ps1` and `deploy.sh`: profile-selecting launch entrypoints without branch mutation.
-- `frontend/nginx.conf`: production same-origin proxy for `/fe/`, `/api/`, and `/ws`; health is available only through `/api/health`.
+- `launcher.ps1` and `deploy.sh`: production-only launch entrypoints without branch mutation; local development runs backend and Vite directly.
+- `frontend/nginx.conf`: production-only same-origin proxy for `/fe/`, `/api/`, and `/ws`; health is available only through `/api/health`.
 - `backend/src/skills/skillPackageService.js`: cross-platform text normalization with byte-exact binary package hashing.
 
 ## Compatibility Behavior

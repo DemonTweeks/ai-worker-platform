@@ -16,7 +16,6 @@ module.exports = defineConfig(() => {
   });
 
   process.env.VITE_APP_BASE ??= runtimeProfile === 'production' ? '/fe/' : '/';
-  process.env.VITE_ROUTER_MODE ??= runtimeProfile === 'production' ? 'hash' : 'history';
   process.env.VITE_API_BASE_URL ??= runtimeProfile === 'production' ? '' : 'http://127.0.0.1:8000';
   process.env.VITE_WS_URL ??= runtimeProfile === 'production' ? '' : 'ws://127.0.0.1:8000/ws';
 

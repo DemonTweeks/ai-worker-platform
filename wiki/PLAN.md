@@ -43,7 +43,7 @@ skills/create-pr-cd-ran/{skill.json,src/main.py}
 skills/tx-pr-auditor/{skill.json,src/main.py}
 
 config/env/{local.env.example,production.env.example}
-launcher.ps1 -Profile local|production
+launcher.ps1 (production only)
 ```
 
 ## Ongoing Release Gates
