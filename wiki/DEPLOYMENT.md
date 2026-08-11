@@ -23,7 +23,7 @@ The real files must never be committed. Production requires `AI_WORKER_MACHINE_I
 .\stop-services.ps1
 ```
 
-`launcher.bat` is a compatibility wrapper. With no argument it launches local mode; `launcher.bat production` launches production. The Admin deployment endpoint invokes the production form explicitly and records its handoff log in the configured deployment directory.
+`launcher.bat` is a compatibility wrapper. With no argument it launches local mode; `launcher.bat production` launches production. The Admin deployment endpoint invokes the production form explicitly and records its handoff log in the configured deployment directory. Backend health is served at `/api/health` through the existing `/api/` proxy; production does not define a separate Nginx `/health` location.
 
 ## Linux
 

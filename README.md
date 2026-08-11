@@ -196,7 +196,7 @@ The backend resolves Python in this order: `PYTHON_EXECUTABLE`, repository `.ven
 ```
 
 - Frontend: `http://localhost:3000`
-- Backend health: `http://localhost:8000/health`
+- Backend health: `http://localhost:8000/api/health`
 
 For later launches, omit `-InstallDependencies`. Use `.\stop-services.ps1` to stop listeners on the configured frontend/backend ports.
 

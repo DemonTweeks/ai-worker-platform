@@ -8,4 +8,4 @@ Completed work is recorded in [PLAN.md](PLAN.md), [ARCHITECTURE.md](ARCHITECTURE
 
 The former `repack/ai-worker-platform` branch committed a live LLM credential. Rotate/revoke that credential, then provision the replacement only in the production host's ignored `config/env/production.env` (or an external secret injector). Also set a stable, unique `AI_WORKER_MACHINE_ID`, administrator password, and JWT secret.
 
-Remove this item after the rotated credentials are installed and both `/health` and `/fe/` are validated through the production Nginx endpoint.
+Remove this item after the rotated credentials are installed and both `/api/health` and `/fe/` are validated through the production Nginx endpoint.

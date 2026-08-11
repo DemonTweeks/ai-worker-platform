@@ -10,7 +10,7 @@ vi.mock('../../api', () => ({
   }
 }));
 
-import { createSkillJob, listSkills, rerunJob } from '../jobApi';
+import { createSkillJob, getHealth, listSkills, rerunJob } from '../jobApi';
 
 describe('jobApi skill contract', () => {
   beforeEach(() => {
@@ -43,5 +43,11 @@ describe('jobApi skill contract', () => {
     const result = await rerunJob('PR/SOURCE');
     expect(postMock).toHaveBeenCalledWith('/api/jobs/PR%2FSOURCE/rerun', {}, { timeout: 120000 });
     expect(result.job.jobId).toBe('PR-NEW');
+  });
+
+  it('requests health through the API namespace', async () => {
+    getMock.mockResolvedValueOnce({ data: { status: 'ok' } });
+    await expect(getHealth()).resolves.toEqual({ status: 'ok' });
+    expect(getMock).toHaveBeenCalledWith('/api/health');
   });
 });

@@ -45,9 +45,24 @@ const run = async () => {
   });
   assert.strictEqual(queuedJob.finalWorkerSummary, '');
 
+  const server = await new Promise((resolve) => {
+    const listener = app.listen(0, '127.0.0.1', () => resolve(listener));
+  });
+  try {
+    const { port } = server.address();
+    const apiHealthResponse = await fetch(`http://127.0.0.1:${port}/api/health`);
+    assert.strictEqual(apiHealthResponse.status, 200);
+    const legacyHealthResponse = await fetch(`http://127.0.0.1:${port}/health`);
+    assert.strictEqual(legacyHealthResponse.status, 404);
+  } finally {
+    await new Promise((resolve, reject) => {
+      server.close((error) => (error ? reject(error) : resolve()));
+    });
+  }
+
   console.log(JSON.stringify({
     ok: true,
-    checks: ['config', 'routes', 'generic_skills', 'job_id', 'path_utils', 'llm_disabled', 'queued_job_summary_empty', 'firebase_mock']
+    checks: ['config', 'routes', 'api_health_only', 'generic_skills', 'job_id', 'path_utils', 'llm_disabled', 'queued_job_summary_empty', 'firebase_mock']
   }));
 };
 

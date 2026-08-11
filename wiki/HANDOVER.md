@@ -21,7 +21,7 @@
 - `frontend/src/views/GenericSkillView.vue`: manifest-driven launch form for all active skills.
 - `skills/*/skill.json` and `skills/*/src/main.py`: standalone contracts.
 - `launcher.ps1` and `deploy.sh`: profile-selecting launch entrypoints without branch mutation.
-- `frontend/nginx.conf`: production same-origin proxy for `/fe/`, `/api/`, `/health`, and `/ws`.
+- `frontend/nginx.conf`: production same-origin proxy for `/fe/`, `/api/`, and `/ws`; health is available only through `/api/health`.
 - `backend/src/skills/skillPackageService.js`: cross-platform text normalization with byte-exact binary package hashing.
 
 ## Compatibility Behavior
@@ -41,7 +41,7 @@
 - Real generic RAN sample job: completed with five tracked outputs.
 - Complete active backend suite: passed, including durable queue, concurrent idempotency, contract/rerun compatibility, and both real creator executions.
 - Cross-platform skill fingerprint normalization regression passed; all approved packages validate on Windows.
-- Frontend: 19 files and 82 tests passed; production build and all 11 route-smoke URLs passed.
+- Frontend: 19 files and 83 tests passed; production build and all 11 route-smoke URLs passed.
 - Node workbook/report dependencies `xlsx`, `exceljs`, and `archiver` were removed with the retired domain services.
 
 ## Next Action
