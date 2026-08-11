@@ -6,30 +6,28 @@
       @dismiss="dismissAllErrors"
     />
 
-    <section class="workbench-hero" :aria-label="`${skillDisplayName} workbench`">
+    <section class="workbench-hero" :aria-label="`${workbenchTitle} workbench`">
       <div class="workbench-hero-copy">
         <p class="workbench-kicker">ZTE AI Worker</p>
         <h2>{{ heroTitle }}</h2>
         <p class="workbench-subtitle">{{ heroSubtitle }}</p>
 
         <div class="workbench-chip-row" aria-label="Workflow status">
-          <span class="workbench-chip">{{ skillDisplayName }}</span>
-          <span class="workbench-chip">Approved package</span>
-          <span class="workbench-chip">Standalone Python</span>
+          <span v-for="chip in heroChips" :key="chip" class="workbench-chip">{{ chip }}</span>
           <span class="workbench-chip">{{ healthLabel }}</span>
         </div>
 
         <div class="workbench-action-row" aria-label="Primary actions">
-          <a class="workbench-primary-link" href="#worker-workbench" @click.prevent="scrollToWorkbench">Configure Job</a>
-          <router-link class="workbench-secondary-link" to="/history">View Job History</router-link>
+          <a class="workbench-primary-link" href="#worker-workbench" @click.prevent="scrollToWorkbench">{{ primaryActionLabel }}</a>
+          <a class="workbench-secondary-link" href="#worker-console">View Live Output</a>
         </div>
       </div>
 
-      <section id="worker-workbench" ref="workbench" class="workbench-surface" :aria-label="`${skillDisplayName} workflow`">
+      <section id="worker-workbench" ref="workbench" class="workbench-surface" :aria-label="`${workbenchTitle} workflow`">
         <div class="workbench-surface-header">
           <div>
             <p class="eyebrow">Operational Workflow</p>
-            <h3>{{ skillDisplayName }}</h3>
+            <h3>{{ workbenchTitle }}</h3>
           </div>
           <span class="workbench-status-pill">{{ statusLabel }}</span>
         </div>
@@ -39,102 +37,90 @@
         <form v-else-if="skill" class="workbench-form" @submit.prevent="submit">
           <div class="workbench-main-grid">
             <div class="workbench-upload-stack">
-              <section
-                v-for="input in skill.inputs.files"
-                :key="input.name"
-                class="panel cockpit-card upload-card workbench-upload-card"
-              >
-                <div class="panel-heading">
-                  <h2 class="upload-validate">{{ uploadTitle(input.name) }}</h2>
-                </div>
-
-                <div v-if="!hasSelectedFile(input.name)">
-                  <label class="field-label" :for="inputId(input.name)">
-                    {{ labelFor(input.name) }}<strong v-if="input.required"> *</strong>
-                  </label>
-                  <p class="field-hint">
-                    {{ input.multiple ? 'Select one or more source files.' : 'Select the source file.' }}
-                    Accepted: {{ input.acceptedExtensions.join(', ') }}
-                  </p>
-                  <input
-                    :id="inputId(input.name)"
-                    :key="`${input.name}-${inputResetKeys[input.name] || 0}`"
-                    class="upload-input"
-                    type="file"
-                    :accept="input.acceptedExtensions.join(',')"
-                    :multiple="input.multiple"
-                    :required="input.required"
-                    :disabled="submitting"
-                    @change="selectFiles(input, $event)"
-                  >
-                </div>
-
-                <div v-else class="file-state">
-                  <span class="meta-label">Selected file{{ input.multiple ? 's' : '' }}</span>
-                  <strong class="file-state-name">{{ selectedFileLabel(input.name) }}</strong>
-                  <div class="workbench-action-row file-state-actions">
-                    <button type="button" class="tertiary-action" :disabled="submitting" @click="clearFiles(input.name)">
-                      Remove
-                    </button>
+              <template v-for="item in uploadColumnItems">
+                <UploadPanel
+                  v-if="item.type === 'file'"
+                  :key="`file-${item.input.name}-${inputResetKeys[item.input.name] || 0}`"
+                  class="cockpit-card upload-card workbench-upload-card"
+                  :title="item.ui.title"
+                  :input-id="inputId(item.input.name)"
+                  :input-label="item.ui.label"
+                  :input-hint="item.ui.hint"
+                  :validate-label="item.ui.actionLabel"
+                  :accept="item.input.acceptedExtensions.join(',')"
+                  :multiple="item.input.multiple"
+                  :result="fileValidationResults[item.input.name] || null"
+                  :disable-action="submitting"
+                  @file-selected="selectFiles(item.input, $event)"
+                  @prevalidate="validateSelectedFiles(item.input, $event)"
+                />
+                <section
+                  v-else
+                  :key="`group-${item.group.id}`"
+                  class="cockpit-card upload-card workbench-upload-card audit-period-card"
+                >
+                  <div class="cockpit-card-heading">
+                    <span>{{ item.group.title }}</span>
+                    <small>{{ item.group.subtitle }}</small>
                   </div>
-                </div>
-
-                <p v-if="!hasSelectedFile(input.name)" class="muted">
-                  Upload is not started. Validation runs inside the approved skill after submission.
-                </p>
-              </section>
+                  <div class="audit-period-grid">
+                    <ManifestParameterField
+                      v-for="entry in item.entries"
+                      :key="entry.name"
+                      :entry="entry"
+                      :value="parameterValues[entry.name]"
+                      :disabled="submitting || isEntryDisabled(entry)"
+                      @input="$set(parameterValues, entry.name, $event)"
+                    />
+                  </div>
+                  <p v-if="item.group.hint" class="field-hint">{{ item.group.hint }}</p>
+                </section>
+              </template>
             </div>
 
             <section class="panel cockpit-card workbench-config-card">
               <div class="cockpit-card-heading">
                 <span>Launch Configuration</span>
-                <small>Manifest-defined</small>
+                <small>{{ configurationModeLabel }}</small>
               </div>
 
-              <div v-if="parameterEntries.length" class="workbench-config-grid">
-                <div v-for="entry in parameterEntries" :key="entry.name" class="cockpit-field-group">
-                  <span class="field-label">
-                    {{ labelFor(entry.name) }}<strong v-if="entry.required"> *</strong>
-                  </span>
-
-                  <div v-if="entry.rule.enum" class="segmented compact-segmented">
+              <div v-if="configurationSwitcher || configGridEntries.length || configurationStages.length" class="workbench-config-grid">
+                <div v-if="configurationSwitcher" class="cockpit-field-group">
+                  <span class="field-label">{{ configurationSwitcher.label }}</span>
+                  <div class="segmented compact-segmented">
                     <button
-                      v-for="option in entry.rule.enum"
-                      :key="option"
+                      v-for="option in configurationSwitcher.options"
+                      :key="option.skillId"
                       type="button"
-                      :class="{ active: parameterValues[entry.name] === option }"
+                      :class="{ active: option.skillId === skillId }"
                       :disabled="submitting"
-                      @click="$set(parameterValues, entry.name, option)"
+                      @click="switchSkill(option)"
                     >
-                      {{ labelFor(option) }}
+                      {{ option.label }}
                     </button>
                   </div>
+                </div>
 
-                  <label v-else-if="entry.rule.type === 'boolean'" class="cockpit-empty-card">
-                    <input v-model="parameterValues[entry.name]" type="checkbox" :disabled="submitting">
-                    {{ parameterValues[entry.name] ? 'Enabled' : 'Disabled' }}
-                  </label>
+                <ManifestParameterField
+                  v-for="entry in configGridEntries"
+                  :key="entry.name"
+                  :entry="entry"
+                  :value="parameterValues[entry.name]"
+                  :disabled="submitting || isEntryDisabled(entry)"
+                  @input="$set(parameterValues, entry.name, $event)"
+                />
 
-                  <textarea
-                    v-else-if="entry.rule.type === 'array'"
-                    v-model="parameterValues[entry.name]"
-                    class="cockpit-sites-input"
-                    rows="5"
-                    placeholder="One value per line"
-                    :required="entry.required"
-                    :disabled="submitting"
-                  ></textarea>
-
-                  <input
-                    v-else
-                    v-model="parameterValues[entry.name]"
-                    class="cockpit-sites-input"
-                    :type="entry.rule.type === 'integer' ? 'number' : 'text'"
-                    :min="entry.rule.minimum"
-                    :max="entry.rule.maximum"
-                    :required="entry.required"
-                    :disabled="submitting"
-                  >
+                <div v-if="configurationStages.length" class="cockpit-empty-card">
+                  <strong>{{ configurationStageHeading }}</strong>
+                  <ol class="audit-flow-list">
+                    <li v-for="(stage, index) in configurationStages" :key="stage.title">
+                      <span>{{ String(index + 1).padStart(2, '0') }}</span>
+                      <div>
+                        <strong>{{ stage.title }}</strong>
+                        <p>{{ stage.description }}</p>
+                      </div>
+                    </li>
+                  </ol>
                 </div>
               </div>
 
@@ -142,16 +128,30 @@
                 This package does not require launch parameters.
               </div>
 
-              <div class="cockpit-empty-card">
-                The platform transports these inputs without interpreting workbook or business content.
+              <ManifestParameterField
+                v-for="entry in configDetailEntries"
+                :key="entry.name"
+                class="workbench-sites-field"
+                :entry="entry"
+                :value="parameterValues[entry.name]"
+                :disabled="submitting || isEntryDisabled(entry)"
+                @input="$set(parameterValues, entry.name, $event)"
+              />
+
+              <div v-for="item in visibleConfigurationEmptyStates" :key="item.text" class="cockpit-empty-card">
+                {{ item.text }}
+              </div>
+
+              <div v-if="configurationNotice" class="cockpit-empty-card">
+                {{ configurationNotice }}
               </div>
 
               <div class="workbench-create-row">
                 <button type="submit" class="action-button" :disabled="submitting || !canSubmit">
-                  {{ submitting ? 'Creating...' : 'Create Job' }}
+                  {{ submitting ? 'Creating...' : primaryActionLabel }}
                 </button>
-                <p v-if="!canSubmit" class="cockpit-note">Select every required input before creating the Job.</p>
-                <p v-else class="cockpit-ready">Ready to create Job</p>
+                <p v-if="!canSubmit" class="cockpit-note">{{ createDisabledReason }}</p>
+                <p v-else class="cockpit-ready">{{ readyActionText }}</p>
               </div>
             </section>
           </div>
@@ -371,6 +371,8 @@
 
 <script>
 import ErrorBanner from '../components/ErrorBanner.vue';
+import ManifestParameterField from '../components/ManifestParameterField.vue';
+import UploadPanel from '../components/UploadPanel.vue';
 import {
   createSkillJob,
   getErrorMessage,
@@ -413,7 +415,7 @@ const UPLOAD_TITLES = {
 export default {
   name: 'GenericSkillView',
   mixins: [workerRuntimeMixin],
-  components: { ErrorBanner },
+  components: { ErrorBanner, ManifestParameterField, UploadPanel },
   props: {
     skillId: { type: String, required: true }
   },
@@ -425,6 +427,7 @@ export default {
       error: '',
       selectedFiles: {},
       inputResetKeys: {},
+      fileValidationResults: {},
       parameterValues: {},
       showLegacyControls: false,
       showOptionalHandoff: false
@@ -434,11 +437,27 @@ export default {
     skillDisplayName() {
       return this.skill ? this.skill.displayName : 'Loading skill...';
     },
+    manifestUi() {
+      return (this.skill && this.skill.ui) || {};
+    },
     heroTitle() {
-      return HERO_CONTENT[this.skillId]?.title || `Launch ${this.skillDisplayName} jobs.`;
+      return this.manifestUi.hero?.title || HERO_CONTENT[this.skillId]?.title || `Launch ${this.skillDisplayName} jobs.`;
     },
     heroSubtitle() {
-      return HERO_CONTENT[this.skillId]?.subtitle || 'Submit approved inputs through the shared Job workflow.';
+      return this.manifestUi.hero?.subtitle || HERO_CONTENT[this.skillId]?.subtitle || 'Submit approved inputs through the shared Job workflow.';
+    },
+    heroChips() {
+      const chips = this.manifestUi.hero?.chips || [this.skillDisplayName, 'Approved package', 'Standalone Python'];
+      return this.manifestUi.hero?.includeModeChip ? [...chips, this.configurationModeLabel] : chips;
+    },
+    workbenchTitle() {
+      return this.manifestUi.workbench?.title || this.skillDisplayName;
+    },
+    primaryActionLabel() {
+      return this.manifestUi.actions?.primaryLabel || 'Create Job';
+    },
+    readyActionText() {
+      return this.manifestUi.actions?.readyLabel || 'Ready to create Job';
     },
     statusLabel() {
       if (this.loading) return 'Loading';
@@ -456,20 +475,122 @@ export default {
       return this.skillId;
     },
     activeWorkerLabel() {
-      return this.skillDisplayName;
+      return this.manifestUi.workerLabel || this.skillDisplayName;
     },
     activeModeLabel() {
-      return this.parameterValues.scope || this.parameterValues.runMode || 'Manifest contract';
+      return this.configurationModeLabel;
     },
-    parameterEntries() {
+    configuration() {
+      return this.manifestUi.configuration || {};
+    },
+    configurationModeLabel() {
+      if (this.configuration.mode?.field) {
+        const value = this.parameterValues[this.configuration.mode.field];
+        const label = this.configuration.mode.labels?.[String(value)];
+        if (label) return label;
+      }
+      return this.configuration.modeLabel || this.parameterValues.scope || this.parameterValues.runMode || 'Manifest contract';
+    },
+    configurationSwitcher() {
+      return this.configuration.switcher || null;
+    },
+    configurationNotice() {
+      return this.configuration.notice || '';
+    },
+    visibleConfigurationEmptyStates() {
+      return (this.configuration.emptyStates || []).filter((item) => this.matchesCondition(item.visibleWhen));
+    },
+    configurationStages() {
+      return this.configuration.stages || [];
+    },
+    configurationStageHeading() {
+      return this.configuration.stageHeading || 'Controlled run';
+    },
+    allParameterEntries() {
       if (!this.skill) return [];
       const schema = this.skill.inputs.parametersSchema || {};
       const required = new Set(schema.required || []);
-      return Object.entries(schema.properties || {}).map(([name, rule]) => ({ name, rule, required: required.has(name) }));
+      const presentations = this.manifestUi.parameters || {};
+      return Object.entries(schema.properties || {}).map(([name, rule]) => ({
+        name,
+        rule,
+        ui: presentations[name] || {},
+        required: required.has(name)
+      }));
+    },
+    parameterEntries() {
+      return this.allParameterEntries.filter((entry) => !entry.ui.hidden && this.isEntryVisible(entry));
+    },
+    uploadGroups() {
+      const entryMap = new Map(this.parameterEntries.map((entry) => [entry.name, entry]));
+      return (this.manifestUi.uploadGroups || []).map((group) => ({
+        ...group,
+        entries: (group.fields || []).map((name) => entryMap.get(name)).filter(Boolean)
+      })).filter((group) => group.entries.length);
+    },
+    uploadColumnItems() {
+      if (!this.skill) return [];
+      const pendingGroups = [...this.uploadGroups];
+      const items = [];
+      this.skill.inputs.files.forEach((input) => {
+        items.push({ type: 'file', input, ui: this.uploadPresentation(input) });
+        pendingGroups.filter((group) => group.after === input.name).forEach((group) => {
+          items.push({ type: 'group', group, entries: group.entries });
+        });
+      });
+      pendingGroups.filter((group) => !group.after).forEach((group) => {
+        items.push({ type: 'group', group, entries: group.entries });
+      });
+      return items;
+    },
+    groupedParameterNames() {
+      return new Set(this.uploadGroups.flatMap((group) => group.fields || []));
+    },
+    configGridEntries() {
+      const order = this.configuration.fieldOrder || [];
+      return this.parameterEntries
+        .filter((entry) => !this.groupedParameterNames.has(entry.name) && entry.ui.placement !== 'detail')
+        .sort((left, right) => {
+          const leftIndex = order.indexOf(left.name);
+          const rightIndex = order.indexOf(right.name);
+          return (leftIndex < 0 ? Number.MAX_SAFE_INTEGER : leftIndex) - (rightIndex < 0 ? Number.MAX_SAFE_INTEGER : rightIndex);
+        });
+    },
+    configDetailEntries() {
+      return this.parameterEntries.filter((entry) => entry.ui.placement === 'detail');
     },
     canSubmit() {
       if (!this.skill) return false;
-      return this.skill.inputs.files.every((input) => !input.required || this.hasSelectedFile(input.name));
+      const filesReady = this.skill.inputs.files.every((input) => {
+        if (input.required && !this.hasSelectedFile(input.name)) return false;
+        if (!this.hasSelectedFile(input.name)) return true;
+        const ui = this.uploadPresentation(input);
+        return !ui.validationRequired || Boolean(this.fileValidationResults[input.name]?.passed);
+      });
+      const parametersReady = this.parameterEntries.every((entry) => {
+        const conditionallyRequired = entry.ui.requiredWhenVisible || (
+          entry.ui.requiredWhen && this.matchesCondition(entry.ui.requiredWhen)
+        );
+        if (!entry.required && !conditionallyRequired) return true;
+        const value = this.parameterValues[entry.name];
+        if (entry.rule.type === 'array') {
+          return String(value || '').split(/[\r\n,]+/).some((item) => item.trim());
+        }
+        return value !== '' && value !== null && value !== undefined;
+      });
+      return filesReady && parametersReady;
+    },
+    createDisabledReason() {
+      if (!this.skill) return 'Loading the approved skill contract.';
+      const missing = this.skill.inputs.files.filter((input) => input.required && !this.hasSelectedFile(input.name));
+      if (missing.length) return this.manifestUi.actions?.missingFilesMessage || 'Select every required input before creating the Job.';
+      const pendingValidation = this.skill.inputs.files.some((input) => (
+        this.hasSelectedFile(input.name)
+        && this.uploadPresentation(input).validationRequired
+        && !this.fileValidationResults[input.name]?.passed
+      ));
+      if (pendingValidation) return this.manifestUi.actions?.validationMessage || 'Validate every selected input before creating the Job.';
+      return this.manifestUi.actions?.missingParametersMessage || 'Complete every required launch parameter.';
     },
     primaryDownloadFile() {
       if (!this.jobDetail || !Array.isArray(this.jobDetail.outputs)) return null;
@@ -540,6 +661,16 @@ export default {
     labelFor(value) {
       return String(value).replace(/_/g, ' ').replace(/-/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (letter) => letter.toUpperCase());
     },
+    uploadPresentation(input) {
+      const configured = this.manifestUi.uploads?.[input.name] || {};
+      return {
+        title: configured.title || UPLOAD_TITLES[input.name] || `${this.labelFor(input.name)} Upload`,
+        label: configured.label || this.labelFor(input.name),
+        hint: configured.hint || `${input.multiple ? 'Select one or more source files.' : 'Select the source file.'} Accepted: ${input.acceptedExtensions.join(', ')}`,
+        actionLabel: configured.actionLabel || 'Validate File',
+        validationRequired: Boolean(configured.validationRequired)
+      };
+    },
     uploadTitle(name) {
       return UPLOAD_TITLES[name] || `${this.labelFor(name)} Upload`;
     },
@@ -557,7 +688,30 @@ export default {
     },
     clearFiles(name) {
       this.$set(this.selectedFiles, name, null);
+      this.$delete(this.fileValidationResults, name);
       this.$set(this.inputResetKeys, name, (this.inputResetKeys[name] || 0) + 1);
+    },
+    isEntryVisible(entry) {
+      return this.matchesCondition(entry.ui.visibleWhen);
+    },
+    isEntryDisabled(entry) {
+      return Boolean(entry.ui.disabledWhen) && this.matchesCondition(entry.ui.disabledWhen);
+    },
+    matchesCondition(condition) {
+      if (!condition) return true;
+      const actual = this.parameterValues[condition.field];
+      if (Object.prototype.hasOwnProperty.call(condition, 'equals')) return actual === condition.equals;
+      if (Array.isArray(condition.oneOf)) return condition.oneOf.includes(actual);
+      return true;
+    },
+    initialParameterValue(rule, presentation) {
+      if (Object.prototype.hasOwnProperty.call(presentation, 'default')) return presentation.default;
+      if (presentation.defaultFrom === 'currentYear') return new Date().getFullYear();
+      if (presentation.defaultFrom === 'currentMonth') return new Date().getMonth() + 1;
+      if (rule.default !== undefined) return rule.default;
+      if (rule.enum) return rule.enum[0];
+      if (rule.type === 'boolean') return false;
+      return '';
     },
     async loadSkill() {
       this.loading = true;
@@ -567,29 +721,53 @@ export default {
         this.skill = catalog.skills.find((item) => item.skillId === this.skillId) || null;
         if (!this.skill) throw new Error('The requested skill is not approved on this server.');
         const schema = this.skill.inputs.parametersSchema || {};
+        const presentations = this.manifestUi.parameters || {};
         const values = {};
         Object.entries(schema.properties || {}).forEach(([name, rule]) => {
-          if (rule.default !== undefined) values[name] = rule.default;
-          else if (rule.enum) values[name] = rule.enum[0];
-          else if (rule.type === 'boolean') values[name] = false;
-          else values[name] = '';
+          values[name] = this.initialParameterValue(rule, presentations[name] || {});
         });
         this.parameterValues = values;
         this.selectedFiles = {};
         this.inputResetKeys = {};
+        this.fileValidationResults = {};
       } catch (error) {
         this.error = getErrorMessage(error);
       } finally {
         this.loading = false;
       }
     },
-    selectFiles(input, event) {
-      const files = Array.from(event.target.files || []);
-      this.$set(this.selectedFiles, input.name, input.multiple ? files : files[0] || null);
+    selectFiles(input, selected) {
+      this.$set(this.selectedFiles, input.name, selected);
+      this.$delete(this.fileValidationResults, input.name);
+    },
+    validateSelectedFiles(input, selected) {
+      const files = (Array.isArray(selected) ? selected : [selected]).filter(Boolean);
+      const accepted = (input.acceptedExtensions || []).map((extension) => extension.toLowerCase());
+      const extensionCheck = files.length > 0 && files.every((file) => accepted.includes(`.${file.name.split('.').pop().toLowerCase()}`));
+      const countCheck = !input.maximumCount || files.length <= input.maximumCount;
+      const sizeCheck = !input.maximumBytes || files.every((file) => file.size <= input.maximumBytes);
+      const checklist = [
+        { name: 'Accepted file type', passed: extensionCheck },
+        { name: 'File count', passed: countCheck },
+        { name: 'File size', passed: sizeCheck }
+      ];
+      const passed = checklist.every((item) => item.passed);
+      this.$set(this.fileValidationResults, input.name, {
+        passed,
+        checklist,
+        workerExplanation: passed
+          ? 'File contract checks passed. Business validation runs inside the approved skill.'
+          : 'The selected input does not meet the manifest file contract.'
+      });
+    },
+    switchSkill(option) {
+      if (!option || option.skillId === this.skillId || !option.routeName) return;
+      this.$router.push({ name: option.routeName });
     },
     normalizedParameters() {
       const result = {};
-      for (const entry of this.parameterEntries) {
+      for (const entry of this.allParameterEntries) {
+        if (entry.ui.omitWhenHidden && !this.isEntryVisible(entry)) continue;
         const value = this.parameterValues[entry.name];
         if (entry.rule.type === 'array') {
           const values = String(value || '').split(/[\r\n,]+/).map((item) => item.trim()).filter(Boolean);

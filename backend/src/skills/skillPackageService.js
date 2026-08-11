@@ -83,6 +83,7 @@ const validateManifest = (manifest, root, approval) => {
   if (!manifest.skillId || !approvals[manifest.skillId]) throw new Error('Skill manifest has an unapproved skillId.');
   if (manifest.version !== approval.approvedVersion) throw new Error(`Skill ${manifest.skillId} version is not approved.`);
   if (!SUPPORTED_CONTRACT_VERSIONS.has(manifest.resultContractVersion)) throw new Error('Skill result contract version is unsupported.');
+  if (manifest.ui && manifest.ui.schemaVersion !== '1.0') throw new Error('Skill UI manifest schemaVersion must be 1.0.');
   if (!manifest.runtime || manifest.runtime.type !== 'python') throw new Error('Only Python skill runtimes are supported.');
   const entrypoint = assertPathInsideRoot(root, path.resolve(root, manifest.runtime.entrypoint || ''));
   if (!fs.statSync(entrypoint).isFile()) throw new Error('Skill entrypoint was not found.');
@@ -113,6 +114,7 @@ const serializeCatalogEntry = ({ manifest, packageSha256 }) => ({
   displayName: manifest.displayName,
   version: manifest.version,
   inputs: manifest.inputs,
+  ui: manifest.ui || null,
   execution: manifest.execution,
   resultContractVersion: manifest.resultContractVersion,
   packageSha256

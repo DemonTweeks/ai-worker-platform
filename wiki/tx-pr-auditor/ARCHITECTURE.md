@@ -51,9 +51,10 @@ Final PO ------------------------------^
 - Isolated workspace and safe paths.
 - Process supervision, timeout and cancellation.
 - Job metadata, progress transport and output delivery.
+- Generic rendering of skill-owned `skill.json.ui` presentation metadata.
 - Structural validation of manifest, input and result envelopes.
 
-The platform must not know Final PO headers, audit reason codes, classification priority or quantity-consumption rules.
+The UI manifest places the audit period between the two upload cards, supplies reference-style audit stages, and hides `annotateEcc` at its default. The platform renders those declarations but must not know Final PO headers, audit reason codes, classification priority or quantity-consumption rules.
 
 ## Current Internal Architecture
 

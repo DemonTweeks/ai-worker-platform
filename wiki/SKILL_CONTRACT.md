@@ -61,6 +61,19 @@ Example `skill.json`:
       "properties": {}
     }
   },
+  "ui": {
+    "schemaVersion": "1.0",
+    "uploads": {
+      "source": {
+        "title": "Source Upload",
+        "label": "Source workbook",
+        "validationRequired": true
+      }
+    },
+    "parameters": {
+      "internalFlag": { "hidden": true, "default": false }
+    }
+  },
   "execution": {
     "timeoutSeconds": 3600,
     "supportsCancellation": true
@@ -70,6 +83,19 @@ Example `skill.json`:
 ```
 
 The platform validates manifest structure, paths, supported contract versions, and administrative approval. It does not interpret the business meaning of inputs or parameters.
+
+### 3.1 Optional UI presentation contract
+
+`ui.schemaVersion: "1.0"` lets an approved skill present its existing input contract in the shared workbench without creating a skill-specific Vue view. It may declare:
+
+- Hero, workbench, status-chip, and action copy.
+- Upload titles, labels, hints, client-side file-contract validation, and ordering.
+- Segmented, select, text, textarea, and checkbox controls for declared parameters.
+- Parameter ordering, upload-column groups, conditional visibility, and configuration detail placement.
+- Presentation-only workflow stages and notices.
+- UI defaults and hidden parameters, provided every submitted value remains valid under `inputs.parametersSchema`.
+
+The UI contract cannot add executable inputs, change file or parameter validation rules, invoke domain prevalidation, or describe platform-owned business decisions. Hidden fields are still submitted with their declared default unless `omitWhenHidden` is explicitly used for a conditionally invisible field. File validation in the workbench covers only manifest constraints such as extension, count, and size; workbook and business validation remains inside the Python skill.
 
 ## 4. Input Envelope
 

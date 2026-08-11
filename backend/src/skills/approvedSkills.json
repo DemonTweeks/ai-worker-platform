@@ -2,7 +2,7 @@
   "create-pr-cd": {
     "rootConfigKey": "createPrCdRoot",
     "approvedVersion": "4.0.0",
-    "approvedPackageSha256": "ddeb29f0f9fb3fb83262e19f55e10b984fa03d8d35c848d586a2b84ec4b330b5",
+    "approvedPackageSha256": "9d4ffde10b2e6b3f241b915deb49ae1ebda56811a052982b3f37bcf2dd790568",
     "include": [
       "skill.json",
       "requirements.txt",
@@ -19,7 +19,7 @@
   "tx-pr-auditor": {
     "rootConfigKey": "prAuditorRoot",
     "approvedVersion": "1.0.0",
-    "approvedPackageSha256": "3bbcc3029180bea9dc4a86b7567bf337d1aa4bc31e0f2934d2f777038f78515d",
+    "approvedPackageSha256": "fd04fde9316bb03e4329ea0dc96ff95e3d3ef1109d4aa855da2d8274b5afb435",
     "include": [
       "skill.json",
       "requirements.txt",
@@ -33,7 +33,7 @@
   "create-pr-cd-ran": {
     "rootConfigKey": "ranCreatePrCdRoot",
     "approvedVersion": "1.1.0",
-    "approvedPackageSha256": "0450131ee5055bfc9c4c65ab1c59dd039e1e8e261d1a6f1bf2a8d07030977d18",
+    "approvedPackageSha256": "78cc700f4ddab322bd1227d2d6336d067aa00c2dba1b9a5b769e6cce0cee29b5",
     "include": [
       "skill.json",
       "requirements.txt",
