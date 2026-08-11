@@ -112,7 +112,7 @@ All backend and frontend variables are co-located under `config/env/`:
 - Ignored `local.env` and `production.env` hold machine-specific values and secrets.
 - The Express configuration loader and Vite configuration read the same selected file.
 
-Local mode uses direct ports and history routing. Production builds at `/fe/`, uses hash routing, and sends API, health, and WebSocket traffic through the same-origin Nginx proxy. The launchers use the current checkout and pinned submodule gitlinks; they never delete, recreate, or switch branches.
+Local mode on `main` runs backend and Vite directly, serves the hash-routed UI at `/`, and does not invoke a launcher or Nginx. The production-only launchers mount the same hash-routed UI at `/fe/` and send UI, API, health, and WebSocket traffic through the same-origin Nginx proxy. `VITE_APP_BASE` controls only the mount path; runtime profiles do not select a different frontend structure. The launchers use the current checkout and pinned submodule gitlinks; they never delete, recreate, or switch branches.
 
 Production startup requires a stable `AI_WORKER_MACHINE_ID`. Firebase queue ownership therefore remains attributable to the deployment machine across application restarts while each runtime still receives a unique instance ID.
 

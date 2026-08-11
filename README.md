@@ -142,8 +142,8 @@ ai-worker-platform/
 
 `main` is the only application branch needed for runtime use. Environment selection is a launch-time concern:
 
-- `local` runs Vite development mode and the backend on ports 3000/8000.
-- `production` builds the frontend under `/fe/`, runs hidden backend/preview processes, and expects Nginx to proxy same-origin HTTP and WebSocket traffic.
+- `local` runs the hash-routed Vite UI at `/` and the backend directly on ports 3000/8000; Nginx is not involved.
+- `production` builds the same hash-routed UI under `/fe/`, runs hidden backend/preview processes, and expects Nginx to proxy the frontend plus same-origin HTTP and WebSocket traffic.
 
 All backend and frontend variables live together under `config/env/`. See [config/env/README.md](config/env/README.md).
 
@@ -189,16 +189,21 @@ $python = (Resolve-Path .\.venv\Scripts\python.exe).Path
 
 The backend resolves Python in this order: `PYTHON_EXECUTABLE`, repository `.venv`, then a safely resolved system interpreter. Do not pass unresolvable bare commands into runtime execution.
 
-### 4. Install and launch
+### 4. Install and run locally
 
 ```powershell
-.\launcher.ps1 -Profile local -InstallDependencies
+$env:AI_WORKER_PROFILE = 'local'
+npm.cmd --prefix backend ci
+npm.cmd --prefix frontend ci
+# Run these in separate terminals:
+npm.cmd --prefix backend run dev
+npm.cmd --prefix frontend run dev
 ```
 
 - Frontend: `http://localhost:3000`
 - Backend health: `http://localhost:8000/api/health`
 
-For later launches, omit `-InstallDependencies`. Use `.\stop-services.ps1` to stop listeners on the configured frontend/backend ports.
+Local development does not use the production launcher or Nginx. Use `.\stop-services.ps1` to stop listeners on the configured frontend/backend ports.
 
 ## Production Launch
 
@@ -207,7 +212,7 @@ Production uses the same `main` checkout; it never switches to an environment br
 ```powershell
 Copy-Item config\env\production.env.example config\env\production.env
 # Set a stable AI_WORKER_MACHINE_ID and all required credentials in production.env.
-.\launcher.ps1 -Profile production -InstallDependencies
+.\launcher.ps1 -InstallDependencies
 ```
 
 Configure the host Nginx installation with `frontend/nginx.conf`, then open `/fe/`. The Admin deployment handoff always relaunches the `production` profile from the current checkout. Live keys and passwords must remain only in ignored `config/env/production.env` or an external secret-injection mechanism.

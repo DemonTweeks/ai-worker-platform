@@ -1,16 +1,13 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('local', 'production')]
-    [string]$Profile = 'local',
-    [switch]$InstallDependencies,
-    [switch]$NoBrowser
+    [switch]$InstallDependencies
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $repoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-$profileName = $Profile.ToLowerInvariant()
+$profileName = 'production'
 $envFile = Join-Path $repoRoot "config\env\$profileName.env"
 
 if (-not (Test-Path -LiteralPath $envFile -PathType Leaf)) {
@@ -59,43 +56,33 @@ try {
         }
     }
 
-    if ($profileName -eq 'production') {
-        & npm.cmd --prefix frontend run build
-        if ($LASTEXITCODE -ne 0) { throw 'Production frontend build failed.' }
+    & npm.cmd --prefix frontend run build
+    if ($LASTEXITCODE -ne 0) { throw 'Production frontend build failed.' }
 
-        $logDirectory = Join-Path $repoRoot 'storage\logs'
-        New-Item -ItemType Directory -Force -Path $logDirectory | Out-Null
+    $logDirectory = Join-Path $repoRoot 'storage\logs'
+    New-Item -ItemType Directory -Force -Path $logDirectory | Out-Null
 
-        $backendProcess = Start-Process `
-            -FilePath 'npm.cmd' `
-            -ArgumentList @('--prefix', 'backend', 'start') `
-            -WorkingDirectory $repoRoot `
-            -RedirectStandardOutput (Join-Path $logDirectory 'backend.stdout.log') `
-            -RedirectStandardError (Join-Path $logDirectory 'backend.stderr.log') `
-            -WindowStyle Hidden `
-            -PassThru
+    $backendProcess = Start-Process `
+        -FilePath 'npm.cmd' `
+        -ArgumentList @('--prefix', 'backend', 'start') `
+        -WorkingDirectory $repoRoot `
+        -RedirectStandardOutput (Join-Path $logDirectory 'backend.stdout.log') `
+        -RedirectStandardError (Join-Path $logDirectory 'backend.stderr.log') `
+        -WindowStyle Hidden `
+        -PassThru
 
-        $frontendProcess = Start-Process `
-            -FilePath 'npm.cmd' `
-            -ArgumentList @('--prefix', 'frontend', 'run', 'preview') `
-            -WorkingDirectory $repoRoot `
-            -RedirectStandardOutput (Join-Path $logDirectory 'frontend.stdout.log') `
-            -RedirectStandardError (Join-Path $logDirectory 'frontend.stderr.log') `
-            -WindowStyle Hidden `
-            -PassThru
+    $frontendProcess = Start-Process `
+        -FilePath 'npm.cmd' `
+        -ArgumentList @('--prefix', 'frontend', 'run', 'preview') `
+        -WorkingDirectory $repoRoot `
+        -RedirectStandardOutput (Join-Path $logDirectory 'frontend.stdout.log') `
+        -RedirectStandardError (Join-Path $logDirectory 'frontend.stderr.log') `
+        -WindowStyle Hidden `
+        -PassThru
 
-        Write-Host "Production backend started as PID $($backendProcess.Id)." -ForegroundColor Green
-        Write-Host "Production frontend preview started as PID $($frontendProcess.Id)." -ForegroundColor Green
-        Write-Host "Configure Nginx with frontend/nginx.conf and open /fe/."
-    } else {
-        Start-Process -FilePath 'cmd.exe' -ArgumentList @('/d', '/k', 'npm.cmd --prefix backend run dev') -WorkingDirectory $repoRoot
-        Start-Process -FilePath 'cmd.exe' -ArgumentList @('/d', '/k', 'npm.cmd --prefix frontend run dev') -WorkingDirectory $repoRoot
-        Write-Host 'Local backend and frontend started in separate windows.' -ForegroundColor Green
-
-        if (-not $NoBrowser) {
-            Start-Process 'http://localhost:3000'
-        }
-    }
+    Write-Host "Production backend started as PID $($backendProcess.Id)." -ForegroundColor Green
+    Write-Host "Production frontend preview started as PID $($frontendProcess.Id)." -ForegroundColor Green
+    Write-Host "Configure Nginx with frontend/nginx.conf and open /fe/."
 } finally {
     Pop-Location
 }
