@@ -1,11 +1,13 @@
 const assert = require('assert');
 const { spawn } = require('child_process');
+const path = require('path');
 
 const routes = [
   '/',
   '/dashboard',
   '/workers/pr-creator',
   '/workers/pr-auditor',
+  '/workers/ran-pr-creator',
   '/history',
   '/jobs/QA15-ROUTE-SMOKE',
   '/admin/login',
@@ -37,20 +39,15 @@ const waitForRoute = async (url, timeoutMs = 30000) => {
 
 const main = async () => {
   const port = 4173;
-  const child = spawn(
-    process.platform === 'win32'
-      ? `npm run preview -- --host 127.0.0.1 --port ${port}`
-      : 'npm',
-    process.platform === 'win32'
-      ? []
-      : ['run', 'preview', '--', '--host', '127.0.0.1', '--port', String(port)],
-    {
-      cwd: process.cwd(),
-      stdio: ['ignore', 'pipe', 'pipe'],
-      shell: process.platform === 'win32',
-      windowsHide: true
-    }
-  );
+  const child = spawn(process.execPath, [
+    path.resolve(__dirname, '../node_modules/vite/bin/vite.js'),
+    'preview', '--host', '127.0.0.1', '--port', String(port)
+  ], {
+    cwd: process.cwd(),
+    stdio: ['ignore', 'pipe', 'pipe'],
+    shell: false,
+    windowsHide: true
+  });
 
   let output = '';
   child.stdout.on('data', (data) => {
@@ -74,14 +71,14 @@ const main = async () => {
 
     console.log(JSON.stringify({ ok: true, routes: checked }));
   } finally {
-    if (process.platform === 'win32' && child.pid) {
-      spawn('taskkill', ['/pid', String(child.pid), '/t', '/f'], {
-        stdio: 'ignore',
-        windowsHide: true
-      });
-    } else {
-      child.kill('SIGTERM');
-    }
+    child.kill('SIGTERM');
+    await new Promise((resolve) => {
+      if (child.exitCode !== null) return resolve();
+      child.once('close', resolve);
+      setTimeout(resolve, 3000);
+    });
+    child.stdout.destroy();
+    child.stderr.destroy();
   }
 };
 

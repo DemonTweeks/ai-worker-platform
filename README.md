@@ -130,9 +130,10 @@ ai-worker-platform/
 ├─ backend/                     # Express API, queue, workers and services
 ├─ skills/
 │  ├─ create-pr-cd/             # MW engine assets
-│  └─ create-pr-cd-ran/         # Pinned RAN engine submodule (read-only)
+│  ├─ create-pr-cd-ran/         # Pinned RAN engine submodule (read-only)
+│  └─ tx-pr-auditor/            # Pinned PR Auditor engine submodule (read-only)
 ├─ storage/                     # Platform runtime storage; generated content is untracked
-├─ docs/                        # Current documentation, architecture and historical evidence
+├─ wiki/                        # Current analysis, handover and remediation plan
 ├─ requirements-worker.txt      # Shared Python runtime dependencies
 └─ .env.example                 # Safe local configuration template
 ```
@@ -251,13 +252,13 @@ Firebase-backed tests that share a test backend must run serially.
 
 ## Documentation
 
-Start with [docs/README.md](docs/README.md).
+Start with [wiki/SUMMARIZE.md](wiki/SUMMARIZE.md).
 
 Current operational references:
 
-- [Platform Architecture and Operating Baseline](docs/AI_Worker_Platform_Technical_Architecture_and_Business_Logic_Reference_v0.1.md)
-- [RAN PR Worker Integration Technical Reference](docs/AI_Worker_Platform_RAN_PR_Worker_Integration_Technical_Reference.md)
-- [Windows Local Development and Deployment Guide](docs/deployment-windows.md)
-- [QA and UAT Checklist](docs/qa-checklist.md)
-
-Historical project plans, autonomous-run logs, prior acceptance evidence and design records remain in `docs/` as evidence. They are not current operating instructions unless explicitly labeled as such.
+- [Platform Architecture](wiki/ARCHITECTURE.md)
+- [Skill Integration Contract](wiki/SKILL_CONTRACT.md)
+- [Pending Architecture Items](wiki/PENDING.md)
+- [Analysis Summary](wiki/SUMMARIZE.md)
+- [Implementation Handover](wiki/HANDOVER.md)
+- [Overall Remediation Plan](wiki/PLAN.md)

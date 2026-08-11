@@ -1,8 +1,7 @@
 import Vue from 'vue';
 import VueRouter from 'vue-router';
 import DashboardView from './views/DashboardView.vue';
-import PRCreatorView from './views/PRCreatorView.vue';
-import PRAuditorView from './views/PRAuditorView.vue';
+import GenericSkillView from './views/GenericSkillView.vue';
 import JobHistoryView from './views/JobHistoryView.vue';
 import JobDetailView from './views/JobDetailView.vue';
 import AdminLoginView from './views/admin/AdminLoginView.vue';
@@ -27,12 +26,20 @@ const routes = [
   {
     path: '/workers/pr-creator',
     name: 'pr-creator',
-    component: PRCreatorView
+    component: GenericSkillView,
+    props: { skillId: 'create-pr-cd' }
   },
   {
     path: '/workers/pr-auditor',
     name: 'pr-auditor',
-    component: PRAuditorView
+    component: GenericSkillView,
+    props: { skillId: 'tx-pr-auditor' }
+  },
+  {
+    path: '/workers/ran-pr-creator',
+    name: 'ran-pr-creator',
+    component: GenericSkillView,
+    props: { skillId: 'create-pr-cd-ran' }
   },
   {
     path: '/history',

@@ -49,7 +49,7 @@ const serviceResult = async (check) => {
 const overallStatus = (services) => {
   const criticalStatuses = [
     services.backend.status,
-    services.mongodb.status,
+    services.firebase.status,
     services.storage.status,
     services.queue.status
   ];
@@ -274,7 +274,6 @@ const buildHealthResponse = async () => {
   const services = {
     backend: await serviceResult(checkBackend),
     firebase: fbStatus,
-    mongodb: fbStatus, // Backwards compatibility for UI
     storage: await serviceResult(checkStorage),
     llm: await serviceResult(checkLlm),
     queue: await serviceResult(checkQueue),
@@ -294,7 +293,6 @@ const buildHealthResponse = async () => {
     // Backward-compatible top-level fields used by earlier UI layers.
     backend: services.backend,
     firebase: services.firebase,
-    mongo: services.mongodb, // Backwards compatibility for top-level
     storage: services.storage,
     llm: services.llm,
     queue: services.queue,
