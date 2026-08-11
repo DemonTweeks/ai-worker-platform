@@ -96,7 +96,7 @@ const redactTechnicalDetails = (text) => {
 
   const posixPathRegex = /\/(?:[a-zA-Z0-9_\-\.%~]+(?:\s+[a-zA-Z0-9_\-\.%~]+)*\/)*(?:[a-zA-Z0-9_\-\.%~]+(?:\s+[a-zA-Z0-9_\-\.%~]+)*\.[a-zA-Z0-9]{2,4}|[a-zA-Z0-9_\-\.%~]+)/g;
   clean = clean.replace(posixPathRegex, (match) => {
-    if (match === '/health' || match === '/api/jobs' || match === '/history') {
+    if (match === '/api/health' || match === '/api/jobs' || match === '/history') {
       return match;
     }
     return '[redacted]';

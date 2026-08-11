@@ -7,18 +7,19 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "health": "node -e \"fetch('http://localhost:8000/health').then(r=>r.json()).then(console.log)\"",
+    "health": "node -e \"fetch('http://localhost:8000/api/health').then(r=>r.json()).then(console.log)\"",
     "smoke": "node scripts/smoke-test.js",
     "test:llm-provider": "node scripts/llm-provider-test.js",
     "test:health-status": "node scripts/health-status-test.js",
     "test:engine-integrity": "node scripts/engine-integrity-test.js",
     "test:queue-registry": "node scripts/queue-registry-test.js",
     "test:durable-queue": "node scripts/durable-queue-reconciliation-test.js",
+    "test:skill-fingerprint": "node scripts/skill-fingerprint-normalization-test.js",
     "test:skill-contract": "node scripts/generic-skill-contract-test.js",
     "test:skill-live": "node scripts/generic-skill-live-test.js",
     "test:ran-skill-live": "node scripts/generic-ran-skill-live-test.js",
     "test:job-control-concurrency": "node scripts/job-control-concurrency-test.js",
-    "test": "npm run smoke && npm run test:llm-provider && npm run test:health-status && npm run test:engine-integrity && npm run test:queue-registry && npm run test:durable-queue && npm run test:skill-contract && npm run test:job-control-concurrency && npm run test:skill-live && npm run test:ran-skill-live"
+    "test": "npm run smoke && npm run test:llm-provider && npm run test:health-status && npm run test:engine-integrity && npm run test:queue-registry && npm run test:durable-queue && npm run test:skill-fingerprint && npm run test:skill-contract && npm run test:job-control-concurrency && npm run test:skill-live && npm run test:ran-skill-live"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

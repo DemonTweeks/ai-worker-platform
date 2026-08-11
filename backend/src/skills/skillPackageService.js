@@ -6,6 +6,7 @@ const approvals = require('./approvedSkills.json');
 const { assertPathInsideRoot } = require('../utils/pathUtils');
 
 const SUPPORTED_CONTRACT_VERSIONS = new Set(['1.0']);
+const NORMALIZED_TEXT_EXTENSIONS = new Set(['.json', '.md', '.py', '.txt', '.yaml', '.yml']);
 
 const toPosix = (value) => value.split(path.sep).join('/');
 const patternToRegex = (pattern) => {
@@ -54,13 +55,21 @@ const listRuntimeFiles = (root, include) => {
   return walkFiles(root).filter((relative) => matchers.some((matcher) => matcher.test(relative))).sort();
 };
 
+const normalizeRuntimeContent = (relative, content) => {
+  if (!NORMALIZED_TEXT_EXTENSIONS.has(path.extname(relative).toLowerCase())) {
+    return content;
+  }
+  return Buffer.from(content.toString('utf8').replace(/\r\n/g, '\n'), 'utf8');
+};
+
 const calculatePackageFingerprint = (root, include) => {
   const files = listRuntimeFiles(root, include);
   if (files.length === 0) throw new Error(`Approved skill package at ${root} contains no runtime files.`);
   const packageHash = crypto.createHash('sha256');
   for (const relative of files) {
     const absolute = assertPathInsideRoot(root, path.join(root, relative));
-    const fileHash = crypto.createHash('sha256').update(fs.readFileSync(absolute)).digest('hex');
+    const content = normalizeRuntimeContent(relative, fs.readFileSync(absolute));
+    const fileHash = crypto.createHash('sha256').update(content).digest('hex');
     packageHash.update(relative);
     packageHash.update('\0');
     packageHash.update(fileHash);
@@ -115,5 +124,6 @@ module.exports = {
   listApprovedSkills,
   listRuntimeFiles,
   loadApprovedSkill,
+  normalizeRuntimeContent,
   serializeCatalogEntry
 };

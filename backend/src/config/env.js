@@ -1,10 +1,15 @@
 const path = require('path');
 const dotenv = require('dotenv');
 
-dotenv.config({ path: path.resolve(__dirname, '../../../.env'), quiet: true });
-dotenv.config({ quiet: true });
-
 const repoRoot = path.resolve(__dirname, '../../..');
+const runtimeProfile = String(process.env.AI_WORKER_PROFILE || 'local').toLowerCase();
+
+if (!['local', 'production'].includes(runtimeProfile)) {
+  throw new Error(`Unsupported AI_WORKER_PROFILE: ${runtimeProfile}`);
+}
+
+const envPath = path.join(repoRoot, 'config', 'env', `${runtimeProfile}.env`);
+dotenv.config({ path: envPath, quiet: true });
 
 const numberFromEnv = (name, fallback) => {
   const value = Number(process.env[name]);
@@ -25,6 +30,8 @@ const resolveFromRepoRoot = (value, fallback) => {
 };
 
 const config = {
+  runtimeProfile,
+  envPath,
   port: numberFromEnv('PORT', 8000),
   firebaseDbUrl: process.env.FIREBASE_DB_URL || 'https://zte-app-state-mgmt-01-default-rtdb.asia-southeast1.firebasedatabase.app/ai-worker-platform',
   firebaseDbMock: booleanFromEnv('FIREBASE_DB_MOCK', false),
@@ -72,5 +79,23 @@ const config = {
     jwtExpiresIn: process.env.JWT_EXPIRES_IN || '8h'
   }
 };
+
+if (runtimeProfile === 'production') {
+  const requiredNames = [
+    'AI_WORKER_MACHINE_ID',
+    'FIREBASE_DB_URL',
+    'ADMIN_DEFAULT_PASSWORD',
+    'JWT_SECRET'
+  ];
+
+  if (config.llm.enabled) {
+    requiredNames.push('LLM_API_KEY');
+  }
+
+  const missingNames = requiredNames.filter((name) => !String(process.env[name] || '').trim());
+  if (missingNames.length > 0) {
+    throw new Error(`Production environment is missing required values: ${missingNames.join(', ')}`);
+  }
+}
 
 module.exports = config;
