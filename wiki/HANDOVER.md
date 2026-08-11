@@ -3,7 +3,7 @@
 ## Current State
 
 - Platform branch: `refactor/thin-skill-wrapper-foundation` packages the complete thin-wrapper refactor.
-- `create-pr-cd` commit `65c6eff` is proposed in [Gumb-D/create-pr-cd#81](https://github.com/Gumb-D/create-pr-cd/pull/81).
+- `create-pr-cd` commit `db416a3` is proposed in [Gumb-D/create-pr-cd#81](https://github.com/Gumb-D/create-pr-cd/pull/81).
 - `tx-pr-auditor` commit `929ffe1` is proposed in [BL2ZteSolution/tx-pr-auditor#4](https://github.com/BL2ZteSolution/tx-pr-auditor/pull/4).
 - `create-pr-cd-ran` commit `dd28ba8` is proposed from the BL2ZteSolution fork in [ammarofficial11/create-pr-cd-ran#1](https://github.com/ammarofficial11/create-pr-cd-ran/pull/1).
 - Merge the three skill PRs before merging the platform PR so every recorded submodule commit is reachable from its configured upstream repository.
