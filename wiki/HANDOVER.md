@@ -2,11 +2,11 @@
 
 ## Current State
 
-- `main` contains the merged thin-wrapper runtime and reference workbench restoration through platform PR #98. `agent/manifest-driven-workbench-ui` adds the skill-owned presentation contract and final reference-layout refinements.
-- `create-pr-cd` commit `6311922` is proposed in [Gumb-D/create-pr-cd#93](https://github.com/Gumb-D/create-pr-cd/pull/93).
-- `tx-pr-auditor` commit `0c1894c` is proposed in [BL2ZteSolution/tx-pr-auditor#5](https://github.com/BL2ZteSolution/tx-pr-auditor/pull/5).
-- `create-pr-cd-ran` commit `2756894` updates the existing BL2ZteSolution fork proposal in [ammarofficial11/create-pr-cd-ran#1](https://github.com/ammarofficial11/create-pr-cd-ran/pull/1).
-- Merge the three skill PRs before merging the platform PR so every recorded submodule commit is reachable from its configured upstream repository.
+- `main` contains the merged thin-wrapper runtime, manifest-driven workbench, and BL2 RAN submodule source through platform PR #100. `refactor/pin-skills-to-main` moves the non-RAN gitlinks from feature commits to their merged `main` heads.
+- `create-pr-cd` is pinned to `main` commit `8d8880f`, the merge of [Gumb-D/create-pr-cd#93](https://github.com/Gumb-D/create-pr-cd/pull/93).
+- `tx-pr-auditor` is pinned to `main` commit `f31de3d`, the merge of [BL2ZteSolution/tx-pr-auditor#5](https://github.com/BL2ZteSolution/tx-pr-auditor/pull/5).
+- `create-pr-cd-ran` remains pinned to BL2 branch commit `2756894`; upstream promotion continues in [ammarofficial11/create-pr-cd-ran#1](https://github.com/ammarofficial11/create-pr-cd-ran/pull/1).
+- Every pinned commit is reachable from the submodule URL configured in `.gitmodules`.
 - Firebase is authoritative for job lifecycle and durable queue ownership.
 - The active registry contains only approved generic Python skill packages.
 - Environment-specific Git branches are no longer part of the runtime design. Both profiles launch from the current `main` checkout.
