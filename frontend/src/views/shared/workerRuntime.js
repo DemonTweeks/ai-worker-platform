@@ -359,11 +359,13 @@ export const workerRuntimeMixin = {
     },
     async restoreActiveJobs() {
       try {
-        const result = await listJobs({
-          workerType: 'pr-worker',
+        const query = {
+          workerType: this.activeJobWorkerType || 'pr-worker',
           browserTabSessionId: this.browserTabSessionId,
           limit: 50
-        });
+        };
+        if (this.activeJobWorkerId) query.workerId = this.activeJobWorkerId;
+        const result = await listJobs(query);
         this.activeSessionJobs = this.normalizeActiveSessionJobs(result.items || []);
       } catch (error) {
         this.activeSessionJobs = [];

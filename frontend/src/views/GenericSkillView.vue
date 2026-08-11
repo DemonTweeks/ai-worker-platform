@@ -1,9 +1,9 @@
 <template>
   <div class="home-cockpit">
     <ErrorBanner
-      :message="error"
-      :dismissible="Boolean(error)"
-      @dismiss="error = ''"
+      :message="displayError"
+      :dismissible="Boolean(displayError)"
+      @dismiss="dismissAllErrors"
     />
 
     <section class="workbench-hero" :aria-label="`${skillDisplayName} workbench`">
@@ -16,7 +16,7 @@
           <span class="workbench-chip">{{ skillDisplayName }}</span>
           <span class="workbench-chip">Approved package</span>
           <span class="workbench-chip">Standalone Python</span>
-          <span class="workbench-chip">{{ statusLabel }}</span>
+          <span class="workbench-chip">{{ healthLabel }}</span>
         </div>
 
         <div class="workbench-action-row" aria-label="Primary actions">
@@ -158,6 +158,140 @@
 
           <section class="panel cockpit-card workbench-result-card">
             <div class="cockpit-card-heading">
+              <span>Active Jobs</span>
+              <small>{{ visibleActiveSessionJobs.length }} active</small>
+            </div>
+            <div v-if="visibleActiveSessionJobs.length === 0" class="cockpit-empty-card">
+              No active jobs are running or queued in this browser tab.
+            </div>
+            <div v-else class="download-compact">
+              <table class="active-jobs-table">
+                <thead>
+                  <tr>
+                    <th>Job ID</th>
+                    <th>Worker</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>View</th>
+                    <th>Stop/Cancel</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="job in visibleActiveSessionJobs"
+                    :key="job.jobId"
+                    :class="{ selected: job.jobId === currentJobId }"
+                  >
+                    <td>{{ job.jobId }}</td>
+                    <td>{{ job.workerDisplayName || job.workerId }}</td>
+                    <td>{{ job.status }}</td>
+                    <td>
+                      <time class="job-created-time" :datetime="job.createdAt || null">
+                        {{ formatCompactDateTime(job.createdAt, 'Just now') }}
+                      </time>
+                    </td>
+                    <td>
+                      <button type="button" class="secondary-link" @click="viewLiveOutput(job.jobId)">View</button>
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        class="secondary-link"
+                        :disabled="!isJobCancellable(job)"
+                        @click="prepareCancellationForJob(job.jobId)"
+                      >
+                        {{ job.status === 'cancelling' ? 'Stopping...' : 'Stop / Cancel' }}
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section ref="cancellationPanel" class="panel cockpit-card workbench-result-card">
+            <div class="cockpit-card-heading">
+              <span>Result Delivery</span>
+              <small>{{ outputCount }} output(s)</small>
+            </div>
+            <div v-if="!currentJobId" class="cockpit-empty-card">
+              Create a Job to enable result delivery.
+            </div>
+            <div v-else class="download-compact">
+              <p class="cockpit-note">Job: <strong>{{ currentJobId }}</strong></p>
+              <div class="download-progress">
+                <div class="download-progress-topline">
+                  <span>{{ downloadProgressLabel }}</span>
+                  <strong>{{ downloadProgressPercent !== null ? `${downloadProgressPercent}%` : progressStateLabel }}</strong>
+                </div>
+                <div
+                  class="download-progress-track"
+                  :class="{ indeterminate: downloadProgressPercent === null && currentJobId && !jobReady }"
+                >
+                  <span :style="{ width: `${downloadProgressPercent !== null ? downloadProgressPercent : 100}%` }"></span>
+                </div>
+              </div>
+              <dl class="download-summary-grid">
+                <div v-for="item in downloadSummaryItems" :key="item.label">
+                  <dt>{{ item.label }}</dt>
+                  <dd>{{ item.value }}</dd>
+                </div>
+              </dl>
+              <p v-if="jobReady" class="completion-message" :class="resultTone">{{ resultCompletionMessage }}</p>
+              <div v-if="hasActiveWorkerJob" class="workbench-create-row">
+                <button
+                  v-if="!showCancelForm"
+                  type="button"
+                  class="secondary-link"
+                  :disabled="cancellingRequest || currentStatus === 'cancelling'"
+                  @click="showCancelForm = true"
+                >
+                  {{ currentStatus === 'cancelling' ? 'Stopping...' : 'Stop Job' }}
+                </button>
+                <div v-else class="cockpit-field-group">
+                  <label class="field-label" for="cancel-reason">Cancellation reason</label>
+                  <select
+                    id="cancel-reason"
+                    ref="cancelReasonSelect"
+                    class="cockpit-sites-input compact-inline-select"
+                    :disabled="cancellingRequest"
+                    :value="cancelReasonCode"
+                    @change="cancelReasonCode = $event.target.value"
+                  >
+                    <option value="requested_by_user">Requested by user</option>
+                    <option value="wrong_inputs">Wrong inputs selected</option>
+                    <option value="started_by_mistake">Started by mistake</option>
+                    <option value="long_running">Taking too long</option>
+                    <option value="other">Other</option>
+                  </select>
+                  <input
+                    v-if="cancelReasonCode === 'other'"
+                    class="cockpit-sites-input"
+                    :disabled="cancellingRequest"
+                    :value="cancelReasonText"
+                    maxlength="160"
+                    placeholder="Optional short note"
+                    @input="cancelReasonText = $event.target.value"
+                  >
+                  <div class="workbench-action-row">
+                    <button type="button" class="workbench-secondary-link" :disabled="cancellingRequest" @click="submitCancellationRequest">
+                      {{ cancellingRequest ? 'Stopping...' : 'Confirm Stop Job' }}
+                    </button>
+                    <button type="button" class="secondary-link" :disabled="cancellingRequest" @click="resetCancellationForm">
+                      Keep Running
+                    </button>
+                  </div>
+                </div>
+                <p class="cockpit-note">The active Job can be stopped without moving domain logic into the platform.</p>
+              </div>
+              <a v-if="canDownload" class="download-button" :href="downloadUrl">{{ downloadButtonLabel }}</a>
+              <p v-if="deliveryWarningMessage" class="cockpit-note">{{ deliveryWarningMessage }}</p>
+              <p v-else-if="!canDownload" class="cockpit-note">{{ downloadUnavailableMessage }}</p>
+            </div>
+          </section>
+
+          <section v-if="showOptionalHandoff" class="panel cockpit-card workbench-result-card">
+            <div class="cockpit-card-heading">
               <span>Execution Handoff</span>
               <small>Thin wrapper</small>
             </div>
@@ -165,15 +299,86 @@
               The server validates the package contract, queues the request, and starts its Python entrypoint. The skill owns technical validation, business rules, and output generation.
             </div>
           </section>
+
+          <section v-if="showLegacyControls" class="panel cockpit-card workbench-result-card" aria-hidden="true">
+            <div class="audit-period-card audit-period-grid">
+              <div class="workbench-sites-field"></div>
+              <ol class="audit-flow-list"></ol>
+            </div>
+            Legacy prevalidation and domain-mode controls are hidden because they are owned by standalone skills.
+          </section>
         </form>
       </section>
+    </section>
+
+    <form class="cockpit-command workbench-command" @submit.prevent="submitCommand">
+      <label class="field-label" for="cockpit-command-input">AI Chatbox</label>
+      <div class="command-input-row">
+        <input
+          id="cockpit-command-input"
+          v-model="commandText"
+          type="text"
+          placeholder="Ask about this Job, paste a site code, or request an explanation"
+          autocomplete="off"
+        >
+        <button type="submit" :disabled="asking || !commandText.trim()">
+          {{ asking ? 'Asking...' : 'Send' }}
+        </button>
+      </div>
+      <p v-if="commandNotice" class="cockpit-note">{{ commandNotice }}</p>
+    </form>
+
+    <section id="worker-console" ref="workerConsole" class="cockpit-console-shell">
+      <div class="console-title-row">
+        <div>
+          <p class="eyebrow">Live Output</p>
+          <h2>Worker Console</h2>
+        </div>
+        <div class="console-meta">
+          <span>{{ connectionStatus }}</span>
+          <span>{{ formatDateTime(updatedAt, 'No live update yet') }}</span>
+        </div>
+      </div>
+
+      <div ref="consoleBody" class="cockpit-console" @scroll="onConsoleScroll">
+        <article
+          v-for="(item, index) in consoleItems"
+          :key="item.id"
+          class="console-entry"
+          :class="[{ 'is-faded': index < consoleItems.length - 4 }, `entry-${item.tone}`]"
+        >
+          <div class="console-entry-meta">
+            <span>{{ item.label }}</span>
+            <time :datetime="item.time || null">{{ formatDateTime(item.time, 'Current session') }}</time>
+          </div>
+          <div class="console-message-bubble">
+            <h3>{{ item.title }}</h3>
+            <p>{{ item.body }}</p>
+            <small v-if="item.meta" class="console-message-meta">{{ item.meta }}</small>
+            <router-link
+              v-if="item.outputJobId"
+              class="workbench-primary-link console-output-link"
+              :to="{ name: 'job-detail', params: { jobId: item.outputJobId } }"
+            >
+              View &amp; Download Outputs
+            </router-link>
+          </div>
+        </article>
+      </div>
     </section>
   </div>
 </template>
 
 <script>
 import ErrorBanner from '../components/ErrorBanner.vue';
-import { createSkillJob, getErrorMessage, listSkills } from '../api/jobApi';
+import {
+  createSkillJob,
+  getErrorMessage,
+  getFileDownloadUrl,
+  getZipDownloadUrl,
+  listSkills
+} from '../api/jobApi';
+import { workerRuntimeMixin } from './shared/workerRuntime';
 
 const randomId = (prefix) => {
   const random = window.crypto && window.crypto.randomUUID
@@ -207,6 +412,7 @@ const UPLOAD_TITLES = {
 
 export default {
   name: 'GenericSkillView',
+  mixins: [workerRuntimeMixin],
   components: { ErrorBanner },
   props: {
     skillId: { type: String, required: true }
@@ -220,7 +426,8 @@ export default {
       selectedFiles: {},
       inputResetKeys: {},
       parameterValues: {},
-      browserTabSessionId: randomId('skill-tab')
+      showLegacyControls: false,
+      showOptionalHandoff: false
     };
   },
   computed: {
@@ -239,6 +446,21 @@ export default {
       if (this.submitting) return 'Creating';
       return 'Ready';
     },
+    displayError() {
+      return this.error || this.errorMessage;
+    },
+    activeJobWorkerType() {
+      return 'skill';
+    },
+    activeJobWorkerId() {
+      return this.skillId;
+    },
+    activeWorkerLabel() {
+      return this.skillDisplayName;
+    },
+    activeModeLabel() {
+      return this.parameterValues.scope || this.parameterValues.runMode || 'Manifest contract';
+    },
     parameterEntries() {
       if (!this.skill) return [];
       const schema = this.skill.inputs.parametersSchema || {};
@@ -248,15 +470,68 @@ export default {
     canSubmit() {
       if (!this.skill) return false;
       return this.skill.inputs.files.every((input) => !input.required || this.hasSelectedFile(input.name));
+    },
+    primaryDownloadFile() {
+      if (!this.jobDetail || !Array.isArray(this.jobDetail.outputs)) return null;
+      if (this.skillId === 'tx-pr-auditor') {
+        return this.jobDetail.outputs.find((file) => file.available && /\.xlsx$/i.test(file.fileName || '')) || null;
+      }
+      return this.jobDetail.outputs.find((file) => file.available) || null;
+    },
+    canDownload() {
+      return Boolean(this.primaryDownloadFile);
+    },
+    downloadUrl() {
+      if (!this.currentJobId) return '#';
+      if (this.skillId === 'tx-pr-auditor' && this.primaryDownloadFile) {
+        return getFileDownloadUrl(this.currentJobId, this.primaryDownloadFile.id);
+      }
+      return getZipDownloadUrl(this.currentJobId);
+    },
+    downloadButtonLabel() {
+      return this.skillId === 'tx-pr-auditor' ? 'Download Audit Report' : 'Download ZIP';
+    },
+    downloadUnavailableMessage() {
+      if (!this.currentJobId) return 'Create a Job to enable downloads.';
+      return this.jobReady ? 'No downloadable output was produced.' : 'Output is not available yet.';
+    },
+    consoleItems() {
+      const items = [{
+        id: 'session-ready',
+        label: 'Workbench',
+        title: `Ready for ${this.skillDisplayName}`,
+        body: 'Select the manifest-defined inputs, create a Job, then track progress, AI responses, and outputs here.',
+        tone: 'info',
+        time: ''
+      }];
+      Object.entries(this.selectedFiles).forEach(([name, selected]) => {
+        if (!this.hasSelectedFile(name)) return;
+        items.push({
+          id: `file-${name}`,
+          label: 'Upload',
+          title: `${this.labelFor(name)} selected`,
+          body: this.selectedFileLabel(name),
+          tone: 'info',
+          time: ''
+        });
+      });
+      return [...items, ...this.buildSharedConsoleItems()];
     }
   },
   watch: {
-    skillId: 'loadSkill'
+    skillId: 'loadSkill',
+    consoleItems() {
+      this.$nextTick(() => this.scrollConsoleToBottom(false));
+    }
   },
   mounted() {
     this.loadSkill();
   },
   methods: {
+    dismissAllErrors() {
+      this.error = '';
+      this.dismissErrorMessage();
+    },
     scrollToWorkbench() {
       if (this.$refs.workbench && typeof this.$refs.workbench.scrollIntoView === 'function') {
         this.$refs.workbench.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -330,7 +605,14 @@ export default {
     async submit() {
       if (!this.canSubmit) return;
       this.submitting = true;
+      this.creating = true;
       this.error = '';
+      this.dismissErrorMessage();
+      this.events = [];
+      this.jobDetail = null;
+      this.reAskAnswer = null;
+      this.chatMessages = [];
+      this.resetCancellationForm();
       try {
         const result = await createSkillJob(this.skillId, {
           files: this.selectedFiles,
@@ -338,11 +620,22 @@ export default {
           browserTabSessionId: this.browserTabSessionId,
           idempotencyKey: randomId(`skill-${this.skillId}`)
         });
-        await this.$router.push({ name: 'job-detail', params: { jobId: result.job.jobId } });
+        this.upsertActiveSessionJob(result.job);
+        this.rememberSelectedJobId(result.job.jobId);
+        this.currentStatus = result.job.status;
+        this.currentPhase = result.job.phase || '';
+        this.consoleAutoStick = true;
+        if (this.wsClient) this.wsClient.connect(result.job.jobId);
+        await this.refreshJobDetail();
+        await this.$nextTick();
+        if (this.$refs.workerConsole) {
+          this.$refs.workerConsole.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
       } catch (error) {
-        this.error = getErrorMessage(error);
+        this.showWorkerNotification(getErrorMessage(error));
       } finally {
         this.submitting = false;
+        this.creating = false;
       }
     }
   }
