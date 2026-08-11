@@ -16,7 +16,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use('/health', healthRouter);
+app.use('/api/health', healthRouter);
 app.use('/api/jobs', jobRouter);
 app.use('/api/skills', skillRouter);
 app.use('/api/admin', adminRouter);

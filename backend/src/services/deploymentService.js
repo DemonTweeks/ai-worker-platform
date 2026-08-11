@@ -4,21 +4,31 @@ const { spawn } = require('child_process');
 const { createApiError } = require('../utils/apiError');
 
 const SCRIPT_NAMES = ['stop-services.bat', 'launcher.bat'];
+const DEPLOYMENT_LOG_NAME = 'deployment-handoff.log';
 const scriptDirectory = path.resolve(
-  process.env.DEPLOY_SCRIPT_DIRECTORY || 'C:\\Development\\ai-worker-platform'
+  process.env.DEPLOY_SCRIPT_DIRECTORY || 'C:\\deployment\\ai-worker-platform'
 );
 
 let handoffInProgress = false;
 
-const resolveScripts = () => SCRIPT_NAMES.map((scriptName) => {
-  const scriptPath = path.join(scriptDirectory, scriptName);
-  if (!fs.existsSync(scriptPath)) {
-    throw createApiError(500, 'DEPLOY_SCRIPT_NOT_FOUND', `${scriptName} was not found.`, {
-      scriptDirectory
-    });
-  }
-  return scriptPath;
-});
+const resolveScripts = () => {
+  console.info(`[DEPLOYMENT_PATH] directory=${scriptDirectory}`);
+
+  return SCRIPT_NAMES.map((scriptName) => {
+    const scriptPath = path.join(scriptDirectory, scriptName);
+    const exists = fs.existsSync(scriptPath);
+    console.info(`[DEPLOYMENT_PATH] script=${scriptName} path=${scriptPath} exists=${exists}`);
+
+    if (!exists) {
+      throw createApiError(500, 'DEPLOY_SCRIPT_NOT_FOUND', `${scriptName} was not found.`, {
+        scriptDirectory,
+        scriptPath,
+        scriptName
+      });
+    }
+    return scriptPath;
+  });
+};
 
 const startDeployment = () => {
   if (process.platform !== 'win32') {
@@ -35,12 +45,33 @@ const startDeployment = () => {
 
   const [stopScriptPath, launcherScriptPath] = resolveScripts();
   const startedAt = new Date().toISOString();
+  const logPath = path.join(scriptDirectory, DEPLOYMENT_LOG_NAME);
+
+  try {
+    fs.appendFileSync(logPath, `[${startedAt}] Deployment handoff requested.\r\n`, 'utf8');
+  } catch (error) {
+    throw createApiError(500, 'DEPLOYMENT_LOG_UNWRITABLE', 'Deployment log could not be written.', {
+      logPath,
+      reason: error.message
+    });
+  }
+
   handoffInProgress = true;
 
+  console.info(
+    `[DEPLOYMENT_HANDOFF] stop=${stopScriptPath} launcher=${launcherScriptPath} log=${logPath} startedAt=${startedAt}`
+  );
+
   setImmediate(() => {
+    const handoffCommand = [
+      `echo [${startedAt}] Running stop-services.bat >> "${logPath}" 2>&1`,
+      `call "${stopScriptPath}" >> "${logPath}" 2>&1`,
+      `echo [${startedAt}] Running launcher.bat >> "${logPath}" 2>&1`,
+      `call "${launcherScriptPath}" >> "${logPath}" 2>&1`
+    ].join(' && ');
     const child = spawn(
       process.env.ComSpec || process.env.COMSPEC || 'cmd.exe',
-      ['/d', '/s', '/c', `call "${stopScriptPath}" && call "${launcherScriptPath}"`],
+      ['/d', '/s', '/c', handoffCommand],
       {
         cwd: scriptDirectory,
         env: process.env,
@@ -57,12 +88,18 @@ const startDeployment = () => {
     child.once('error', (error) => {
       handoffInProgress = false;
       console.error(`DEPLOYMENT_HANDOFF_FAILED: ${error.message}`);
+      try {
+        fs.appendFileSync(logPath, `[${new Date().toISOString()}] Spawn failed: ${error.message}\r\n`, 'utf8');
+      } catch (logError) {
+        console.error(`DEPLOYMENT_LOG_WRITE_FAILED: ${logError.message}`);
+      }
     });
   });
 
   return {
     status: 'accepted',
     startedAt,
+    logPath,
     message: 'Windows deployment scripts were handed off for background execution.'
   };
 };
