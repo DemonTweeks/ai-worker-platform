@@ -13,13 +13,14 @@
         class="upload-input"
         type="file"
         :accept="accept"
+        :multiple="multiple"
         :disabled="loading || disableAction"
         @change="onFileChange"
       />
     </div>
     
     <div v-if="fileName" class="file-state">
-      <span class="meta-label">{{ file ? 'Selected file' : 'Reusable validated file' }}</span>
+      <span class="meta-label">{{ file ? (multiple ? 'Selected files' : 'Selected file') : 'Reusable validated file' }}</span>
       <strong class="file-state-name">{{ fileName }}</strong>
       <div class="workbench-action-row file-state-actions">
         <button type="button" class="tertiary-action" @click="replaceFile">Replace</button>
@@ -66,6 +67,7 @@ export default {
     inputHint: { type: String, default: 'Accepted file types: .xlsx, .xls, .csv. Maximum recommended size: 25 MB.' },
     validateLabel: { type: String, default: 'Validate File' },
     accept: { type: String, default: '.xlsx,.xls,.csv' },
+    multiple: { type: Boolean, default: false },
     retainedFileName: { type: String, default: '' }
   },
   data() {
@@ -75,12 +77,14 @@ export default {
   },
   computed: {
     fileName() {
+      if (Array.isArray(this.file)) return this.file.map((item) => item.name).join(', ');
       return this.file ? this.file.name : this.retainedFileName;
     }
   },
   methods: {
     onFileChange(event) {
-      const file = event.target.files && event.target.files[0] ? event.target.files[0] : null;
+      const selected = Array.from(event.target.files || []);
+      const file = this.multiple ? selected : selected[0] || null;
       this.file = file;
       this.$emit('file-selected', file);
     },

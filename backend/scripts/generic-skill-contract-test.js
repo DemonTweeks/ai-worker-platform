@@ -30,6 +30,13 @@ const run = async () => {
     assert.strictEqual(catalogResponse.status, 200);
     const catalog = await catalogResponse.json();
     assert.deepStrictEqual(catalog.skills.map((item) => item.skillId).sort(), ['create-pr-cd', 'create-pr-cd-ran', 'tx-pr-auditor']);
+    const creatorCatalogEntry = catalog.skills.find((item) => item.skillId === 'create-pr-cd');
+    assert.strictEqual(creatorCatalogEntry.ui.schemaVersion, '1.0');
+    assert.strictEqual(creatorCatalogEntry.ui.parameters.nonProductionUat.hidden, true);
+    assert.strictEqual(creatorCatalogEntry.ui.parameters.siteCodes.visibleWhen.field, 'allSites');
+    const auditorCatalogEntry = catalog.skills.find((item) => item.skillId === 'tx-pr-auditor');
+    assert.deepStrictEqual(auditorCatalogEntry.ui.uploadGroups[0].fields, ['filterYear', 'filterMonth']);
+    assert.strictEqual(auditorCatalogEntry.ui.parameters.annotateEcc.default, true);
 
     const form = new FormData();
     form.append('browserTabSessionId', 'generic-tab-0001');

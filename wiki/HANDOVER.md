@@ -2,10 +2,10 @@
 
 ## Current State
 
-- `main` contains the merged thin-wrapper refactor. `refactor/unified-runtime-profiles` prepares the single-branch local/production runtime model for merge into `main`.
-- `create-pr-cd` commit `db416a3` is proposed in [Gumb-D/create-pr-cd#81](https://github.com/Gumb-D/create-pr-cd/pull/81).
-- `tx-pr-auditor` commit `929ffe1` is proposed in [BL2ZteSolution/tx-pr-auditor#4](https://github.com/BL2ZteSolution/tx-pr-auditor/pull/4).
-- `create-pr-cd-ran` commit `dd28ba8` is proposed from the BL2ZteSolution fork in [ammarofficial11/create-pr-cd-ran#1](https://github.com/ammarofficial11/create-pr-cd-ran/pull/1).
+- `main` contains the merged thin-wrapper runtime and reference workbench restoration through platform PR #98. `agent/manifest-driven-workbench-ui` adds the skill-owned presentation contract and final reference-layout refinements.
+- `create-pr-cd` commit `6311922` is proposed in [Gumb-D/create-pr-cd#93](https://github.com/Gumb-D/create-pr-cd/pull/93).
+- `tx-pr-auditor` commit `0c1894c` is proposed in [BL2ZteSolution/tx-pr-auditor#5](https://github.com/BL2ZteSolution/tx-pr-auditor/pull/5).
+- `create-pr-cd-ran` commit `2756894` updates the existing BL2ZteSolution fork proposal in [ammarofficial11/create-pr-cd-ran#1](https://github.com/ammarofficial11/create-pr-cd-ran/pull/1).
 - Merge the three skill PRs before merging the platform PR so every recorded submodule commit is reachable from its configured upstream repository.
 - Firebase is authoritative for job lifecycle and durable queue ownership.
 - The active registry contains only approved generic Python skill packages.
@@ -18,7 +18,8 @@
 - `backend/src/skills/genericSkillJobService.js`: generic multipart submission and input envelopes.
 - `backend/src/skills/genericSkillRunner.js`: process supervision and authoritative result ingestion.
 - `backend/src/queue/jobQueue.js`: Firebase leases, heartbeats, cancellation state, and restart reconciliation.
-- `frontend/src/views/GenericSkillView.vue`: manifest-driven launch form for all active skills using the complete productized workbench visual structure from baseline `4d4148d7`, including active Jobs, results, cancellation, AI chat, and live output; keep legacy-only domain controls hidden rather than reintroducing their platform logic.
+- `frontend/src/views/GenericSkillView.vue`: manifest-driven launch form for all active skills using the productized workbench visual structure from baseline `4d4148d7`, including reference-style upload validation cards, skill mode switching, placed/grouped parameters, active Jobs, results, cancellation, AI chat, and live output.
+- `frontend/src/components/ManifestParameterField.vue`: generic renderer for manifest-selected segmented, select, checkbox, text, and textarea controls; conditional and hidden/default behavior comes from `skill.json.ui`.
 - `skills/*/skill.json` and `skills/*/src/main.py`: standalone contracts.
 - `launcher.ps1` and `deploy.sh`: production-only launch entrypoints without branch mutation; local development runs backend and Vite directly.
 - `frontend/nginx.conf`: production-only same-origin proxy for `/fe/`, `/api/`, and `/ws`; health is available only through `/api/health`.
@@ -26,6 +27,7 @@
 
 ## Compatibility Behavior
 
+- `skill.json.ui` is presentation-only. Hidden values remain schema-valid request parameters, client validation checks only declared file constraints, and all workbook/business validation stays in standalone Python.
 - Historical jobs, metadata, warnings, and retained file downloads remain readable.
 - Rerunning a generic job rebuilds a new request from retained `skill_input` files and stored parameters.
 - Rerunning a historical legacy job returns `LEGACY_RERUN_REQUIRES_NEW_REQUEST` with a safe instruction to submit through an approved skill.

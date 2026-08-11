@@ -24,9 +24,10 @@
 - Isolated workspace creation and safe path handling.
 - Process supervision, timeout and cancellation.
 - Job metadata, progress transport and output delivery.
+- Generic rendering of skill-owned `skill.json.ui` presentation metadata.
 - Structural validation of `skill.json`, `input.json` and `result.json`.
 
-The platform may know that an input is a declared file. It must not know what an iEPMS header, TSS, TI, SOW, PBOM or DU profile means.
+The UI manifest places the PR Creator mode switch, site-mode/task controls, and the conditional site-code field while hiding `nonProductionUat` at its default. The platform renders those declarations without interpreting what an iEPMS header, TSS, TI, SOW, PBOM or DU profile means.
 
 ## Current Internal Architecture
 
