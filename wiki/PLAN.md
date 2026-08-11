@@ -20,6 +20,7 @@ The platform is a thin HTTP(S), storage, execution, and lifecycle wrapper for th
 | Legacy retirement | Legacy launch pages, registry adapters, worker services, and auditor workspace/ingestion removed |
 | Domain cleanup | Node prevalidation, workbook parsing, filtering, output reconstruction, and workbook/archive dependencies removed |
 | Compatibility | Historical detail/download remains; generic rerun recreates stored contract inputs; legacy rerun returns a safe explanation |
+| Unified runtime profiles | One `main` code line launches local or production using centralized `config/env/` profiles |
 
 ## Current Structure
 
@@ -39,6 +40,9 @@ frontend/src/views/GenericSkillView.vue
 skills/create-pr-cd/{skill.json,src/main.py}
 skills/create-pr-cd-ran/{skill.json,src/main.py}
 skills/tx-pr-auditor/{skill.json,src/main.py}
+
+config/env/{local.env.example,production.env.example}
+launcher.ps1 -Profile local|production
 ```
 
 ## Ongoing Release Gates
@@ -48,3 +52,4 @@ skills/tx-pr-auditor/{skill.json,src/main.py}
 - Generic API, durable queue, and rerun contract tests pass.
 - A successful result has valid output paths and checksums.
 - Frontend unit tests, production build, and route smoke pass.
+- No tracked runtime file contains a live credential; production secrets are injected through ignored `config/env/production.env` or external secret management.

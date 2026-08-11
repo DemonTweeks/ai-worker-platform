@@ -2,13 +2,15 @@
 
 ## Current State
 
-- Platform branch: `refactor/thin-skill-wrapper-foundation` packages the complete thin-wrapper refactor.
+- `main` contains the merged thin-wrapper refactor. `refactor/unified-runtime-profiles` prepares the single-branch local/production runtime model for merge into `main`.
 - `create-pr-cd` commit `db416a3` is proposed in [Gumb-D/create-pr-cd#81](https://github.com/Gumb-D/create-pr-cd/pull/81).
 - `tx-pr-auditor` commit `929ffe1` is proposed in [BL2ZteSolution/tx-pr-auditor#4](https://github.com/BL2ZteSolution/tx-pr-auditor/pull/4).
 - `create-pr-cd-ran` commit `dd28ba8` is proposed from the BL2ZteSolution fork in [ammarofficial11/create-pr-cd-ran#1](https://github.com/ammarofficial11/create-pr-cd-ran/pull/1).
 - Merge the three skill PRs before merging the platform PR so every recorded submodule commit is reachable from its configured upstream repository.
 - Firebase is authoritative for job lifecycle and durable queue ownership.
 - The active registry contains only approved generic Python skill packages.
+- Environment-specific Git branches are no longer part of the runtime design. Both profiles launch from the current `main` checkout.
+- All backend and frontend environment values are centralized in `config/env/`; real profile files are intentionally untracked.
 
 ## Implemented Components
 
@@ -18,6 +20,8 @@
 - `backend/src/queue/jobQueue.js`: Firebase leases, heartbeats, cancellation state, and restart reconciliation.
 - `frontend/src/views/GenericSkillView.vue`: manifest-driven launch form for all active skills.
 - `skills/*/skill.json` and `skills/*/src/main.py`: standalone contracts.
+- `launcher.ps1` and `deploy.sh`: profile-selecting launch entrypoints without branch mutation.
+- `frontend/nginx.conf`: production same-origin proxy for `/fe/`, `/api/`, `/health`, and `/ws`.
 
 ## Compatibility Behavior
 
@@ -40,4 +44,4 @@
 
 ## Next Action
 
-Review the working tree and validation evidence, then commit the parent and each dirty submodule intentionally. [PENDING.md](PENDING.md) contains no remaining refactor work.
+Rotate the credential exposed by the former production branch, provision ignored `config/env/production.env`, validate on the production host, and merge the unified runtime-profile branch into `main`. See [PENDING.md](PENDING.md).

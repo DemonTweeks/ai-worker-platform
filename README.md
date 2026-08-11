@@ -135,8 +135,17 @@ ai-worker-platform/
 ├─ storage/                     # Platform runtime storage; generated content is untracked
 ├─ wiki/                        # Current analysis, handover and remediation plan
 ├─ requirements-worker.txt      # Shared Python runtime dependencies
-└─ .env.example                 # Safe local configuration template
+└─ config/env/                 # Central local/production environment templates
 ```
+
+## Runtime Profiles
+
+`main` is the only application branch needed for runtime use. Environment selection is a launch-time concern:
+
+- `local` runs Vite development mode and the backend on ports 3000/8000.
+- `production` builds the frontend under `/fe/`, runs hidden backend/preview processes, and expects Nginx to proxy same-origin HTTP and WebSocket traffic.
+
+All backend and frontend variables live together under `config/env/`. See [config/env/README.md](config/env/README.md).
 
 ## Local Development (Windows)
 
@@ -158,17 +167,13 @@ git submodule sync --recursive
 git submodule update --init --recursive
 ```
 
-### 2. Configure local environment
+### 2. Configure the centralized local environment
 
 ```powershell
-Copy-Item .env.example .env
-@"
-VITE_API_BASE_URL=http://127.0.0.1:8000
-VITE_WS_URL=ws://127.0.0.1:8000/ws
-"@ | Set-Content frontend\.env.local
+Copy-Item config\env\local.env.example config\env\local.env
 ```
 
-Keep `.env`, `frontend/.env.local`, runtime workspaces and generated outputs untracked.
+Keep `config/env/*.env`, runtime workspaces, logs, and generated outputs untracked.
 
 ### 3. Create a deterministic Python runtime
 
@@ -179,23 +184,33 @@ $python = (Resolve-Path .\.venv\Scripts\python.exe).Path
 & $python -m pip install -r requirements-worker.txt
 & $python -m pip install -r skills\create-pr-cd\requirements.txt
 & $python -m pip install -r skills\tx-pr-auditor\requirements.txt
-Add-Content .env ('PYTHON_EXECUTABLE="' + $python + '"')
+# Set PYTHON_EXECUTABLE in config\env\local.env to the resolved path.
 ```
 
 The backend resolves Python in this order: `PYTHON_EXECUTABLE`, repository `.venv`, then a safely resolved system interpreter. Do not pass unresolvable bare commands into runtime execution.
 
-### 4. Install and run Node services
+### 4. Install and launch
 
 ```powershell
-npm.cmd --prefix backend ci
-npm.cmd --prefix frontend ci
-
-npm.cmd --prefix backend run dev
-npm.cmd --prefix frontend run dev
+.\launcher.ps1 -Profile local -InstallDependencies
 ```
 
 - Frontend: `http://localhost:3000`
 - Backend health: `http://localhost:8000/health`
+
+For later launches, omit `-InstallDependencies`. Use `.\stop-services.ps1` to stop listeners on the configured frontend/backend ports.
+
+## Production Launch
+
+Production uses the same `main` checkout; it never switches to an environment branch.
+
+```powershell
+Copy-Item config\env\production.env.example config\env\production.env
+# Set a stable AI_WORKER_MACHINE_ID and all required credentials in production.env.
+.\launcher.ps1 -Profile production -InstallDependencies
+```
+
+Configure the host Nginx installation with `frontend/nginx.conf`, then open `/fe/`. The Admin deployment handoff always relaunches the `production` profile from the current checkout. Live keys and passwords must remain only in ignored `config/env/production.env` or an external secret-injection mechanism.
 
 ## Verification
 

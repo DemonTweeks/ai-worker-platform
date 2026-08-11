@@ -101,3 +101,17 @@ The runner writes `temp/cancel.requested` and allows cooperative cleanup before 
 ## Historical Compatibility Boundary
 
 The active registry and all launch routes are generic. Historical job detail and retained downloads remain supported. Generic jobs rerun from their stored contract inputs; legacy jobs return a safe compatibility explanation and are never dispatched to removed adapters.
+
+## Runtime and Deployment Profiles
+
+Git branches do not represent environments. `main` contains the complete local and production runtime behavior, and `AI_WORKER_PROFILE=local|production` selects configuration at process start.
+
+All backend and frontend variables are co-located under `config/env/`:
+
+- `local.env.example` and `production.env.example` define the tracked contracts.
+- Ignored `local.env` and `production.env` hold machine-specific values and secrets.
+- The Express configuration loader and Vite configuration read the same selected file.
+
+Local mode uses direct ports and history routing. Production builds at `/fe/`, uses hash routing, and sends API, health, and WebSocket traffic through the same-origin Nginx proxy. The launchers use the current checkout and pinned submodule gitlinks; they never delete, recreate, or switch branches.
+
+Production startup requires a stable `AI_WORKER_MACHINE_ID`. Firebase queue ownership therefore remains attributable to the deployment machine across application restarts while each runtime still receives a unique instance ID.

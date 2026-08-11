@@ -9,3 +9,5 @@ Queue state survives restart through Firebase leases carrying a stable `machineI
 Legacy MW/auditor launch pages and execution adapters have been retired. No refactor item remains in [PENDING.md](PENDING.md).
 
 The Node control plane no longer depends on workbook parsing or archive-generation libraries. Those concerns are package-owned Python behavior.
+
+Local and production deployment are now runtime profiles of the same `main` code line. A centralized `config/env/` contract supplies both backend and frontend values, launchers no longer mutate Git branches, production uses a same-origin Nginx `/fe/` deployment, and the stable machine ID remains part of Firebase queue ownership.
