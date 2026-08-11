@@ -21,6 +21,7 @@ The platform is a thin HTTP(S), storage, execution, and lifecycle wrapper for th
 | Domain cleanup | Node prevalidation, workbook parsing, filtering, output reconstruction, and workbook/archive dependencies removed |
 | Compatibility | Historical detail/download remains; generic rerun recreates stored contract inputs; legacy rerun returns a safe explanation |
 | Unified runtime profiles | One `main` code line launches local or production using centralized `config/env/` profiles |
+| Portable package identity | Text line endings are canonicalized for hashing; binary skill assets remain byte-exact |
 
 ## Current Structure
 

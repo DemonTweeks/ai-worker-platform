@@ -22,6 +22,7 @@
 - `skills/*/skill.json` and `skills/*/src/main.py`: standalone contracts.
 - `launcher.ps1` and `deploy.sh`: profile-selecting launch entrypoints without branch mutation.
 - `frontend/nginx.conf`: production same-origin proxy for `/fe/`, `/api/`, `/health`, and `/ws`.
+- `backend/src/skills/skillPackageService.js`: cross-platform text normalization with byte-exact binary package hashing.
 
 ## Compatibility Behavior
 
@@ -39,7 +40,8 @@
 - TX 10,000-row baseline: 6.708 seconds and 33.63 MiB traced peak.
 - Real generic RAN sample job: completed with five tracked outputs.
 - Complete active backend suite: passed, including durable queue, concurrent idempotency, contract/rerun compatibility, and both real creator executions.
-- Frontend: 18 files and 76 tests passed; production build and all 11 route-smoke URLs passed.
+- Cross-platform skill fingerprint normalization regression passed; all approved packages validate on Windows.
+- Frontend: 19 files and 82 tests passed; production build and all 11 route-smoke URLs passed.
 - Node workbook/report dependencies `xlsx`, `exceljs`, and `archiver` were removed with the retired domain services.
 
 ## Next Action

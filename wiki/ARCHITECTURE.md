@@ -115,3 +115,5 @@ All backend and frontend variables are co-located under `config/env/`:
 Local mode uses direct ports and history routing. Production builds at `/fe/`, uses hash routing, and sends API, health, and WebSocket traffic through the same-origin Nginx proxy. The launchers use the current checkout and pinned submodule gitlinks; they never delete, recreate, or switch branches.
 
 Production startup requires a stable `AI_WORKER_MACHINE_ID`. Firebase queue ownership therefore remains attributable to the deployment machine across application restarts while each runtime still receives a unique instance ID.
+
+Approved package fingerprints canonicalize CRLF to LF for declared text runtime formats while hashing binary assets byte-for-byte. The same pinned package therefore has one identity on Windows and Linux without weakening workbook/template integrity checks.
