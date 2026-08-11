@@ -1,10 +1,26 @@
 import { mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import GenericSkillView from '../GenericSkillView.vue';
-import { createSkillJob } from '../../api/jobApi';
+import { createSkillJob, listJobs } from '../../api/jobApi';
+
+vi.mock('../../services/websocketClient', () => ({
+  default: class {
+    connect() {}
+    close() {}
+  }
+}));
 
 vi.mock('../../api/jobApi', () => ({
+  cancelJob: vi.fn(),
+  getFileDownloadUrl: vi.fn(() => '/download/file'),
+  getHealth: vi.fn(async () => ({ status: 'ok' })),
+  getJobDetail: vi.fn(async (jobId) => ({
+    job: { jobId, workerId: 'create-pr-cd', workerType: 'skill', status: 'queued' },
+    outputs: []
+  })),
+  getZipDownloadUrl: vi.fn(() => '/download/zip'),
   getErrorMessage: vi.fn((error) => error.message),
+  listJobs: vi.fn(async () => ({ items: [] })),
   listSkills: vi.fn(async () => ({
     skills: [{
       skillId: 'create-pr-cd',
@@ -26,14 +42,17 @@ vi.mock('../../api/jobApi', () => ({
   createSkillJob: vi.fn(async () => ({ job: { jobId: 'PR-GENERIC-001' } }))
 }));
 
+vi.mock('../../api/reAskApi', () => ({
+  askJob: vi.fn()
+}));
+
 describe('GenericSkillView', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('renders manifest-owned files and parameters and submits the generic envelope', async () => {
-    const push = vi.fn(async () => {});
     const wrapper = mount(GenericSkillView, {
       propsData: { skillId: 'create-pr-cd' },
-      mocks: { $router: { push } },
+      mocks: { $router: { push: vi.fn(async () => {}) } },
       stubs: { RouterLink: { template: '<a><slot /></a>' } }
     });
     await new Promise((resolve) => setTimeout(resolve, 0));
@@ -47,6 +66,16 @@ describe('GenericSkillView', () => {
     expect(wrapper.find('.workbench-surface').exists()).toBe(true);
     expect(wrapper.find('.workbench-upload-card').exists()).toBe(true);
     expect(wrapper.find('.workbench-config-card').exists()).toBe(true);
+    expect(wrapper.text()).toContain('AI Chatbox');
+    expect(wrapper.text()).toContain('Live Output');
+    expect(wrapper.text()).toContain('Result Delivery');
+    expect(wrapper.vm.showLegacyControls).toBe(false);
+    expect(wrapper.vm.showOptionalHandoff).toBe(false);
+    expect(wrapper.find('.audit-flow-list').exists()).toBe(false);
+    expect(listJobs).toHaveBeenCalledWith(expect.objectContaining({
+      workerType: 'skill',
+      workerId: 'create-pr-cd'
+    }));
     wrapper.vm.$set(wrapper.vm.selectedFiles, 'site_data', new File(['x'], 'sites.xlsx'));
     wrapper.vm.parameterValues.scope = 'TI';
     wrapper.vm.parameterValues.siteCodes = 'SITE-1\nSITE-2';
@@ -56,6 +85,6 @@ describe('GenericSkillView', () => {
       files: expect.objectContaining({ site_data: expect.any(File) }),
       parameters: { scope: 'TI', allSites: false, siteCodes: ['SITE-1', 'SITE-2'] }
     }));
-    expect(push).toHaveBeenCalledWith({ name: 'job-detail', params: { jobId: 'PR-GENERIC-001' } });
+    expect(wrapper.vm.currentJobId).toBe('PR-GENERIC-001');
   });
 });

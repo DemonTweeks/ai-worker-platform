@@ -114,7 +114,7 @@ All backend and frontend variables are co-located under `config/env/`:
 
 Local mode on `main` runs backend and Vite directly, serves the hash-routed UI at `/`, and does not invoke a launcher or Nginx. The production-only launchers mount the same hash-routed UI at `/fe/` and send UI, API, health, and WebSocket traffic through the same-origin Nginx proxy. `VITE_APP_BASE` controls only the mount path; runtime profiles do not select a different frontend structure. The launchers use the current checkout and pinned submodule gitlinks; they never delete, recreate, or switch branches.
 
-The generic skill launch view preserves the productized workbench structure from UI baseline `4d4148d7`: hero, workflow status, upload cards, configuration card, and execution handoff. Its fields remain generated from `skill.json`; the visual compatibility layer does not restore legacy workbook parsing, prevalidation endpoints, or worker-specific business logic to the platform.
+The generic skill launch view preserves the productized workbench structure from UI baseline `4d4148d7`: hero, workflow status, upload cards, configuration card, active Jobs, result delivery, cancellation, AI chatbox, and WebSocket-backed live output. Its fields remain generated from `skill.json`; the visual compatibility layer does not restore legacy workbook parsing, prevalidation endpoints, or worker-specific business logic to the platform. Unsupported legacy-only controls remain disabled and hidden by default.
 
 Production startup requires a stable `AI_WORKER_MACHINE_ID`. Firebase queue ownership therefore remains attributable to the deployment machine across application restarts while each runtime still receives a unique instance ID.
 
