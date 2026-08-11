@@ -119,3 +119,5 @@ The generic skill launch view preserves the productized workbench structure from
 Production startup requires a stable `AI_WORKER_MACHINE_ID`. Firebase queue ownership therefore remains attributable to the deployment machine across application restarts while each runtime still receives a unique instance ID.
 
 Approved package fingerprints canonicalize CRLF to LF for declared text runtime formats while hashing binary assets byte-for-byte. The same pinned package therefore has one identity on Windows and Linux without weakening workbook/template integrity checks.
+
+The RAN submodule is sourced from `BL2ZteSolution/create-pr-cd-ran` and follows the dedicated `refactor/standard-skill-contract` development branch. Its local `origin` points to that platform-owned source; `upstream` points to `ammarofficial11/create-pr-cd-ran` for dual-repository publication and upstream review. The platform always executes the pinned gitlink, so the branch declaration guides development updates without making runtime startup branch-dependent.
