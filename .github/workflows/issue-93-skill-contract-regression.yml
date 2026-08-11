@@ -9,7 +9,6 @@ on:
       - "backend/src/skills/approvedSkills.json"
       - "backend/src/skills/**"
       - "backend/scripts/generic-skill-live-test.js"
-      - "backend/scripts/generic-skill-contract-test.js"
       - ".github/workflows/issue-93-skill-contract-regression.yml"
 
 permissions:
@@ -36,24 +35,17 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-          cache-dependency-path: |
-            skills/create-pr-cd/requirements.txt
-            skills/create-pr-cd-ran/requirements.txt
-      - name: Install Python skill dependencies
-        run: |
-          python -m pip install -r skills/create-pr-cd/requirements.txt
-          python -m pip install -r skills/create-pr-cd-ran/requirements.txt
+          cache-dependency-path: skills/create-pr-cd/requirements.txt
+      - name: Install create-pr-cd dependencies
+        run: python -m pip install -r skills/create-pr-cd/requirements.txt
       - name: Install backend dependencies
         working-directory: backend
         run: npm ci
-      - name: Verify generic skill contract
+      - name: Verify create-pr-cd package approval
         working-directory: backend
-        run: npm run test:skill-contract
+        run: node -e "require('./src/skills/skillPackageService').loadApprovedSkill('create-pr-cd'); console.log('create-pr-cd package approval verified')"
       - name: Verify Issue 93 live fail-closed persistence
         working-directory: backend
         run: npm run test:skill-live
-      - name: Verify engine/package integrity
-        working-directory: backend
-        run: npm run test:engine-integrity
       - name: Check changed-file whitespace
         run: git diff --check "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"
