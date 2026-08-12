@@ -31,7 +31,7 @@ PR-model, template, mapping, profile, and policy overrides are not public inputs
 
 ## Output
 
-`result.json` declares every generated ECC workbook and domain report. It includes safe summary metrics and the standard reconciliation counts:
+`result.json` declares every generated ECC workbook, domain report, and `CREATE_PR_DELIVERY_<scope>.zip`. It includes safe summary metrics, exact selected source Site IDs with their terminal dispositions, and the standard reconciliation counts:
 
 ```text
 requested = generated + review-required + approved-ignored
@@ -39,6 +39,8 @@ requested = generated + review-required + approved-ignored
 ```
 
 Review, ignore, or duplicate outcomes produce `succeeded_with_warning`. Failed or unaccounted engine outcomes cannot produce success.
+
+The delivery ZIP is created by the standalone Python skill. The Node platform does not compose or reinterpret it.
 
 ## Standalone Command
 

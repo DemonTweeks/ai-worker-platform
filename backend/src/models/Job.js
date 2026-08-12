@@ -34,6 +34,10 @@ const RECONCILIATION_FIELDS = [
 class Job {
   constructor(data) {
     Object.assign(this, data);
+    const parameterScope = String(this.parameters && this.parameters.scope || '').trim().toUpperCase();
+    if (!this.prScope && this.workerType === 'skill' && PR_SCOPES.includes(parameterScope)) {
+      this.prScope = parameterScope;
+    }
     if (typeof this.workerId === 'undefined' || this.workerId === null) {
       this.workerId = this.workerType === 'pr-worker' ? WORKER_IDS.MW_PR : null;
     }
@@ -91,6 +95,7 @@ class Job {
       engineCommit: payload.engineCommit || null,
       runMode: payload.runMode || null,
       selectedProject: payload.selectedProject || null,
+      prScope: payload.prScope || null,
       requestedSiteCount: payload.requestedSiteCount || 0,
       matchedSiteCount: payload.matchedSiteCount || 0,
       matchedSiteCodes: Array.isArray(payload.matchedSiteCodes) ? payload.matchedSiteCodes : [],

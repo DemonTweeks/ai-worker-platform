@@ -71,9 +71,12 @@ const getWorkerPresentation = (job = {}) => {
 
 const isRanWorker = (workerId) => workerId === WORKER_IDS.RAN_PR;
 const isPrAuditorWorker = (workerId) => workerId === WORKER_IDS.PR_AUDITOR;
-const getDisplayPrScope = (job = {}) => (
-  (isRanWorker(job.workerId) || isPrAuditorWorker(job.workerId)) ? (job.prScope || null) : (job.prScope || 'TSS')
-);
+const getDisplayPrScope = (job = {}) => {
+  if (job.prScope) return job.prScope;
+  const parameterScope = String(job.parameters && job.parameters.scope || '').trim().toUpperCase();
+  if (job.workerType === 'skill') return PR_SCOPES.includes(parameterScope) ? parameterScope : null;
+  return (isRanWorker(job.workerId) || isPrAuditorWorker(job.workerId)) ? null : 'TSS';
+};
 
 const redactTechnicalDetails = (text) => {
   if (!text || typeof text !== 'string') return '';
@@ -334,43 +337,63 @@ const serializeCancellation = (job = {}) => {
   };
 };
 
-const serializeJobSummary = (job) => ({
-  ...getWorkerPresentation(job),
-  jobId: job.jobId,
-  workerType: job.workerType,
-  status: job.status,
-  resultStatus: job.status === 'failed' && job.error && job.error.code === RESULT_RECONCILIATION_INCOMPLETE ? 'incomplete_result' : null,
-  error: serializeSafeError(job),
-  createdAt: job.createdAt,
-  completedAt: job.completedAt,
-  generationScope: job.generationScope,
-  prScope: getDisplayPrScope(job),
-  runMode: job.runMode || null,
-  selectedProject: job.selectedProject || null,
-  requestedSiteCount: job.requestedSiteCount,
-  matchedSiteCount: job.matchedSiteCount,
-  matchedSiteCodes: Array.isArray(job.matchedSiteCodes) ? job.matchedSiteCodes : [],
-  unmatchedSiteCount: job.unmatchedSiteCount,
-  outputFileCount: job.outputFileCount,
-  reviewRequiredCount: job.reviewRequiredCount,
-  warningCount: job.warningCount,
-  generatedSiteCount: job.generatedSiteCount ?? null,
-  reviewRequiredSiteCount: job.reviewRequiredSiteCount ?? null,
-  approvedIgnoredSiteCount: job.approvedIgnoredSiteCount ?? null,
-  duplicateBlockedSiteCount: job.duplicateBlockedSiteCount ?? null,
-  failedSiteCount: job.failedSiteCount ?? null,
-  accountedSiteCount: job.accountedSiteCount ?? null,
-  unaccountedSiteCount: job.unaccountedSiteCount ?? null,
-  reconciliationConsistent: job.reconciliationConsistent ?? null,
-  auditSummary: job.auditSummary || null,
-  auditYear: job.auditYear || null,
-  auditMonth: job.auditMonth || null,
-  finalWorkerSummary: job.finalWorkerSummary,
-  browserTabSessionId: job.browserTabSessionId || null,
-  idempotencyKey: job.idempotencyKey || null,
-  cancellation: serializeCancellation(job),
-  failureSummary: getFailureSummary(job)
-});
+const getDisplayMatchedSiteCodes = (job = {}) => {
+  const persisted = Array.isArray(job.matchedSiteCodes)
+    ? job.matchedSiteCodes.filter((value) => typeof value === 'string' && value.trim())
+    : [];
+  if (persisted.length) return persisted;
+  if (
+    job.workerType === 'skill'
+    && job.workerId === 'create-pr-cd'
+    && ['completed', 'completed_with_warning'].includes(job.status)
+    && Array.isArray(job.parameters && job.parameters.siteCodes)
+  ) {
+    return job.parameters.siteCodes.filter((value) => typeof value === 'string' && value.trim());
+  }
+  return [];
+};
+
+const serializeJobSummary = (job) => {
+  const matchedSiteCodes = getDisplayMatchedSiteCodes(job);
+  const matchedSiteCount = matchedSiteCodes.length || job.matchedSiteCount;
+  return ({
+    ...getWorkerPresentation(job),
+    jobId: job.jobId,
+    workerType: job.workerType,
+    status: job.status,
+    resultStatus: job.status === 'failed' && job.error && job.error.code === RESULT_RECONCILIATION_INCOMPLETE ? 'incomplete_result' : null,
+    error: serializeSafeError(job),
+    createdAt: job.createdAt,
+    completedAt: job.completedAt,
+    generationScope: job.generationScope,
+    prScope: getDisplayPrScope(job),
+    runMode: job.runMode || null,
+    selectedProject: job.selectedProject || null,
+    requestedSiteCount: job.requestedSiteCount,
+    matchedSiteCount,
+    matchedSiteCodes,
+    unmatchedSiteCount: job.unmatchedSiteCount,
+    outputFileCount: job.outputFileCount,
+    reviewRequiredCount: job.reviewRequiredCount,
+    warningCount: job.warningCount,
+    generatedSiteCount: job.generatedSiteCount ?? null,
+    reviewRequiredSiteCount: job.reviewRequiredSiteCount ?? null,
+    approvedIgnoredSiteCount: job.approvedIgnoredSiteCount ?? null,
+    duplicateBlockedSiteCount: job.duplicateBlockedSiteCount ?? null,
+    failedSiteCount: job.failedSiteCount ?? null,
+    accountedSiteCount: job.accountedSiteCount ?? null,
+    unaccountedSiteCount: job.unaccountedSiteCount ?? null,
+    reconciliationConsistent: job.reconciliationConsistent ?? null,
+    auditSummary: job.auditSummary || null,
+    auditYear: job.auditYear || null,
+    auditMonth: job.auditMonth || null,
+    finalWorkerSummary: job.finalWorkerSummary,
+    browserTabSessionId: job.browserTabSessionId || null,
+    idempotencyKey: job.idempotencyKey || null,
+    cancellation: serializeCancellation(job),
+    failureSummary: getFailureSummary(job)
+  });
+};
 
 const assertJobExists = async (jobId) => {
   const job = await Job.findOne({ jobId });

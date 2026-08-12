@@ -137,6 +137,11 @@ const createSkillJob = async (skillId, body = {}, files = []) => {
         browserTabSessionId,
         idempotencyKey,
         parameters,
+        prScope: ['TSS', 'TI'].includes(String(parameters.scope || '').toUpperCase())
+          ? String(parameters.scope).toUpperCase()
+          : null,
+        generationScope: parameters.allSites === true ? 'all_sites' : (Array.isArray(parameters.siteCodes) ? 'site_code' : null),
+        requestedSiteCount: Array.isArray(parameters.siteCodes) ? parameters.siteCodes.length : 0,
         fileRetentionUntil: retentionUntil,
         inputManifestPath: toStorageRelativePath(storageService.getStorageRoot(), inputManifestPath)
       });

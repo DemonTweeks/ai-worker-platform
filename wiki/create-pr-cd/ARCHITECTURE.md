@@ -74,7 +74,7 @@ iEPMS workbook
   -> model, subcontractor and contract resolution
   -> eligible/review/ignored partitions
   -> requested-site reconciliation
-  -> ECC workbooks and domain reports
+  -> ECC workbooks, domain reports, and skill-owned delivery ZIP
 ```
 
 ### PR-model baseline boundary
@@ -99,7 +99,7 @@ POST /api/skills/create-pr-cd/jobs
   -> python src/main.py --input-manifest skill-input.json
   -> NDJSON progress events
   -> output/*
-  -> result.json
+  -> result.json (exact source Site IDs + declared delivery archive)
   -> generic result validation and delivery
 ```
 
@@ -112,6 +112,7 @@ POST /api/skills/create-pr-cd/jobs
 - UAT output remains visibly marked and isolated.
 - Ambiguous data fails closed or becomes review-required.
 - Every requested site must have exactly one terminal disposition; failed or unaccounted reconciliation fails closed.
+- Archive composition remains inside Python; the platform only validates and serves `CREATE_PR_DELIVERY_<scope>.zip` as a declared output.
 - Source and reference workbooks are not modified.
 - Generated paths stay inside the declared workspace.
 - A platform refactor must preserve workbook content and safety behavior through golden tests.

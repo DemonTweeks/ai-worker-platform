@@ -10,6 +10,6 @@ Invocation:
 python src/main.py --input-manifest <workspace>/input.json
 ```
 
-Public input is one `site_data` `.xlsx` file plus scope and site-selection parameters. Reference assets remain internal to the approved package. The skill emits NDJSON progress and writes `result.json` with every output, SHA-256, warnings, safe metrics, and reconciliation.
+Public input is one `site_data` `.xlsx` file plus scope and site-selection parameters. Reference assets remain internal to the approved package. The skill emits NDJSON progress and writes `result.json` with exact selected Site IDs, every individual output, a skill-owned delivery ZIP, SHA-256 values, warnings, safe metrics, and reconciliation.
 
 The current PR model is version `4.0`, independently pinned by `config/pr_model_baseline.yaml`. Planning and Operation Backoffice are not exposed because the Python skill does not yet implement them.
