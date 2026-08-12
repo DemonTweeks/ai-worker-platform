@@ -1,6 +1,6 @@
 # AI Worker Platform — Skill Contract
 
-> Status: implemented for `create-pr-cd` 4.0.0 and `tx-pr-auditor` 1.0.0.
+> Status: implemented for `create-pr-cd` 4.0.0 and `tx-pr-auditor` 1.1.0.
 
 ## 1. Purpose
 

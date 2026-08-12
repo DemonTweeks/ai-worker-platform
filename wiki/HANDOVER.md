@@ -2,9 +2,9 @@
 
 ## Current State
 
-- `main` contains the merged thin-wrapper runtime, manifest-driven workbench, and BL2 RAN submodule source through platform PR #100. `refactor/pin-skills-to-main` moves the non-RAN gitlinks from feature commits to their merged `main` heads.
+- `main` contains the thin-wrapper runtime, manifest-driven workbench, BL2 RAN source, and non-RAN main pins through platform PR #101.
 - `create-pr-cd` is pinned to `main` commit `8d8880f`, the merge of [Gumb-D/create-pr-cd#93](https://github.com/Gumb-D/create-pr-cd/pull/93).
-- `tx-pr-auditor` is pinned to `main` commit `f31de3d`, the merge of [BL2ZteSolution/tx-pr-auditor#5](https://github.com/BL2ZteSolution/tx-pr-auditor/pull/5).
+- `refactor/restore-pr-auditor-workflow` pins `tx-pr-auditor` 1.1.0 commit `0142a9f`, published for review in [BL2ZteSolution/tx-pr-auditor#6](https://github.com/BL2ZteSolution/tx-pr-auditor/pull/6).
 - `create-pr-cd-ran` remains pinned to BL2 branch commit `2756894`; upstream promotion continues in [ammarofficial11/create-pr-cd-ran#1](https://github.com/ammarofficial11/create-pr-cd-ran/pull/1).
 - Every pinned commit is reachable from the submodule URL configured in `.gitmodules`.
 - Firebase is authoritative for job lifecycle and durable queue ownership.
@@ -36,7 +36,7 @@ The `BL2ZteSolution` account currently lacks direct push permission to `ammaroff
 - `backend/src/queue/jobQueue.js`: Firebase leases, heartbeats, cancellation state, and restart reconciliation.
 - `frontend/src/views/GenericSkillView.vue`: manifest-driven launch form for all active skills using the productized workbench visual structure from baseline `4d4148d7`, including reference-style upload validation cards, skill mode switching, placed/grouped parameters, active Jobs, results, cancellation, AI chat, and live output.
 - `frontend/src/components/ManifestParameterField.vue`: generic renderer for manifest-selected segmented, select, checkbox, text, and textarea controls; conditional and hidden/default behavior comes from `skill.json.ui`.
-- `skills/*/skill.json` and `skills/*/src/main.py`: standalone contracts.
+- `skills/*/skill.json` and `skills/*/src/main.py`: standalone contracts. The TX Auditor entrypoint internally runs its pinned recursive `create-pr-cd` dependency for TSS and TI.
 - `launcher.ps1` and `deploy.sh`: production-only launch entrypoints without branch mutation; local development runs backend and Vite directly.
 - `frontend/nginx.conf`: production-only same-origin proxy for `/fe/`, `/api/`, and `/ws`; health is available only through `/api/health`.
 - `backend/src/skills/skillPackageService.js`: cross-platform text normalization with byte-exact binary package hashing.
@@ -54,7 +54,7 @@ The `BL2ZteSolution` account currently lacks direct push permission to `ammaroff
 - Durable queue ownership/restart suite: passed.
 - Generic catalog/submission/result suite: passed with three approved packages.
 - Real generic CD create execution: completed with zero unaccounted work and 90 outputs.
-- TX unit/contract suite: 31 passed; real workbook integration passed.
+- TX focused and contract tests pass. The supplied June 2026 Final PO + EPMS demo completed end to end: 94 TSS workbooks, 20 TI workbooks, and 24 audited Final PO rows (2 Normal, 3 Wrong PO, 19 Invalid PO).
 - TX 10,000-row baseline: 6.708 seconds and 33.63 MiB traced peak.
 - Real generic RAN sample job: completed with five tracked outputs.
 - Complete active backend suite: passed, including durable queue, concurrent idempotency, contract/rerun compatibility, and both real creator executions.

@@ -1,34 +1,30 @@
 # tx-pr-auditor — Handover
 
-## Current State
+## Current Work
 
-- Branch: `agent/align-du-registry`.
-- Contract changes are uncommitted.
-- Direct domain CLI remains `scripts/audit_final_po.py`.
-- Platform contract CLI is `src/main.py --input-manifest`.
-- Manifest version is `1.0.0` and result contract is `1.0`.
+- Platform branch: `refactor/restore-pr-auditor-workflow`.
+- Skill branch: `refactor/restore-composite-audit-flow`.
+- Skill commit: `0142a9fb253580986ce04fb9eca4fe63c6c41d2a`.
+- Skill PR: [BL2ZteSolution/tx-pr-auditor#6](https://github.com/BL2ZteSolution/tx-pr-auditor/pull/6).
+- Skill contract version: 1.1.0.
+- Public inputs: Final PO + EPMS.
+- Dependency: `create-pr-cd` 4.0.0 at `8d8880ffb044a0273650f9c54fe1688efcc4623b`.
+
+## Design Decision
+
+The old Node composite adapter was not restored. The composite sequence lives in `tx-pr-auditor/src/main.py`, so the platform remains a generic HTTPS/queue/process/result wrapper. The focused audit engine still accepts only Final PO plus generated ECC internally.
 
 ## Important Files
 
-- `skill.json`: public inputs, limits, cancellation, and DU compatibility declaration.
-- `src/main.py`: contract and authoritative result adapter.
-- `scripts/audit_final_po.py`: focused Final PO-versus-ECC business pipeline.
-- `config/du_registry.json`: nine identities, registry version, source registry SHA, promotion policy.
-- `tests/benchmark_large_workbook.py`: capacity evidence.
+- `skills/tx-pr-auditor/skill.json`: public input and UI contract.
+- `skills/tx-pr-auditor/src/main.py`: composite Python orchestration.
+- `skills/tx-pr-auditor/scripts/audit_final_po.py`: focused audit business logic.
+- `skills/tx-pr-auditor/dependencies/create-pr-cd`: pinned generator.
+- `backend/src/skills/approvedSkills.json`: package approval coverage.
+- `frontend/src/views/GenericSkillView.vue`: generic manifest renderer; no auditor orchestration.
 
-## Decisions Already Made
+## Acceptance Dataset
 
-- The auditor consumes Final PO and generated ECC only.
-- It does not consume iEPMS or the PR model.
-- Generator and auditor are separate jobs.
-- Any composite workflow is a separate standalone skill.
-- Registry compatibility is a skill release gate, not a platform domain comparison.
-- Final PO workload limit is 10,000 rows until new evidence supports promotion.
+Source files: `C:\Users\ZX01-ai\Desktop\temp\pr-audit`.
 
-## Evidence
-
-- 31 focused unit and contract tests passed.
-- Real workbook standalone contract integration passed.
-- Nine DU identities and profile/view/status parity passed.
-- 10,000-row benchmark: 6.708 seconds and 33.63 MiB traced peak.
-- Cooperative cancellation is checked every 250 rows in long loops.
+June 2026 run: 24 rows audited, 94 TSS and 20 TI workbooks generated, final status `succeeded_with_warning`. Findings require business review.

@@ -1,19 +1,17 @@
 # tx-pr-auditor — Implementation Plan
 
-## Completed Contract Work
+## Implemented
 
-- Added `skill.json` version `1.0.0`.
-- Added `src/main.py --input-manifest`.
-- Declared one Final PO and repeatable expected ECC inputs.
-- Kept all audit mapping, identity, matching, classification, quantity, and evidence logic in Python.
-- Added safe path, size, checksum, parameter, and result validation.
-- Added NDJSON phases, 30-second heartbeats, and cancellation probes every 250 rows.
-- Made the audit workbook, summary, and annotated ECC copies authoritative `result.json` outputs.
-- Added a release-version and upstream SHA-256 policy for the nine-DU registry.
-- Chose separate generator and auditor jobs; no composite sequence is owned by the platform.
-- Added contract, real-workbook integration, parity, cancellation, and capacity tests.
+- Restored the `Final PO + EPMS` public flow from UI baseline `4d4148d7`.
+- Promoted the manifest to version 1.1.0.
+- Added pinned `create-pr-cd` 4.0.0 as a recursive Git dependency.
+- Added isolated Python orchestration for mandatory TSS and TI generation.
+- Added dependency identity validation, safe failures, progress forwarding, and cancellation propagation.
+- Kept the existing focused audit engine unchanged and ECC-only.
+- Restored baseline upload/stage/notice copy through generic `skill.json.ui` metadata.
+- Updated platform catalog, contract tests, approval coverage, and documentation.
 
-## Current Layout
+## Runtime Layout
 
 ```text
 tx-pr-auditor/
@@ -21,14 +19,16 @@ tx-pr-auditor/
 |-- src/main.py
 |-- scripts/audit_final_po.py
 |-- config/du_registry.json
+|-- dependencies/create-pr-cd/   # pinned Git submodule
 `-- tests/
-    |-- test_skill_contract.py
-    |-- test_skill_contract_integration.py
-    `-- benchmark_large_workbook.py
 ```
 
-## Capacity Baseline
+## Acceptance Evidence
 
-The declared Final PO limit is 10,000 rows. The repeatable synthetic benchmark processed 10,000 results in 6.708 seconds with 33.63 MiB traced peak memory. Rebenchmark before raising the manifest limit.
+The supplied June 2026 demo inputs completed end to end:
 
-The platform's rollback-only auditor orchestration has been removed. No current focused-auditor contract work remains.
+- 94 TSS entitlement workbooks.
+- 20 TI entitlement workbooks.
+- 24 Final PO rows audited.
+- 2 Normal, 3 Abnormal - Wrong PO, 19 Abnormal - Invalid PO.
+- Authoritative report and 117 declared output files.

@@ -400,7 +400,7 @@ const HERO_CONTENT = {
   },
   'tx-pr-auditor': {
     title: 'Run controlled PR audits from approved inputs.',
-    subtitle: 'Submit Final PO and expected ECC workbooks to the standalone auditor, then review progress and evidence through the shared Job workflow.'
+    subtitle: 'Submit Final PO and EPMS once. The worker creates ECC entitlement, audits PO claims, and preserves evidence in one controlled run.'
   }
 };
 

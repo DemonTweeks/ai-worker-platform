@@ -37,6 +37,8 @@ const run = async () => {
     const auditorCatalogEntry = catalog.skills.find((item) => item.skillId === 'tx-pr-auditor');
     assert.deepStrictEqual(auditorCatalogEntry.ui.uploadGroups[0].fields, ['filterYear', 'filterMonth']);
     assert.strictEqual(auditorCatalogEntry.ui.parameters.annotateEcc.default, true);
+    assert.deepStrictEqual(auditorCatalogEntry.inputs.files.map((item) => item.name), ['final_po', 'epms']);
+    assert.strictEqual(auditorCatalogEntry.ui.configuration.stageHeading, 'Controlled two-stage run');
 
     const form = new FormData();
     form.append('browserTabSessionId', 'generic-tab-0001');
@@ -70,6 +72,20 @@ const run = async () => {
     assert.strictEqual(rerun.job.skillId, 'create-pr-cd');
     assert.strictEqual(rerun.job.rerunSourceJobId, created.job.jobId);
 
+    const auditorForm = new FormData();
+    auditorForm.append('browserTabSessionId', 'generic-auditor-tab-0001');
+    auditorForm.append('idempotencyKey', 'generic-auditor-create-0001');
+    auditorForm.append('parameters', JSON.stringify({ filterYear: 2026, filterMonth: 6, annotateEcc: true }));
+    auditorForm.append('final_po', new Blob([Buffer.from('synthetic-final-po')]), 'Final PO.xlsx');
+    auditorForm.append('epms', new Blob([Buffer.from('synthetic-epms')]), 'EPMS.xlsx');
+    const auditorResponse = await fetch(`${baseUrl}/api/skills/tx-pr-auditor/jobs`, { method: 'POST', body: auditorForm });
+    assert.strictEqual(auditorResponse.status, 201);
+    const auditorJob = (await auditorResponse.json()).job;
+    assert.strictEqual(auditorJob.skillId, 'tx-pr-auditor');
+    const auditorEnvelope = JSON.parse(await fs.promises.readFile(path.join(tempRoot, auditorJob.inputManifestPath), 'utf8'));
+    assert.deepStrictEqual(auditorEnvelope.files.map((item) => item.name), ['final_po', 'epms']);
+    assert.deepStrictEqual(auditorEnvelope.parameters, { filterYear: 2026, filterMonth: 6, annotateEcc: true });
+
     const retiredCreateResponse = await fetch(`${baseUrl}/api/jobs`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -99,7 +115,7 @@ const run = async () => {
     const validated = await validateResult({
       job, skill, workspace,
       result: {
-        schemaVersion: '1.0', jobId: job.jobId, skillId: 'tx-pr-auditor', skillVersion: '1.0.0',
+        schemaVersion: '1.0', jobId: job.jobId, skillId: 'tx-pr-auditor', skillVersion: '1.1.0',
         status: 'succeeded', summary: { message: 'ok', metrics: {} },
         outputs: [{ name: 'result', path: 'output/result.txt', displayName: 'result.txt' }], warnings: [], error: null
       }

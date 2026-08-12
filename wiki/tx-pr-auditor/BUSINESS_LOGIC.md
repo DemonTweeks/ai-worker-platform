@@ -11,7 +11,7 @@ Sources reviewed:
 - `skills/tx-pr-auditor/references/current-inputs.md`
 - Current `scripts/audit_final_po.py` pipeline
 
-The standard contract is now implemented in `src/main.py`. The platform validates only the declared transport and result structure; every rule below remains in Python.
+The standard composite contract is implemented in `src/main.py`. It runs pinned `create-pr-cd` for TSS and TI before calling the focused audit pipeline. The platform validates only the declared transport and result structure; every rule below remains in Python.
 
 ## Business Boundary
 
@@ -24,19 +24,20 @@ Sources of truth:
 - Generated ECC: expected entitlement.
 - Final PO: submitted claim population and submitted line details.
 
-Not sources of truth:
+Not audit sources of truth:
 
 - iEPMS/Site PR-PO data.
 - PR model.
 - Reconstructed entitlement rules.
 - PR number alone.
 
-The auditor must not call or imitate `create-pr-cd` during focused audit execution.
+The focused audit engine must not call or imitate `create-pr-cd`. Its composite parent invokes the pinned dependency and passes generated ECC as the sole audit entitlement source.
 
 ## Decision Order
 
 ```text
-Read explicit Final PO and ECC inputs
+Generate TSS and TI ECC from declared EPMS through pinned create-pr-cd
+  -> read explicit Final PO and generated ECC inputs
   -> map workbook fields
   -> canonicalize identity and quantities
   -> optionally filter Final PO by dispatch period
@@ -53,10 +54,12 @@ Classification checks occur before quantity consumption. Invalid or Wrong rows c
 
 ## 1. Input Population
 
-The caller supplies explicit paths for:
+The public caller supplies explicit paths for:
 
 - One Final PO workbook.
-- One or more generated ECC files or directories.
+- One EPMS workbook.
+
+The composite entrypoint supplies one or more generated ECC paths to the focused audit pipeline.
 
 The skill must not discover inputs by scanning arbitrary workspace locations.
 
@@ -231,15 +234,7 @@ Source workbooks must never be modified. An ECC row without an exact Final PO it
 
 ## 14. Relationship to Combined Workflow
 
-The current platform generates TSS and TI ECC from iEPMS before invoking the auditor. That sequence is product orchestration, not auditor business logic.
-
-In the implemented generic architecture:
-
-- The focused `tx-pr-auditor` continues to accept Final PO + ECC only.
-- Separate jobs may provide ECC outputs to the auditor; or
-- A dedicated composite Python skill may own entitlement generation plus audit.
-
-The generic platform must not embed the sequence or pass iEPMS into the focused auditor.
+`tx-pr-auditor/src/main.py` owns the combined `create-pr-cd TSS -> create-pr-cd TI -> focused audit` sequence. The generic platform does not embed it. EPMS is passed only to the generator dependency; the focused auditor continues to receive Final PO plus generated ECC.
 
 ## 15. Refactor Invariants
 

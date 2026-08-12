@@ -14,7 +14,7 @@ The platform is a thin HTTP(S), storage, execution, and lifecycle wrapper for th
 | Generic runner | Isolated Python execution, timeout, cancellation, structural result validation, output persistence |
 | Durable queue | Firebase atomic claims, machine/runtime identity, leases, heartbeat, restart reconciliation |
 | `create-pr-cd` | TSS/TI standalone contract and authoritative reconciliation |
-| `tx-pr-auditor` | Standalone audit contract, DU registry pin, 10,000-row capacity baseline |
+| `tx-pr-auditor` | Standalone Final PO + EPMS composite contract, pinned TSS/TI generation, focused audit, DU registry pin, 10,000-row capacity baseline |
 | `create-pr-cd-ran` | BOM/EPMS standalone contract, project validation, four-stage pipeline, generic output ingestion |
 | Frontend | Manifest-driven routes for MW/CD, RAN, and TX audit skills |
 | Legacy retirement | Legacy launch pages, registry adapters, worker services, and auditor workspace/ingestion removed |
@@ -40,7 +40,7 @@ frontend/src/views/GenericSkillView.vue
 
 skills/create-pr-cd/{skill.json,src/main.py}
 skills/create-pr-cd-ran/{skill.json,src/main.py}
-skills/tx-pr-auditor/{skill.json,src/main.py}
+skills/tx-pr-auditor/{skill.json,src/main.py,dependencies/create-pr-cd}
 
 config/env/{local.env.example,production.env.example}
 launcher.ps1 (production only)
