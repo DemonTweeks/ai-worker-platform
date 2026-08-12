@@ -2,7 +2,7 @@
   "create-pr-cd": {
     "rootConfigKey": "createPrCdRoot",
     "approvedVersion": "4.0.0",
-    "approvedPackageSha256": "9d4ffde10b2e6b3f241b915deb49ae1ebda56811a052982b3f37bcf2dd790568",
+    "approvedPackageSha256": "6ce0088adcf1685308029b1bf3d8211706fafd9aee7950abd1817e4d02e687e0",
     "include": [
       "skill.json",
       "requirements.txt",

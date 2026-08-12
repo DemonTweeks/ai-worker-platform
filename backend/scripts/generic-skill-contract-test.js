@@ -14,7 +14,8 @@ const originalEnqueue = jobQueue.enqueueJob;
 jobQueue.enqueueJob = async (jobId) => ({ queuedJobIds: [jobId], activeJobIds: [], queuedCount: 1, activeCount: 0 });
 const app = require('../src/app');
 const { Job, JobFile } = require('../src/models');
-const { validateReconciliation, validateResult } = require('../src/skills/genericSkillRunner');
+const { serializeJobSummary } = require('../src/services/jobService');
+const { persistResult, validateReconciliation, validateResult } = require('../src/skills/genericSkillRunner');
 const { loadApprovedSkill } = require('../src/skills/skillPackageService');
 
 const startServer = async () => {
@@ -50,6 +51,8 @@ const run = async () => {
     const created = await createResponse.json();
     assert.strictEqual(created.job.skillId, 'create-pr-cd');
     assert.strictEqual(created.job.workerType, 'skill');
+    assert.strictEqual(created.job.prScope, 'TSS');
+    assert.strictEqual(created.job.generationScope, 'all_sites');
     assert.strictEqual(created.job.queueRuntime.queueState, 'queued');
     const inputs = await JobFile.find({ jobId: created.job.jobId }).lean();
     assert.strictEqual(inputs.length, 1);
@@ -100,12 +103,67 @@ const run = async () => {
 
     validateReconciliation({
       requestedCount: 2, generatedCount: 1, reviewRequiredCount: 1,
-      approvedIgnoredCount: 0, duplicateBlockedCount: 0, failedCount: 0, unaccountedCount: 0
+      approvedIgnoredCount: 0, duplicateBlockedCount: 0, failedCount: 0, unaccountedCount: 0,
+      siteDispositions: [
+        { siteCode: 'SITE-001', disposition: 'GENERATED' },
+        { siteCode: 'SITE-002', disposition: 'REVIEW_REQUIRED' }
+      ]
     }, 'succeeded_with_warning');
     assert.throws(() => validateReconciliation({
       requestedCount: 2, generatedCount: 1, reviewRequiredCount: 0,
       approvedIgnoredCount: 0, duplicateBlockedCount: 0, failedCount: 0, unaccountedCount: 0
     }, 'succeeded'), /arithmetic/);
+    assert.throws(() => validateReconciliation({
+      requestedCount: 2, generatedCount: 2, reviewRequiredCount: 0,
+      approvedIgnoredCount: 0, duplicateBlockedCount: 0, failedCount: 0, unaccountedCount: 0,
+      siteDispositions: [{ siteCode: 'SITE-001', disposition: 'GENERATED' }]
+    }, 'succeeded'), /identify every requested site/);
+
+    const identityJob = await Job.create({
+      jobId: 'GENERIC-SITE-IDENTITY-001',
+      workerId: 'create-pr-cd',
+      workerType: 'skill',
+      skillId: 'create-pr-cd',
+      status: 'generating',
+      parameters: { scope: 'TI', allSites: false, siteCodes: ['SITE-001', 'SITE-002'] }
+    });
+    await persistResult({
+      job: identityJob,
+      skill: loadApprovedSkill('create-pr-cd'),
+      outputs: [],
+      result: {
+        status: 'succeeded_with_warning',
+        summary: { message: 'complete' },
+        warnings: [{ code: 'REVIEW', message: 'review' }],
+        reconciliation: {
+          requestedCount: 2, generatedCount: 1, reviewRequiredCount: 1,
+          approvedIgnoredCount: 0, duplicateBlockedCount: 0, failedCount: 0, unaccountedCount: 0,
+          siteDispositions: [
+            { siteCode: 'SITE-001', disposition: 'GENERATED' },
+            { siteCode: 'SITE-002', disposition: 'REVIEW_REQUIRED' }
+          ]
+        }
+      }
+    });
+    const persistedIdentityJob = await Job.findOne({ jobId: identityJob.jobId });
+    assert.strictEqual(persistedIdentityJob.prScope, 'TI');
+    assert.deepStrictEqual(persistedIdentityJob.matchedSiteCodes, ['SITE-001', 'SITE-002']);
+    assert.strictEqual(persistedIdentityJob.matchedSiteCount, 2);
+    assert.strictEqual(persistedIdentityJob.unmatchedSiteCount, 0);
+
+    const historicalSummary = serializeJobSummary({
+      jobId: 'GENERIC-HISTORICAL-TI-001',
+      workerId: 'create-pr-cd',
+      workerType: 'skill',
+      status: 'completed_with_warning',
+      parameters: { scope: 'TI', siteCodes: ['OLD-SITE-001', 'OLD-SITE-002'] },
+      matchedSiteCodes: [],
+      matchedSiteCount: 0,
+      createdAt: new Date().toISOString()
+    });
+    assert.strictEqual(historicalSummary.prScope, 'TI');
+    assert.deepStrictEqual(historicalSummary.matchedSiteCodes, ['OLD-SITE-001', 'OLD-SITE-002']);
+    assert.strictEqual(historicalSummary.matchedSiteCount, 2);
 
     const workspace = path.join(tempRoot, 'result-validation');
     await fs.promises.mkdir(path.join(workspace, 'output'), { recursive: true });

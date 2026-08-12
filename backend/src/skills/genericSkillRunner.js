@@ -45,6 +45,22 @@ const validateReconciliation = (reconciliation, status) => {
   if (['succeeded', 'succeeded_with_warning'].includes(status) && reconciliation.unaccountedCount > 0) {
     throw new Error('A successful result cannot contain unaccounted work.');
   }
+  if (reconciliation.siteDispositions !== undefined) {
+    if (!Array.isArray(reconciliation.siteDispositions)) {
+      throw new Error('result.reconciliation.siteDispositions must be an array.');
+    }
+    if (reconciliation.siteDispositions.length !== reconciliation.requestedCount) {
+      throw new Error('result.reconciliation.siteDispositions must identify every requested site.');
+    }
+    for (const [index, item] of reconciliation.siteDispositions.entries()) {
+      if (!item || typeof item !== 'object' || !String(item.siteCode || '').trim()) {
+        throw new Error(`result.reconciliation.siteDispositions[${index}].siteCode is required.`);
+      }
+      if (!String(item.disposition || '').trim()) {
+        throw new Error(`result.reconciliation.siteDispositions[${index}].disposition is required.`);
+      }
+    }
+  }
 };
 
 const validateResult = async ({ result, job, skill, workspace }) => {
@@ -177,6 +193,11 @@ const persistResult = async ({ job, result, outputs, skill }) => {
     job.unaccountedSiteCount = result.reconciliation.unaccountedCount;
     job.accountedSiteCount = result.reconciliation.requestedCount - result.reconciliation.unaccountedCount;
     job.reconciliationConsistent = true;
+    if (Array.isArray(result.reconciliation.siteDispositions)) {
+      job.matchedSiteCodes = result.reconciliation.siteDispositions.map((item) => String(item.siteCode).trim());
+      job.matchedSiteCount = job.matchedSiteCodes.length;
+      job.unmatchedSiteCount = 0;
+    }
   }
   if (result.error) job.error = result.error;
   await job.save();
@@ -248,6 +269,7 @@ const runGenericSkillJob = async (jobId) => {
 
 module.exports = {
   executeProcess,
+  persistResult,
   runGenericSkillJob,
   validateReconciliation,
   validateResult
