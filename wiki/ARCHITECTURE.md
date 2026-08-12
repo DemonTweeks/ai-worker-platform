@@ -82,10 +82,10 @@ The platform validates identity, status, paths, checksums, output existence, and
 | Skill | Version | Contract entrypoint | Public inputs |
 | --- | --- | --- | --- |
 | `create-pr-cd` | `4.0.0` | `src/main.py` | `site_data` + TSS/TI selection parameters |
-| `tx-pr-auditor` | `1.0.0` | `src/main.py` | one `final_po`, one or more `expected_ecc` |
+| `tx-pr-auditor` | `1.1.0` | `src/main.py` | one `final_po`, one `epms`; pinned TSS/TI generator dependency |
 | `create-pr-cd-ran` | `1.1.0` | `src/main.py` | one `bom`, one `epms`, run mode, optional project |
 
-The generator and auditor skills are separate product jobs. The platform does not generate ECC as an implicit auditor step. A future composite workflow must be another standalone skill.
+The PR Auditor product flow is one composite Python skill job. `tx-pr-auditor` owns its pinned `create-pr-cd TSS -> create-pr-cd TI -> focused audit` sequence; the platform still starts only one generic approved entrypoint and does not interpret or orchestrate those stages.
 
 ## Storage and Persistence
 

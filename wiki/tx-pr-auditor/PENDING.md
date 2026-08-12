@@ -1,7 +1,10 @@
 # tx-pr-auditor — Pending Work
 
-There is no open skill-owned contract work for the current focused auditor release.
+No implementation gap remains for restoring the `3001` Final PO + EPMS flow while preserving the platform thin-wrapper boundary.
 
-The skill now owns `skill.json`, `src/main.py`, Final PO/ECC validation, authoritative results, progress, cooperative cancellation, DU-registry release compatibility, workload limits, and standalone integration tests. The product model is separate `create-pr-cd` and `tx-pr-auditor` jobs; any future composite workflow must be a separately versioned standalone skill.
+Before production merge:
 
-The rollback-only Node orchestration has been retired.
+- Review the demo audit classifications as business evidence; technical success does not approve the 22 findings.
+- Merge [BL2ZteSolution/tx-pr-auditor#6](https://github.com/BL2ZteSolution/tx-pr-auditor/pull/6), then optionally move the platform gitlink from the reviewed feature commit to the resulting merge commit when a main-only production pin is required. The approved runtime fingerprint is content-based and must remain unchanged for an equivalent merge.
+
+Potential future optimization: make annotated ECC delivery separately configurable if 100+ evidence files are too large for routine jobs. The current default matches the existing audit evidence behavior.

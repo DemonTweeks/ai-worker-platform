@@ -92,7 +92,7 @@ vi.mock('../../api/jobApi', () => ({
       inputs: {
         files: [
           { name: 'final_po', required: true, multiple: false, acceptedExtensions: ['.xlsx'] },
-          { name: 'expected_ecc', required: true, multiple: true, acceptedExtensions: ['.xlsx'] }
+          { name: 'epms', required: true, multiple: false, acceptedExtensions: ['.xlsx', '.xlsm'] }
         ],
         parametersSchema: {
           type: 'object',
@@ -104,12 +104,16 @@ vi.mock('../../api/jobApi', () => ({
         }
       },
       ui: {
-        hero: { title: 'Review PO submissions with the dedicated PR Auditor worker.', chips: ['PR Auditor', 'Validate', 'Audit Run'] },
+        hero: {
+          title: 'Review PO submissions with the dedicated PR Auditor worker.',
+          subtitle: 'Upload Final PO and EPMS once. The worker creates ECC entitlement, audits PO claims, and preserves evidence in one controlled run.',
+          chips: ['PR Auditor', 'Validate', 'Audit Run']
+        },
         workbench: { title: 'PR Auditor' },
         actions: { primaryLabel: 'Run Audit', readyLabel: 'Ready to run audit' },
         uploads: {
-          final_po: { title: 'Final PO Upload', label: 'Final PO workbook', actionLabel: 'Validate Final PO' },
-          expected_ecc: { title: 'Expected ECC Upload', label: 'Expected ECC workbooks', actionLabel: 'Validate Expected ECC' }
+          final_po: { title: 'Final PO Upload', label: 'Final PO workbook', hint: 'Upload the current Final PO workbook to be audited.', actionLabel: 'Validate Final PO' },
+          epms: { title: 'EPMS Upload', label: 'EPMS workbook', hint: 'Upload EPMS site data. create-pr-cd will generate the TSS and TI entitlement used by the audit.', actionLabel: 'Validate EPMS' }
         },
         uploadGroups: [{
           id: 'audit-period',
@@ -120,12 +124,13 @@ vi.mock('../../api/jobApi', () => ({
         }],
         configuration: {
           modeLabel: 'Audit Run',
-          stageHeading: 'Controlled audit run',
+          stageHeading: 'Controlled two-stage run',
           stages: [
-            { title: 'Load entitlement', description: 'Use approved ECC evidence.' },
+            { title: 'Create entitlement', description: 'create-pr-cd reads EPMS and generates mandatory TSS and TI ECC lines.' },
             { title: 'Audit Final PO', description: 'Compare the submitted PO.' },
             { title: 'Deliver evidence', description: 'Download the result.' }
-          ]
+          ],
+          notice: 'One job runs both engines in order. EPMS is never passed into the focused tx-pr-auditor audit engine. Audit findings require business review.'
         },
         parameters: {
           filterYear: { label: 'Year', control: 'select', optionSource: 'years', defaultFrom: 'currentYear' },
@@ -205,11 +210,15 @@ describe('GenericSkillView', () => {
 
     const uploadText = wrapper.find('.workbench-upload-stack').text();
     expect(uploadText.indexOf('Final PO Upload')).toBeLessThan(uploadText.indexOf('Final PO Period'));
-    expect(uploadText.indexOf('Final PO Period')).toBeLessThan(uploadText.indexOf('Expected ECC Upload'));
+    expect(uploadText.indexOf('Final PO Period')).toBeLessThan(uploadText.indexOf('EPMS Upload'));
     expect(wrapper.findAll('.workbench-upload-card')).toHaveLength(3);
     expect(wrapper.find('.audit-period-grid').exists()).toBe(true);
     expect(wrapper.find('.audit-flow-list').exists()).toBe(true);
-    expect(wrapper.text()).toContain('Controlled audit run');
+    expect(wrapper.text()).toContain('Controlled two-stage run');
+    expect(wrapper.text()).toContain('create-pr-cd reads EPMS and generates mandatory TSS and TI ECC lines.');
+    expect(wrapper.text()).toContain('Upload Final PO and EPMS once.');
+    expect(wrapper.text()).toContain('EPMS is never passed into the focused tx-pr-auditor audit engine.');
+    expect(wrapper.text()).not.toContain('Expected ECC Upload');
     expect(wrapper.text()).not.toContain('Annotate Ecc');
     expect(wrapper.vm.parameterValues.filterYear).toBe(new Date().getFullYear());
     expect(wrapper.vm.parameterValues.filterMonth).toBe(new Date().getMonth() + 1);
