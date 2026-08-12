@@ -101,7 +101,18 @@ describe('result reconciliation rendering', () => {
 
   it('keeps valid partial output downloadable without presenting it as complete', () => {
     const historyWrapper = mount(JobHistoryCard, {
-      propsData: { job: incompleteResultJob },
+      propsData: {
+        job: {
+          ...incompleteResultJob,
+          outputs: [{
+            id: 'partial-zip',
+            fileType: 'zip_package',
+            fileName: 'partial.zip',
+            available: true,
+            exists: true
+          }]
+        }
+      },
       stubs: {
         RouterLink: { template: '<a><slot /></a>' }
       }

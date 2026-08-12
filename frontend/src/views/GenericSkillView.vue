@@ -377,7 +377,6 @@ import {
   createSkillJob,
   getErrorMessage,
   getFileDownloadUrl,
-  getZipDownloadUrl,
   listSkills
 } from '../api/jobApi';
 import { workerRuntimeMixin } from './shared/workerRuntime';
@@ -597,20 +596,23 @@ export default {
       if (this.skillId === 'tx-pr-auditor') {
         return this.jobDetail.outputs.find((file) => file.available && /\.xlsx$/i.test(file.fileName || '')) || null;
       }
-      return this.jobDetail.outputs.find((file) => file.available) || null;
+      return this.jobDetail.outputs.find((file) => file.available && /\.zip$/i.test(file.fileName || ''))
+        || this.jobDetail.outputs.find((file) => file.available)
+        || null;
     },
     canDownload() {
       return Boolean(this.primaryDownloadFile);
     },
     downloadUrl() {
-      if (!this.currentJobId) return '#';
-      if (this.skillId === 'tx-pr-auditor' && this.primaryDownloadFile) {
-        return getFileDownloadUrl(this.currentJobId, this.primaryDownloadFile.id);
-      }
-      return getZipDownloadUrl(this.currentJobId);
+      return this.currentJobId && this.primaryDownloadFile
+        ? getFileDownloadUrl(this.currentJobId, this.primaryDownloadFile.id)
+        : '#';
     },
     downloadButtonLabel() {
-      return this.skillId === 'tx-pr-auditor' ? 'Download Audit Report' : 'Download ZIP';
+      if (this.skillId === 'tx-pr-auditor') return 'Download Audit Report';
+      return this.primaryDownloadFile && /\.zip$/i.test(this.primaryDownloadFile.fileName || '')
+        ? 'Download ZIP'
+        : 'Download Output';
     },
     downloadUnavailableMessage() {
       if (!this.currentJobId) return 'Create a Job to enable downloads.';

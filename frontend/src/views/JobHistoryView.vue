@@ -68,7 +68,7 @@ import JobHistoryCard from '../components/history/JobHistoryCard.vue';
 import JobHistoryFilters from '../components/history/JobHistoryFilters.vue';
 import { getErrorMessage, listJobs } from '../api/jobApi';
 
-const PR_SCOPE_WORKER_IDS = new Set(['mw-pr', 'ran-pr']);
+const PR_SCOPE_WORKER_IDS = new Set(['create-pr-cd', 'mw-pr', 'ran-pr']);
 
 const defaultFilters = () => ({
   search: '',
@@ -126,8 +126,7 @@ export default {
     buildQuery() {
       const query = {
         page: this.page,
-        limit: this.limit,
-        workerType: 'pr-worker'
+        limit: this.limit
       };
 
       ['search', 'status', 'workerId', 'dateFrom', 'dateTo'].forEach((key) => {

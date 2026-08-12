@@ -13,7 +13,7 @@ HTTPS request
        -> pinned create-pr-cd 4.0.0 / TSS
        -> pinned create-pr-cd 4.0.0 / TI
        -> focused Final PO-versus-ECC audit
-  -> result.json
+  -> result.json (individual evidence + skill-owned delivery ZIP)
   -> generic output delivery
 ```
 
@@ -26,7 +26,7 @@ The platform does not know the sequence, scopes, workbook headers, entitlement r
 - Run TSS and TI generators in isolated child workspaces.
 - Forward progress and propagate cancellation.
 - Give only generated ECC to the focused audit engine.
-- Produce the audit workbook, summary, and annotated ECC evidence.
+- Produce the audit workbook, summary, annotated ECC evidence, and the complete `TX_PR_Audit_Delivery.zip` package.
 
 ## Focused Audit Boundary
 
@@ -48,3 +48,4 @@ The inner `scripts/audit_final_po.py` pipeline remains Final PO-versus-ECC only.
 - Generated paths stay inside isolated job workspaces.
 - Invalid and Wrong audit rows never consume entitlement.
 - Business and technical logic remain Python skill-owned.
+- Archive composition remains Python skill-owned; the platform only exposes declared files through the generic download endpoint.
