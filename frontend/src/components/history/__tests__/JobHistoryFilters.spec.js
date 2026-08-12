@@ -51,4 +51,20 @@ describe('JobHistoryFilters worker-aware PR Scope', () => {
       prScope: ''
     }));
   });
+
+  it('offers generic skill workers while retaining legacy history filters', () => {
+    const wrapper = mount(JobHistoryFilters, {
+      propsData: { value: buildFilters() }
+    });
+
+    const values = wrapper.findAll('option').wrappers.map((option) => option.attributes('value'));
+    expect(values).toEqual(expect.arrayContaining([
+      'create-pr-cd',
+      'create-pr-cd-ran',
+      'tx-pr-auditor',
+      'mw-pr',
+      'ran-pr',
+      'pr-auditor'
+    ]));
+  });
 });

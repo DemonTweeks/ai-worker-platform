@@ -84,6 +84,7 @@ describe('JobHistoryCard.vue Component', () => {
       status: 'cancelled_with_partial_result',
       workerType: 'pr-worker',
       outputFileCount: 1,
+      outputs: [{ id: 'partial-zip', fileType: 'zip_package', fileName: 'partial.zip', available: true }],
       finalWorkerSummary: 'Task cancelled after partial output was preserved.',
       createdAt: new Date().toISOString()
     };
@@ -150,6 +151,57 @@ describe('JobHistoryCard.vue Component', () => {
     expect(text).toContain('Review Required: 5');
     expect(text).toContain('Warnings: 2');
     expect(text).toContain('Download Audit Report');
+  });
+
+  it('downloads generic auditor outputs directly from history', () => {
+    const wrapper = mount(JobHistoryCard, {
+      propsData: {
+        job: {
+          jobId: 'SKILL-TX-AUDIT-007',
+          status: 'completed',
+          workerType: 'skill',
+          workerId: 'tx-pr-auditor',
+          workerDisplayName: 'TX PR Auditor',
+          outputFileCount: 2,
+          outputs: [{
+            id: 'skill-audit-result',
+            fileType: 'skill_output',
+            fileName: 'PR_Audit_Result.xlsx',
+            available: true
+          }],
+          createdAt: new Date().toISOString()
+        }
+      },
+      stubs: { routerLink: true, JobStatusBadge: true, JobScopeBadge: true }
+    });
+
+    expect(wrapper.text()).toContain('Download Audit Report');
+    expect(wrapper.find('a.secondary-link').attributes('href')).toContain('/download/skill-audit-result');
+  });
+
+  it('uses a tracked generic skill ZIP instead of the legacy ZIP endpoint', () => {
+    const wrapper = mount(JobHistoryCard, {
+      propsData: {
+        job: {
+          jobId: 'SKILL-ZIP-008',
+          status: 'completed',
+          workerType: 'skill',
+          workerId: 'create-pr-cd',
+          outputs: [{
+            id: 'skill-zip',
+            fileType: 'skill_output',
+            fileName: 'delivery.zip',
+            available: true
+          }],
+          createdAt: new Date().toISOString()
+        }
+      },
+      stubs: { routerLink: true, JobStatusBadge: true, JobScopeBadge: true }
+    });
+
+    expect(wrapper.text()).toContain('Download ZIP');
+    expect(wrapper.find('a.secondary-link').attributes('href')).toContain('/download/skill-zip');
+    expect(wrapper.find('a.secondary-link').attributes('href')).not.toContain('download-zip');
   });
 
   it('does not claim an audit report exists for a failed PR Auditor job with zero outputs', () => {

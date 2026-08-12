@@ -50,9 +50,17 @@ describe('JobHistoryView worker-aware filters', () => {
     await wrapper.vm.loadJobs();
 
     expect(listJobs).toHaveBeenLastCalledWith(expect.objectContaining({
-      workerId: 'ran-pr',
-      workerType: 'pr-worker'
+      workerId: 'ran-pr'
     }));
+    expect(listJobs.mock.calls.at(-1)[0]).not.toHaveProperty('workerType');
+  });
+
+  it('loads legacy and generic jobs together by default', async () => {
+    mountView();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const query = listJobs.mock.calls[0][0];
+    expect(query).toEqual({ page: 1, limit: 20 });
   });
 
   it('omits stale PR Scope from PR Auditor list queries', async () => {
@@ -101,5 +109,6 @@ describe('JobHistoryView worker-aware filters', () => {
     });
 
     expect(wrapper.text()).toContain('PR Auditor');
+    expect(wrapper.find('option[value="tx-pr-auditor"]').exists()).toBe(true);
   });
 });

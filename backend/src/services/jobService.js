@@ -459,7 +459,27 @@ const listJobs = async (query = {}) => {
   const skip = (page - 1) * limit;
   const filter = await buildListFilter(query);
   const [items, total] = await Promise.all([Job.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(), Job.countDocuments(filter)]);
-  return { page, limit, total, items: items.map(serializeJobSummary) };
+  const jobIds = items.map((job) => job.jobId);
+  const files = jobIds.length
+    ? await JobFile.find({ jobId: { $in: jobIds } }).sort({ createdAt: 1 }).lean()
+    : [];
+  const outputFiles = files.filter((file) => !INPUT_FILE_TYPES.has(file.fileType));
+  const filesWithAvailability = await Promise.all(outputFiles.map(getFileAvailability));
+  const outputsByJobId = filesWithAvailability.reduce((grouped, file, index) => {
+    const jobId = outputFiles[index].jobId;
+    if (!grouped[jobId]) grouped[jobId] = [];
+    grouped[jobId].push(file);
+    return grouped;
+  }, {});
+  return {
+    page,
+    limit,
+    total,
+    items: items.map((job) => ({
+      ...serializeJobSummary(job),
+      outputs: outputsByJobId[job.jobId] || []
+    }))
+  };
 };
 
 const isExpired = (file) => Boolean(file.isExpired) || (file.retentionUntil && new Date(file.retentionUntil).getTime() < Date.now());

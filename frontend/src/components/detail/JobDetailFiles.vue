@@ -52,9 +52,14 @@
 </template>
 
 <script>
-import { getFileDownloadUrl, getZipDownloadUrl } from '../../api/jobApi';
+import { getFileDownloadUrl } from '../../api/jobApi';
 import { formatBytes, formatDateTime } from '../../utils/formatUtils';
 import { isIncompleteResult } from '../../utils/jobStatusUtils';
+import {
+  findAvailableArchive,
+  findAvailableAuditReport,
+  isPrAuditorWorker
+} from '../../utils/prAuditorResultUtils';
 
 const FILE_TYPE_LABELS = {
   ecc_output: 'ECC Output',
@@ -77,13 +82,13 @@ export default {
   },
   computed: {
     isPrAuditorJob() {
-      return this.workerId === 'pr-auditor';
+      return isPrAuditorWorker(this.workerId);
     },
-    canDownloadZip() {
-      return this.outputs.some((file) => file.fileType === 'zip_package' && file.available);
+    archiveFile() {
+      return findAvailableArchive(this.outputs);
     },
     auditReportFile() {
-      return this.outputs.find((file) => file.fileType === 'pr_audit_result_xlsx' && file.available) || null;
+      return findAvailableAuditReport(this.outputs);
     },
     isPartialCancelledResult() {
       return this.status === 'cancelled_with_partial_result';
@@ -95,17 +100,15 @@ export default {
       return this.isPartialCancelledResult || this.isIncompleteResultJob ? 'Download Partial ZIP' : 'Download ZIP';
     },
     primaryDownloadLabel() {
-      return this.isPrAuditorJob ? 'Download Audit Report' : this.zipLabel;
+      if (this.isPrAuditorJob && this.auditReportFile) return 'Download Audit Report';
+      return this.archiveFile ? this.zipLabel : '';
     },
     primaryDownloadUrl() {
       if (this.isPrAuditorJob && this.auditReportFile) {
         return getFileDownloadUrl(this.jobId, this.auditReportFile.id);
       }
 
-      return this.canDownloadZip ? this.zipUrl : '';
-    },
-    zipUrl() {
-      return getZipDownloadUrl(this.jobId);
+      return this.archiveFile ? getFileDownloadUrl(this.jobId, this.archiveFile.id) : '';
     }
   },
   methods: {

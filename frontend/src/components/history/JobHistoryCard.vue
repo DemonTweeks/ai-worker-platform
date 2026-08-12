@@ -36,7 +36,7 @@
       >
         {{ downloadLabel }}
       </a>
-      <span v-else class="muted">ZIP not ready</span>
+      <span v-else class="muted">Output not available</span>
     </div>
     <p v-if="job.status === 'cancelled_with_partial_result'" class="muted">Partial cancelled result only. This package is not a completed delivery.</p>
     <p v-else-if="isIncompleteResultJob" class="muted">Incomplete result package only. This is not a completed delivery.</p>
@@ -44,12 +44,14 @@
 </template>
 
 <script>
-import { getFileDownloadUrl, getZipDownloadUrl } from '../../api/jobApi';
+import { getFileDownloadUrl } from '../../api/jobApi';
 import { formatDateTime } from '../../utils/formatUtils';
 import { generationScopeLabel, isIncompleteResult } from '../../utils/jobStatusUtils';
 import {
   findAvailableAuditReport,
+  findAvailableArchive,
   hasAuditReport,
+  isPrAuditorWorker,
   prAuditorReportMessage
 } from '../../utils/prAuditorResultUtils';
 import JobScopeBadge from './JobScopeBadge.vue';
@@ -66,7 +68,7 @@ export default {
   },
   computed: {
     isPrAuditorJob() {
-      return this.job.workerId === 'pr-auditor';
+      return isPrAuditorWorker(this.job.workerId);
     },
     isIncompleteResultJob() {
       return isIncompleteResult(this.job);
@@ -126,27 +128,36 @@ export default {
     selectedProjectLabel() {
       return this.job.selectedProject || 'N/A';
     },
-    zipUrl() {
-      return getZipDownloadUrl(this.job.jobId);
-    },
     auditReportFile() {
       return findAvailableAuditReport(this.job.outputs);
     },
+    archiveFile() {
+      return findAvailableArchive(this.job.outputs);
+    },
+    availableOutputFile() {
+      if (this.isPrAuditorJob && this.auditReportFile) return this.auditReportFile;
+      if (this.archiveFile) return this.archiveFile;
+      return Array.isArray(this.job.outputs)
+        ? this.job.outputs.find((file) => file.available) || null
+        : null;
+    },
     downloadUrl() {
-      if (this.isPrAuditorJob && this.auditReportFile) {
-        return getFileDownloadUrl(this.job.jobId, this.auditReportFile.id);
-      }
-
-      return this.zipUrl;
+      return this.availableOutputFile
+        ? getFileDownloadUrl(this.job.jobId, this.availableOutputFile.id)
+        : '';
     },
     downloadLabel() {
-      if (this.isPrAuditorJob) {
+      if (this.isPrAuditorJob && this.auditReportFile) {
         return 'Download Audit Report';
       }
 
-      return this.job.status === 'cancelled_with_partial_result' || this.isIncompleteResultJob
-        ? 'Download Partial ZIP'
-        : 'Download ZIP';
+      if (this.archiveFile) {
+        return this.job.status === 'cancelled_with_partial_result' || this.isIncompleteResultJob
+          ? 'Download Partial ZIP'
+          : 'Download ZIP';
+      }
+
+      return 'Download Output';
     },
     reconciliationPreview() {
       if (!this.hasReconciliation) return '';
@@ -192,12 +203,7 @@ export default {
       return text.length > 180 ? `${text.slice(0, 177)}...` : text;
     },
     hasDownloadableResult() {
-      if (this.isPrAuditorJob) {
-        return Boolean(this.auditReportFile);
-      }
-
-      return (['completed', 'completed_with_warning', 'cancelled_with_partial_result'].includes(this.job.status) || this.isIncompleteResultJob)
-        && ((this.job.outputFileCount || 0) > 0 || (this.job.reviewRequiredCount || 0) > 0 || (this.job.warningCount || 0) > 0);
+      return Boolean(this.availableOutputFile);
     }
   },
   methods: {
