@@ -130,11 +130,11 @@ vi.mock('../../api/jobApi', () => ({
             { title: 'Audit Final PO', description: 'Compare the submitted PO.' },
             { title: 'Deliver evidence', description: 'Download the result.' }
           ],
-          notice: 'One job runs both engines in order. EPMS is never passed into the focused tx-pr-auditor audit engine. Audit findings require business review.'
+          notice: 'One job runs both engines in order. EPMS supplies governed scope evidence to the audit engine. Audit findings require business review.'
         },
         parameters: {
-          filterYear: { label: 'Year', control: 'select', optionSource: 'years', defaultFrom: 'currentYear' },
-          filterMonth: { label: 'Month', control: 'select', optionSource: 'months', defaultFrom: 'currentMonth' },
+          filterYear: { label: 'Year', control: 'select', optionSource: 'years', placeholder: 'All years' },
+          filterMonth: { label: 'Month', control: 'select', optionSource: 'months', placeholder: 'All months' },
           annotateEcc: { hidden: true, default: true }
         }
       }
@@ -217,12 +217,12 @@ describe('GenericSkillView', () => {
     expect(wrapper.text()).toContain('Controlled two-stage run');
     expect(wrapper.text()).toContain('create-pr-cd reads EPMS and generates mandatory TSS and TI ECC lines.');
     expect(wrapper.text()).toContain('Upload Final PO and EPMS once.');
-    expect(wrapper.text()).toContain('EPMS is never passed into the focused tx-pr-auditor audit engine.');
+    expect(wrapper.text()).toContain('EPMS supplies governed scope evidence to the audit engine.');
     expect(wrapper.text()).not.toContain('Expected ECC Upload');
     expect(wrapper.text()).not.toContain('Annotate Ecc');
-    expect(wrapper.vm.parameterValues.filterYear).toBe(new Date().getFullYear());
-    expect(wrapper.vm.parameterValues.filterMonth).toBe(new Date().getMonth() + 1);
-    expect(wrapper.vm.normalizedParameters().annotateEcc).toBe(true);
+    expect(wrapper.vm.parameterValues.filterYear).toBe('');
+    expect(wrapper.vm.parameterValues.filterMonth).toBe('');
+    expect(wrapper.vm.normalizedParameters()).toEqual({ annotateEcc: true });
     expect(listJobs).toHaveBeenCalledWith(expect.objectContaining({
       workerType: 'skill',
       workerId: 'tx-pr-auditor'
