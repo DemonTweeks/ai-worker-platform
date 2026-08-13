@@ -19,7 +19,7 @@
   "tx-pr-auditor": {
     "rootConfigKey": "prAuditorRoot",
     "approvedVersion": "1.1.0",
-    "approvedPackageSha256": "76219fd5ea1dc5e3a72bf1c7e417adc54d2f8a1244003b8adec96a3d35e066c1",
+    "approvedPackageSha256": "c9f9c29403298a8013e938eff619abec8daaec2c01878497136009fa76fd14e3",
     "include": [
       "skill.json",
       "requirements.txt",
