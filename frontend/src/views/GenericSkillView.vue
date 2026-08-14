@@ -400,6 +400,10 @@ const HERO_CONTENT = {
   'tx-pr-auditor': {
     title: 'Run controlled PR audits from approved inputs.',
     subtitle: 'Submit Final PO and EPMS once. The worker creates ECC entitlement, audits PO claims, and preserves evidence in one controlled run.'
+  },
+  'bom-builder': {
+    title: 'Analyze TX BOM requirements with controlled evidence.',
+    subtitle: 'Submit TX Mini EPMS and optional stock workbooks. The standalone skill owns classification, material proposals, inventory checks, and validation outputs.'
   }
 };
 
@@ -408,7 +412,9 @@ const UPLOAD_TITLES = {
   bom: 'BOM Upload',
   epms: 'EPMS Upload',
   final_po: 'Final PO Upload',
-  expected_ecc: 'Expected ECC Upload'
+  expected_ecc: 'Expected ECC Upload',
+  scm_inventory: 'SCM Inventory Upload',
+  huawei_stock: 'Huawei MW Stock Upload'
 };
 
 export default {

@@ -30,7 +30,7 @@ const run = async () => {
     const catalogResponse = await fetch(`${baseUrl}/api/skills`);
     assert.strictEqual(catalogResponse.status, 200);
     const catalog = await catalogResponse.json();
-    assert.deepStrictEqual(catalog.skills.map((item) => item.skillId).sort(), ['create-pr-cd', 'create-pr-cd-ran', 'tx-pr-auditor']);
+    assert.deepStrictEqual(catalog.skills.map((item) => item.skillId).sort(), ['bom-builder', 'create-pr-cd', 'create-pr-cd-ran', 'tx-pr-auditor']);
     const creatorCatalogEntry = catalog.skills.find((item) => item.skillId === 'create-pr-cd');
     assert.strictEqual(creatorCatalogEntry.ui.schemaVersion, '1.0');
     assert.strictEqual(creatorCatalogEntry.ui.parameters.nonProductionUat.hidden, true);
@@ -40,6 +40,10 @@ const run = async () => {
     assert.strictEqual(auditorCatalogEntry.ui.parameters.annotateEcc.default, true);
     assert.deepStrictEqual(auditorCatalogEntry.inputs.files.map((item) => item.name), ['final_po', 'epms']);
     assert.strictEqual(auditorCatalogEntry.ui.configuration.stageHeading, 'Controlled two-stage run');
+    const bomCatalogEntry = catalog.skills.find((item) => item.skillId === 'bom-builder');
+    assert.deepStrictEqual(bomCatalogEntry.inputs.files.map((item) => item.name), ['epms', 'scm_inventory', 'huawei_stock']);
+    assert.deepStrictEqual(bomCatalogEntry.inputs.parametersSchema.properties.mode.enum, ['analyze', 'validate']);
+    assert.strictEqual(bomCatalogEntry.ui.parameters.profile.hidden, true);
 
     const form = new FormData();
     form.append('browserTabSessionId', 'generic-tab-0001');
@@ -88,6 +92,19 @@ const run = async () => {
     const auditorEnvelope = JSON.parse(await fs.promises.readFile(path.join(tempRoot, auditorJob.inputManifestPath), 'utf8'));
     assert.deepStrictEqual(auditorEnvelope.files.map((item) => item.name), ['final_po', 'epms']);
     assert.deepStrictEqual(auditorEnvelope.parameters, { filterYear: 2026, filterMonth: 6, annotateEcc: true });
+
+    const bomForm = new FormData();
+    bomForm.append('browserTabSessionId', 'generic-bom-tab-0001');
+    bomForm.append('idempotencyKey', 'generic-bom-create-0001');
+    bomForm.append('parameters', JSON.stringify({ mode: 'validate', profile: 'auto' }));
+    bomForm.append('epms', new Blob([Buffer.from('synthetic-epms')]), 'TX Mini EPMS.xlsx');
+    const bomResponse = await fetch(`${baseUrl}/api/skills/bom-builder/jobs`, { method: 'POST', body: bomForm });
+    assert.strictEqual(bomResponse.status, 201);
+    const bomJob = (await bomResponse.json()).job;
+    assert.strictEqual(bomJob.skillId, 'bom-builder');
+    const bomEnvelope = JSON.parse(await fs.promises.readFile(path.join(tempRoot, bomJob.inputManifestPath), 'utf8'));
+    assert.deepStrictEqual(bomEnvelope.files.map((item) => item.name), ['epms']);
+    assert.deepStrictEqual(bomEnvelope.parameters, { mode: 'validate', profile: 'auto' });
 
     const retiredCreateResponse = await fetch(`${baseUrl}/api/jobs`, {
       method: 'POST',
