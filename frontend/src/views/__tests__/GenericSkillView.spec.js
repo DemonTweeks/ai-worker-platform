@@ -87,6 +87,58 @@ vi.mock('../../api/jobApi', () => ({
         }
       }
     }, {
+      skillId: 'create-pr-cd-ran',
+      displayName: 'Create PR CD RAN',
+      inputs: {
+        files: [
+          { name: 'bom', required: true, multiple: false, acceptedExtensions: ['.xlsx'] },
+          { name: 'epms', required: true, multiple: false, acceptedExtensions: ['.xlsx'] }
+        ],
+        parametersSchema: {
+          type: 'object',
+          required: ['runMode'],
+          properties: {
+            runMode: { type: 'string', enum: ['standard-pr', 'general-item'] },
+            selectedProject: { type: 'string' }
+          }
+        }
+      },
+      ui: {
+        workerLabel: 'RAN PR Worker',
+        hero: { title: 'Launch RAN PR jobs.', subtitle: 'Reference RAN workbench', chips: ['RAN PR Worker'] },
+        workbench: { title: 'PR Creator' },
+        actions: { primaryLabel: 'Create Job', readyLabel: 'Ready to create Job' },
+        uploads: {
+          bom: { title: 'BOM Upload', validationRequired: true },
+          epms: { title: 'EPMS Upload', validationRequired: true }
+        },
+        configuration: {
+          mode: { field: 'runMode', labels: { 'standard-pr': 'Standard PR', 'general-item': 'General Item' } },
+          fieldOrder: ['runMode', 'selectedProject']
+        },
+        parameters: {
+          runMode: {
+            label: 'Run mode',
+            control: 'segmented',
+            options: [
+              { value: 'standard-pr', label: 'Standard PR' },
+              { value: 'general-item', label: 'General Item' }
+            ]
+          },
+          selectedProject: {
+            label: 'General Item project',
+            control: 'select',
+            placeholder: 'Select a validated project',
+            options: [
+              { value: 'CD consolidation 2023 (Swap/ Modernize)', label: 'CD consolidation 2023 (Swap/ Modernize)' },
+              { value: 'Project Thanos', label: 'Project Thanos' }
+            ],
+            disabledWhen: { field: 'runMode', equals: 'standard-pr' },
+            requiredWhen: { field: 'runMode', equals: 'general-item' }
+          }
+        }
+      }
+    }, {
       skillId: 'tx-pr-auditor',
       displayName: 'TX PR Auditor',
       inputs: {
@@ -226,6 +278,40 @@ describe('GenericSkillView', () => {
     expect(listJobs).toHaveBeenCalledWith(expect.objectContaining({
       workerType: 'skill',
       workerId: 'tx-pr-auditor'
+    }));
+  });
+
+  it('renders the RAN General Item project as a validated dropdown', async () => {
+    const wrapper = mount(GenericSkillView, {
+      propsData: { skillId: 'create-pr-cd-ran' },
+      mocks: { $router: { push: vi.fn(async () => {}) } },
+      stubs: { RouterLink: { template: '<a><slot /></a>' } }
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await wrapper.vm.$nextTick();
+
+    const projectSelect = wrapper.find('select.compact-inline-select');
+    expect(projectSelect.exists()).toBe(true);
+    expect(projectSelect.attributes('disabled')).toBeDefined();
+    expect(projectSelect.text()).toContain('Select a validated project');
+    expect(projectSelect.text()).toContain('CD consolidation 2023 (Swap/ Modernize)');
+    expect(projectSelect.text()).toContain('Project Thanos');
+
+    wrapper.vm.parameterValues.runMode = 'general-item';
+    await wrapper.vm.$nextTick();
+    expect(projectSelect.attributes('disabled')).toBeUndefined();
+    await projectSelect.setValue('Project Thanos');
+    expect(wrapper.vm.parameterValues.selectedProject).toBe('Project Thanos');
+
+    wrapper.vm.$set(wrapper.vm.selectedFiles, 'bom', new File(['bom'], 'BOM.xlsx'));
+    wrapper.vm.$set(wrapper.vm.selectedFiles, 'epms', new File(['epms'], 'EPMS.xlsx'));
+    wrapper.vm.skill.inputs.files.forEach((input) => {
+      wrapper.vm.validateSelectedFiles(input, wrapper.vm.selectedFiles[input.name]);
+    });
+    await wrapper.find('form').trigger('submit');
+
+    expect(createSkillJob).toHaveBeenCalledWith('create-pr-cd-ran', expect.objectContaining({
+      parameters: { runMode: 'general-item', selectedProject: 'Project Thanos' }
     }));
   });
 });
