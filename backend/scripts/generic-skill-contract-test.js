@@ -35,6 +35,15 @@ const run = async () => {
     assert.strictEqual(creatorCatalogEntry.ui.schemaVersion, '1.0');
     assert.strictEqual(creatorCatalogEntry.ui.parameters.nonProductionUat.hidden, true);
     assert.strictEqual(creatorCatalogEntry.ui.parameters.siteCodes.visibleWhen.field, 'allSites');
+    const ranCatalogEntry = catalog.skills.find((item) => item.skillId === 'create-pr-cd-ran');
+    const ranProjectPresentation = ranCatalogEntry.ui.parameters.selectedProject;
+    assert.strictEqual(ranCatalogEntry.version, '1.1.1');
+    assert.strictEqual(ranProjectPresentation.control, 'select');
+    assert.strictEqual(ranProjectPresentation.placeholder, 'Select a validated project');
+    assert.strictEqual(ranProjectPresentation.disabledWhen.field, 'runMode');
+    assert.strictEqual(ranProjectPresentation.requiredWhen.equals, 'general-item');
+    assert.strictEqual(ranProjectPresentation.options.length, 15);
+    assert(ranProjectPresentation.options.some((option) => option.value === 'Project Thanos'));
     const auditorCatalogEntry = catalog.skills.find((item) => item.skillId === 'tx-pr-auditor');
     assert.deepStrictEqual(auditorCatalogEntry.ui.uploadGroups[0].fields, ['filterYear', 'filterMonth']);
     assert.strictEqual(auditorCatalogEntry.ui.parameters.annotateEcc.default, true);

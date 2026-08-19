@@ -5,6 +5,7 @@ ai-worker-platform.code-workspace
 
 # Local prompts and scratch material
 prompts/
+temp/
 
 # Environment and secrets
 .env
