@@ -37,7 +37,7 @@ const run = async () => {
     assert.strictEqual(creatorCatalogEntry.ui.parameters.siteCodes.visibleWhen.field, 'allSites');
     const ranCatalogEntry = catalog.skills.find((item) => item.skillId === 'create-pr-cd-ran');
     const ranProjectPresentation = ranCatalogEntry.ui.parameters.selectedProject;
-    assert.strictEqual(ranCatalogEntry.version, '1.1.1');
+    assert.strictEqual(ranCatalogEntry.version, '1.1.2');
     assert.strictEqual(ranProjectPresentation.control, 'select');
     assert.strictEqual(ranProjectPresentation.placeholder, 'Select a validated project');
     assert.strictEqual(ranProjectPresentation.disabledWhen.field, 'runMode');
@@ -188,6 +188,31 @@ const run = async () => {
       }
     });
     assert.strictEqual(validated.outputs.length, 1);
+
+    const zipPath = path.join(workspace, 'output', 'delivery.zip');
+    await fs.promises.writeFile(zipPath, 'zip-content');
+    const zipJob = await Job.create({
+      jobId: 'GENERIC-ZIP-OUTPUT-001',
+      workerId: 'create-pr-cd-ran',
+      workerType: 'skill',
+      skillId: 'create-pr-cd-ran',
+      status: 'generating'
+    });
+    await persistResult({
+      job: zipJob,
+      skill: loadApprovedSkill('create-pr-cd-ran'),
+      outputs: [{
+        absolutePath: zipPath,
+        displayName: 'delivery.zip',
+        fileSize: 11,
+        mediaType: 'application/zip',
+        sha256: 'test-sha'
+      }],
+      result: { status: 'succeeded', summary: { message: 'complete' }, warnings: [] }
+    });
+    const persistedArchive = await JobFile.findOne({ jobId: zipJob.jobId, fileType: 'zip_package' });
+    assert(persistedArchive);
+    assert.strictEqual(persistedArchive.fileName, 'delivery.zip');
     console.log('Generic skill catalog, submission, and result-contract tests passed.');
   } finally {
     jobQueue.enqueueJob = originalEnqueue;

@@ -12,6 +12,7 @@ process.env.STORAGE_ROOT = tempRoot;
 const { Job, JobFile } = require('../src/models');
 const { createSkillJob } = require('../src/skills/genericSkillJobService');
 const { shutdownQueue } = require('../src/queue/jobQueue');
+const { getZipDownloadFile } = require('../src/services/jobService');
 
 const waitForTerminal = async (jobId, timeoutMs = 120000) => {
   const terminal = new Set(['completed', 'completed_with_warning', 'failed', 'cancelled', 'cancelled_with_partial_result']);
@@ -44,8 +45,15 @@ const run = async () => {
     const completed = await waitForTerminal(created.job.jobId);
     assert.notStrictEqual(completed.status, 'failed', JSON.stringify(completed.error || {}));
     assert.strictEqual(completed.skillResult.skillId, 'create-pr-cd-ran');
-    const outputs = await JobFile.find({ jobId: completed.jobId, fileType: 'skill_output' }).lean();
+    const persistedFiles = await JobFile.find({ jobId: completed.jobId }).lean();
+    const outputs = persistedFiles.filter((file) => file.fileType !== 'skill_input');
     assert(outputs.some((file) => file.fileName === 'ECC_PR_Output.xlsx'));
+    const archive = outputs.find((file) => file.fileName === 'CREATE_PR_CD_RAN_DELIVERY.zip');
+    assert(archive);
+    assert.strictEqual(archive.fileType, 'zip_package');
+    const download = await getZipDownloadFile(completed.jobId);
+    assert.strictEqual(download.file._id, archive._id);
+    assert.strictEqual(download.absolutePath.endsWith('CREATE_PR_CD_RAN_DELIVERY.zip'), true);
     console.log(JSON.stringify({ jobId: completed.jobId, status: completed.status, outputFileCount: outputs.length }, null, 2));
   } finally {
     await shutdownQueue();

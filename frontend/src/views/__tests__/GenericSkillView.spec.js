@@ -314,4 +314,28 @@ describe('GenericSkillView', () => {
       parameters: { runMode: 'general-item', selectedProject: 'Project Thanos' }
     }));
   });
+
+  it('uses the RAN delivery ZIP as the primary download', async () => {
+    const wrapper = mount(GenericSkillView, {
+      propsData: { skillId: 'create-pr-cd-ran' },
+      mocks: { $router: { push: vi.fn(async () => {}) } },
+      stubs: { RouterLink: { template: '<a><slot /></a>' } }
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await wrapper.vm.$nextTick();
+
+    wrapper.vm.currentJobId = 'PR-RAN-ZIP-001';
+    wrapper.vm.jobDetail = {
+      job: { jobId: 'PR-RAN-ZIP-001', status: 'completed' },
+      outputs: [
+        { id: 'json-output', fileName: 'simple_normalized.json', available: true },
+        { id: 'zip-output', fileName: 'CREATE_PR_CD_RAN_DELIVERY.zip', available: true }
+      ]
+    };
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.vm.primaryDownloadFile.id).toBe('zip-output');
+    expect(wrapper.vm.downloadButtonLabel).toBe('Download ZIP');
+    expect(wrapper.vm.downloadUrl).toBe('/download/zip');
+  });
 });
