@@ -377,6 +377,7 @@ import {
   createSkillJob,
   getErrorMessage,
   getFileDownloadUrl,
+  getZipDownloadUrl,
   listSkills
 } from '../api/jobApi';
 import { workerRuntimeMixin } from './shared/workerRuntime';
@@ -604,9 +605,10 @@ export default {
       return Boolean(this.primaryDownloadFile);
     },
     downloadUrl() {
-      return this.currentJobId && this.primaryDownloadFile
-        ? getFileDownloadUrl(this.currentJobId, this.primaryDownloadFile.id)
-        : '#';
+      if (!this.currentJobId || !this.primaryDownloadFile) return '#';
+      return /\.zip$/i.test(this.primaryDownloadFile.fileName || '')
+        ? getZipDownloadUrl(this.currentJobId)
+        : getFileDownloadUrl(this.currentJobId, this.primaryDownloadFile.id);
     },
     downloadButtonLabel() {
       if (this.skillId === 'tx-pr-auditor') return 'Download Audit Report';

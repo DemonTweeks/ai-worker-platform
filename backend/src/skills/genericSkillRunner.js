@@ -148,7 +148,9 @@ const executeProcess = ({ jobId, skill, inputManifest, workspace, cancellationPa
 const persistResult = async ({ job, result, outputs, skill }) => {
   const createdFiles = await JobFile.insertMany(outputs.map((item) => ({
     jobId: job.jobId,
-    fileType: 'skill_output',
+    fileType: item.mediaType === 'application/zip' || path.extname(item.displayName || item.absolutePath).toLowerCase() === '.zip'
+      ? 'zip_package'
+      : 'skill_output',
     fileName: item.displayName || path.basename(item.absolutePath),
     filePath: toStorageRelativePath(storageService.getStorageRoot(), item.absolutePath),
     fileSize: item.fileSize,

@@ -42,8 +42,8 @@
   },
   "create-pr-cd-ran": {
     "rootConfigKey": "ranCreatePrCdRoot",
-    "approvedVersion": "1.1.1",
-    "approvedPackageSha256": "45b79a76d19b1677b28f1f1b9b8c5b913f0c7fd80cf3e865794024882465171d",
+    "approvedVersion": "1.1.2",
+    "approvedPackageSha256": "2f22a3200766cbda35b1af63b425fcbf5a0bcda1b0685fcec21020619c1fde3a",
     "include": [
       "skill.json",
       "requirements.txt",
