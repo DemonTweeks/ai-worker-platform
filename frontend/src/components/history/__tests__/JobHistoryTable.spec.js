@@ -25,7 +25,7 @@ describe('JobHistoryTable', () => {
     expect(wrapper.find('.history-site-code').attributes('title')).toBe('SITE-001, SITE-002');
   });
 
-  it('keeps number and site-code cells marked as sticky columns', () => {
+  it('places status, site code, view, and download beside the row number with status marked sticky', () => {
     const wrapper = mountTable([{
       jobId: 'PR-002',
       status: 'running',
@@ -33,9 +33,15 @@ describe('JobHistoryTable', () => {
       createdAt: '2026-08-20T12:00:00.000Z'
     }]);
 
-    expect(wrapper.find('th.history-index-column').exists()).toBe(true);
-    expect(wrapper.find('th.history-site-column').exists()).toBe(true);
-    expect(wrapper.find('td.history-index-column').exists()).toBe(true);
+    expect(wrapper.findAll('thead th').wrappers.slice(0, 5).map((header) => header.text())).toEqual([
+      'No.',
+      'Status',
+      'Site Code',
+      'View',
+      'Download'
+    ]);
+    expect(wrapper.find('th.history-status-column').exists()).toBe(true);
+    expect(wrapper.find('td.history-status-column').exists()).toBe(true);
     expect(wrapper.find('td.history-site-column').text()).toBe('All sites');
   });
 
@@ -54,6 +60,7 @@ describe('JobHistoryTable', () => {
 
     expect(wrapper.text()).toContain('View');
     expect(wrapper.text()).toContain('Download');
-    expect(wrapper.find('a.secondary-link').attributes('href')).toContain('/download/result-zip');
+    expect(wrapper.find('td.history-download-column a.secondary-link').attributes('href')).toContain('/download/result-zip');
+    expect(wrapper.find('td.history-view-column').text()).toBe('View');
   });
 });

@@ -6,10 +6,12 @@
         <thead>
           <tr>
             <th class="history-index-column" scope="col">No.</th>
+            <th class="history-status-column" scope="col">Status</th>
             <th class="history-site-column" scope="col">Site Code</th>
+            <th class="history-view-column" scope="col">View</th>
+            <th class="history-download-column" scope="col">Download</th>
             <th scope="col">Job ID</th>
             <th scope="col">Worker</th>
-            <th scope="col">Status</th>
             <th scope="col">Run Mode</th>
             <th scope="col">Project</th>
             <th scope="col">PR Scope</th>
@@ -22,18 +24,36 @@
             <th scope="col">Summary</th>
             <th scope="col">Created</th>
             <th scope="col">Completed</th>
-            <th scope="col">Actions</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="(job, index) in jobs" :key="job.jobId">
             <td class="history-index-column">{{ startIndex + index + 1 }}</td>
+            <td class="history-status-column"><JobStatusBadge :status="job.status" :job="job" /></td>
             <td class="history-site-column">
               <span class="history-site-code" :title="siteCodeTitle(job)">{{ siteCodeDisplay(job) }}</span>
             </td>
+            <td class="history-view-column">
+              <router-link
+                class="download-button"
+                :to="{ name: 'job-detail', params: { jobId: job.jobId } }"
+              >
+                View
+              </router-link>
+            </td>
+            <td class="history-download-column">
+              <a
+                v-if="availableOutputFile(job)"
+                class="secondary-link"
+                :href="downloadUrl(job)"
+                :title="downloadTitle(job)"
+              >
+                Download
+              </a>
+              <span v-else class="muted">No output</span>
+            </td>
             <td class="history-job-id">{{ job.jobId }}</td>
             <td>{{ workerLabel(job) }}</td>
-            <td><JobStatusBadge :status="job.status" :job="job" /></td>
             <td>{{ job.runMode || '—' }}</td>
             <td>{{ job.selectedProject || '—' }}</td>
             <td>{{ job.prScope || '—' }}</td>
@@ -48,25 +68,6 @@
             </td>
             <td>{{ formatDateTime(job.createdAt) }}</td>
             <td>{{ job.completedAt ? formatDateTime(job.completedAt) : 'In progress' }}</td>
-            <td class="history-actions-cell">
-              <div class="history-table-actions">
-                <router-link
-                  class="download-button"
-                  :to="{ name: 'job-detail', params: { jobId: job.jobId } }"
-                >
-                  View
-                </router-link>
-                <a
-                  v-if="availableOutputFile(job)"
-                  class="secondary-link"
-                  :href="downloadUrl(job)"
-                  :title="downloadTitle(job)"
-                >
-                  Download
-                </a>
-                <span v-else class="muted">No output</span>
-              </div>
-            </td>
           </tr>
         </tbody>
       </table>

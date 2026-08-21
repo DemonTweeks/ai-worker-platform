@@ -3080,33 +3080,44 @@ body:has(.home-cockpit) {
   background: #f3f8fc;
 }
 
-.history-results-table .history-index-column,
-.history-results-table .history-site-column {
-  position: sticky;
-}
-
 .history-results-table .history-index-column {
-  left: 0;
   max-width: 62px;
   min-width: 62px;
   text-align: center;
   width: 62px;
-  z-index: 4;
 }
 
 .history-results-table .history-site-column {
-  box-shadow: 8px 0 14px -14px rgba(15, 23, 42, 0.82);
-  left: 62px;
   max-width: 166px;
   min-width: 166px;
   width: 166px;
+}
+
+.history-results-table .history-status-column {
+  box-shadow: 8px 0 14px -14px rgba(15, 23, 42, 0.82);
+  left: 0;
+  min-width: 220px;
+  position: sticky;
+  width: 220px;
   z-index: 4;
 }
 
-.history-results-table thead .history-index-column,
-.history-results-table thead .history-site-column {
+.history-results-table thead .history-status-column {
   background: #e9f0f6;
   z-index: 5;
+}
+
+.history-view-column,
+.history-download-column {
+  min-width: 112px;
+}
+
+.history-view-column .download-button,
+.history-download-column .secondary-link {
+  font-size: 12px;
+  min-height: 32px;
+  padding: 7px 10px;
+  white-space: nowrap;
 }
 
 .history-site-code,
@@ -3137,23 +3148,6 @@ body:has(.home-cockpit) {
   text-overflow: ellipsis;
 }
 
-.history-actions-cell {
-  min-width: 176px;
-}
-
-.history-table-actions {
-  align-items: center;
-  display: flex;
-  gap: 6px;
-}
-
-.history-table-actions .download-button,
-.history-table-actions .secondary-link {
-  font-size: 12px;
-  min-height: 32px;
-  padding: 7px 10px;
-  white-space: nowrap;
-}
 
 @media (max-width: 760px) {
   .history-results-table {
@@ -3172,9 +3166,13 @@ body:has(.home-cockpit) {
   }
 
   .history-results-table .history-site-column {
-    left: 52px;
     max-width: 138px;
     min-width: 138px;
     width: 138px;
+  }
+
+  .history-results-table .history-status-column {
+    min-width: 190px;
+    width: 190px;
   }
 }
