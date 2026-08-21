@@ -52,10 +52,10 @@
           <option value="status_asc">Status A-Z</option>
         </select>
       </label>
-    </div>
-    <div class="filter-actions">
-      <button type="button" @click="$emit('apply')">Apply filters</button>
-      <button type="button" class="secondary-button" @click="$emit('reset')">Reset</button>
+      <div class="filter-actions">
+        <button type="button" @click="$emit('apply')">Apply filters</button>
+        <button type="button" class="secondary-button" @click="$emit('reset')">Reset</button>
+      </div>
     </div>
   </section>
 </template>

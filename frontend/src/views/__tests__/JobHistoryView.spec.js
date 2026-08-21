@@ -26,7 +26,7 @@ const mountView = () => mount(JobHistoryView, {
   stubs: {
     routerLink: true,
     ErrorBanner: true,
-    JobHistoryCard: true,
+    JobHistoryTable: true,
     JobHistoryFilters: true
   }
 });
@@ -103,7 +103,7 @@ describe('JobHistoryView worker-aware filters', () => {
       stubs: {
         routerLink: true,
         ErrorBanner: true,
-        JobHistoryCard: true,
+        JobHistoryTable: true,
         JobHistoryFilters: false
       }
     });
