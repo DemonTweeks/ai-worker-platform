@@ -51,5 +51,17 @@
       "config/**/*.xlsx",
       "config/**/*.xls"
     ]
+  },
+  "bom-builder": {
+    "rootConfigKey": "bomBuilderRoot",
+    "approvedVersion": "0.1.0",
+    "approvedPackageSha256": "61c958f96971159deae933cd1eca14f477c2dafcaf2bd2fbcd0e080bb12edd66",
+    "include": [
+      "skill.json",
+      "requirements.txt",
+      "src/**/*.py",
+      "scripts/**/*.py",
+      "config/**/*.json"
+    ]
   }
 }

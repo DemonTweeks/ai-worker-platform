@@ -40,6 +40,7 @@ const config = {
   ranCreatePrCdRoot: resolveFromRepoRoot(process.env.RAN_CREATE_PR_CD_ROOT, './skills/create-pr-cd-ran'),
   ranWorkspaceRoot: resolveFromRepoRoot(process.env.RAN_WORKSPACE_ROOT, './storage/ran-workspaces'),
   prAuditorRoot: resolveFromRepoRoot(process.env.PR_AUDITOR_ROOT, './skills/tx-pr-auditor'),
+  bomBuilderRoot: resolveFromRepoRoot(process.env.BOM_BUILDER_ROOT, './skills/bom-builder'),
   llmBaseUrl: process.env.LLM_BASE_URL || '',
   llmApiKey: process.env.LLM_API_KEY || '',
   llm: {

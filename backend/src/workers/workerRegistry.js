@@ -19,6 +19,13 @@ const registry = new Map([
       return { ...skill.manifest, workerId: skill.manifest.skillId, engineVersion: skill.manifest.version, engineCommit: null };
     },
     adapterFactory: () => ({ run: require('../skills/genericSkillRunner').runGenericSkillJob })
+  }],
+  ['bom-builder', {
+    manifestFactory: () => {
+      const skill = require('../skills/skillPackageService').loadApprovedSkill('bom-builder');
+      return { ...skill.manifest, workerId: skill.manifest.skillId, engineVersion: skill.manifest.version, engineCommit: null };
+    },
+    adapterFactory: () => ({ run: require('../skills/genericSkillRunner').runGenericSkillJob })
   }]
 ]);
 

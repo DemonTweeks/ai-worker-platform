@@ -23,6 +23,7 @@
           <option value="create-pr-cd">MW PR Worker</option>
           <option value="create-pr-cd-ran">RAN PR Worker</option>
           <option value="tx-pr-auditor">PR Auditor</option>
+          <option value="bom-builder">TX BOM Analyzer</option>
           <option value="mw-pr">MW PR Worker (Legacy)</option>
           <option value="ran-pr">RAN PR Worker (Legacy)</option>
           <option value="pr-auditor">PR Auditor (Legacy)</option>

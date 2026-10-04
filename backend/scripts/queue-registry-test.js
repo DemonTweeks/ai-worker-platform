@@ -3,7 +3,7 @@ const { getWorkerAdapter, listWorkers } = require('../src/workers/workerRegistry
 const jobQueue = require('../src/queue/jobQueue');
 const { Job } = require('../src/models');
 
-const SKILL_IDS = ['create-pr-cd', 'create-pr-cd-ran', 'tx-pr-auditor'];
+const SKILL_IDS = ['bom-builder', 'create-pr-cd', 'create-pr-cd-ran', 'tx-pr-auditor'];
 
 const runTests = async () => {
   assert.deepStrictEqual(listWorkers().map((worker) => worker.skillId).sort(), [...SKILL_IDS].sort());

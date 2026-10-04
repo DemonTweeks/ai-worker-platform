@@ -42,6 +42,12 @@ const routes = [
     props: { skillId: 'create-pr-cd-ran' }
   },
   {
+    path: '/workers/bom-builder',
+    name: 'bom-builder',
+    component: GenericSkillView,
+    props: { skillId: 'bom-builder' }
+  },
+  {
     path: '/history',
     name: 'job-history',
     component: JobHistoryView

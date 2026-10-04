@@ -8,6 +8,11 @@ export const workerNavigationItems = [
     id: 'pr-auditor',
     label: 'PR Auditor',
     to: '/workers/pr-auditor'
+  },
+  {
+    id: 'bom-builder',
+    label: 'TX BOM Analyzer',
+    to: '/workers/bom-builder'
   }
 ];
 

@@ -10,3 +10,7 @@
 	path = skills/tx-pr-auditor
 	url = https://github.com/BL2ZteSolution/tx-pr-auditor.git
 	branch = main
+[submodule "skills/bom-builder"]
+	path = skills/bom-builder
+	url = https://github.com/BL2ZteSolution/bom-builder.git
+	branch = main
