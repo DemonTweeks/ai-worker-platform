@@ -6,6 +6,16 @@ import JobDetailSummary from '../JobDetailSummary.vue';
 import { formatDateTime } from '../../../utils/formatUtils';
 
 describe('RAN detail metadata rendering', () => {
+  it('displays generic PSQ fields without unrelated generation counters', () => {
+    const wrapper = mount(JobDetailSummary, { propsData: { job: {
+      workerType: 'skill', workerId: 'iepms-pr-upload-automation', status: 'completed',
+      resultFields: [{ key: 'psq', label: 'PSQ' }, { key: 'submitted', label: 'Submitted' }],
+      resultSummary: { metrics: { psq: 'PSQ-READY', submitted: false } }
+    } } });
+    expect(wrapper.text()).toContain('PSQ-READY');
+    expect(wrapper.vm.summaryItems).toContainEqual({ label: 'Submitted', value: 'No' });
+    expect(wrapper.vm.summaryItems.some((item) => item.label === 'Requested')).toBe(false);
+  });
   it('shows worker identity in the detail header for ran jobs', () => {
     const wrapper = mount(JobDetailHeader, {
       propsData: {

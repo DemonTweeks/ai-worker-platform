@@ -3,6 +3,18 @@ import { describe, expect, it } from 'vitest';
 import JobHistoryCard from '../JobHistoryCard.vue';
 
 describe('JobHistoryCard.vue Component', () => {
+  it('shows manifest result fields for an unverified known PSQ', () => {
+    const wrapper = mount(JobHistoryCard, {
+      propsData: { job: { jobId: 'IEPMS-BLOCKED', status: 'failed', workerType: 'skill',
+        workerId: 'iepms-pr-upload-automation', workerDisplayName: 'iEPMS PR Upload',
+        resultFields: [{ key: 'psq', label: 'PSQ' }, { key: 'verified', label: 'Draft verified' }],
+        resultSummary: { metrics: { psq: 'PSQ-KNOWN', verified: false } }, outputs: [] } },
+      stubs: { routerLink: true, JobStatusBadge: true, JobScopeBadge: true }
+    });
+    expect(wrapper.text()).toContain('PSQ-KNOWN');
+    expect(wrapper.vm.metadataItems).toContainEqual({ label: 'Draft verified', value: 'No' });
+    expect(wrapper.vm.metadataItems.some((item) => item.label === 'Requested')).toBe(false);
+  });
   it('renders standard worker summary for successful jobs', () => {
     const job = {
       jobId: 'PR-SUCCESS-001',

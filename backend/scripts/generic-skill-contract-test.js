@@ -30,7 +30,7 @@ const run = async () => {
     const catalogResponse = await fetch(`${baseUrl}/api/skills`);
     assert.strictEqual(catalogResponse.status, 200);
     const catalog = await catalogResponse.json();
-    assert.deepStrictEqual(catalog.skills.map((item) => item.skillId).sort(), ['create-pr-cd', 'create-pr-cd-ran', 'tx-pr-auditor']);
+    assert.deepStrictEqual(catalog.skills.map((item) => item.skillId).sort(), ['create-pr-cd', 'create-pr-cd-ran', 'iepms-pr-upload-automation', 'tx-pr-auditor']);
     const creatorCatalogEntry = catalog.skills.find((item) => item.skillId === 'create-pr-cd');
     assert.strictEqual(creatorCatalogEntry.ui.schemaVersion, '1.0');
     assert.strictEqual(creatorCatalogEntry.ui.parameters.nonProductionUat.hidden, true);
@@ -49,6 +49,25 @@ const run = async () => {
     assert.strictEqual(auditorCatalogEntry.ui.parameters.annotateEcc.default, true);
     assert.deepStrictEqual(auditorCatalogEntry.inputs.files.map((item) => item.name), ['final_po', 'epms']);
     assert.strictEqual(auditorCatalogEntry.ui.configuration.stageHeading, 'Controlled two-stage run');
+
+    const uploadCatalogEntry = catalog.skills.find((item) => item.skillId === 'iepms-pr-upload-automation');
+    assert.deepStrictEqual(uploadCatalogEntry.inputs.files.map((item) => item.name), ['ecc', 'attachment']);
+    assert.strictEqual(uploadCatalogEntry.execution.supportsCancellation, false);
+    const uploadForm = new FormData();
+    uploadForm.append('browserTabSessionId', 'iepms-contract-tab-001');
+    uploadForm.append('idempotencyKey', 'iepms-contract-create-001');
+    uploadForm.append('parameters', JSON.stringify({ projectId: 'c46633e8-6e52-2178-f17e-dcbfdade7cb2', scope: 'TI',
+      duModelName: 'TX Mini Project', plannedStartDate: '2026-10-15',
+      outsourcedComponentService: 'N', productQualityRectification: 'N' }));
+    uploadForm.append('ecc', new Blob(['synthetic-ecc']), 'ECC.xlsx');
+    uploadForm.append('attachment', new Blob(['synthetic-evidence']), 'evidence.pdf');
+    const uploadResponse = await fetch(`${baseUrl}/api/skills/iepms-pr-upload-automation/jobs`, { method: 'POST', body: uploadForm });
+    assert.strictEqual(uploadResponse.status, 201);
+    const uploadJob = (await uploadResponse.json()).job;
+    assert.strictEqual(uploadJob.skillId, 'iepms-pr-upload-automation');
+    const uploadEnvelope = JSON.parse(await fs.promises.readFile(path.join(tempRoot, uploadJob.inputManifestPath), 'utf8'));
+    assert.deepStrictEqual(uploadEnvelope.files.map((item) => item.name), ['ecc', 'attachment']);
+    assert.strictEqual(uploadEnvelope.parameters.scope, 'TI');
 
     const form = new FormData();
     form.append('browserTabSessionId', 'generic-tab-0001');

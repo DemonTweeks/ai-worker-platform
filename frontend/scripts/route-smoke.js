@@ -8,6 +8,7 @@ const routes = [
   '/workers/pr-creator',
   '/workers/pr-auditor',
   '/workers/ran-pr-creator',
+  '/workers/iepms-pr-upload',
   '/history',
   '/jobs/QA15-ROUTE-SMOKE',
   '/admin/login',

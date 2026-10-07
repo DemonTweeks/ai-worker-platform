@@ -2,7 +2,7 @@
 
 ## Outcome
 
-The platform is a thin HTTP(S), storage, execution, and lifecycle wrapper for three standalone Python skills. Workbook, technical, and business logic stays inside each skill.
+The platform is a thin HTTP(S), storage, execution, and lifecycle wrapper for four standalone Python skills. Workbook, technical, and business logic stays inside each skill.
 
 ## Completed Workstreams
 
@@ -41,6 +41,7 @@ frontend/src/views/GenericSkillView.vue
 skills/create-pr-cd/{skill.json,src/main.py}
 skills/create-pr-cd-ran/{skill.json,src/main.py}
 skills/tx-pr-auditor/{skill.json,src/main.py,dependencies/create-pr-cd}
+skills/iepms-pr-upload-automation/{skill.json,src/main.py,src/iepms_pr_upload}
 
 config/env/{local.env.example,production.env.example}
 launcher.ps1 (production only)

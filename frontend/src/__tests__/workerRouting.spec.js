@@ -6,6 +6,13 @@ const waitForNavigation = () => new Promise((resolve) => {
 });
 
 describe('worker routing', () => {
+  it('opens iEPMS upload with the generic skill component', async () => {
+    await router.replace('/workers/iepms-pr-upload');
+    await waitForNavigation();
+    expect(router.currentRoute.name).toBe('iepms-pr-upload');
+    const record = router.currentRoute.matched[0];
+    expect(record.props.default.skillId).toBe('iepms-pr-upload-automation');
+  });
   it('redirects the root route to the PR Creator worker route', async () => {
     await router.push('/');
     await waitForNavigation();

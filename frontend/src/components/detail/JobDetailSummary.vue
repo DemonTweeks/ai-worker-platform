@@ -22,6 +22,7 @@
 
 <script>
 import { formatDateTime } from '../../utils/formatUtils';
+import { getSkillResultItems } from '../../utils/skillResultUtils';
 import { generationScopeLabel, jobStatusLabel } from '../../utils/jobStatusUtils';
 import { hasAuditReport, prAuditorReportMessage } from '../../utils/prAuditorResultUtils';
 
@@ -80,6 +81,10 @@ export default {
 
       if (this.isPrAuditorJob) {
         return common;
+      }
+
+      if (this.job.resultFields && this.job.resultFields.length) {
+        return [...common, ...getSkillResultItems(this.job)];
       }
 
       const reconciliation = this.hasReconciliation

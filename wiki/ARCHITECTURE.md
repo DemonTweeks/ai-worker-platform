@@ -83,7 +83,10 @@ The platform validates identity, status, paths, checksums, output existence, and
 | --- | --- | --- | --- |
 | `create-pr-cd` | `4.0.0` | `src/main.py` | `site_data` + TSS/TI selection parameters |
 | `tx-pr-auditor` | `1.1.0` | `src/main.py` | one `final_po`, one `epms`; pinned TSS/TI generator dependency |
-| `create-pr-cd-ran` | `1.1.0` | `src/main.py` | one `bom`, one `epms`, run mode, optional project |
+| `create-pr-cd-ran` | `1.1.2` | `src/main.py` | one `bom`, one `epms`, run mode, optional project |
+| `iepms-pr-upload-automation` | `0.1.0` | `src/main.py` | one `ecc`, separate `attachment`, project/scope/DU/date and Y/N flags |
+
+The iEPMS skill owns an external draft-preparation workflow through Step 20. It returns a verified PSQ and safe reports and excludes Submit/downstream stages. Its authenticated Chrome session and persistent recovery root belong to the backend host. The manifest disables running cancellation; the queue enforces this restriction atomically after claim while allowing queued cancellation. `ui.result.fields` selects summary metrics for workbench/history/detail display. See [the dedicated architecture](iepms-pr-upload-automation/ARCHITECTURE.md).
 
 The PR Auditor product flow is one composite Python skill job. `tx-pr-auditor` owns its pinned `create-pr-cd TSS -> create-pr-cd TI -> focused audit` sequence; the platform still starts only one generic approved entrypoint and does not interpret or orchestrate those stages.
 

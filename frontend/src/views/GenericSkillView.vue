@@ -197,7 +197,7 @@
                       <button
                         type="button"
                         class="secondary-link"
-                        :disabled="!isJobCancellable(job)"
+                        :disabled="!isJobCancellable(job) || (skill && skill.execution && skill.execution.supportsCancellation === false && job.status !== 'queued')"
                         @click="prepareCancellationForJob(job.jobId)"
                       >
                         {{ job.status === 'cancelling' ? 'Stopping...' : 'Stop / Cancel' }}
@@ -232,13 +232,13 @@
                 </div>
               </div>
               <dl class="download-summary-grid">
-                <div v-for="item in downloadSummaryItems" :key="item.label">
+                <div v-for="item in [...downloadSummaryItems, ...skillResultItems]" :key="item.label">
                   <dt>{{ item.label }}</dt>
                   <dd>{{ item.value }}</dd>
                 </div>
               </dl>
               <p v-if="jobReady" class="completion-message" :class="resultTone">{{ resultCompletionMessage }}</p>
-              <div v-if="hasActiveWorkerJob" class="workbench-create-row">
+              <div v-if="canStopCurrentJob" class="workbench-create-row">
                 <button
                   v-if="!showCancelForm"
                   type="button"
@@ -381,6 +381,7 @@ import {
   listSkills
 } from '../api/jobApi';
 import { workerRuntimeMixin } from './shared/workerRuntime';
+import { getSkillResultItems } from '../utils/skillResultUtils';
 
 const randomId = (prefix) => {
   const random = window.crypto && window.crypto.randomUUID
@@ -502,6 +503,12 @@ export default {
     },
     configurationStages() {
       return this.configuration.stages || [];
+    },
+    canStopCurrentJob() {
+      return this.hasActiveWorkerJob && (this.skill?.execution?.supportsCancellation !== false || this.currentStatus === 'queued');
+    },
+    skillResultItems() {
+      return getSkillResultItems(this.jobDetail?.job || {}, this.manifestUi.result?.fields || []);
     },
     configurationStageHeading() {
       return this.configuration.stageHeading || 'Controlled run';

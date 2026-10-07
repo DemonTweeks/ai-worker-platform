@@ -10,3 +10,7 @@
 	path = skills/tx-pr-auditor
 	url = https://github.com/BL2ZteSolution/tx-pr-auditor.git
 	branch = main
+[submodule "skills/iepms-pr-upload-automation"]
+	path = skills/iepms-pr-upload-automation
+	url = https://github.com/Gumb-D/iepms-pr-upload-automation.git
+	branch = migration/zx01-pc

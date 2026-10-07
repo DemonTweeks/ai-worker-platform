@@ -16,13 +16,14 @@ const runTests = async () => {
   const platformResults = assertPlatformEngineIntegrity();
   assert.deepStrictEqual(
     platformResults.map((result) => result.workerId),
-    ['create-pr-cd', 'tx-pr-auditor', 'create-pr-cd-ran']
+    ['create-pr-cd', 'tx-pr-auditor', 'iepms-pr-upload-automation', 'create-pr-cd-ran']
   );
   assert(platformResults.every((result) => /^[a-f0-9]{64}$/.test(result.runtimeFingerprint)));
   assert(loadApprovedSkill('create-pr-cd').runtimeFiles.includes('src/main.py'));
   assert(loadApprovedSkill('create-pr-cd').runtimeFiles.includes('config/pr_model_baseline.yaml'));
   assert(loadApprovedSkill('tx-pr-auditor').runtimeFiles.includes('config/du_registry.json'));
   assert(loadApprovedSkill('create-pr-cd-ran').runtimeFiles.includes('src/main.py'));
+  assert(loadApprovedSkill('iepms-pr-upload-automation').runtimeFiles.includes('src/iepms_pr_upload/thin_wrapper.py'));
 
   const tempRoot = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'engine-integrity-'));
   try {

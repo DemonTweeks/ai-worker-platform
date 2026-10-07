@@ -55,6 +55,7 @@ import {
   prAuditorReportMessage
 } from '../../utils/prAuditorResultUtils';
 import JobScopeBadge from './JobScopeBadge.vue';
+import { getSkillResultItems } from '../../utils/skillResultUtils';
 import JobStatusBadge from './JobStatusBadge.vue';
 
 export default {
@@ -86,6 +87,13 @@ export default {
       return this.job.workerId ? `${this.workerLabel} • ${this.job.workerId}` : (this.job.workerType || 'PR Worker');
     },
     metadataItems() {
+      if (this.job.resultFields && this.job.resultFields.length) {
+        return [
+          { label: 'Worker', value: this.workerLabel },
+          ...getSkillResultItems(this.job),
+          { label: 'Outputs', value: this.job.outputFileCount || 0 }
+        ];
+      }
       if (this.isPrAuditorJob) {
         const auditSummary = this.job.auditSummary || null;
         return [

@@ -270,7 +270,7 @@ const enqueueJob = async (jobId, { recovered = false } = {}) => {
   return getQueueState();
 };
 
-const cancelQueuedJob = async (jobId) => {
+const cancelQueuedJob = async (jobId, { allowRunning = true } = {}) => {
   const queuedIndex = queuedJobIds.indexOf(jobId);
   const locallyQueued = queuedIndex !== -1;
   const locallyActive = activeJobIds.has(jobId);
@@ -278,6 +278,7 @@ const cancelQueuedJob = async (jobId) => {
     if (TERMINAL_STATUSES.has(job.status)) return undefined;
     const current = job.queueRuntime || {};
     const running = ['claimed', 'running', 'cancelling'].includes(current.queueState) && isLeaseValid(current);
+    if (!allowRunning && (job.status !== 'queued' || ['claimed', 'running', 'cancelling'].includes(current.queueState))) return undefined;
     return {
       ...job,
       queueRuntime: {
@@ -292,6 +293,9 @@ const cancelQueuedJob = async (jobId) => {
   });
   const runtime = result.snapshot && result.snapshot.queueRuntime;
   const running = Boolean(runtime && runtime.queueState === 'cancelling' && isLeaseValid(runtime));
+  if (!allowRunning && !result.committed && result.snapshot && !TERMINAL_STATUSES.has(result.snapshot.status)) {
+    return { cancelled: false, running: true, unsupported: true, queueRuntime: runtime };
+  }
   if (locallyQueued && !running) {
     queuedJobIds.splice(queuedIndex, 1);
     knownJobIds.delete(jobId);

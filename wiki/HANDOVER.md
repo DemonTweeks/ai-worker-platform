@@ -2,10 +2,12 @@
 
 ## Current State
 
-- `main` contains the thin-wrapper runtime, manifest-driven workbench, BL2 RAN source, and non-RAN main pins through platform PR #101.
-- `create-pr-cd` is pinned to `main` commit `8d8880f`, the merge of [Gumb-D/create-pr-cd#93](https://github.com/Gumb-D/create-pr-cd/pull/93).
-- `refactor/restore-pr-auditor-workflow` pins `tx-pr-auditor` 1.1.0 commit `0142a9f`, published for review in [BL2ZteSolution/tx-pr-auditor#6](https://github.com/BL2ZteSolution/tx-pr-auditor/pull/6).
-- `create-pr-cd-ran` remains pinned to BL2 branch commit `2756894`; upstream promotion continues in [ammarofficial11/create-pr-cd-ran#1](https://github.com/ammarofficial11/create-pr-cd-ran/pull/1).
+- The `agent/add-iepms-pr-upload-skill` integration adds `iepms-pr-upload-automation` 0.1.0 from `Gumb-D/iepms-pr-upload-automation`, branch `migration/zx01-pc`, pinned to published contract commit `f094cc1`. It prepares drafts through Step 20 and displays PSQ via generic result fields. See [the dedicated handover](iepms-pr-upload-automation/HANDOVER.md) and [pending host validation](iepms-pr-upload-automation/PENDING.md).
+
+- The merged `main` baseline is `a987eb6`, including the thin-wrapper runtime, manifest-driven workbench, BL2 RAN source, and RAN ZIP delivery.
+- The platform gitlink pins `create-pr-cd` 4.0.0 at `e94e10d`. The pre-existing local checkout at `1ca0942` has equivalent tracked content and has been preserved.
+- The platform gitlink pins `tx-pr-auditor` 1.1.0 at `df14590`.
+- `create-pr-cd-ran` 1.1.2 is pinned to BL2 branch commit `15fae20` with delivery ZIP output; upstream promotion uses [ammarofficial11/create-pr-cd-ran#1](https://github.com/ammarofficial11/create-pr-cd-ran/pull/1).
 - Every pinned commit is reachable from the submodule URL configured in `.gitmodules`.
 - Firebase is authoritative for job lifecycle and durable queue ownership.
 - The active registry contains only approved generic Python skill packages.
@@ -51,6 +53,8 @@ The `BL2ZteSolution` account currently lacks direct push permission to `ammaroff
 
 ## Validation Evidence
 
+October 7, 2026 iEPMS integration: 94 Python tests and 94 frontend tests passed; frontend build and 12 route-smoke URLs passed. Backend smoke, approval, registry, durable queue, normalized fingerprint, HTTP contract, concurrency, health, and actual Python/no-auth iEPMS integration checks passed. No live iEPMS draft was created.
+
 - Durable queue ownership/restart suite: passed.
 - Generic catalog/submission/result suite: passed with three approved packages.
 - Real generic CD create execution: completed with zero unaccounted work and 90 outputs.
@@ -64,4 +68,4 @@ The `BL2ZteSolution` account currently lacks direct push permission to `ammaroff
 
 ## Next Action
 
-Rotate the credential exposed by the former production branch, provision ignored `config/env/production.env`, validate on the production host, and merge the unified runtime-profile branch into `main`. See [PENDING.md](PENDING.md).
+Provision the authenticated backend host and validate the iEPMS draft-only flow. The existing production credential-rotation requirement remains in [PENDING.md](PENDING.md).

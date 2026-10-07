@@ -40,6 +40,12 @@
       "dependencies/create-pr-cd/Info/input/contract_info_reference.md"
     ]
   },
+  "iepms-pr-upload-automation": {
+    "rootConfigKey": "iepmsPrUploadRoot",
+    "approvedVersion": "0.1.0",
+    "approvedPackageSha256": "e72fcaa563ec025408c5864fa12bf9d056c9960841f362b279f97760dd0e8bad",
+    "include": ["skill.json", "requirements.txt", "pyproject.toml", "src/**/*.py"]
+  },
   "create-pr-cd-ran": {
     "rootConfigKey": "ranCreatePrCdRoot",
     "approvedVersion": "1.1.2",

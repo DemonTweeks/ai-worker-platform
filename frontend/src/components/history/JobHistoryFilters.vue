@@ -23,6 +23,7 @@
           <option value="create-pr-cd">MW PR Worker</option>
           <option value="create-pr-cd-ran">RAN PR Worker</option>
           <option value="tx-pr-auditor">PR Auditor</option>
+          <option value="iepms-pr-upload-automation">iEPMS PR Upload</option>
           <option value="mw-pr">MW PR Worker (Legacy)</option>
           <option value="ran-pr">RAN PR Worker (Legacy)</option>
           <option value="pr-auditor">PR Auditor (Legacy)</option>
@@ -63,7 +64,7 @@
 <script>
 import { STATUS_LABELS } from '../../utils/jobStatusUtils';
 
-const PR_SCOPE_WORKER_IDS = new Set(['create-pr-cd', 'mw-pr', 'ran-pr']);
+const PR_SCOPE_WORKER_IDS = new Set(['create-pr-cd', 'iepms-pr-upload-automation', 'mw-pr', 'ran-pr']);
 
 export default {
   name: 'JobHistoryFilters',

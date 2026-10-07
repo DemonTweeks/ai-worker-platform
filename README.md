@@ -2,15 +2,18 @@
 
 AI Worker Platform is an internal web platform for running approved business-domain workers through a shared, browser-based job lifecycle.
 
-The current baseline provides three PR worker families:
+The platform provides four Python skill families:
 
 | Worker | Worker ID | Business-rule owner | Current capability |
 | --- | --- | --- | --- |
-| MW PR Worker | `mw-pr` | `skills/create-pr-cd` | Existing MW TSS/TI PR and ECC workflow |
-| RAN PR Worker | `ran-pr` | Pinned `skills/create-pr-cd-ran` submodule | Standard PR and General Item PR |
-| PR Auditor | `pr-auditor` | Pinned `skills/tx-pr-auditor` submodule | Generate TSS/TI entitlement and audit Final PO submissions |
+| MW PR Worker | `create-pr-cd` | `skills/create-pr-cd` | Existing MW TSS/TI PR and ECC workflow |
+| RAN PR Worker | `create-pr-cd-ran` | Pinned `skills/create-pr-cd-ran` submodule | Standard PR and General Item PR |
+| PR Auditor | `tx-pr-auditor` | Pinned `skills/tx-pr-auditor` submodule | Generate TSS/TI entitlement and audit Final PO submissions |
+| iEPMS PR Upload | `iepms-pr-upload-automation` | Pinned `skills/iepms-pr-upload-automation` submodule | ECC + attachment to a verified draft PSQ through Step 20 |
 
-**Current merged baseline:** RAN PR Worker merged through PR #17 at `29cbd382c92222b4f555d1926f106e1c66837404`.
+The iEPMS skill follows `Gumb-D/iepms-pr-upload-automation` branch `migration/zx01-pc`. Open `/#/workers/iepms-pr-upload` locally or `/fe/#/workers/iepms-pr-upload` in production. It requires corporate connectivity and a signed-in CDP Chrome on the backend host. The existing Python draft wrapper owns all API and recovery logic; Submit and downstream tracker/IP operations are excluded. Setup, contract, and host-validation requirements are in [wiki/iepms-pr-upload-automation](wiki/iepms-pr-upload-automation/HANDOVER.md).
+
+**Merged baseline:** `main` at `a987eb6`; the iEPMS integration is developed on `agent/add-iepms-pr-upload-skill`.
 
 ## What the Platform Owns
 
@@ -18,7 +21,7 @@ The platform owns the shared product and runtime responsibilities:
 
 - Vue frontend, worker selection, uploads, live progress and download UX
 - Express API, queue dispatch, cancellation and timeout lifecycle
-- per-job workspaces, file metadata, ZIP packaging and output collection
+- per-job workspaces, file metadata, skill output registration and downloads
 - Firebase-backed job history, Job Detail and audit metadata
 - WebSocket progress events
 - safe user-facing errors, warnings and failure diagnosis
