@@ -212,13 +212,19 @@ describe('GenericSkillView', () => {
     });
     await new Promise((resolve) => setTimeout(resolve, 0));
     await wrapper.vm.$nextTick();
-    expect(wrapper.text()).toContain('Prepare an iEPMS PR draft and return its PSQ.');
+    expect(wrapper.text()).toContain('Prepare, submit and verify an iEPMS PR.');
     expect(wrapper.find('input[type="date"]').exists()).toBe(true);
+    const expectedDate = new Date();
+    expectedDate.setDate(expectedDate.getDate() + 7);
+    const pad = (part) => String(part).padStart(2, '0');
+    expect(wrapper.find('input[type="date"]').element.value).toBe(`${expectedDate.getFullYear()}-${pad(expectedDate.getMonth() + 1)}-${pad(expectedDate.getDate())}`);
+    expect(wrapper.vm.canSubmit).toBe(false);
+
     wrapper.vm.parameterValues.duModelName = 'TX Mini Project';
     await wrapper.find('input[type="date"]').setValue('2026-10-15');
     wrapper.vm.$set(wrapper.vm.selectedFiles, 'ecc', new File(['ecc'], 'ECC.xlsx'));
-    wrapper.vm.$set(wrapper.vm.selectedFiles, 'attachment', new File(['evidence'], 'evidence.pdf'));
-    wrapper.vm.skill.inputs.files.forEach((input) => wrapper.vm.validateSelectedFiles(input, wrapper.vm.selectedFiles[input.name]));
+    wrapper.vm.validateSelectedFiles(wrapper.vm.skill.inputs.files.find((input) => input.name === 'ecc'), wrapper.vm.selectedFiles.ecc);
+    expect(wrapper.vm.canSubmit).toBe(true);
     await wrapper.find('form').trigger('submit');
     expect(createSkillJob).toHaveBeenCalledWith('iepms-pr-upload-automation', expect.objectContaining({
       parameters: { projectId: 'c46633e8-6e52-2178-f17e-dcbfdade7cb2', scope: 'TSS',

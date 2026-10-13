@@ -719,6 +719,12 @@ export default {
       if (Object.prototype.hasOwnProperty.call(presentation, 'default')) return presentation.default;
       if (presentation.defaultFrom === 'currentYear') return new Date().getFullYear();
       if (presentation.defaultFrom === 'currentMonth') return new Date().getMonth() + 1;
+      if (presentation.defaultFrom === 'todayPlusDays') {
+        const date = new Date();
+        date.setDate(date.getDate() + (Number(presentation.days) || 0));
+        const pad = (part) => String(part).padStart(2, '0');
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+      }
       if (rule.default !== undefined) return rule.default;
       if (rule.enum) return rule.enum[0];
       if (rule.type === 'boolean') return false;

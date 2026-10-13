@@ -36,7 +36,6 @@ const run = async () => {
     ].join('\n'), eccPath], { encoding: 'utf8', windowsHide: true });
     assert.strictEqual(generated.status, 0, generated.stderr);
     const ecc = fs.readFileSync(eccPath);
-    const attachment = Buffer.from('offline attachment');
     const created = await createSkillJob('iepms-pr-upload-automation', {
       browserTabSessionId: 'iepms-offline-tab-001',
       idempotencyKey: 'iepms-offline-create-001',
@@ -44,8 +43,7 @@ const run = async () => {
         duModelName: 'TX Mini Project', plannedStartDate: '2026-10-15',
         outsourcedComponentService: 'N', productQualityRectification: 'N' })
     }, [
-      { fieldname: 'ecc', originalname: 'ECC.xlsx', size: ecc.length, buffer: ecc },
-      { fieldname: 'attachment', originalname: 'evidence.pdf', size: attachment.length, buffer: attachment }
+      { fieldname: 'ecc', originalname: 'ECC.xlsx', size: ecc.length, buffer: ecc }
     ]);
     const claimed = await queue.claimJob(created.job.jobId);
     assert(claimed);
@@ -60,6 +58,7 @@ const run = async () => {
     assert(detail.job.resultFields.some((field) => field.key === 'psq'));
     assert.strictEqual(detail.job.resultSummary.metrics.verified, false);
     assert.strictEqual(detail.job.resultSummary.metrics.submitted, false);
+    assert.strictEqual(detail.job.resultSummary.metrics.attachmentSource, 'ecc');
     assert.strictEqual(detail.outputs.length, 2);
     assert(detail.outputs.every((file) => file.available));
     const report = await getDownloadFile(created.job.jobId, detail.outputs[0].id);

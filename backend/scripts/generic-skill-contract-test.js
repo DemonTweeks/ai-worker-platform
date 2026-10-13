@@ -52,6 +52,8 @@ const run = async () => {
 
     const uploadCatalogEntry = catalog.skills.find((item) => item.skillId === 'iepms-pr-upload-automation');
     assert.deepStrictEqual(uploadCatalogEntry.inputs.files.map((item) => item.name), ['ecc', 'attachment']);
+    assert.strictEqual(uploadCatalogEntry.inputs.files.find((item) => item.name === 'ecc').required, true);
+    assert.strictEqual(uploadCatalogEntry.inputs.files.find((item) => item.name === 'attachment').required, false);
     assert.strictEqual(uploadCatalogEntry.execution.supportsCancellation, false);
     const uploadForm = new FormData();
     uploadForm.append('browserTabSessionId', 'iepms-contract-tab-001');
@@ -60,13 +62,12 @@ const run = async () => {
       duModelName: 'TX Mini Project', plannedStartDate: '2026-10-15',
       outsourcedComponentService: 'N', productQualityRectification: 'N' }));
     uploadForm.append('ecc', new Blob(['synthetic-ecc']), 'ECC.xlsx');
-    uploadForm.append('attachment', new Blob(['synthetic-evidence']), 'evidence.pdf');
     const uploadResponse = await fetch(`${baseUrl}/api/skills/iepms-pr-upload-automation/jobs`, { method: 'POST', body: uploadForm });
     assert.strictEqual(uploadResponse.status, 201);
     const uploadJob = (await uploadResponse.json()).job;
     assert.strictEqual(uploadJob.skillId, 'iepms-pr-upload-automation');
     const uploadEnvelope = JSON.parse(await fs.promises.readFile(path.join(tempRoot, uploadJob.inputManifestPath), 'utf8'));
-    assert.deepStrictEqual(uploadEnvelope.files.map((item) => item.name), ['ecc', 'attachment']);
+    assert.deepStrictEqual(uploadEnvelope.files.map((item) => item.name), ['ecc']);
     assert.strictEqual(uploadEnvelope.parameters.scope, 'TI');
 
     const form = new FormData();
