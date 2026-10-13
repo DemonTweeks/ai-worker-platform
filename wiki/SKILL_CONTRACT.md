@@ -1,6 +1,6 @@
 # AI Worker Platform — Skill Contract
 
-> Status: implemented for `create-pr-cd` 4.0.0 and `tx-pr-auditor` 1.1.0.
+> Status: implemented for `create-pr-cd` 4.0.0, `tx-pr-auditor` 1.1.0, `create-pr-cd-ran` 1.1.2, and the `iepms-pr-upload-automation` 0.1.0 integration.
 
 ## 1. Purpose
 
@@ -30,6 +30,8 @@ skills/<skill-id>/
 ```
 
 The platform reads `skill.json`. Other files remain owned by the skill.
+
+`execution.supportsCancellation=false` allows queued cancellation but rejects cancellation after an execution claim. This is used by external mutation skills whose recovery state must survive interruption. `ui.parameters.<name>.control=date` renders a native date field. `ui.result.fields` contains `{key, label}` descriptors selecting scalar `summary.metrics` values; the generic API exposes `resultSummary` and `resultFields` to render them in the workbench, history, and job detail without interpreting their business meaning.
 
 ## 3. Skill Manifest
 

@@ -8,6 +8,11 @@ export const workerNavigationItems = [
     id: 'pr-auditor',
     label: 'PR Auditor',
     to: '/workers/pr-auditor'
+  },
+  {
+    id: 'iepms-pr-upload',
+    label: 'iEPMS PR Upload',
+    to: '/workers/iepms-pr-upload'
   }
 ];
 

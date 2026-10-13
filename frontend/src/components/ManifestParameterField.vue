@@ -55,7 +55,7 @@
       v-else
       class="cockpit-sites-input"
       :value="value"
-      :type="entry.rule.type === 'integer' ? 'number' : 'text'"
+      :type="entry.rule.type === 'integer' ? 'number' : (control === 'date' ? 'date' : 'text')"
       :min="entry.rule.minimum"
       :max="entry.rule.maximum"
       :placeholder="presentation.placeholder"

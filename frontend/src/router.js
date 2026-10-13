@@ -42,6 +42,12 @@ const routes = [
     props: { skillId: 'create-pr-cd-ran' }
   },
   {
+    path: '/workers/iepms-pr-upload',
+    name: 'iepms-pr-upload',
+    component: GenericSkillView,
+    props: { skillId: 'iepms-pr-upload-automation' }
+  },
+  {
     path: '/history',
     name: 'job-history',
     component: JobHistoryView

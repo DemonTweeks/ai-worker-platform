@@ -25,7 +25,7 @@ const run = async () => {
   assert((await firebase.checkFirebaseConnection()).connected);
   assert(config.port && app && jobService && jobQueue && genericSkillRunner && skillPackageService);
   assert(cleanupService && healthService && websocketServer && llmClient);
-  assert.strictEqual(skillPackageService.listApprovedSkills().length, 3);
+  assert.strictEqual(skillPackageService.listApprovedSkills().length, 4);
 
   const jobId = await generateUniqueJobId();
   assert(/^PR-\d{8}-\d{3}$/.test(jobId));

@@ -1,6 +1,8 @@
 # AI Worker Platform - Summary
 
-AI Worker Platform is now a generic control plane for three approved Python skills: `create-pr-cd`, `create-pr-cd-ran`, and `tx-pr-auditor`.
+AI Worker Platform is a generic control plane for four approved Python skills: `create-pr-cd`, `create-pr-cd-ran`, `tx-pr-auditor`, and `iepms-pr-upload-automation`.
+
+The iEPMS upload skill accepts ECC plus a separate attachment and prepares a verified draft/PSQ through Step 20 using its existing Python workflow. It requires authenticated Chrome on the backend host and does not perform Submit. See [its summary](iepms-pr-upload-automation/SUMMARIZE.md).
 
 The platform owns HTTP(S), safe uploads, isolated workspaces, Firebase-backed lifecycle and queue ownership, Python process supervision, progress relay, cancellation, structural result validation, retained metadata, and downloads. Each skill owns its workbook interpretation, calculations, domain validation, warnings, output content, and any internal dependency sequence.
 

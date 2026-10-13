@@ -6,7 +6,7 @@ const approvals = require('./approvedSkills.json');
 const { assertPathInsideRoot } = require('../utils/pathUtils');
 
 const SUPPORTED_CONTRACT_VERSIONS = new Set(['1.0']);
-const NORMALIZED_TEXT_EXTENSIONS = new Set(['.json', '.md', '.py', '.txt', '.yaml', '.yml']);
+const NORMALIZED_TEXT_EXTENSIONS = new Set(['.json', '.md', '.py', '.toml', '.txt', '.yaml', '.yml']);
 
 const toPosix = (value) => value.split(path.sep).join('/');
 const patternToRegex = (pattern) => {

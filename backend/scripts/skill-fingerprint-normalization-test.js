@@ -20,6 +20,12 @@ try {
   const crlfFingerprint = calculatePackageFingerprint(tempRoot, ['src/**/*.py', 'config/**/*.xls']);
   assert.strictEqual(crlfFingerprint.sha256, lfFingerprint.sha256);
 
+  const tomlPath = path.join(tempRoot, 'pyproject.toml');
+  fs.writeFileSync(tomlPath, '[project]\nversion = "0.1.0"\n', 'utf8');
+  const lfToml = calculatePackageFingerprint(tempRoot, ['pyproject.toml']);
+  fs.writeFileSync(tomlPath, '[project]\r\nversion = "0.1.0"\r\n', 'utf8');
+  assert.strictEqual(calculatePackageFingerprint(tempRoot, ['pyproject.toml']).sha256, lfToml.sha256);
+
   fs.writeFileSync(textPath, 'print("changed")\r\nprint("second")\r\n', 'utf8');
   const changedTextFingerprint = calculatePackageFingerprint(tempRoot, ['src/**/*.py', 'config/**/*.xls']);
   assert.notStrictEqual(changedTextFingerprint.sha256, lfFingerprint.sha256);

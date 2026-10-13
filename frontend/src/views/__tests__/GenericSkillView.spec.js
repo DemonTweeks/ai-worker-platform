@@ -1,7 +1,8 @@
 import { mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import GenericSkillView from '../GenericSkillView.vue';
-import { createSkillJob, listJobs } from '../../api/jobApi';
+import { createSkillJob, listJobs, listSkills } from '../../api/jobApi';
+import iepmsSkill from '../../../../skills/iepms-pr-upload-automation/skill.json';
 
 vi.mock('../../services/websocketClient', () => ({
   default: class {
@@ -201,6 +202,47 @@ vi.mock('../../api/reAskApi', () => ({
 
 describe('GenericSkillView', () => {
   beforeEach(() => vi.clearAllMocks());
+
+  it('submits the iEPMS manifest and shows PSQ without offering running cancellation', async () => {
+    listSkills.mockResolvedValueOnce({ skills: [iepmsSkill] });
+    const wrapper = mount(GenericSkillView, {
+      propsData: { skillId: 'iepms-pr-upload-automation' },
+      mocks: { $router: { push: vi.fn(async () => {}) } },
+      stubs: { RouterLink: { template: '<a><slot /></a>' } }
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await wrapper.vm.$nextTick();
+    expect(wrapper.text()).toContain('Prepare, submit and verify an iEPMS PR.');
+    expect(wrapper.find('input[type="date"]').exists()).toBe(true);
+    const expectedDate = new Date();
+    expectedDate.setDate(expectedDate.getDate() + 7);
+    const pad = (part) => String(part).padStart(2, '0');
+    expect(wrapper.find('input[type="date"]').element.value).toBe(`${expectedDate.getFullYear()}-${pad(expectedDate.getMonth() + 1)}-${pad(expectedDate.getDate())}`);
+    expect(wrapper.vm.canSubmit).toBe(false);
+
+    wrapper.vm.parameterValues.duModelName = 'TX Mini Project';
+    await wrapper.find('input[type="date"]').setValue('2026-10-15');
+    wrapper.vm.$set(wrapper.vm.selectedFiles, 'ecc', new File(['ecc'], 'ECC.xlsx'));
+    wrapper.vm.validateSelectedFiles(wrapper.vm.skill.inputs.files.find((input) => input.name === 'ecc'), wrapper.vm.selectedFiles.ecc);
+    expect(wrapper.vm.canSubmit).toBe(true);
+    await wrapper.find('form').trigger('submit');
+    expect(createSkillJob).toHaveBeenCalledWith('iepms-pr-upload-automation', expect.objectContaining({
+      parameters: { projectId: 'c46633e8-6e52-2178-f17e-dcbfdade7cb2', scope: 'TSS',
+        duModelName: 'TX Mini Project', plannedStartDate: '2026-10-15',
+        outsourcedComponentService: 'N', productQualityRectification: 'N' }
+    }));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    wrapper.vm.currentStatus = 'generating';
+    wrapper.vm.jobDetail = { job: { jobId: wrapper.vm.currentJobId, status: 'generating',
+      resultSummary: { metrics: { psq: 'PSQ-TEST', verified: true, submitted: false } } }, outputs: [] };
+    await wrapper.vm.$nextTick();
+    expect(wrapper.text()).toContain('PSQ-TEST');
+    expect(wrapper.vm.skillResultItems).toContainEqual({ label: 'Submitted', value: 'No' });
+    expect(wrapper.vm.canStopCurrentJob).toBe(false);
+    wrapper.vm.currentStatus = 'queued';
+    expect(wrapper.vm.canStopCurrentJob).toBe(true);
+    wrapper.destroy();
+  });
 
   it('renders manifest-owned files and parameters and submits the generic envelope', async () => {
     const wrapper = mount(GenericSkillView, {

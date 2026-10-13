@@ -1,4 +1,11 @@
 const registry = new Map([
+  ['iepms-pr-upload-automation', {
+    manifestFactory: () => {
+      const skill = require('../skills/skillPackageService').loadApprovedSkill('iepms-pr-upload-automation');
+      return { ...skill.manifest, workerId: skill.manifest.skillId, engineVersion: skill.manifest.version, engineCommit: null };
+    },
+    adapterFactory: () => ({ run: require('../skills/genericSkillRunner').runGenericSkillJob })
+  }],
   ['create-pr-cd', {
     manifestFactory: () => {
       const skill = require('../skills/skillPackageService').loadApprovedSkill('create-pr-cd');

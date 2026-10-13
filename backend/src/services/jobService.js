@@ -56,6 +56,7 @@ const getWorkerPresentation = (job = {}) => {
     return {
       workerId,
       workerDisplayName: manifest.displayName,
+      resultFields: manifest.ui && manifest.ui.result && manifest.ui.result.fields || [],
       engineVersion: job.engineVersion || manifest.engineVersion || null,
       engineCommit: job.engineCommit || manifest.engineCommit || null
     };
@@ -146,6 +147,10 @@ const getFailureSummary = (job) => {
     return getIncompleteResultMessage(job);
   }
 
+  if (job.workerType === 'skill' && job.skillResult && job.skillResult.summary && job.skillResult.summary.message) {
+    return redactTechnicalDetails(job.skillResult.summary.message).slice(0, 1000);
+  }
+
   if (isPrAuditorJob && code === ENGINE_PIN_UNAPPROVED_CODE) {
     return ENGINE_PIN_UNAPPROVED_MESSAGE;
   }
@@ -181,6 +186,14 @@ const getFailureSummary = (job) => {
 const getFailureDiagnosis = (job) => {
   if (job.status !== 'failed') return undefined;
   const error = job.error;
+  if (job.workerType === 'skill' && job.skillResult && error) {
+    return {
+      category: /^[A-Z0-9_]+$/.test(error.code || '') ? error.code : 'WORKER_ERROR',
+      title: `${getWorkerPresentation(job).workerDisplayName} failed`,
+      summary: getFailureSummary(job),
+      technicalDetails: ''
+    };
+  }
   if (!error) {
     const isPrAuditorJob = job.workerId === WORKER_IDS.PR_AUDITOR;
     const isRanJob = job.workerId === WORKER_IDS.RAN_PR;
@@ -388,6 +401,7 @@ const serializeJobSummary = (job) => {
     auditYear: job.auditYear || null,
     auditMonth: job.auditMonth || null,
     finalWorkerSummary: job.finalWorkerSummary,
+    resultSummary: job.skillResult && job.skillResult.summary || null,
     browserTabSessionId: job.browserTabSessionId || null,
     idempotencyKey: job.idempotencyKey || null,
     cancellation: serializeCancellation(job),
@@ -544,7 +558,11 @@ const cancelJob = async (jobId, cancellationRequest = {}, requestContext = {}) =
   if (TERMINAL_JOB_STATUSES.includes(job.status)) return { job: serializeJobSummary(job), message: 'Job cancellation has already been recorded.' };
   job.cancellation = buildCancellationMetadata({ job, requestedAt, requestedBy, ...reason });
   job.statusEvents = appendStatusEvent(job, 'cancellation_requested', { createdAt: requestedAt, requestedBy, reasonCode: reason.reasonCode, reasonLabel: reason.reasonLabel, reasonText: reason.reasonText });
-  const queueCancelResult = await jobQueue.cancelQueuedJob(jobId);
+  const allowRunning = job.workerType !== 'skill' || getWorkerManifest(job.workerId).execution.supportsCancellation !== false;
+  const queueCancelResult = await jobQueue.cancelQueuedJob(jobId, { allowRunning });
+  if (queueCancelResult.unsupported) {
+    throw createApiError(409, 'SKILL_CANCELLATION_UNSUPPORTED', 'This skill cannot be cancelled after execution is claimed. Review its result and retained execution state.');
+  }
   if (queueCancelResult.queueRuntime) job.queueRuntime = queueCancelResult.queueRuntime;
   if (queueCancelResult.cancelled) {
     const cancelledAt = new Date();
