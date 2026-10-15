@@ -293,6 +293,26 @@ describe('GenericSkillView', () => {
     expect(wrapper.vm.currentJobId).toBe('PR-GENERIC-001');
   });
 
+  it('accepts XLS and XLSX from the actual iEPMS skill catalog', async () => {
+    listSkills.mockResolvedValueOnce({ skills: [iepmsSkill] });
+    const wrapper = mount(GenericSkillView, {
+      propsData: { skillId: 'iepms-pr-upload-automation' },
+      mocks: { $router: { push: vi.fn(async () => {}) } },
+      stubs: { RouterLink: { template: '<a><slot /></a>' } }
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find('input[type="file"]').attributes('accept')).toBe('.xls,.xlsx');
+    const input = wrapper.vm.skill.inputs.files.find((item) => item.name === 'ecc');
+    for (const name of ['ECC.xls', 'ECC.xlsx', 'ECC.XLS']) {
+      wrapper.vm.validateSelectedFiles(input, new File(['fixture'], name));
+      expect(wrapper.vm.fileValidationResults.ecc.checklist.find((item) => item.name === 'Accepted file type').passed).toBe(true);
+    }
+    wrapper.vm.validateSelectedFiles(input, new File(['fixture'], 'ECC.csv'));
+    expect(wrapper.vm.fileValidationResults.ecc.checklist.find((item) => item.name === 'Accepted file type').passed).toBe(false);
+    wrapper.destroy();
+  });
+
   it('places auditor period controls between upload cards and keeps hidden defaults out of the form', async () => {
     const wrapper = mount(GenericSkillView, {
       propsData: { skillId: 'tx-pr-auditor' },

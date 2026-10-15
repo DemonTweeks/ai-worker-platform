@@ -53,6 +53,8 @@ const run = async () => {
     const uploadCatalogEntry = catalog.skills.find((item) => item.skillId === 'iepms-pr-upload-automation');
     assert.deepStrictEqual(uploadCatalogEntry.inputs.files.map((item) => item.name), ['ecc', 'attachment']);
     assert.strictEqual(uploadCatalogEntry.inputs.files.find((item) => item.name === 'ecc').required, true);
+    assert.deepStrictEqual(uploadCatalogEntry.inputs.files.find((item) => item.name === 'ecc').acceptedExtensions, ['.xls', '.xlsx']);
+    assert.strictEqual(uploadCatalogEntry.version, '0.3.1');
     assert.strictEqual(uploadCatalogEntry.inputs.files.find((item) => item.name === 'attachment').required, false);
     assert.strictEqual(uploadCatalogEntry.execution.supportsCancellation, false);
     const uploadForm = new FormData();
@@ -69,6 +71,30 @@ const run = async () => {
     const uploadEnvelope = JSON.parse(await fs.promises.readFile(path.join(tempRoot, uploadJob.inputManifestPath), 'utf8'));
     assert.deepStrictEqual(uploadEnvelope.files.map((item) => item.name), ['ecc']);
     assert.strictEqual(uploadEnvelope.parameters.scope, 'TI');
+
+    // Test-only queue is stubbed above: neither format can reach live iEPMS.
+    for (const extension of ['xls', 'xlsx']) {
+      const fixture = fs.readFileSync(path.join(__dirname, '../../skills/iepms-pr-upload-automation/tests/fixtures', `ecc.${extension}`));
+      const formatForm = new FormData();
+      formatForm.append('browserTabSessionId', `iepms-format-tab-${extension}`);
+      formatForm.append('idempotencyKey', `iepms-format-create-${extension}`);
+      formatForm.append('parameters', uploadEnvelope.parameters ? JSON.stringify(uploadEnvelope.parameters) : '{}');
+      formatForm.append('ecc', new Blob([fixture]), `ECC.${extension}`);
+      const response = await fetch(`${baseUrl}/api/skills/iepms-pr-upload-automation/jobs`, { method: 'POST', body: formatForm });
+      assert.strictEqual(response.status, 201, await response.clone().text());
+      const { job } = await response.json();
+      const saved = JSON.parse(fs.readFileSync(path.join(tempRoot, job.inputManifestPath), 'utf8'));
+      assert(saved.files[0].path.endsWith(`.${extension}`));
+      assert.deepStrictEqual(fs.readFileSync(path.join(tempRoot, job.inputManifestPath, '..', saved.files[0].path)), fixture);
+    }
+    const invalidFormat = new FormData();
+    invalidFormat.append('browserTabSessionId', 'iepms-invalid-format-tab');
+    invalidFormat.append('idempotencyKey', 'iepms-invalid-format-create');
+    invalidFormat.append('parameters', JSON.stringify(uploadEnvelope.parameters));
+    invalidFormat.append('ecc', new Blob(['not an ECC workbook']), 'ECC.csv');
+    const invalidFormatResponse = await fetch(`${baseUrl}/api/skills/iepms-pr-upload-automation/jobs`, { method: 'POST', body: invalidFormat });
+    assert.strictEqual(invalidFormatResponse.status, 400);
+
 
     const form = new FormData();
     form.append('browserTabSessionId', 'generic-tab-0001');
