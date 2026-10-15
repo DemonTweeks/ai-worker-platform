@@ -28,3 +28,14 @@ October 7, 2026: 94 Python tests and 94 frontend tests passed. Frontend build an
 For live use, the backend host needs corporate access and an interactively authenticated CDP Chrome. Use one stable runtime root across desktop/platform instances. The UI reports PSQ separately from verified/submitted state. A blocked result must not be treated as a successful draft.
 
 Runtime changes in the skill require a newly reviewed package SHA-256 in `backend/src/skills/approvedSkills.json`. The declared include set covers the manifest, requirements, pyproject, and all Python sources; TOML line endings are normalized alongside existing text formats.
+
+
+## ECC XLS/XLSX support (v0.3.1)
+
+- ECC input accepts genuine `.xls` (BIFF) and `.xlsx` workbooks; the manifest drives both frontend file acceptance and backend upload validation.
+- Install updated skill runtime requirements in the backend-selected Python interpreter: `python -m pip install -r skills/iepms-pr-upload-automation/requirements.txt`. The new runtime dependency is `xlrd>=2.0.1,<3`.
+- Test environments also need the skill test extras (`python -m pip install -e "skills/iepms-pr-upload-automation[test]"`) for `xlwt`, which generates genuine XLS fixtures. xlwt is not a production dependency.
+- Preserve the original ECC bytes, suffix, SHA-256 binding and optional ECC attachment fallback. No format conversion or formula recalculation is performed.
+- Same required details-sheet columns, quantities, project/DU and abnormal-quantity explanations apply to both formats.
+- XLS parsing and mocked submission are covered offline. A live iEPMS XLS import has not been performed as part of this format change.
+- Deploy the matching skill pin and approved runtime fingerprint together; do not merely change the frontend accepted extensions.

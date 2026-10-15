@@ -203,7 +203,7 @@ vi.mock('../../api/reAskApi', () => ({
 describe('GenericSkillView', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('submits the iEPMS manifest and shows PSQ without offering running cancellation', async () => {
+  it.each(['xls', 'xlsx'])('submits the iEPMS %s manifest and shows PSQ without offering running cancellation', async (extension) => {
     listSkills.mockResolvedValueOnce({ skills: [iepmsSkill] });
     const wrapper = mount(GenericSkillView, {
       propsData: { skillId: 'iepms-pr-upload-automation' },
@@ -213,6 +213,8 @@ describe('GenericSkillView', () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
     await wrapper.vm.$nextTick();
     expect(wrapper.text()).toContain('Prepare, submit and verify an iEPMS PR.');
+    expect(wrapper.text()).toContain('ECC workbook (.xls / .xlsx)');
+    expect(wrapper.find('input[type="file"]').attributes('accept')).toBe('.xls,.xlsx');
     expect(wrapper.find('input[type="date"]').exists()).toBe(true);
     const expectedDate = new Date();
     expectedDate.setDate(expectedDate.getDate() + 7);
@@ -222,7 +224,7 @@ describe('GenericSkillView', () => {
 
     wrapper.vm.parameterValues.duModelName = 'TX Mini Project';
     await wrapper.find('input[type="date"]').setValue('2026-10-15');
-    wrapper.vm.$set(wrapper.vm.selectedFiles, 'ecc', new File(['ecc'], 'ECC.xlsx'));
+    wrapper.vm.$set(wrapper.vm.selectedFiles, 'ecc', new File(['ecc'], `ECC.${extension}`));
     wrapper.vm.validateSelectedFiles(wrapper.vm.skill.inputs.files.find((input) => input.name === 'ecc'), wrapper.vm.selectedFiles.ecc);
     expect(wrapper.vm.canSubmit).toBe(true);
     await wrapper.find('form').trigger('submit');
