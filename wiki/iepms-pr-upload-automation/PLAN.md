@@ -1,30 +1,16 @@
-# Integration Plan
+# Integration and Release Plan
 
-Implemented on `agent/add-iepms-pr-upload-skill`:
+## Delivered
+- Generic manifest-driven platform API, UI, queue, Python runner and safe output contract.
+- Guarded submit-and-verify operation, stopping before tracker/IP changes; separate desktop preparation mode retained.
+- Published native XLS/XLSX support v0.3.1 at `397010e`, platform integration `1822f2d`.
+- Platform baseline `ec5fd9b` adds MW generator v4.0.1 (`dc7cb77`), independent of uploader fixes.
+- W16 real XLSX import, attachment, Submit and verification succeeded (`PSQ202610150919`).
 
-- Add the repository as a pinned submodule following `migration/zx01-pc`.
-- Add `skill.json`, `requirements.txt`, and `src/main.py` inside the skill repository, delegating to its existing draft wrapper.
-- Approve the complete Python runtime package, dependency declarations, and manifest by normalized SHA-256.
-- Register the skill with the generic runner and catalog.
-- Add navigation, dashboard link, hash route, file controls, date input, and manifest-declared PSQ fields.
-- Display generic skill result fields in job history and detail.
-- Respect the manifest's running-cancellation restriction atomically at queue claim boundaries.
-- Preserve shared snapshots, worker locking, cached PSQs, and uncertain-state recovery.
-- Test the standalone draft workflow, generic HTTP submission, actual Python execution with unavailable authentication, report downloads, and cancellation behavior offline.
+## Local implementation, not released
+- Working-tree v0.3.2 shared padding policy and safe validation-coordinate reporting.
+- Tested offline (236 Python tests reported for that fix; backend integrity/no-auth regressions passed). These counts are dated validation evidence, not a claim that every current platform suite was rerun.
+- W14 passed local validation but server import rejected original padding; W15 failed safely at P2.
 
-Source layout:
-
-```text
-skills/iepms-pr-upload-automation/
-  skill.json
-  requirements.txt
-  pyproject.toml
-  src/main.py                         # platform contract adapter
-  src/iepms_pr_upload/thin_wrapper.py # existing desktop/CLI wrapper
-  src/iepms_pr_upload/workflow/       # existing business workflow
-  tests/test_platform_contract.py
-backend/scripts/iepms-skill-offline-test.js
-wiki/iepms-pr-upload-automation/*.md
-```
-
-The skill contract is published at `f094cc1` on `migration/zx01-pc` and pinned by this integration. Remaining host validation is tracked in `PENDING.md`.
+## Next gates
+Publish/re-pin runtime changes separately, resolve server-import padding without altering originals or bypassing recovery, inspect W15, and propagate safe details into the platform UI. See [pending items](PENDING.md) and [snapshot](DEPLOYMENT_SNAPSHOT_2026-10-15.md).

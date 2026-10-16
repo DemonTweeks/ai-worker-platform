@@ -1,41 +1,31 @@
-# Handover
+# Handover — reviewed 2026-10-15
 
-Source: `https://github.com/Gumb-D/iepms-pr-upload-automation`, branch `migration/zx01-pc`. Contract commit `f094cc1697ed8fa444ec437bcae4e21d9adbcee0` is published and pinned by the platform integration branch `agent/add-iepms-pr-upload-skill`. The adapter builds on upstream draft-wrapper commit `789bdff`.
+## Current truth
+- Source: `https://github.com/Gumb-D/iepms-pr-upload-automation`.
+- Published platform baseline `ec5fd9b` pins uploader `397010e` v0.3.1 (XLS/XLSX).
+- The inspected host runs an uncommitted v0.3.2 fix plus modified approval. It is NOT contained in the published gitlink. [Exact snapshot](DEPLOYMENT_SNAPSHOT_2026-10-15.md).
+- Platform adapter calls `submit_request`, not draft-only `prepare_request`. It validates, imports, attaches, submits and verifies, then stops before tracker/IP writes. Generic production run/resume must not be substituted casually.
 
-Install dependencies into the Python interpreter used by the backend:
+## Latest live evidence
+- W14 job `PR-20261015-015`: existing draft `PSQ202610150909` / `1000121288`; zero server lines; all 7 imported rows failed; NOT submitted. Preserve unresolved IMPORT_ECC intent and existing draft.
+- W15 job `PR-20261015-016`: local validation rejected `details!P2`; no draft created by this attempt. Original unchanged.
+- W16 job `PR-20261015-019`: `PSQ202610150919` / `1000121298`; submitted=true, verified=true; exit 0. Tracker/IP stages were not run. Original unchanged.
+
+## Validation / installation
+Use the actual backend Python (host checked: `C:\Python314\python.exe`; use a virtual environment where configured):
 
 ```powershell
-.\.venv\Scripts\python.exe -m pip install -r skills\iepms-pr-upload-automation\requirements.txt
-```
-
-The production launchers already install each skill's `requirements.txt` when dependency installation is requested. They initialize pinned submodules; they do not follow branch heads automatically.
-
-Offline checks:
-
-```powershell
-$env:PYTHONPATH = "$PWD\skills\iepms-pr-upload-automation\src"
-.\.venv\Scripts\python.exe -m pytest skills\iepms-pr-upload-automation\tests -q -p no:cacheprovider
+python -m pip install -r skills/iepms-pr-upload-automation/requirements.txt
+# In an isolated/offline test environment; tests may need pytest and test-only xlwt:
+python -m pytest skills/iepms-pr-upload-automation/tests -q
 npm.cmd --prefix backend run test:iepms-skill-offline
-npm.cmd --prefix backend run test:skill-contract
 npm.cmd --prefix backend run test:engine-integrity
-npm.cmd --prefix frontend test
+npm.cmd --prefix backend run test:skill-fingerprint
 ```
 
-The Python suite checks the real workflow using injected offline backends, including verified PSQ, cached reruns, ambiguous-import protection, and no Submit/downstream calls. The platform regression uses an unavailable local CDP endpoint to prevent live authentication, then verifies auth-required failure, safe reports, downloads, and cancellation restrictions.
+Run tests with network access blocked/mocked; these commands are not permission for live PR mutations. v0.3.1 validation recorded 182 Python and 95 frontend tests; local v0.3.2 recorded 236 offline Python tests. Backend integrity and unavailable-CDP regression passed after local deployment. W16 is evidence for the XLSX submit-only path; failed W14 does not demonstrate successful XLS import.
 
-October 7, 2026: 94 Python tests and 94 frontend tests passed. Frontend build and all 12 route-smoke URLs passed. Backend approval, registry, queue, contract, concurrency, health, and iEPMS offline execution checks passed.
+## Recovery / deployment
+Launchers initialize exact pins, not branch heads. Commit/publish skill changes, pin them, update approval and install dependencies before a reproducible release. Backend restart reloads approval JSON; do not restart while jobs are active. Preserve recovery snapshots/ledgers and backend-host CDP auth; never export credentials into reports.
 
-For live use, the backend host needs corporate access and an interactively authenticated CDP Chrome. Use one stable runtime root across desktop/platform instances. The UI reports PSQ separately from verified/submitted state. A blocked result must not be treated as a successful draft.
-
-Runtime changes in the skill require a newly reviewed package SHA-256 in `backend/src/skills/approvedSkills.json`. The declared include set covers the manifest, requirements, pyproject, and all Python sources; TOML line endings are normalized alongside existing text formats.
-
-
-## ECC XLS/XLSX support (v0.3.1)
-
-- ECC input accepts genuine `.xls` (BIFF) and `.xlsx` workbooks; the manifest drives both frontend file acceptance and backend upload validation.
-- Install updated skill runtime requirements in the backend-selected Python interpreter: `python -m pip install -r skills/iepms-pr-upload-automation/requirements.txt`. The new runtime dependency is `xlrd>=2.0.1,<3`.
-- Test environments also need the skill test extras (`python -m pip install -e "skills/iepms-pr-upload-automation[test]"`) for `xlwt`, which generates genuine XLS fixtures. xlwt is not a production dependency.
-- Preserve the original ECC bytes, suffix, SHA-256 binding and optional ECC attachment fallback. No format conversion or formula recalculation is performed.
-- Same required details-sheet columns, quantities, project/DU and abnormal-quantity explanations apply to both formats.
-- XLS parsing and mocked submission are covered offline. A live iEPMS XLS import has not been performed as part of this format change.
-- Deploy the matching skill pin and approved runtime fingerprint together; do not merely change the frontend accepted extensions.
+Original workbooks remain unchanged in the inspected host's Downloads. Investigation evidence is host-local, not committed wholesale: see [snapshot](DEPLOYMENT_SNAPSHOT_2026-10-15.md). Next actions are in [PENDING.md](PENDING.md); no blind retry of known drafts or submitted PRs.

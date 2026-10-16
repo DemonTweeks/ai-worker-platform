@@ -16,7 +16,7 @@
 - Frontend already derives accepted formats from the skill catalog; no UI runtime fork was needed.
 - Runtime dependency xlrd 2.0.2 installed in the current Python environment; pytest/xlwt are test-only.
 
-## Verified offline
+## Format-release offline validation (v0.3.1)
 - Skill Python suite: 182 passed, socket connections blocked.
 - Frontend: 95 unit tests passed.
 - Backend generic skill contract: both genuine XLS/XLSX fixtures accepted; CSV rejected.
@@ -31,4 +31,4 @@ Deployment steps:
 2. Install the skill requirements in the actual deployment Python environment (including xlrd).
 3. Restart the backend to reload its in-memory approval JSON; reload the UI/catalog. Use the normal frontend build step when deploying.
 
-No live server XLS attachment/import has been exercised, no services restarted and no PR submitted by this change. Existing running backend processes may still hold the old approval table and need restarting before using this revised package.
+At the original format-release checkpoint, no live import had been exercised. Subsequent 2026-10-15 tests: W14 XLS was parsed but rejected by the server for padding/mixed-site rows; W15 XLS was rejected locally at P2; W16 XLSX was submitted and verified. The host was restarted with a local uncommitted v0.3.2 fix. These events do not prove successful live XLS import. See [deployment snapshot](DEPLOYMENT_SNAPSHOT_2026-10-15.md), and [pending items](PENDING.md).

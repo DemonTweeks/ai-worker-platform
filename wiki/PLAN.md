@@ -16,7 +16,8 @@ The platform is a thin HTTP(S), storage, execution, and lifecycle wrapper for fo
 | `create-pr-cd` | TSS/TI standalone contract and authoritative reconciliation |
 | `tx-pr-auditor` | Standalone Final PO + EPMS composite contract, pinned TSS/TI generation, focused audit, DU registry pin, 10,000-row capacity baseline |
 | `create-pr-cd-ran` | BOM/EPMS standalone contract, project validation, four-stage pipeline, generic output ingestion |
-| Frontend | Manifest-driven routes for MW/CD, RAN, and TX audit skills |
+| iEPMS PR Upload | Guarded submit-and-verify, XLS/XLSX input and optional attachment; stops before tracker/IP updates; see [release/runtime snapshot](iepms-pr-upload-automation/DEPLOYMENT_SNAPSHOT_2026-10-15.md) |
+| Frontend | Manifest-driven routes for MW/CD, RAN, TX audit and iEPMS upload skills |
 | Legacy retirement | Legacy launch pages, registry adapters, worker services, and auditor workspace/ingestion removed |
 | Domain cleanup | Node prevalidation, workbook parsing, filtering, output reconstruction, and workbook/archive dependencies removed |
 | Compatibility | Historical detail/download remains; generic rerun recreates stored contract inputs; legacy rerun returns a safe explanation |

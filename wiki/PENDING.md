@@ -10,6 +10,6 @@ The former `repack/ai-worker-platform` branch committed a live LLM credential. R
 
 Remove this item after the rotated credentials are installed and both `/api/health` and `/fe/` are validated through the production Nginx endpoint.
 
-## P-003 - iEPMS Live Host Validation
+## P-003 - iEPMS Release and Blocked-Import Follow-up
 
-The standard contract is published at `f094cc1` on `Gumb-D/iepms-pr-upload-automation` branch `migration/zx01-pc` and pinned in the platform integration. Validate the draft-only flow on the intended backend host with corporate connectivity, authenticated CDP Chrome, one shared persistent recovery root, verified PSQ, downloads, and retry recovery. See [the dedicated pending items](iepms-pr-upload-automation/PENDING.md).
+Live submit-and-verify was demonstrated by W16 (`PSQ202610150919`). Remaining work is not initial draft-only host provisioning: publish/re-pin the local v0.3.2 runtime fix, resolve W14 server padding rejection, inspect W15 P2, and retain stable shared recovery state. See [dedicated pending items](iepms-pr-upload-automation/PENDING.md).

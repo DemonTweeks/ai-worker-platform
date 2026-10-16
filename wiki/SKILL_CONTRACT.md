@@ -1,6 +1,6 @@
 # AI Worker Platform — Skill Contract
 
-> Status: implemented for `create-pr-cd` 4.0.0, `tx-pr-auditor` 1.1.0, `create-pr-cd-ran` 1.1.2, and the `iepms-pr-upload-automation` 0.1.0 integration.
+> Status (2026-10-15): `create-pr-cd` 4.0.1, `tx-pr-auditor` 1.1.0, `create-pr-cd-ran` 1.1.2, and `iepms-pr-upload-automation` 0.3.1 published / 0.3.2 local working-tree fix. See the [deployment snapshot](iepms-pr-upload-automation/DEPLOYMENT_SNAPSHOT_2026-10-15.md); local runtime changes are not a published release.
 
 ## 1. Purpose
 

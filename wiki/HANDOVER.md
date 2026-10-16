@@ -2,10 +2,10 @@
 
 ## Current State
 
-- The `agent/add-iepms-pr-upload-skill` integration adds `iepms-pr-upload-automation` 0.1.0 from `Gumb-D/iepms-pr-upload-automation`, branch `migration/zx01-pc`, pinned to published contract commit `f094cc1`. It prepares drafts through Step 20 and displays PSQ via generic result fields. See [the dedicated handover](iepms-pr-upload-automation/HANDOVER.md) and [pending host validation](iepms-pr-upload-automation/PENDING.md).
-
-- The merged `main` baseline is `a987eb6`, including the thin-wrapper runtime, manifest-driven workbench, BL2 RAN source, and RAN ZIP delivery.
-- The platform gitlink pins `create-pr-cd` 4.0.0 at `e94e10d`. The pre-existing local checkout at `1ca0942` has equivalent tracked content and has been preserved.
+- Documentation reviewed on 2026-10-15 against platform baseline `ec5fd9b`. The latest runtime activity includes live W14-W16 tests; this is not a fresh audit of all historical PRs.
+- Published uploader pin: `397010e`, v0.3.1, native XLS/XLSX. Platform operation submits and verifies, then stops before trackers/Implementation Plans. Desktop preparation remains a separate draft-only path.
+- On the inspected deployment host, an uncommitted v0.3.2 uploader fix and matching modified approval are running. This documentation commit does not publish those files or update the gitlink. See [exact release/runtime state](iepms-pr-upload-automation/DEPLOYMENT_SNAPSHOT_2026-10-15.md).
+- The platform pins `create-pr-cd` v4.0.1 at `dc7cb77`, including governed PostMOCN and Starlink/NLOS TI guidance.
 - The platform gitlink pins `tx-pr-auditor` 1.1.0 at `df14590`.
 - `create-pr-cd-ran` 1.1.2 is pinned to BL2 branch commit `15fae20` with delivery ZIP output; upstream promotion uses [ammarofficial11/create-pr-cd-ran#1](https://github.com/ammarofficial11/create-pr-cd-ran/pull/1).
 - Every pinned commit is reachable from the submodule URL configured in `.gitmodules`.
@@ -51,7 +51,9 @@ The `BL2ZteSolution` account currently lacks direct push permission to `ammaroff
 - Rerunning a historical legacy job returns `LEGACY_RERUN_REQUIRES_NEW_REQUEST` with a safe instruction to submit through an approved skill.
 - `POST /api/jobs` returns `LEGACY_JOB_CREATION_RETIRED`; new work uses `/api/skills/:skillId/jobs`.
 
-## Validation Evidence
+## Historical Validation Evidence
+
+The following earlier test counts describe their original snapshots, not the latest suite. Current live findings are in the dedicated uploader handover.
 
 October 7, 2026 iEPMS integration: 94 Python tests and 94 frontend tests passed; frontend build and 12 route-smoke URLs passed. Backend smoke, approval, registry, durable queue, normalized fingerprint, HTTP contract, concurrency, health, and actual Python/no-auth iEPMS integration checks passed. No live iEPMS draft was created.
 
@@ -68,4 +70,4 @@ October 7, 2026 iEPMS integration: 94 Python tests and 94 frontend tests passed;
 
 ## Next Action
 
-Provision the authenticated backend host and validate the iEPMS draft-only flow. The existing production credential-rotation requirement remains in [PENDING.md](PENDING.md).
+Review the [uploader handover](iepms-pr-upload-automation/HANDOVER.md), preserve blocked drafts and recovery ledgers, and resolve the uploader [pending items](iepms-pr-upload-automation/PENDING.md). W16 was submitted and verified; do not repeat it. The existing production credential-rotation requirement remains in [PENDING.md](PENDING.md).

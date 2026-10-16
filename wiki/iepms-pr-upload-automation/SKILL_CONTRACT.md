@@ -1,34 +1,26 @@
 # Skill Contract
 
-Identity: `iepms-pr-upload-automation`, version `0.1.0`, schema/result contract `1.0`, Python >=3.11.
+Identity: `iepms-pr-upload-automation`; published v0.3.1 (`397010e`), local uncommitted v0.3.2; schema/result contract 1.0; Python >=3.11. See [deployment snapshot](DEPLOYMENT_SNAPSHOT_2026-10-15.md).
 
 ```text
 python src/main.py --input-manifest <workspace>/skill-input.json
 ```
 
-Required inputs:
-
-| Name | Value |
+| Input | Requirement |
 | --- | --- |
-| `ecc` | One `.xlsx` ECC workbook |
-| `attachment` | One separate evidence file; allowed extensions are declared in `skill.json` |
-| `projectId` | One of the two approved project UUIDs in `skill.json` |
+| `ecc` | One genuine `.xls` or `.xlsx` ECC, max 100 MiB |
+| `attachment` | Optional separate evidence, max 100 MiB; extensions declared by manifest. If omitted, attach the ECC |
+| `projectId` | Approved project UUID from manifest |
 | `scope` | `TSS` or `TI` |
 | `duModelName` | `2023 TX Rollout`, `TX Mini Project`, `MW EOS Swap`, or `ZTE TX MINI` |
-| `plannedStartDate` | Calendar date, entered as `YYYY-MM-DD` |
-| `outsourcedComponentService` | `N` or `Y`; UI default `N` |
-| `productQualityRectification` | `N` or `Y`; UI default `N` |
+| `plannedStartDate` | Calendar date `YYYY-MM-DD` |
+| `outsourcedComponentService` | `N` or `Y`; default `N` |
+| `productQualityRectification` | `N` or `Y`; default `N` |
 
-The Python skill validates project/model compatibility, workbook contents, dates, file hashes, and immutable request identity. The adapter has no Submit, backend-selection, CDP-port, credential, or runtime-directory request parameters.
+The skill validates workbook data, project/model compatibility, dates, hashes and immutable identity. Submission is the operation, not an additional user-selectable request parameter. Backend/CDP/credential/runtime selection is not exposed in the request.
 
-Host configuration stays in the selected ignored platform `config/env/*.env` file:
+Host-only ignored configuration: `IEPMS_PR_UPLOAD_ROOT`, optional absolute `IEPMS_PR_UPLOAD_RUNTIME_ROOT`, optional `IEPMS_PR_UPLOAD_CDP_PORT` (blank probes 19229, 19222, 19223). NDJSON progress and 30-second heartbeats; timeout 1800 seconds. Queued cancellation only.
 
-- `IEPMS_PR_UPLOAD_ROOT`: skill package location.
-- `IEPMS_PR_UPLOAD_RUNTIME_ROOT`: optional absolute shared recovery directory.
-- `IEPMS_PR_UPLOAD_CDP_PORT`: optional existing browser port; blank probes 19229, 19222, then 19223.
+Success requires `submitted=true`, `verified=true`, PSQ and header OID from the submit wrapper, with successful source status/exit code. A draft or completed import-processing task is not success: failed import-row counts block submission. Safe metrics include execution ID, PSQ, OID, verification, submission, resume eligibility and exit code where available.
 
-NDJSON progress and 30-second heartbeats are emitted. Timeout is 1800 seconds. Running cancellation is disabled; a pre-start cancellation sentinel is honored.
-
-Success requires the existing wrapper to return `prepared`, `verified=true`, a PSQ and PR header OID, and `submitted=false`. All other outcomes are failed platform jobs with a safe skill error and report. `summary.metrics` carries execution ID, PSQ, PR header OID, source status, verification, submission, resume eligibility, and exit code.
-
-Declared outputs: `output/IEPMS_DRAFT_RESULT.json` and `output/IEPMS_DRAFT_RESULT.html`, both checksummed. `result.json` is authoritative. The generic API exposes `resultSummary` and manifest `resultFields` for workbench/history/detail presentation.
+Outputs retain historical names `output/IEPMS_DRAFT_RESULT.json` and `.html`, even for submitted PRs. Checksummed authoritative `result.json` drives ingestion. Local v0.3.2 reports allowlisted `error.details.validationIssue` (worksheet/row/column); platform job detail currently omits that nested detail. Never publish arbitrary raw exceptions.

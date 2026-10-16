@@ -5,19 +5,21 @@ Manifest-driven Vue form
   -> multipart POST /api/skills/iepms-pr-upload-automation/jobs
   -> platform workspace + Firebase queue/machine lease
   -> python src/main.py --input-manifest skill-input.json
-  -> existing prepare_request(request, persistent_runtime_root)
+  -> submit_request(request, persistent_runtime_root)
   -> workbook/project validation + immutable snapshot + host worker lock
-  -> authenticated Chrome session -> existing signed Python API workflow
-  -> Step 20 verified draft / blocked outcome
+  -> authenticated Chrome -> signed Python API workflow
+  -> create/reconcile draft -> ECC import -> verify lines/exceptions
+  -> attachment/reviewers/save -> guarded Submit -> server-state verification
+  -> stop before tracker and Implementation Plan stages
   -> PSQ + safe JSON/HTML report -> platform history/downloads
 ```
 
-The existing desktop form, CLI, and platform adapter use the same `prepare_request` function. The platform does not reconstruct signing, API payloads, reviewer selection, ECC parsing, or the execution sequence.
+The desktop/CLI `prepare_request` is a distinct draft-only mode. Do not substitute generic production run/resume paths that can execute tracker/IP stages.
 
-`IEPMS_PR_UPLOAD_RUNTIME_ROOT` identifies a persistent, host-local recovery directory. It defaults to the skill's `runtime/jobs/wrapper`, matching the desktop launcher's default. Every wrapper instance must use the same root to share the lock and cached executions. Frozen inputs and ledger state survive platform job retention; do not remove them while an external draft may need recovery.
+`IEPMS_PR_UPLOAD_RUNTIME_ROOT` is a persistent host-local recovery directory, defaulting to the skill's `runtime/jobs/wrapper`. All wrapper instances on a host must share it. Preserve immutable snapshots, cached results and SQLite ledgers independently of platform job retention. Unknown create/import outcomes must be reconciled against the existing PSQ before another mutation; never delete/reset state to force a replay.
 
-Equivalent frozen requests return the same cached verified PSQ across platform jobs. Auth-paused requests can resume the same execution. Ambiguous mutations retain the known PSQ and remain blocked rather than replaying an uncertain create/import operation.
+The manifest disables running cancellation; queued cancellation is supported. Timeouts and host failures may still interrupt a mutation. The frontend uses manifest file/count/size checks, not ECC business validation.
 
-The contract declares `supportsCancellation=false`. Queued cancellation remains available; cancellation after lease claim returns `SKILL_CANCELLATION_UNSUPPORTED`. A process timeout or host failure still interrupts execution, so the retained ledger must be reviewed before recovery. This integration requires the backend host's browser; it cannot consume the frontend user's browser session on a different machine.
+Only allowlisted reports are public. Cookies, signing material, raw authenticated diagnostics, resume paths and ledgers remain private. Local v0.3.2 adds safe validation coordinates, but the platform job error projection currently drops nested validation details: download the safe report for the cell location.
 
-Only safe report fields are published. Browser cookies, signatures, raw network diagnostics, local resume paths, and the SQLite ledger are not downloadable artifacts.
+See [published versus local runtime](DEPLOYMENT_SNAPSHOT_2026-10-15.md) and [pending work](PENDING.md).
