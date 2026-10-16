@@ -56,3 +56,8 @@ launcher.ps1 (production only)
 - A successful result has valid output paths and checksums.
 - Frontend unit tests, production build, and route smoke pass.
 - No tracked runtime file contains a live credential; production secrets are injected through ignored `config/env/production.env` or external secret management.
+
+
+## Documentation review gate (2026-10-16)
+
+Keep all four standard skill document sets aligned with their pinned source, not just the latest uploader story. Compare manifests, direct entrypoints and implementation separately; record nested dependencies, ingest/cancellation limits, error disclosure and external mutation risks. The [wiki guide](README.md) defines ownership. A documentation-only update does not commit the dirty uploader or approve its runtime release. Preserve historical evidence and outstanding business questions; validate local links and recorded result references without triggering live workflows.

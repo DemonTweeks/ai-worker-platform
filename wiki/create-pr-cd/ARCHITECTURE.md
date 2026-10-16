@@ -83,7 +83,7 @@ iEPMS workbook
 
 Candidate models are not runtime inputs. `scripts/analyze_pr_model_change.py` compares a candidate with the current model, and `scripts/promote_pr_model.py` performs controlled replacement only after compatibility, required business approval evidence, and the full regression gate pass. A failed promotion restores the prior production baseline.
 
-The implemented CLI supports TSS and TI. Planning and Operation Backoffice are documented future scopes and must not be advertised as current runtime capabilities.
+The platform `src/main.py` manifest supports TSS and TI only. The official direct `scripts/create_pr.py` CLI implements TSS, TI, PLANNING and BACKOFFICE, whereas `create_pr_impl.py` remains TSS/TI. Do not confuse the underlying domain CLI with the narrower platform contract or advertise hidden scopes in the UI.
 
 ## Platform Coupling
 

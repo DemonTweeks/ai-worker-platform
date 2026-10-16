@@ -12,7 +12,7 @@ HTTPS request
   -> tx-pr-auditor/src/main.py
        -> pinned create-pr-cd 4.0.0 / TSS
        -> pinned create-pr-cd 4.0.0 / TI
-       -> focused Final PO-versus-ECC audit
+       -> focused Final PO audit (ECC + PR-model/EPMS scope augmentation)
   -> result.json (individual evidence + skill-owned delivery ZIP)
   -> generic output delivery
 ```
@@ -25,12 +25,12 @@ The platform does not know the sequence, scopes, workbook headers, entitlement r
 - Verify the pinned dependency identity.
 - Run TSS and TI generators in isolated child workspaces.
 - Forward progress and propagate cancellation.
-- Give only generated ECC to the focused audit engine.
+- Pass generated ECC plus PR-model and EPMS scope evidence to the audit pipeline, which can augment expected entitlement under current pinned rules.
 - Produce the audit workbook, summary, annotated ECC evidence, and the complete `TX_PR_Audit_Delivery.zip` package.
 
 ## Focused Audit Boundary
 
-The inner `scripts/audit_final_po.py` pipeline remains Final PO-versus-ECC only. It never reads EPMS or the PR model and never reimplements `create-pr-cd` entitlement logic.
+The inner `scripts/audit_final_po.py` reads generated ECC, PR-model scope catalogue and EPMS scope evidence. `augment_pr_model_entitlement` can synthesize audit-only expected records marked `PR_MODEL_COLUMN_B_AND_EPMS_SCOPE_EVIDENCE`. Generated ECC is therefore not the sole entitlement source in pinned code. This is skill-owned Python behavior, but differs from the previously documented ECC-only business boundary and requires explicit owner review. Source: `src/main.py`, `scripts/audit_final_po.py::run_pipeline`, `_scope_evidence_allows`, `augment_pr_model_entitlement`, and their tests.
 
 ## UI
 

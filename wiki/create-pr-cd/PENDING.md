@@ -1,7 +1,11 @@
-# create-pr-cd — Pending Work
+# create-pr-cd - Pending work
 
-There is no open skill-owned contract work for the current TSS/TI release.
+## TI case follow-up
 
-The skill now owns `skill.json`, `src/main.py`, domain validation, progress, cancellation, output declaration, reconciliation, PR-model baseline validation, and standalone contract tests. Planning and Operation Backoffice remain intentionally unavailable until a future skill release implements and declares them; they are not platform tasks.
+Preserve [seven-site findings](HANDOVER.md). Approve exact EOS State/Jendela antenna source fingerprints before using previously unverified data; add governed equipment-shorthand parsing with old/new/cable/frequency safeguards; clarify new-link versus reroute/dismantling and antenna counts; resolve partial-ECC/whole-site atomicity policy. Replays need retained correct inputs, isolated workspaces and appropriate authorization. Existing PR references must not be bypassed.
 
-The rollback-only Node integration has been retired.
+## Scope and release policy
+
+Platform contract remains TSS/TI. Direct CLI already implements Planning and Backoffice; any future platform exposure must declare required inputs and governance in Python manifest/tests. Reference overrides remain private. Review v4.0.1's documented pre-existing Windows/path/mock/rollback-artifact test failures before claiming all regression gates clean. Auditor nested-generator upgrades are separate releases, not sibling-directory changes.
+
+No business rule belongs in a platform Node workaround. Rollback-only Node generation path remains retired.

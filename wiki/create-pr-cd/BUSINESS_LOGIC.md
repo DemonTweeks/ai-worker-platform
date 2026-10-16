@@ -22,10 +22,10 @@ The standard contract is now implemented in `src/main.py`. This did not move or 
 | --- | --- | --- |
 | TSS | Implemented | Uses SOW, profile and scope-specific selection rules |
 | TI | Implemented | Uses SOW, antenna and specialized migration/reroute rules |
-| Planning | Documented, not implemented in current CLI | Must not be exposed until Python implements and tests it |
-| Operation Backoffice | Documented, not implemented in current CLI | Must not be exposed until Python implements and tests it |
+| Planning | Implemented in direct `scripts/create_pr.py` CLI | Not exposed by platform manifest; retain approved profile and scope gates |
+| Operation Backoffice | Implemented in direct `scripts/create_pr.py` CLI | Requires governed tracker, closed billing month and issuance/tier controls; not a platform input |
 
-The current entrypoint accepts exactly one execution scope, `TSS` or `TI`, per invocation.
+The public contract entrypoint accepts one TSS/TI scope per invocation; direct domain CLI scope choices are broader. Source: `scripts/create_pr.py::parse_args`, `src/main.py` and `skill.json`.
 
 ## Decision Order
 
@@ -256,11 +256,9 @@ For generated candidate rows:
 
 The exact workbook columns, filenames and grouping are domain output rules, not platform conventions.
 
-## 12. Documented Future Rules
+## 12. Domain-only scopes versus platform inputs
 
-Planning and Operation Backoffice logic exists in skill documentation, including fixed Planning PBOM behavior and Allstar Operation Backoffice behavior. These rules are not current CLI capabilities and are excluded from the active runtime contract.
-
-When implemented, they must be added in Python, covered by golden tests and declared in a new approved skill version. The platform should require no scope-specific code change.
+The direct CLI already routes PLANNING to `planning_ecc_renderer.py` and BACKOFFICE to `backoffice_ecc_renderer.py` using approved profiles/service registry. Backoffice requires production mode, authoritative tracker and billing month; Main PR aggregates the required DU export set and validates closed/immediately previous month and tiers before issuance. These capabilities remain absent from platform `skill.json.inputs`; do not pass undeclared parameters through the generic API. Any platform exposure requires a reviewed manifest/release and tests, not duplicated Node rules.
 
 ## 13. Refactor Invariants
 
@@ -282,4 +280,9 @@ The thin-wrapper refactor is correct only if:
 - Confirm whether review-required rows belong inside an ECC workbook, only in review reports, or vary by reason/profile.
 - Confirm whether reference-asset overrides are supported production behavior.
 - Confirm formal rules for MW Re-engineering.
-- Implement and approve Planning and Operation Backoffice before advertising them.
+- Review whether/how to expose implemented direct-CLI Planning and Backoffice under a future platform manifest; do not bypass their input/approval controls.
+
+
+## v4.0.1 guidance and unresolved real-case evidence
+
+PostMOCN normalization is terminal Site-ID alias handling, not a global change to TX SOW source precedence. Colliding aliases fail closed. Starlink-only dismantling bypasses MW diameter selection; mixed MW components retain evidence and atomicity gates. Approved deterministic NLOS resolves 0.3m only in governed source context; contradictory/uncertain evidence remains review-required and diameter does not invent endpoint/count choices. TX Rollout detail mapping changes do not approve unrelated EOS/Jendela fields. See [guidance release](TI_BUSINESS_GUIDANCE_4_0_1.md) and the [seven-case historical investigation](HANDOVER.md).

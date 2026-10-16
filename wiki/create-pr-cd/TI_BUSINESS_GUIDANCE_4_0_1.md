@@ -1,4 +1,4 @@
-﻿# MW TI business guidance v4.0.1
+# MW TI business guidance v4.0.1
 
 - Skill commit: `dc7cb77d656a367c0563c169271f784b15e7d287`.
 - Built on current MW main `237ee81`, retaining its Backoffice changes.
@@ -19,7 +19,7 @@
 - Full Python suite: 858 passed, 20 skipped, 380 subtests passed; five failures also reproduce on unchanged MW main `237ee81` (Windows path/mock and immutable rollback artifact issues).
 - TX Rollout discovery packet, historical headers and profile traceability checks pass.
 - Platform fingerprint normalization, generic catalog/submission/result contracts, and local offline Python runner pass.
-- The seven reported production workbooks are not available, so no claim of replaying those exact cases.
-- Local commits only: not deployed, not submitted to live iEPMS, no tracker updates.
+- The release validation record did not have the exact seven reported production workbooks. Earlier retained exports/jobs were separately studied; neither establishes a complete real-data replay of the reported October cases.
+- At original release validation these were local commits, not deployed. Subsequently published skill `dc7cb77` and platform integration `ec5fd9b` were pulled and restarted; live catalog confirmed MW v4.0.1. Deployment does not prove all seven cases are solved; MW generation itself does not submit iEPMS PRs or update trackers.
 
 See `skills/create-pr-cd/docs/TI_BUSINESS_GUIDANCE_4_0_1.md` for scope and limitations.

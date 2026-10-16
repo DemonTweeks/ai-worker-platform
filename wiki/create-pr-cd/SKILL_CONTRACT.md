@@ -1,11 +1,11 @@
-# create-pr-cd — Skill Contract
+# create-pr-cd â€” Skill Contract
 
 ## Identity
 
 | Field | Value |
 | --- | --- |
 | Skill ID | `create-pr-cd` |
-| Version | `4.0.0` |
+| Version | `4.0.1` |
 | Entrypoint | `src/main.py` |
 | Manifest schema | `1.0` |
 | Result contract | `1.0` |
@@ -49,3 +49,5 @@ python src/main.py --input-manifest <workspace>/input.json
 ```
 
 The shared rules in [../SKILL_CONTRACT.md](../SKILL_CONTRACT.md) also apply.
+
+Cancellation path precedence: platform-generated `paths.cancellation` overrides standalone defaults. Current generic platform jobs use `temp/cancel.requested`; MW/auditor manifest fallback `control/cancel.requested` does not override that envelope. Sources: `genericSkillRunner.js`, `genericSkillJobService.js`, and each Python `load_envelope`.

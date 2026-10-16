@@ -7,7 +7,7 @@
 - Added pinned `create-pr-cd` 4.0.0 as a recursive Git dependency.
 - Added isolated Python orchestration for mandatory TSS and TI generation.
 - Added dependency identity validation, safe failures, progress forwarding, and cancellation propagation.
-- Kept the existing focused audit engine unchanged and ECC-only.
+- Composite generation is Python-owned; current pinned audit also augments expected entitlement from PR-model/EPMS scope evidence. The former ECC-only statement is not true for current code; business-owner review remains open.
 - Restored baseline upload/stage/notice copy through generic `skill.json.ui` metadata.
 - Updated platform catalog, contract tests, approval coverage, and documentation.
 

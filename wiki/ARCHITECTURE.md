@@ -44,7 +44,7 @@ Each claimed job stores:
 
 ```json
 {
-  "queueState": "queued|running|cancelling|terminal",
+  "queueState": "queued|claimed|running|cancelling|terminal",
   "machineId": "stable-host-id|null",
   "runtimeInstanceId": "per-start-id|null",
   "claimedAt": "timestamp|null",
@@ -99,7 +99,7 @@ The PR Auditor product flow is one composite Python skill job. `tx-pr-auditor` o
 
 ## Cancellation and Progress
 
-The runner writes `temp/cancel.requested` and allows cooperative cleanup before terminating the process. All current skill wrappers emit phase events and a 30-second progress heartbeat. The auditor checks cancellation every 250 rows in long loops; both creators supervise their existing domain processes so cancellation can terminate child work and still produce an authoritative result envelope.
+For cancellable skills the runner writes the job envelope's `paths.cancellation` (platform jobs currently use `temp/cancel.requested`) and allows cooperative cleanup before terminating the process. MW/auditor manifests and standalone fallback use `control/cancel.requested`; Python honors the envelope override, so this is not a second signal to create manually. The iEPMS uploader is not cancellable after claim; queued cancellation is distinct. All current skill wrappers emit phase events and a 30-second progress heartbeat. The auditor checks cancellation every 250 rows in long loops; both creators supervise their existing domain processes so cancellation can terminate child work and still produce an authoritative result envelope.
 
 ## Historical Compatibility Boundary
 
@@ -124,3 +124,14 @@ Production startup requires a stable `AI_WORKER_MACHINE_ID`. Firebase queue owne
 Approved package fingerprints canonicalize CRLF to LF for declared text runtime formats while hashing binary assets byte-for-byte. The same pinned package therefore has one identity on Windows and Linux without weakening workbook/template integrity checks.
 
 The RAN submodule is sourced from `BL2ZteSolution/create-pr-cd-ran` and follows the dedicated `refactor/standard-skill-contract` development branch. Its local `origin` points to that platform-owned source; `upstream` points to `ammarofficial11/create-pr-cd-ran` for dual-repository publication and upstream review. The platform always executes the pinned gitlink, so the branch declaration guides development updates without making runtime startup branch-dependent.
+
+## Operational details verified against source (2026-10-16)
+
+- Firebase ownership includes `claimed`. Reconciliation runs at startup and periodically; valid leases are untouched. Expired queued work can requeue, interrupted execution fails with `WORKER_INTERRUPTED_BY_RESTART`, and expired cancellation is finalized with the partial-output distinction. This never resumes an interrupted Python process or authorizes replay of an external PR mutation.
+- Code defaults: concurrency 2, lease 45 seconds, heartbeat 15 seconds, reconciliation 30 seconds; heartbeat scheduling is also bounded by half the lease. These are defaults, not verified host settings (`backend/src/config/env.js`, `backend/src/queue/jobQueue.js`).
+- Authentication is not universal: admin login is public; later admin routes use `adminAuth`. `jobRoutes.js` and `skillRoutes.js` do not install equivalent auth middleware. Verify network/reverse-proxy controls separately; admin login must not be described as protecting all job creation/history/rerun/downloads. Admin business-asset mutation endpoints are disabled: assets ship with skill releases.
+- Startup validates packages/persistence/queue before HTTP listening (`backend/src/server.js`). A spawned PID is not readiness evidence. Health may contact the configured LLM provider with a cache; it is not always a network-free check.
+- Vue 2 hash routes use `/fe/` only in production. `GenericSkillView.vue` uses `views/shared/workerRuntime.js`, `ManifestParameterField.vue` and `skillResultUtils.js`. Client upload checks type/count/size, not workbook content. `websocketClient.js` reconnects after three seconds unless closed and resubscribes; it does not recover execution.
+- Auditor ownership is more than ECC comparison: its pinned Python pipeline also augments entitlement using the PR model and EPMS scope evidence. See [auditor architecture](tx-pr-auditor/ARCHITECTURE.md); platform Node still owns none of that domain logic.
+
+Sources: `backend/src/{app.js,server.js}`, routes, queue, config and services; `frontend/src/{router.js,views/GenericSkillView.vue,views/shared/workerRuntime.js,services/websocketClient.js}`.

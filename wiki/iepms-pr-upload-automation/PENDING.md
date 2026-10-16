@@ -17,3 +17,11 @@ W03/W04 remain unsubmitted drafts with budget/exchange-rate issues; W12 has 0/6 
 
 ## Host recovery
 Use a stable persistent shared runtime root and browser/queue host affinity. Keep snapshots and ledgers across releases. Verify recovery against an existing PSQ before mutation. Trackers and Implementation Plans remain excluded from the platform submit-only operation.
+
+## Acceptance and release gates
+
+- Keep v0.3.1 baseline182 Python/95frontend and local v0.3.2 236offline tests dated; do not merge claims into an invented all-green current suite. Re-run isolated tests after any code change; blocked sockets/unavailable CDP prevent live mutation.
+- Before changing W14 import representation, obtain approval, prove3business-row equivalence/no lost Remarks or identifiers, preserve original attachment and hashes, reconcile zero-server-lines against existing PSQ and unresolved intent. No destructive reset or untracked replay.
+- Check P2 formula/lookup read-only and distinguish auxiliary error from required-contract data in W15; serial-only rows remain a later server risk even after an authorized lookup correction.
+- Preserve authentication and corporate session only on backend host. Startup can wait for context; meaningful progress should identify safe workflow stage without leaking private server responses.
+- Proposed v0.3.2 is not published/reproducibly pinned yet. Stable runtime root and upgraded package approval must be released together with reviewed source identity; no documentation commit should stage those runtime edits accidentally.

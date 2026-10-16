@@ -35,4 +35,8 @@ create-pr-cd/
 4. Platform approved package fingerprint matches all declared runtime files.
 5. Reconciliation has zero unaccounted or failed engine outcomes before success.
 
-The platform's rollback-only MW path has been removed. No current TSS/TI contract work remains.
+The platform's rollback-only MW path has been removed. See current pending work below; completion of the thin-wrapper contract did not resolve every later TI business case.
+
+## Review update, 2026-10-16
+
+The v4.0.0 contract addition above is historical completed work. Current release is v4.0.1 / `dc7cb77`; direct CLI also contains governed Planning/Backoffice while platform declaration remains TSS/TI. The assertion that no current work remains is superseded by the [pending TI cases and regression follow-up](PENDING.md). Release order: skill commit/tests -> approved fingerprint -> platform pin -> dependency install -> readiness-verified restart. Current package identity must never be confused with model version 4.0.

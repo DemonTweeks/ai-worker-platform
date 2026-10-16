@@ -71,3 +71,20 @@ October 7, 2026 iEPMS integration: 94 Python tests and 94 frontend tests passed;
 ## Next Action
 
 Review the [uploader handover](iepms-pr-upload-automation/HANDOVER.md), preserve blocked drafts and recovery ledgers, and resolve the uploader [pending items](iepms-pr-upload-automation/PENDING.md). W16 was submitted and verified; do not repeat it. The existing production credential-rotation requirement remains in [PENDING.md](PENDING.md).
+
+## Documentation audit, 2026-10-16
+
+Read [wiki navigation](README.md) before editing. This pass covers platform runtime/deployment, all four skills, transport versus business validation, nested dependency ownership, release identities and preserved investigation evidence. No fresh live PR lookup or aggregate test run was done for this documentation audit. Local uploader v0.3.2 and approval remain uncommitted and are deliberately excluded from documentation changes.
+
+Important corrected claims:
+- MW contract is v4.0.1/TSS-TI only, but its direct domain CLI already implements governed Planning and Backoffice; not exposing them in the platform does not mean absent code.
+- RAN is v1.1.2, has delivery ZIP and catalogue validation, and does not promise exactly five outputs.
+- Auditor reads additional PR-model/EPMS scope evidence; generated ECC is not its sole entitlement source in the pinned implementation. Business-owner review is recorded in its pending page.
+- Windows spawn is not readiness, queue recovery is periodic as well as startup, and admin auth does not protect every job/skill route.
+- No standalone workbook register is present. Supplied historical statuses and live W14-W16 recovery details belong in the existing uploader handover/pending pages, with provenance.
+
+### Available validation commands (not freshly run here)
+
+Backend package scripts cover smoke, engine integrity, normalized fingerprint, queue registry, durable reconciliation, job concurrency/idempotency, health, contracts and offline iEPMS integration. `npm.cmd --prefix backend test` also runs MW/RAN creator execution suites; it is not a read-only audit command. Frontend `npm.cmd --prefix frontend test` runs unit tests, build and route smoke. Use isolated/mock storage and blocked network for uploader regression; never repoint a live mutation test at a real authenticated host without explicit authorization.
+
+Historical pass counts above remain snapshot-specific. Relevant source: `backend/package.json`, `frontend/package.json`, `backend/scripts/*test.js`, each skill's `tests/`.
