@@ -25,3 +25,15 @@ Use a stable persistent shared runtime root and browser/queue host affinity. Kee
 - Check P2 formula/lookup read-only and distinguish auxiliary error from required-contract data in W15; serial-only rows remain a later server risk even after an authorized lookup correction.
 - Preserve authentication and corporate session only on backend host. Startup can wait for context; meaningful progress should identify safe workflow stage without leaking private server responses.
 - Proposed v0.3.2 is not published/reproducibly pinned yet. Stable runtime root and upgraded package approval must be released together with reviewed source identity; no documentation commit should stage those runtime edits accidentally.
+
+
+## New model release gate — 2026-10-16
+
+Local v0.3.3 now implements the three confirmed Malaysia models; this is not yet a published or restarted release. Preserve the uncommitted v0.3.2 changes when reviewing/publishing the cumulative skill. Commit/publish reviewed source first, then update the platform gitlink and approved version/fingerprint, install dependencies as needed and authorize restart. The currently running backend may retain its older in-memory approval; do not run live uploads against this changed package before deployment is completed. New models have offline coverage only. Any actual model/contract/DU-specific business restrictions remain subject to iEPMS validation. Never infer tracker or Implementation Plan mappings from the dropdown additions.
+
+
+## Release update — v0.3.3 (2026-10-16)
+
+Uploader v0.3.3 is now published on main at `93f303825fd03094e15019ded55b479633197292`. The accompanying platform release pins that exact commit and approves runtime fingerprint `0148ae1bba4eaedf41a509f3906cd115797dc707b677ba51772e55eefa5f1c83`. This supersedes earlier descriptions of v0.3.2/v0.3.3 as uncommitted local changes; dated live observations and unresolved W14/W15 blockers remain historical evidence and are not cleared by publishing.
+
+The release includes the three new Malaysia CelcomDigi DU options and earlier safe row-validation/reporting fixes. Restart and inspect `/api/skills` for v0.3.3 and all seven models before claiming activation. No live new-model PR, tracker update or Implementation Plan write is part of this release.

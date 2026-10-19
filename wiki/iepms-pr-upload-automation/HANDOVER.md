@@ -59,3 +59,20 @@ The following are user-supplied latest-recorded observations, not fresh server c
 - W13 Magicell ECC,3lines/1siteQ01087_AD, DU00006931164: `PSQ202610130030` / OID1000118088; submitted and verified3lines, MYR 2293.74; last recorded To be countersigned.
 
 Do not retry submitted PRs or equate historical draft existence with safe resubmission. Resolve business/data blockers from read-only server evidence before proposing narrowly authorized recovery.
+
+
+## New DU-model handoff — 2026-10-16
+
+Local unreleased v0.3.3 adds `2024 Celcomdigi BAU`, `Celcomdigi USP` and `Jendela TX Migration` to Malaysia CelcomDigi Project only. See [contract and release boundary](SKILL_CONTRACT.md#additional-du-models--local-v033-2026-10-16). Existing models, submit-only limits and workbook validations are preserved. No commit, push, restart or live new-model submission was performed for this implementation. Historical v0.3.2 deployment observations below/above remain dated evidence, not the current working-tree version.
+
+
+### Validation for local v0.3.3
+
+2026-10-16: 295 Python tests passed with socket connections blocked; 99 frontend unit tests passed. Backend engine integrity, generic skill contract (including new models and rejected short alias), XLS/XLSX offline auth-failure integration and cross-platform fingerprint tests passed. New Python cases cover both formats, both TSS/TI scopes, valid/invalid project pairings, exact filename detection/ambiguity, one/two-site descriptions and frozen production-config construction. These are isolated implementation results, not live-model UAT or a full backend aggregate test run.
+
+
+## Release update — v0.3.3 (2026-10-16)
+
+Uploader v0.3.3 is now published on main at `93f303825fd03094e15019ded55b479633197292`. The accompanying platform release pins that exact commit and approves runtime fingerprint `0148ae1bba4eaedf41a509f3906cd115797dc707b677ba51772e55eefa5f1c83`. This supersedes earlier descriptions of v0.3.2/v0.3.3 as uncommitted local changes; dated live observations and unresolved W14/W15 blockers remain historical evidence and are not cleared by publishing.
+
+The release includes the three new Malaysia CelcomDigi DU options and earlier safe row-validation/reporting fixes. Restart and inspect `/api/skills` for v0.3.3 and all seven models before claiming activation. No live new-model PR, tracker update or Implementation Plan write is part of this release.

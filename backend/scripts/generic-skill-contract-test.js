@@ -54,7 +54,11 @@ const run = async () => {
     assert.deepStrictEqual(uploadCatalogEntry.inputs.files.map((item) => item.name), ['ecc', 'attachment']);
     assert.strictEqual(uploadCatalogEntry.inputs.files.find((item) => item.name === 'ecc').required, true);
     assert.deepStrictEqual(uploadCatalogEntry.inputs.files.find((item) => item.name === 'ecc').acceptedExtensions, ['.xls', '.xlsx']);
-    assert.strictEqual(uploadCatalogEntry.version, '0.3.1');
+    assert.strictEqual(uploadCatalogEntry.version, '0.3.3');
+    assert.deepStrictEqual(uploadCatalogEntry.inputs.parametersSchema.properties.duModelName.enum, [
+      '2023 TX Rollout', 'TX Mini Project', 'MW EOS Swap', 'ZTE TX MINI',
+      '2024 Celcomdigi BAU', 'Celcomdigi USP', 'Jendela TX Migration'
+    ]);
     assert.strictEqual(uploadCatalogEntry.inputs.files.find((item) => item.name === 'attachment').required, false);
     assert.strictEqual(uploadCatalogEntry.execution.supportsCancellation, false);
     const uploadForm = new FormData();
@@ -87,6 +91,27 @@ const run = async () => {
       assert(saved.files[0].path.endsWith(`.${extension}`));
       assert.deepStrictEqual(fs.readFileSync(path.join(tempRoot, job.inputManifestPath, '..', saved.files[0].path)), fixture);
     }
+    // Queue is stubbed: exercise transport acceptance only; Python owns project pairing.
+    for (const [index, model] of ['2024 Celcomdigi BAU', 'Celcomdigi USP', 'Jendela TX Migration'].entries()) {
+      const modelForm = new FormData();
+      modelForm.append('browserTabSessionId', `iepms-new-model-tab-${index}`);
+      modelForm.append('idempotencyKey', `iepms-new-model-create-${index}`);
+      modelForm.append('parameters', JSON.stringify({ ...uploadEnvelope.parameters, duModelName: model }));
+      modelForm.append('ecc', new Blob([fs.readFileSync(path.join(__dirname, '../../skills/iepms-pr-upload-automation/tests/fixtures/ecc.xlsx'))]), 'ECC.xlsx');
+      const response = await fetch(`${baseUrl}/api/skills/iepms-pr-upload-automation/jobs`, { method: 'POST', body: modelForm });
+      assert.strictEqual(response.status, 201, await response.clone().text());
+      const { job } = await response.json();
+      const saved = JSON.parse(fs.readFileSync(path.join(tempRoot, job.inputManifestPath), 'utf8'));
+      assert.strictEqual(saved.parameters.duModelName, model);
+      assert.strictEqual(saved.parameters.projectId, 'c46633e8-6e52-2178-f17e-dcbfdade7cb2');
+    }
+    const invalidModelForm = new FormData();
+    invalidModelForm.append('browserTabSessionId', 'iepms-invalid-model-tab');
+    invalidModelForm.append('idempotencyKey', 'iepms-invalid-model-create');
+    invalidModelForm.append('parameters', JSON.stringify({ ...uploadEnvelope.parameters, duModelName: 'TX Migration' }));
+    invalidModelForm.append('ecc', new Blob(['synthetic']), 'ECC.xlsx');
+    const invalidModelResponse = await fetch(`${baseUrl}/api/skills/iepms-pr-upload-automation/jobs`, { method: 'POST', body: invalidModelForm });
+    assert.strictEqual(invalidModelResponse.status, 400);
     const invalidFormat = new FormData();
     invalidFormat.append('browserTabSessionId', 'iepms-invalid-format-tab');
     invalidFormat.append('idempotencyKey', 'iepms-invalid-format-create');

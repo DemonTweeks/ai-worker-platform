@@ -88,3 +88,15 @@ Important corrected claims:
 Backend package scripts cover smoke, engine integrity, normalized fingerprint, queue registry, durable reconciliation, job concurrency/idempotency, health, contracts and offline iEPMS integration. `npm.cmd --prefix backend test` also runs MW/RAN creator execution suites; it is not a read-only audit command. Frontend `npm.cmd --prefix frontend test` runs unit tests, build and route smoke. Use isolated/mock storage and blocked network for uploader regression; never repoint a live mutation test at a real authenticated host without explicit authorization.
 
 Historical pass counts above remain snapshot-specific. Relevant source: `backend/package.json`, `frontend/package.json`, `backend/scripts/*test.js`, each skill's `tests/`.
+
+
+## Local follow-up — three iEPMS DU models (2026-10-16)
+
+The working tree now targets uploader v0.3.3, adding the user-confirmed Malaysia CelcomDigi models 2024 Celcomdigi BAU, Celcomdigi USP and Jendela TX Migration. This includes earlier uncommitted v0.3.2 fixes; source and approval are still dirty, while the recorded published gitlink remains397010e/v0.3.1. Services were not restarted. See [uploader contract](iepms-pr-upload-automation/SKILL_CONTRACT.md) for profile routing, validation and release steps. Do not interpret the October15 snapshot as proof of v0.3.3 deployment.
+
+
+## Release update — v0.3.3 (2026-10-16)
+
+Uploader v0.3.3 is now published on main at `93f303825fd03094e15019ded55b479633197292`. The accompanying platform release pins that exact commit and approves runtime fingerprint `0148ae1bba4eaedf41a509f3906cd115797dc707b677ba51772e55eefa5f1c83`. This supersedes earlier descriptions of v0.3.2/v0.3.3 as uncommitted local changes; dated live observations and unresolved W14/W15 blockers remain historical evidence and are not cleared by publishing.
+
+The release includes the three new Malaysia CelcomDigi DU options and earlier safe row-validation/reporting fixes. Restart and inspect `/api/skills` for v0.3.3 and all seven models before claiming activation. No live new-model PR, tracker update or Implementation Plan write is part of this release.

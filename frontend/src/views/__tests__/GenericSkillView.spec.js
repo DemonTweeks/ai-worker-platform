@@ -246,6 +246,38 @@ describe('GenericSkillView', () => {
     wrapper.destroy();
   });
 
+  it.each(['2024 Celcomdigi BAU', 'Celcomdigi USP', 'Jendela TX Migration'])(
+    'renders all seven DU options and submits the confirmed Malaysia project model %s', async (model) => {
+      listSkills.mockResolvedValueOnce({ skills: [iepmsSkill] });
+      const wrapper = mount(GenericSkillView, {
+        propsData: { skillId: 'iepms-pr-upload-automation' },
+        mocks: { $router: { push: vi.fn(async () => {}) } },
+        stubs: { RouterLink: { template: '<a><slot /></a>' } }
+      });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      await wrapper.vm.$nextTick();
+      const selects = wrapper.findAll('select');
+      const project = selects.at(0);
+      const duModel = selects.at(1);
+      expect(duModel.findAll('option').wrappers.map((option) => option.element.value).filter(Boolean)).toEqual([
+        '2023 TX Rollout', 'TX Mini Project', 'MW EOS Swap', 'ZTE TX MINI',
+        '2024 Celcomdigi BAU', 'Celcomdigi USP', 'Jendela TX Migration'
+      ]);
+      await project.setValue('c46633e8-6e52-2178-f17e-dcbfdade7cb2');
+      await duModel.setValue(model);
+      wrapper.vm.$set(wrapper.vm.selectedFiles, 'ecc', new File(['synthetic'], 'ECC.xlsx'));
+      wrapper.vm.validateSelectedFiles(wrapper.vm.skill.inputs.files.find((item) => item.name === 'ecc'), wrapper.vm.selectedFiles.ecc);
+      expect(wrapper.vm.canSubmit).toBe(true);
+      await wrapper.find('form').trigger('submit');
+      expect(createSkillJob).toHaveBeenCalledWith('iepms-pr-upload-automation', expect.objectContaining({
+        parameters: expect.objectContaining({
+          projectId: 'c46633e8-6e52-2178-f17e-dcbfdade7cb2', duModelName: model, scope: 'TSS'
+        })
+      }));
+      wrapper.destroy();
+    }
+  );
+
   it('renders manifest-owned files and parameters and submits the generic envelope', async () => {
     const wrapper = mount(GenericSkillView, {
       propsData: { skillId: 'create-pr-cd' },

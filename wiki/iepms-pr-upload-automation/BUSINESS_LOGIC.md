@@ -26,3 +26,15 @@ No normalization/import copy was implemented: attachment and import both use ori
 Create/recover exact draft identity -> import and verify actual server rows -> compare lines/exceptions -> governed correction/remediation only -> attach and verify expected evidence -> configure reviewer context -> validate fresh amount/currency, duplicate/abnormal categories and identity -> final save -> Submit -> verify submitted server status. `FINAL_SAVE_COMPLETED` and Submit intent affect recovery; do not repeat already-completed mutation stages blindly.
 
 Unresolved exception categories, bad amount/currency, reviewer mismatch, import failedRowsNum>0, unknown mutation outcome or identity mismatch block Submit. The code contains governed duplicate remediation; this is not permission for operators to delete arbitrary lines or bypass business conflicts. Platform submit-only returns before tracker/IP stages. A PSQ, draft save, HTTP200 or import processing SUCCEEDED alone is not business success.
+
+
+## Additional project/model rules — 2026-10-16
+
+Local unreleased v0.3.3 adds `2024 Celcomdigi BAU`, `Celcomdigi USP` and `Jendela TX Migration` to Malaysia CelcomDigi Project only. See [contract and release boundary](SKILL_CONTRACT.md#additional-du-models--local-v033-2026-10-16). Existing models, submit-only limits and workbook validations are preserved. No commit, push, restart or live new-model submission was performed for this implementation. Historical v0.3.2 deployment observations below/above remain dated evidence, not the current working-tree version.
+
+
+## Release update — v0.3.3 (2026-10-16)
+
+Uploader v0.3.3 is now published on main at `93f303825fd03094e15019ded55b479633197292`. The accompanying platform release pins that exact commit and approves runtime fingerprint `0148ae1bba4eaedf41a509f3906cd115797dc707b677ba51772e55eefa5f1c83`. This supersedes earlier descriptions of v0.3.2/v0.3.3 as uncommitted local changes; dated live observations and unresolved W14/W15 blockers remain historical evidence and are not cleared by publishing.
+
+The release includes the three new Malaysia CelcomDigi DU options and earlier safe row-validation/reporting fixes. Restart and inspect `/api/skills` for v0.3.3 and all seven models before claiming activation. No live new-model PR, tracker update or Implementation Plan write is part of this release.
