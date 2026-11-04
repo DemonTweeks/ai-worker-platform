@@ -51,3 +51,8 @@ python src/main.py --input-manifest <workspace>/input.json
 The shared rules in [../SKILL_CONTRACT.md](../SKILL_CONTRACT.md) also apply.
 
 Cancellation path precedence: platform-generated `paths.cancellation` overrides standalone defaults. Current generic platform jobs use `temp/cancel.requested`; MW/auditor manifest fallback `control/cancel.requested` does not override that envelope. Sources: `genericSkillRunner.js`, `genericSkillJobService.js`, and each Python `load_envelope`.
+
+
+## Production TI scope split — v4.0.2
+
+The user-approved new-link/reroute split is implemented in the skill: clear new-link-only needs installation evidence; actual reroute additionally requires explicit old-antenna diameter and 2/4 count; unclear combined labels remain REVIEW_REQUIRED. Mandatory transport/model choices must resolve uniquely and atomically, with no partial ECC for unresolved reroute records. NLOS is not an automatic old-size/count substitute. Existing TSS and Jendela separated migration work-item routing is preserved. Earlier case findings above remain historical and are not proof of successful replay. See [release rules](TI_NEW_LINK_REROUTE_4_0_2.md).

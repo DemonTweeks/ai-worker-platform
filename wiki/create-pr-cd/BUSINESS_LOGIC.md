@@ -286,3 +286,8 @@ The thin-wrapper refactor is correct only if:
 ## v4.0.1 guidance and unresolved real-case evidence
 
 PostMOCN normalization is terminal Site-ID alias handling, not a global change to TX SOW source precedence. Colliding aliases fail closed. Starlink-only dismantling bypasses MW diameter selection; mixed MW components retain evidence and atomicity gates. Approved deterministic NLOS resolves 0.3m only in governed source context; contradictory/uncertain evidence remains review-required and diameter does not invent endpoint/count choices. TX Rollout detail mapping changes do not approve unrelated EOS/Jendela fields. See [guidance release](TI_BUSINESS_GUIDANCE_4_0_1.md) and the [seven-case historical investigation](HANDOVER.md).
+
+
+## Production TI scope split — v4.0.2
+
+The user-approved new-link/reroute split is implemented in the skill: clear new-link-only needs installation evidence; actual reroute additionally requires explicit old-antenna diameter and 2/4 count; unclear combined labels remain REVIEW_REQUIRED. Mandatory transport/model choices must resolve uniquely and atomically, with no partial ECC for unresolved reroute records. NLOS is not an automatic old-size/count substitute. Existing TSS and Jendela separated migration work-item routing is preserved. Earlier case findings above remain historical and are not proof of successful replay. See [release rules](TI_NEW_LINK_REROUTE_4_0_2.md).

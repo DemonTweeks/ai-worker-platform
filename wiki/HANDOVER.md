@@ -100,3 +100,8 @@ The working tree now targets uploader v0.3.3, adding the user-confirmed Malaysia
 Uploader v0.3.3 is now published on main at `93f303825fd03094e15019ded55b479633197292`. The accompanying platform release pins that exact commit and approves runtime fingerprint `0148ae1bba4eaedf41a509f3906cd115797dc707b677ba51772e55eefa5f1c83`. This supersedes earlier descriptions of v0.3.2/v0.3.3 as uncommitted local changes; dated live observations and unresolved W14/W15 blockers remain historical evidence and are not cleared by publishing.
 
 The release includes the three new Malaysia CelcomDigi DU options and earlier safe row-validation/reporting fixes. Restart and inspect `/api/skills` for v0.3.3 and all seven models before claiming activation. No live new-model PR, tracker update or Implementation Plan write is part of this release.
+
+
+## MW production TI split — 2026-11-04
+
+Published MW v4.0.2 pin `0e08c63a59c23f9a00e662a15a7de744c2da1783` implements the user-approved new-link-only / actual-reroute / ambiguous classification and atomic selection. See [rules, tests and baseline failures](create-pr-cd/TI_NEW_LINK_REROUTE_4_0_2.md). The uploader is unchanged (v0.3.3); auditor nested MW remains independently pinned. No historical PR upload is part of deployment.

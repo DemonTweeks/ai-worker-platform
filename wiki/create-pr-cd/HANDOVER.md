@@ -32,3 +32,8 @@ Historical generic run: 2,554 requested sites with zero unaccounted outcomes. Re
 Sources: `skill.json`, `src/main.py`, `scripts/create_pr.py`, `scripts/antenna_evidence_resolver.py`, `scripts/pr_helpers.py`, source profiles, `tests/test_ti_business_guidance.py`. Original local study/probes are retained in the conversation evidence folder identified by the uploader deployment snapshot. Do not import executable legacy generator modules merely to inspect helpers: some execute work at import time.
 
 Next: [Pending](PENDING.md). Do not modify original inputs, bypass duplicates, promote an untested fingerprint, or equate generated/review rows with approved live upload.
+
+
+## Production TI scope split — v4.0.2
+
+The user-approved new-link/reroute split is implemented in the skill: clear new-link-only needs installation evidence; actual reroute additionally requires explicit old-antenna diameter and 2/4 count; unclear combined labels remain REVIEW_REQUIRED. Mandatory transport/model choices must resolve uniquely and atomically, with no partial ECC for unresolved reroute records. NLOS is not an automatic old-size/count substitute. Existing TSS and Jendela separated migration work-item routing is preserved. Earlier case findings above remain historical and are not proof of successful replay. See [release rules](TI_NEW_LINK_REROUTE_4_0_2.md).

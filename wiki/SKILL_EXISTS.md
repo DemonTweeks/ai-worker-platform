@@ -2,7 +2,7 @@
 
 | Skill | Version | Public inputs | Domain outputs |
 | --- | --- | --- | --- |
-| `create-pr-cd` | `4.0.1` | one site-data workbook plus TSS/TI and site selection | ECC files, reports, reconciliation |
+| `create-pr-cd` | `4.0.2` | one site-data workbook plus TSS/TI and site selection | ECC files, reports, reconciliation |
 | `create-pr-cd-ran` | `1.1.2` | one BOM, one EPMS workbook, run mode, optional approved project | normalized/calculated JSON, PR JSON, ECC workbooks, delivery ZIP |
 | `tx-pr-auditor` | `1.1.0` | one Final PO plus one EPMS workbook; skill generates mandatory TSS/TI ECC | audit workbook, summary, annotated ECC copies |
 | `iepms-pr-upload-automation` | `0.3.3` published | one XLS/XLSX ECC, optional attachment, project/scope/DU/date and Y/N flags | submitted/verified PSQ or safe blocked reports; no tracker/IP updates |
