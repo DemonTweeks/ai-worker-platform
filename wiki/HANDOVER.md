@@ -105,3 +105,8 @@ The release includes the three new Malaysia CelcomDigi DU options and earlier sa
 ## MW production TI split — 2026-11-04
 
 Published MW v4.0.2 pin `0e08c63a59c23f9a00e662a15a7de744c2da1783` implements the user-approved new-link-only / actual-reroute / ambiguous classification and atomic selection. See [rules, tests and baseline failures](create-pr-cd/TI_NEW_LINK_REROUTE_4_0_2.md). The uploader is unchanged (v0.3.3); auditor nested MW remains independently pinned. No historical PR upload is part of deployment.
+
+
+## MW Planning integration — 2026-11-04
+
+MW v4.1.0 release adds Planning to the public adapter and manifest-driven Task Type. Worker-specific metadata/filter/history/rerun/error handling preserves PLANNING for create-pr-cd only. See [contract and release status](create-pr-cd/PLANNING_PLATFORM_4_1_0.md). No uploader Planning support, source mapping relaxation or new external PR submission is included. The release includes the new MW gitlink and matching approval; service restart and live catalog verification remain pending.

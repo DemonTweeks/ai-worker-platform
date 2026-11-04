@@ -19,3 +19,8 @@ The user-approved new-link/reroute split is implemented in the skill: clear new-
 ### Existing full-suite failures reproduced on baseline (2026-11-04)
 
 Five tests remain failing independently of this split: long-path mocked os.walk keyword compatibility on Python3.14, Windows promotion path separator assertions, and three Jendela immutable rollback SHA/readiness assertions. See [release validation](TI_NEW_LINK_REROUTE_4_0_2.md). No blanket full-suite pass or automatic historical-site clearance is claimed.
+
+
+## Planning platform integration — v4.1.0
+
+MW platform Task Type now declares Planning (`PLANNING`) alongside TSS/TI, using the existing governed engine without changing its business rules. This supersedes earlier current-scope statements that Planning is standalone-only; Backoffice remains standalone-only. [Integration, tests and release boundary](PLANNING_PLATFORM_4_1_0.md). This release includes the skill gitlink and matching approval; services have not been restarted, and live activation remains unverified. iEPMS PR Upload/Auditor/RAN scopes remain unchanged.

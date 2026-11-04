@@ -21,3 +21,8 @@ Job/skill creation, history, rerun and file routes do not share admin auth middl
 ## P-005 - Domain documentation/code discrepancies
 
 Auditor's PR-model/EPMS entitlement augmentation needs business-owner confirmation against the previously documented ECC-only boundary. MW seven-site TI evidence and partial-output atomicity remain unresolved beyond the v4.0.1 narrow guidance changes. See each skill's PENDING.md; upgrading the sibling MW generator does not upgrade auditor's nested pin.
+
+
+## MW Planning integration — 2026-11-04
+
+MW v4.1.0 release adds Planning to the public adapter and manifest-driven Task Type. Worker-specific metadata/filter/history/rerun/error handling preserves PLANNING for create-pr-cd only. See [contract and release status](create-pr-cd/PLANNING_PLATFORM_4_1_0.md). No uploader Planning support, source mapping relaxation or new external PR submission is included. The release includes the new MW gitlink and matching approval; service restart and live catalog verification remain pending.

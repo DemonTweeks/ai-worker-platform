@@ -1,5 +1,5 @@
 <template>
-  <span class="scope-badge">{{ scope || 'TSS' }}</span>
+  <span class="scope-badge">{{ scope === 'PLANNING' ? 'Planning' : (scope || 'TSS') }}</span>
 </template>
 
 <script>

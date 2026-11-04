@@ -35,6 +35,7 @@
           <option value="">All scopes</option>
           <option value="TSS">TSS</option>
           <option value="TI">TI</option>
+          <option v-if="!value.workerId || value.workerId === 'create-pr-cd'" value="PLANNING">Planning</option>
         </select>
       </label>
       <label>
@@ -85,6 +86,10 @@ export default {
         ...this.value,
         [key]: nextValue
       };
+
+      if (key === 'workerId' && nextValue && nextValue !== 'create-pr-cd' && nextFilters.prScope === 'PLANNING') {
+        nextFilters.prScope = '';
+      }
 
       if (key === 'workerId' && nextValue && !PR_SCOPE_WORKER_IDS.has(nextValue)) {
         nextFilters.prScope = '';

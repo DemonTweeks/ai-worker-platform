@@ -1,3 +1,4 @@
+const { normalizePrScope: normalizeWorkerPrScope } = require('../utils/prScope');
 const fs = require('fs');
 const path = require('path');
 const {
@@ -168,12 +169,12 @@ const getFailureSummary = (job) => {
   } else if (code === 'WORKER_TIMEOUT') {
     if (isPrAuditorJob) return 'PR Auditor execution timed out.';
     if (isRanJob) return ranStage ? `RAN PR worker execution timed out (${ranStage}).` : 'RAN PR worker execution timed out.';
-    if (details.scope === 'TSS' || details.scope === 'TI') return `PR worker execution timed out (${details.scope}).`;
+    if (normalizeWorkerPrScope(details.scope, job.workerId)) return `PR worker execution timed out (${details.scope}).`;
     return 'PR worker execution timed out.';
   } else if (code === 'WORKER_PROCESS_FAILED') {
     if (isPrAuditorJob) return 'PR Auditor process failed.';
     if (isRanJob) return ranStage ? `RAN PR worker process failed (${ranStage}).` : 'RAN PR worker process failed.';
-    if (details.scope === 'TSS' || details.scope === 'TI') return `PR worker process failed (${details.scope}).`;
+    if (normalizeWorkerPrScope(details.scope, job.workerId)) return `PR worker process failed (${details.scope}).`;
     return 'PR worker process failed.';
   } else if (code === 'RAN_INVALID_ECC_OUTPUT' || code === 'RAN_ZERO_VALID_ECC_OUTPUT') {
     return 'RAN PR worker produced no valid ECC output.';
@@ -273,7 +274,7 @@ const getFailureDiagnosis = (job) => {
       : isRanJob
       ? `RAN PR worker execution exceeded the maximum allowed time limit${ranStage ? ` while running ${ranStage}` : ''}.`
       : 'PR worker execution exceeded the maximum allowed time limit.';
-    if (!isPrAuditorJob && !isRanJob && (details.scope === 'TSS' || details.scope === 'TI')) scope = details.scope;
+    if (!isPrAuditorJob && !isRanJob && normalizeWorkerPrScope(details.scope, job.workerId)) scope = details.scope;
   } else if (category === 'WORKER_PROCESS_FAILED') {
     title = 'Worker process failed';
     summary = isPrAuditorJob
@@ -281,7 +282,7 @@ const getFailureDiagnosis = (job) => {
       : isRanJob
       ? `RAN PR worker stage failed${ranStage ? ` while running ${ranStage}` : ''}.`
       : 'PR worker child process exited with an error status during execution.';
-    if (!isPrAuditorJob && !isRanJob && (details.scope === 'TSS' || details.scope === 'TI')) scope = details.scope;
+    if (!isPrAuditorJob && !isRanJob && normalizeWorkerPrScope(details.scope, job.workerId)) scope = details.scope;
     if (Number.isInteger(details.exitCode)) exitCode = details.exitCode;
   } else if (category === 'RAN_INVALID_ECC_OUTPUT' || category === 'RAN_ZERO_VALID_ECC_OUTPUT') {
     title = 'RAN ECC output invalid';
@@ -472,7 +473,7 @@ const buildListFilter = async (query) => {
   if (query.status) filter.status = query.status;
   if (query.prScope) {
     const normalizedPrScope = normalizePrScope(query.prScope);
-    if (PR_SCOPES.includes(normalizedPrScope)) filter.prScope = normalizedPrScope;
+    if (PR_SCOPES.includes(normalizedPrScope) || normalizedPrScope === 'PLANNING') filter.prScope = normalizedPrScope;
   }
   if (query.dateFrom || query.dateTo) {
     filter.createdAt = {};

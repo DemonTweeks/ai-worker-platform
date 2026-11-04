@@ -329,3 +329,8 @@ A compliant skill must not:
 - Require platform secrets for ordinary domain processing.
 
 The platform must not import the skill's internal Python modules to reproduce or bypass its CLI behavior.
+
+
+## MW Planning integration — 2026-11-04
+
+MW v4.1.0 release adds Planning to the public adapter and manifest-driven Task Type. Worker-specific metadata/filter/history/rerun/error handling preserves PLANNING for create-pr-cd only. See [contract and release status](create-pr-cd/PLANNING_PLATFORM_4_1_0.md). No uploader Planning support, source mapping relaxation or new external PR submission is included. The release includes the new MW gitlink and matching approval; service restart and live catalog verification remain pending.

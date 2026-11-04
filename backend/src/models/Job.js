@@ -1,3 +1,4 @@
+const { normalizePrScope } = require('../utils/prScope');
 const { readFirebase, writeFirebase } = require('../db/firebaseClient');
 const { QueryChain, matchFilter } = require('./compatibility');
 const { RAN_RUN_MODES, WORKER_IDS } = require('../workers/workerTypes');
@@ -35,7 +36,7 @@ class Job {
   constructor(data) {
     Object.assign(this, data);
     const parameterScope = String(this.parameters && this.parameters.scope || '').trim().toUpperCase();
-    if (!this.prScope && this.workerType === 'skill' && PR_SCOPES.includes(parameterScope)) {
+    if (!this.prScope && this.workerType === 'skill' && normalizePrScope(parameterScope, this.workerId)) {
       this.prScope = parameterScope;
     }
     if (typeof this.workerId === 'undefined' || this.workerId === null) {

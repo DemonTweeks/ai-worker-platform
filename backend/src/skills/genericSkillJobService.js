@@ -1,3 +1,4 @@
+const { normalizePrScope } = require('../utils/prScope');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
@@ -137,9 +138,7 @@ const createSkillJob = async (skillId, body = {}, files = []) => {
         browserTabSessionId,
         idempotencyKey,
         parameters,
-        prScope: ['TSS', 'TI'].includes(String(parameters.scope || '').toUpperCase())
-          ? String(parameters.scope).toUpperCase()
-          : null,
+        prScope: normalizePrScope(parameters.scope, skillId),
         generationScope: parameters.allSites === true ? 'all_sites' : (Array.isArray(parameters.siteCodes) ? 'site_code' : null),
         requestedSiteCount: Array.isArray(parameters.siteCodes) ? parameters.siteCodes.length : 0,
         fileRetentionUntil: retentionUntil,

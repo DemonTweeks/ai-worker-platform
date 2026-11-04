@@ -40,3 +40,8 @@ The platform's rollback-only MW path has been removed. See current pending work 
 ## Review update, 2026-10-16
 
 The v4.0.0 contract addition above is historical completed work. Current release is v4.0.1 / `dc7cb77`; direct CLI also contains governed Planning/Backoffice while platform declaration remains TSS/TI. The assertion that no current work remains is superseded by the [pending TI cases and regression follow-up](PENDING.md). Release order: skill commit/tests -> approved fingerprint -> platform pin -> dependency install -> readiness-verified restart. Current package identity must never be confused with model version 4.0.
+
+
+## Planning platform integration — v4.1.0
+
+MW platform Task Type now declares Planning (`PLANNING`) alongside TSS/TI, using the existing governed engine without changing its business rules. This supersedes earlier current-scope statements that Planning is standalone-only; Backoffice remains standalone-only. [Integration, tests and release boundary](PLANNING_PLATFORM_4_1_0.md). This release includes the skill gitlink and matching approval; services have not been restarted, and live activation remains unverified. iEPMS PR Upload/Auditor/RAN scopes remain unchanged.

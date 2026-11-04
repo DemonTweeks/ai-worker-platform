@@ -52,6 +52,17 @@ describe('JobHistoryFilters worker-aware PR Scope', () => {
     }));
   });
 
+  it('offers Planning only for MW/global history and clears it when selecting another worker', async () => {
+    const wrapper = mount(JobHistoryFilters, { propsData: { value: buildFilters({ workerId: 'create-pr-cd', prScope: 'PLANNING' }) } });
+    expect(wrapper.find('option[value="PLANNING"]').exists()).toBe(true);
+    await findLabel(wrapper, 'Worker').find('select').setValue('iepms-pr-upload-automation');
+    expect(wrapper.emitted('input').at(-1)[0].prScope).toBe('');
+    await wrapper.setProps({ value: buildFilters({ workerId: 'create-pr-cd-ran' }) });
+    expect(wrapper.find('option[value="PLANNING"]').exists()).toBe(false);
+    await wrapper.setProps({ value: buildFilters() });
+    expect(wrapper.find('option[value="PLANNING"]').exists()).toBe(true);
+  });
+
   it('offers generic skill workers while retaining legacy history filters', () => {
     const wrapper = mount(JobHistoryFilters, {
       propsData: { value: buildFilters() }

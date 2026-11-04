@@ -1,3 +1,4 @@
+const { normalizePrScope } = require('../utils/prScope');
 const path = require('path');
 const { Job, JobFile, ReviewRequiredItem, WarningItem } = require('../models');
 const workerStateService = require('./workerStateService');
@@ -19,9 +20,7 @@ const safeCode = (value) => {
   return /^[A-Z0-9_]+$/.test(code) ? code.slice(0, 120) : 'WORKER_ERROR';
 };
 
-const safeScope = (value) => (
-  value === 'TSS' || value === 'TI' ? value : undefined
-);
+const safeScope = (value, workerId) => normalizePrScope(value, workerId) || undefined;
 
 const safeStage = (value) => {
   const stage = String(value || '').trim();
@@ -55,7 +54,7 @@ const sanitizeWorkerErrorForLlm = (job) => {
     ? job.error.details
     : {};
   const details = {};
-  const scope = safeScope(rawDetails.scope);
+  const scope = safeScope(rawDetails.scope, job.workerId);
   const stage = safeStage(rawDetails.stage);
   if (scope) details.scope = scope;
   if (stage) details.stage = stage;

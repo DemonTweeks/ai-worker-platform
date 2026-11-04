@@ -125,3 +125,8 @@ POST /api/skills/create-pr-cd/jobs
 - [Plan](PLAN.md)
 - [Pending work](PENDING.md)
 - [Handover](HANDOVER.md)
+
+
+## Planning platform integration — v4.1.0
+
+MW platform Task Type now declares Planning (`PLANNING`) alongside TSS/TI, using the existing governed engine without changing its business rules. This supersedes earlier current-scope statements that Planning is standalone-only; Backoffice remains standalone-only. [Integration, tests and release boundary](PLANNING_PLATFORM_4_1_0.md). This release includes the skill gitlink and matching approval; services have not been restarted, and live activation remains unverified. iEPMS PR Upload/Auditor/RAN scopes remain unchanged.

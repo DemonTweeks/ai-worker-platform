@@ -1,3 +1,4 @@
+import mwSkill from '../../../../skills/create-pr-cd/skill.json';
 import { mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import GenericSkillView from '../GenericSkillView.vue';
@@ -344,6 +345,30 @@ describe('GenericSkillView', () => {
     }
     wrapper.vm.validateSelectedFiles(input, new File(['fixture'], 'ECC.csv'));
     expect(wrapper.vm.fileValidationResults.ecc.checklist.find((item) => item.name === 'Accepted file type').passed).toBe(false);
+    wrapper.destroy();
+  });
+
+  it('submits Planning for MW only using the real manifest', async () => {
+    listSkills.mockResolvedValueOnce({ skills: [mwSkill] });
+    const wrapper = mount(GenericSkillView, {
+      propsData: { skillId: 'create-pr-cd' },
+      mocks: { $router: { push: vi.fn(async () => {}) } },
+      stubs: { RouterLink: { template: '<a><slot /></a>' } }
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await wrapper.vm.$nextTick();
+    const planning = wrapper.findAll('button').wrappers.find((button) => button.text() === 'Planning');
+    expect(planning).toBeTruthy();
+    await planning.trigger('click');
+    wrapper.vm.parameterValues.siteCodes = 'SITE-PLANNING';
+    wrapper.vm.$set(wrapper.vm.selectedFiles, 'site_data', new File(['fixture'], 'planning.xlsx'));
+    wrapper.vm.validateSelectedFiles(mwSkill.inputs.files[0], wrapper.vm.selectedFiles.site_data);
+    expect(wrapper.vm.canSubmit).toBe(true);
+    await wrapper.find('form').trigger('submit');
+    expect(createSkillJob).toHaveBeenCalledWith('create-pr-cd', expect.objectContaining({
+      parameters: expect.objectContaining({ scope: 'PLANNING', siteCodes: ['SITE-PLANNING'] })
+    }));
+    expect(iepmsSkill.inputs.parametersSchema.properties.scope.enum).toEqual(['TSS', 'TI']);
     wrapper.destroy();
   });
 

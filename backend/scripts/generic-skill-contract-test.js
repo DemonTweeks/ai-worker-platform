@@ -155,6 +155,43 @@ const run = async () => {
     assert.strictEqual(rerun.job.skillId, 'create-pr-cd');
     assert.strictEqual(rerun.job.rerunSourceJobId, created.job.jobId);
 
+    assert.deepStrictEqual(creatorCatalogEntry.inputs.parametersSchema.properties.scope.enum, ['TSS', 'TI', 'PLANNING']);
+    const planningForm = new FormData();
+    planningForm.append('browserTabSessionId', 'planning-tab');
+    planningForm.append('idempotencyKey', 'planning-create');
+    planningForm.append('parameters', JSON.stringify({ scope: 'PLANNING', allSites: true }));
+    planningForm.append('site_data', new Blob(['synthetic input']), 'planning.xlsx');
+    const planningResponse = await fetch(`${baseUrl}/api/skills/create-pr-cd/jobs`, { method: 'POST', body: planningForm });
+    assert.strictEqual(planningResponse.status, 201, await planningResponse.clone().text());
+    const planningCreated = await planningResponse.json();
+    assert.strictEqual(planningCreated.job.prScope, 'PLANNING');
+    const planningSaved = await Job.findOne({ jobId: planningCreated.job.jobId });
+    assert.strictEqual(planningSaved.prScope, 'PLANNING');
+    assert.strictEqual(new Job({ workerId: 'create-pr-cd', workerType: 'skill', parameters: { scope: 'PLANNING' } }).prScope, 'PLANNING');
+    assert(!new Job({ workerId: 'iepms-pr-upload-automation', workerType: 'skill', parameters: { scope: 'PLANNING' } }).prScope);
+    const planningDetailResponse = await fetch(`${baseUrl}/api/jobs/${planningCreated.job.jobId}`);
+    const planningDetail = await planningDetailResponse.json();
+    assert.strictEqual(planningDetail.job.prScope, 'PLANNING');
+    const planningList = await (await fetch(`${baseUrl}/api/jobs?prScope=PLANNING`)).json();
+    assert(planningList.items.some((item) => item.jobId === planningCreated.job.jobId));
+    assert(planningList.items.every((item) => item.prScope === 'PLANNING'));
+    await Job.updateOne({ jobId: planningCreated.job.jobId }, { $set: { status: 'completed' } });
+    const planningRerun = await fetch(`${baseUrl}/api/jobs/${planningCreated.job.jobId}/rerun`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ browserTabSessionId: 'planning-tab' })
+    });
+    assert.strictEqual(planningRerun.status, 201, await planningRerun.clone().text());
+    assert.strictEqual((await planningRerun.json()).job.prScope, 'PLANNING');
+    const rejectedPlanning = new FormData();
+    rejectedPlanning.append('browserTabSessionId', 'iepms-planning-rejected');
+    rejectedPlanning.append('parameters', JSON.stringify({ ...uploadEnvelope.parameters, scope: 'PLANNING' }));
+    rejectedPlanning.append('ecc', new Blob(['synthetic']), 'ECC.xlsx');
+    assert.strictEqual((await fetch(`${baseUrl}/api/skills/iepms-pr-upload-automation/jobs`, { method: 'POST', body: rejectedPlanning })).status, 400);
+    const { sanitizeWorkerErrorForLlm } = require('../src/services/jobContextService');
+    const planningError = { workerId: 'create-pr-cd', error: { code: 'WORKER_TIMEOUT', details: { scope: 'PLANNING', secret: 'not-public' } } };
+    assert.strictEqual(sanitizeWorkerErrorForLlm(planningError).details.scope, 'PLANNING');
+    assert(!sanitizeWorkerErrorForLlm(planningError).details.secret);
+    assert(!sanitizeWorkerErrorForLlm({ ...planningError, workerId: 'iepms-pr-upload-automation' }).details.scope);
+
     const auditorForm = new FormData();
     auditorForm.append('browserTabSessionId', 'generic-auditor-tab-0001');
     auditorForm.append('idempotencyKey', 'generic-auditor-create-0001');
