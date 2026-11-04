@@ -9,3 +9,7 @@ The supplied June 2026 demo completed successfully with warnings: 24 rows audite
 ## Current source boundary
 
 Pinned v1.1.0 / `df14590` owns composite TSS/TI generation using nested MW `8d8880f`, independently of the platform's sibling MW pin. Audit entitlement also includes governed PR-model/EPMS scope augmentation in current code, not solely generated ECC. Final PO ingestion is capped before period filtering. See [handover](HANDOVER.md) and [pending business review](PENDING.md) before claiming full-workbook or ECC-only semantics.
+
+## Shared MW migration - v1.2.0
+
+Auditor v1.2.0 replaces nested MW with the shared approved MW 4.1.0 package, retaining TSS/TI generation and existing audit-only evidence logic. See [dependency migration, tests and release boundary](SHARED_MW_DEPENDENCY_1_2_0.md). Publication and production restart are owner-authorized; observed activation will be recorded in the linked release notes.

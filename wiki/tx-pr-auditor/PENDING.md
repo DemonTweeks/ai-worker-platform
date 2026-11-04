@@ -11,3 +11,7 @@ Final PO ingestion caps 10,000 nonblank records / 1,000 consecutive blank rows b
 ## Business review / evidence size
 
 Historical demo findings are not approved merely because execution succeeds. Preserve classification-priority/quantity rules and review remaining business questions at the end of BUSINESS_LOGIC.md. Consider annotation/archive configurability for large evidence sets. Old pre-merge PR instructions are superseded by current pin; verify any future remote release state separately.
+
+## Shared MW migration - v1.2.0
+
+Auditor v1.2.0 replaces nested MW with the shared approved MW 4.1.0 package, retaining TSS/TI generation and existing audit-only evidence logic. See [dependency migration, tests and release boundary](SHARED_MW_DEPENDENCY_1_2_0.md). Publication and production restart are owner-authorized; observed activation will be recorded in the linked release notes.

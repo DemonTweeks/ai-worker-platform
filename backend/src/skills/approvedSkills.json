@@ -18,8 +18,8 @@
   },
   "tx-pr-auditor": {
     "rootConfigKey": "prAuditorRoot",
-    "approvedVersion": "1.1.0",
-    "approvedPackageSha256": "81f3d1ab9e2ad6c433465b04138db2398a3b207248d51c2f3cceecfcc373f7c6",
+    "approvedVersion": "1.2.0",
+    "approvedPackageSha256": "19e6eda24aaee4d4e72690689bfcc8dd170f58a1b63ce638c9f6623b5d8323f6",
     "include": [
       "skill.json",
       "requirements.txt",
@@ -27,17 +27,7 @@
       "scripts/**/*.py",
       "config/**/*.json",
       "config/**/*.yaml",
-      "config/**/*.yml",
-      "dependencies/create-pr-cd/skill.json",
-      "dependencies/create-pr-cd/requirements.txt",
-      "dependencies/create-pr-cd/src/**/*.py",
-      "dependencies/create-pr-cd/scripts/**/*.py",
-      "dependencies/create-pr-cd/config/**/*.json",
-      "dependencies/create-pr-cd/config/**/*.yaml",
-      "dependencies/create-pr-cd/config/**/*.yml",
-      "dependencies/create-pr-cd/Info/input/pr_model.xlsx",
-      "dependencies/create-pr-cd/Info/input/ecc_template.xls",
-      "dependencies/create-pr-cd/Info/input/contract_info_reference.md"
+      "config/**/*.yml"
     ]
   },
   "iepms-pr-upload-automation": {

@@ -98,11 +98,26 @@ const parseProgressLine = async (jobId, line) => {
 };
 
 const executeProcess = ({ jobId, skill, inputManifest, workspace, cancellationPath }) => new Promise((resolve) => {
+  const dependencyEnv = {};
+  if (skill.manifest.skillId === 'tx-pr-auditor') {
+    // Re-validate the shared approved package immediately before spawning.
+    const current = loadApprovedSkill('tx-pr-auditor');
+    const mw = current.dependencies.find((item) => item.manifest.skillId === 'create-pr-cd');
+    const frozen = JSON.parse(fs.readFileSync(inputManifest, 'utf8')).dependencies;
+    const identity = { skillId: mw.manifest.skillId, version: mw.manifest.version, packageSha256: mw.packageSha256 };
+    if (JSON.stringify(frozen) !== JSON.stringify([identity])) {
+      const error = new Error('Queued dependency identity changed; rerun with reviewed inputs.');
+      error.code = 'SKILL_DEPENDENCY_CHANGED';
+      throw error;
+    }
+    dependencyEnv.TX_PR_AUDITOR_MW_DEPENDENCY = JSON.stringify({ ...identity, root: mw.root, runtimeFiles: mw.runtimeFiles,
+      commit: require('../services/engineIntegrityService').resolveGitHead(mw.root) });
+  }
   const child = childProcess.spawn(getPythonExecutable(), [skill.entrypoint, '--input-manifest', inputManifest], {
     cwd: workspace,
     shell: false,
     windowsHide: true,
-    env: { ...process.env, PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8' }
+    env: { ...process.env, ...dependencyEnv, PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8' }
   });
   const stderr = [];
   let timedOut = false;

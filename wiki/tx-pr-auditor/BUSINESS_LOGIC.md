@@ -252,3 +252,7 @@ The thin-wrapper refactor is correct only if:
 - Confirm how missing submitted subcontractor should be treated when only one expected subcontractor exists; current code permits the unambiguous case.
 - Confirm the required user-facing behavior when a period filter matches no Final PO rows.
 - Define limits and operational policy for very large Final PO/ECC batches.
+
+## Shared MW migration - v1.2.0
+
+Auditor v1.2.0 replaces nested MW with the shared approved MW 4.1.0 package, retaining TSS/TI generation and existing audit-only evidence logic. See [dependency migration, tests and release boundary](SHARED_MW_DEPENDENCY_1_2_0.md). Publication and production restart are owner-authorized; observed activation will be recorded in the linked release notes.

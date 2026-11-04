@@ -91,7 +91,8 @@ const validateManifest = (manifest, root, approval) => {
   return entrypoint;
 };
 
-const loadApprovedSkill = (skillId) => {
+const loadApprovedSkill = (skillId, ancestry = []) => {
+  if (ancestry.includes(skillId)) throw new Error('Cyclic skill dependency.');
   const { approval, root } = resolveApproval(skillId);
   const manifestPath = assertPathInsideRoot(root, path.join(root, 'skill.json'));
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
@@ -104,12 +105,21 @@ const loadApprovedSkill = (skillId) => {
     error.details = { skillId, expected: approval.approvedPackageSha256, actual: fingerprint.sha256 };
     throw error;
   }
-  return { manifest, root, entrypoint, packageSha256: fingerprint.sha256, runtimeFiles: fingerprint.files };
+  const dependencies = (manifest.dependencies || []).map((declaration) => {
+    const dependency = loadApprovedSkill(declaration.skillId, [...ancestry, skillId]);
+    if (!Array.isArray(declaration.supportedVersions) || !declaration.supportedVersions.includes(dependency.manifest.version)) {
+      const error = new Error(`Skill ${skillId} dependency ${declaration.skillId} version is incompatible.`);
+      error.code = 'SKILL_DEPENDENCY_INCOMPATIBLE';
+      throw error;
+    }
+    return dependency;
+  });
+  return { manifest, root, entrypoint, packageSha256: fingerprint.sha256, runtimeFiles: fingerprint.files, dependencies };
 };
 
 const listApprovedSkills = () => Object.keys(approvals).map((skillId) => loadApprovedSkill(skillId));
 
-const serializeCatalogEntry = ({ manifest, packageSha256 }) => ({
+const serializeCatalogEntry = ({ manifest, packageSha256, dependencies = [] }) => ({
   skillId: manifest.skillId,
   displayName: manifest.displayName,
   version: manifest.version,
@@ -117,6 +127,7 @@ const serializeCatalogEntry = ({ manifest, packageSha256 }) => ({
   ui: manifest.ui || null,
   execution: manifest.execution,
   resultContractVersion: manifest.resultContractVersion,
+  dependencies: dependencies.map((dependency) => ({ skillId: dependency.manifest.skillId, version: dependency.manifest.version, packageSha256: dependency.packageSha256 })),
   packageSha256
 });
 

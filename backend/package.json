@@ -20,8 +20,9 @@
     "test:ran-skill-live": "node scripts/generic-ran-skill-live-test.js",
     "test:iepms-skill-offline": "node scripts/iepms-skill-offline-test.js",
     "test:job-control-concurrency": "node scripts/job-control-concurrency-test.js",
-    "test": "npm run smoke && npm run test:llm-provider && npm run test:health-status && npm run test:engine-integrity && npm run test:queue-registry && npm run test:durable-queue && npm run test:skill-fingerprint && npm run test:skill-contract && npm run test:job-control-concurrency && npm run test:iepms-skill-offline && npm run test:skill-live && npm run test:ran-skill-live && npm run test:tx-bom-skill-offline",
-    "test:tx-bom-skill-offline": "node scripts/tx-bom-skill-offline-test.js"
+    "test": "npm run smoke && npm run test:llm-provider && npm run test:health-status && npm run test:engine-integrity && npm run test:queue-registry && npm run test:durable-queue && npm run test:skill-fingerprint && npm run test:skill-contract && npm run test:job-control-concurrency && npm run test:iepms-skill-offline && npm run test:skill-live && npm run test:ran-skill-live && npm run test:tx-bom-skill-offline && npm run test:auditor-shared-mw",
+    "test:tx-bom-skill-offline": "node scripts/tx-bom-skill-offline-test.js",
+    "test:auditor-shared-mw": "node scripts/auditor-shared-mw-test.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

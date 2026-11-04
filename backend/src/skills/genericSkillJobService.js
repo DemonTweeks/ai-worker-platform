@@ -118,6 +118,9 @@ const createSkillJob = async (skillId, body = {}, files = []) => {
         jobId,
         skill: { skillId, version: skill.manifest.version },
         parameters,
+        ...(skill.dependencies.length ? { dependencies: skill.dependencies.map((dependency) => ({
+          skillId: dependency.manifest.skillId, version: dependency.manifest.version, packageSha256: dependency.packageSha256
+        })) } : {}),
         files: inputFiles.map(({ absolutePath, ...item }) => item),
         paths: { workspace: '.', output: 'output', result: 'result.json', cancellation: 'temp/cancel.requested' }
       };

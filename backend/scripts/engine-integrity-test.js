@@ -21,7 +21,11 @@ const runTests = async () => {
   assert(platformResults.every((result) => /^[a-f0-9]{64}$/.test(result.runtimeFingerprint)));
   assert(loadApprovedSkill('create-pr-cd').runtimeFiles.includes('src/main.py'));
   assert(loadApprovedSkill('create-pr-cd').runtimeFiles.includes('config/pr_model_baseline.yaml'));
-  assert(loadApprovedSkill('tx-pr-auditor').runtimeFiles.includes('config/du_registry.json'));
+  const auditor = loadApprovedSkill('tx-pr-auditor');
+  assert(auditor.runtimeFiles.includes('config/du_registry.json'));
+  assert(!auditor.runtimeFiles.some((name) => name.startsWith('dependencies/')));
+  assert.strictEqual(auditor.dependencies.length, 1);
+  assert.strictEqual(auditor.dependencies[0].packageSha256, loadApprovedSkill('create-pr-cd').packageSha256);
   assert(loadApprovedSkill('create-pr-cd-ran').runtimeFiles.includes('src/main.py'));
   assert(loadApprovedSkill('iepms-pr-upload-automation').runtimeFiles.includes('src/iepms_pr_upload/thin_wrapper.py'));
 

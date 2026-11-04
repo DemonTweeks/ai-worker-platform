@@ -19,3 +19,7 @@ Nested MW generator: v4.0.0 / `8d8880ffb044a0273650f9c54fe1688efcc4623b`, indepe
 June 2026 demo: 94 TSS and 20 TI generated workbooks, 24 audited rows, 2 Normal / 3 Wrong / 19 Invalid; 117 declared output files, succeeded_with_warning. Historical10,000-row benchmark: 6.708 s / 33.63 MiB. Do not relabel these as fresh tests on changed dependencies. Relevant suites: `tests/test_skill_contract.py`, `test_skill_contract_integration.py`, `test_audit_final_po.py`, including PR-model Column B scope and missing-generated-TI augmentation tests.
 
 Never modify original PO/EPMS workbooks or consume entitlement for Invalid/Wrong rows. Do not upgrade nested generation without business regression and new runtime approval. No fresh audit execution or external PR action was performed during this wiki review.
+
+## Shared MW migration - v1.2.0
+
+Auditor v1.2.0 replaces nested MW with the shared approved MW 4.1.0 package, retaining TSS/TI generation and existing audit-only evidence logic. See [dependency migration, tests and release boundary](SHARED_MW_DEPENDENCY_1_2_0.md). Publication and production restart are owner-authorized; observed activation will be recorded in the linked release notes.

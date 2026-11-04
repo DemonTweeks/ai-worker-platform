@@ -32,3 +32,7 @@ The supplied June 2026 demo inputs completed end to end:
 - 24 Final PO rows audited.
 - 2 Normal, 3 Abnormal - Wrong PO, 19 Abnormal - Invalid PO.
 - Authoritative report and 117 declared output files.
+
+## Shared MW migration - v1.2.0
+
+Auditor v1.2.0 replaces nested MW with the shared approved MW 4.1.0 package, retaining TSS/TI generation and existing audit-only evidence logic. See [dependency migration, tests and release boundary](SHARED_MW_DEPENDENCY_1_2_0.md). Publication and production restart are owner-authorized; observed activation will be recorded in the linked release notes.
