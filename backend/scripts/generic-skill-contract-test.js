@@ -30,7 +30,7 @@ const run = async () => {
     const catalogResponse = await fetch(`${baseUrl}/api/skills`);
     assert.strictEqual(catalogResponse.status, 200);
     const catalog = await catalogResponse.json();
-    assert.deepStrictEqual(catalog.skills.map((item) => item.skillId).sort(), ['create-pr-cd', 'create-pr-cd-ran', 'iepms-pr-upload-automation', 'tx-pr-auditor']);
+    assert.deepStrictEqual(catalog.skills.map((item) => item.skillId).sort(), ['create-pr-cd', 'create-pr-cd-ran', 'iepms-pr-upload-automation', 'tx-bom-generator', 'tx-pr-auditor']);
     const creatorCatalogEntry = catalog.skills.find((item) => item.skillId === 'create-pr-cd');
     assert.strictEqual(creatorCatalogEntry.ui.schemaVersion, '1.0');
     assert.strictEqual(creatorCatalogEntry.ui.parameters.nonProductionUat.hidden, true);

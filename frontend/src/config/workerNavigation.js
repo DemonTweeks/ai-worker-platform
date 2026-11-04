@@ -1,5 +1,10 @@
 export const workerNavigationItems = [
   {
+    id: 'tx-bom-generator',
+    label: 'TX BOM Generator',
+    to: '/workers/tx-bom-generator'
+  },
+  {
     id: 'pr-creator',
     label: 'PR Creator',
     to: '/workers/pr-creator'

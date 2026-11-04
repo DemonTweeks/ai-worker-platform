@@ -1,4 +1,11 @@
 const registry = new Map([
+  ['tx-bom-generator', {
+    manifestFactory: () => {
+      const skill = require('../skills/skillPackageService').loadApprovedSkill('tx-bom-generator');
+      return { ...skill.manifest, workerId: skill.manifest.skillId, engineVersion: skill.manifest.version, engineCommit: null };
+    },
+    adapterFactory: () => ({ run: require('../skills/genericSkillRunner').runGenericSkillJob })
+  }],
   ['iepms-pr-upload-automation', {
     manifestFactory: () => {
       const skill = require('../skills/skillPackageService').loadApprovedSkill('iepms-pr-upload-automation');

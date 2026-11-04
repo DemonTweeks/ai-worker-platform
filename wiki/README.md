@@ -13,6 +13,10 @@ This wiki describes the platform and the exact checked-out skill implementations
 
 Each skill uses ARCHITECTURE.md, BUSINESS_LOGIC.md, SKILL_CONTRACT.md, SUMMARIZE.md, PLAN.md, PENDING.md and HANDOVER.md. Put capabilities in summary/contract, execution/ownership in architecture, rule detail in business logic, current evidence/recovery in handover, and unresolved decisions in pending. Keep release-specific notes supplementary; do not duplicate an independent workbook register.
 
+## Feature-branch additions
+
+[TX BOM Generator](tx-bom-generator/SUMMARIZE.md) is a tested development integration on agent/tx-bom-generator-skill, not a deployed release. See its handover and pending release decisions.
+
 ## What was reviewed
 
 Source audit performed 2026-10-16 against platform runtime baseline `ec5fd9b` plus documentation commit `f657427`, manifests, entrypoints, queue/runner, UI and existing evidence. Documentation edits following that commit are not themselves a new release. No live PR state was refreshed by this documentation review; no aggregate runtime test suite was rerun.

@@ -48,6 +48,12 @@ const routes = [
     props: { skillId: 'iepms-pr-upload-automation' }
   },
   {
+    path: '/workers/tx-bom-generator',
+    name: 'tx-bom-generator',
+    component: GenericSkillView,
+    props: { skillId: 'tx-bom-generator' }
+  },
+  {
     path: '/history',
     name: 'job-history',
     component: JobHistoryView

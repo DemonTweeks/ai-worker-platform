@@ -16,7 +16,7 @@ const runTests = async () => {
   const platformResults = assertPlatformEngineIntegrity();
   assert.deepStrictEqual(
     platformResults.map((result) => result.workerId),
-    ['create-pr-cd', 'tx-pr-auditor', 'iepms-pr-upload-automation', 'create-pr-cd-ran']
+    ['create-pr-cd', 'tx-pr-auditor', 'iepms-pr-upload-automation', 'create-pr-cd-ran', 'tx-bom-generator']
   );
   assert(platformResults.every((result) => /^[a-f0-9]{64}$/.test(result.runtimeFingerprint)));
   assert(loadApprovedSkill('create-pr-cd').runtimeFiles.includes('src/main.py'));

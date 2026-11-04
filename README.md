@@ -15,6 +15,10 @@ The iEPMS skill follows `Gumb-D/iepms-pr-upload-automation` branch `migration/zx
 
 **Merged baseline:** `main` at `a987eb6`; the iEPMS integration is developed on `agent/add-iepms-pr-upload-skill`.
 
+## Feature-branch addition: TX BOM Generator
+
+This branch adds independent `tx-bom-generator` 0.1.0 via a private submodule and `GenericSkillView` at `/workers/tx-bom-generator`. It requires per-job EPMS/Config .xlsx uploads and multiline Customer Site IDs. This is **not a merged or deployed release**. Setup, private-submodule access, safety limits and test evidence are in [the TX BOM handover](wiki/tx-bom-generator/HANDOVER.md). Existing historical baseline claims elsewhere in this README are not refreshed by this addition.
+
 ## What the Platform Owns
 
 The platform owns the shared product and runtime responsibilities:

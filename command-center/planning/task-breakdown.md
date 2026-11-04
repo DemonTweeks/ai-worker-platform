@@ -1,0 +1,7 @@
+- TASK-001: Git and records; owner AIDA (sequential); outputs in skill/platform scope; unit/integration tests then QA required.
+- TASK-002: Headless engine/provenance/synthetic tests; owner AIDA (sequential); outputs in skill/platform scope; unit/integration tests then QA required.
+- TASK-003: Manifest and adapter; owner AIDA (sequential); outputs in skill/platform scope; unit/integration tests then QA required.
+- TASK-004: Separate text/formula safety; owner AIDA (sequential); outputs in skill/platform scope; unit/integration tests then QA required.
+- TASK-005: Platform registration/UI; owner AIDA (sequential); outputs in skill/platform scope; unit/integration tests then QA required.
+- TASK-006: Offline acceptance tests; owner AIDA (sequential); outputs in skill/platform scope; unit/integration tests then QA required.
+- TASK-007: Review and local commits; owner AIDA (sequential); outputs in skill/platform scope; unit/integration tests then QA required.
