@@ -14,3 +14,6 @@
 	path = skills/iepms-pr-upload-automation
 	url = https://github.com/Gumb-D/iepms-pr-upload-automation.git
 	branch = migration/zx01-pc
+[submodule "skills/tx-bom-generator"]
+	path = skills/tx-bom-generator
+	url = https://github.com/BL2ZteSolution/tx-bom-generator.git

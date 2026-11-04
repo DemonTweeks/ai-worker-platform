@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import GenericSkillView from '../GenericSkillView.vue';
 import { createSkillJob, listJobs, listSkills } from '../../api/jobApi';
 import iepmsSkill from '../../../../skills/iepms-pr-upload-automation/skill.json';
+import txBomSkill from '../../../../skills/tx-bom-generator/skill.json';
 
 vi.mock('../../services/websocketClient', () => ({
   default: class {
@@ -325,6 +326,39 @@ describe('GenericSkillView', () => {
       parameters: { scope: 'TI', allSites: false, siteCodes: ['SITE-1', 'SITE-2'], nonProductionUat: false }
     }));
     expect(wrapper.vm.currentJobId).toBe('PR-GENERIC-001');
+  });
+
+  it('renders all three TX BOM inputs from the actual manifest and preserves multiline site text', async () => {
+    listSkills.mockResolvedValueOnce({ skills: [txBomSkill] });
+    const wrapper = mount(GenericSkillView, {
+      propsData: { skillId: 'tx-bom-generator' },
+      mocks: { $router: { push: vi.fn(async () => {}) } },
+      stubs: { RouterLink: { template: '<a><slot /></a>' } }
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await wrapper.vm.$nextTick();
+    expect(wrapper.findAll('input[type="file"]')).toHaveLength(2);
+    expect(wrapper.text()).toContain('EPMS workbook');
+    expect(wrapper.text()).toContain('Config workbook');
+    expect(wrapper.text()).toContain('Customer Site IDs');
+    expect(wrapper.vm.canSubmit).toBe(false);
+    for (const input of txBomSkill.inputs.files) {
+      const file = new File(['synthetic'], `${input.name}.xlsx`);
+      wrapper.vm.$set(wrapper.vm.selectedFiles, input.name, file);
+      wrapper.vm.validateSelectedFiles(input, file);
+      expect(wrapper.vm.fileValidationResults[input.name].checklist.find((x) => x.name === 'Accepted file type').passed).toBe(true);
+    }
+    expect(wrapper.vm.canSubmit).toBe(false);
+    const text = 'SITE_A\nsite_a;SITE_B';
+    await wrapper.find('textarea').setValue(text);
+    expect(wrapper.vm.normalizedParameters()).toEqual({ siteIds: text });
+    expect(wrapper.vm.canSubmit).toBe(true);
+    await wrapper.find('form').trigger('submit');
+    expect(createSkillJob).toHaveBeenCalledWith('tx-bom-generator', expect.objectContaining({
+      files: { epms: expect.any(File), config: expect.any(File) }, parameters: { siteIds: text }
+    }));
+    expect(listJobs).toHaveBeenCalledWith(expect.objectContaining({ workerId: 'tx-bom-generator' }));
+    wrapper.destroy();
   });
 
   it('accepts XLS and XLSX from the actual iEPMS skill catalog', async () => {

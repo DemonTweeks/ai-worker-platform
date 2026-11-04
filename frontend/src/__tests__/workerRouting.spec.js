@@ -6,6 +6,12 @@ const waitForNavigation = () => new Promise((resolve) => {
 });
 
 describe('worker routing', () => {
+  it('opens TX BOM with the generic skill component', async () => {
+    await router.replace('/workers/tx-bom-generator');
+    await waitForNavigation();
+    expect(router.currentRoute.name).toBe('tx-bom-generator');
+    expect(router.currentRoute.matched[0].props.default.skillId).toBe('tx-bom-generator');
+  });
   it('opens iEPMS upload with the generic skill component', async () => {
     await router.replace('/workers/iepms-pr-upload');
     await waitForNavigation();

@@ -64,6 +64,8 @@ describe('App selected job navigation', () => {
     expect(wrapper.html()).toContain('/workers/pr-creator');
     expect(wrapper.html()).toContain('/workers/pr-auditor');
     expect(wrapper.html()).toContain('/workers/iepms-pr-upload');
+    expect(wrapper.html()).toContain('/workers/tx-bom-generator');
+    expect(wrapper.text()).toContain('TX BOM Generator');
     expect(wrapper.html()).toContain('/dashboard');
     expect(wrapper.text()).toContain('PR Creator');
     expect(wrapper.text()).toContain('PR Auditor');

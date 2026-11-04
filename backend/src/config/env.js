@@ -41,6 +41,7 @@ const config = {
   ranWorkspaceRoot: resolveFromRepoRoot(process.env.RAN_WORKSPACE_ROOT, './storage/ran-workspaces'),
   prAuditorRoot: resolveFromRepoRoot(process.env.PR_AUDITOR_ROOT, './skills/tx-pr-auditor'),
   iepmsPrUploadRoot: resolveFromRepoRoot(process.env.IEPMS_PR_UPLOAD_ROOT, './skills/iepms-pr-upload-automation'),
+  txBomGeneratorRoot: resolveFromRepoRoot(process.env.TX_BOM_GENERATOR_ROOT, './skills/tx-bom-generator'),
   llmBaseUrl: process.env.LLM_BASE_URL || '',
   llmApiKey: process.env.LLM_API_KEY || '',
   llm: {

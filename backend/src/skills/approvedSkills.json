@@ -62,5 +62,15 @@
       "config/**/*.xlsx",
       "config/**/*.xls"
     ]
+  },
+  "tx-bom-generator": {
+    "rootConfigKey": "txBomGeneratorRoot",
+    "approvedVersion": "0.1.0",
+    "approvedPackageSha256": "c95a5ce6ef8ed2d622a2c0e325fe076b1b828b76db0e150bbd6f23077bb4e448",
+    "include": [
+      "skill.json",
+      "requirements.txt",
+      "src/**/*.py"
+    ]
   }
 }
