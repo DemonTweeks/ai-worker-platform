@@ -78,3 +78,7 @@ Local unreleased v0.3.3 adds `2024 Celcomdigi BAU`, `Celcomdigi USP` and `Jendel
 Uploader v0.3.3 is now published on main at `93f303825fd03094e15019ded55b479633197292`. The accompanying platform release pins that exact commit and approves runtime fingerprint `0148ae1bba4eaedf41a509f3906cd115797dc707b677ba51772e55eefa5f1c83`. This supersedes earlier descriptions of v0.3.2/v0.3.3 as uncommitted local changes; dated live observations and unresolved W14/W15 blockers remain historical evidence and are not cleared by publishing.
 
 The release includes the three new Malaysia CelcomDigi DU options and earlier safe row-validation/reporting fixes. Restart and inspect `/api/skills` for v0.3.3 and all seven models before claiming activation. No live new-model PR, tracker update or Implementation Plan write is part of this release.
+
+## dev02 Planning follow-up - v0.3.5
+
+After pulling published main `0aa085d`, preserve dev01 navigation/history and Planning lifecycle work. See [dev02 changes, tests and production gates](PLANNING_UPLOAD_DEV02.md) for uploader 0.3.5: observed Planning description spelling, frozen ECC preservation and old-ledger conflict handling. Sales-contract/current entitlement verification remains open; publication and restart are owner-authorized, but no live PR acceptance test is included.
