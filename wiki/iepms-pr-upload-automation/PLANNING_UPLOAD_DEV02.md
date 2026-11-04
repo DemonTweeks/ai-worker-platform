@@ -41,3 +41,12 @@ Review contract gates, rerun final approval checks, then publish uploader commit
 ## Published uploader identity
 
 Uploader commit: `99688cb71c00644f82fcb58ad73be5ec2e64a4c7`; version 0.3.5. The platform gitlink and normalized approval record this release together.
+
+## Verified production activation - 2026-11-04
+
+- Owner-authorized commit/push/restart completed. Activated platform `03cdbb131f2524f3737dfcae7df8752e95c2d696` with uploader `99688cb71c00644f82fcb58ad73be5ec2e64a4c7`; remote main identities verified.
+- Queue had zero active/queued jobs. Ran `stop-services.bat`, then `launcher.bat`; production frontend build succeeded.
+- Nginx `/api/skills` verifies uploader 0.3.5, scopes TSS/TI/PLANNING and normalized SHA-256 `7a74e34cfb08d0ac2d93ea846ecb5c2416e672d814758504ca1f6941abef840c`. Other four skills retain their versions.
+- `/fe/` and rebuilt `index-CXjp3nQC.js` return HTTP 200. Backend/Firebase/storage/queue are OK; overall health remains degraded by existing Agnes LLM provider failure.
+- No Planning workbook submitted or imported. Procurement verification remains open as documented above; deployment is not live submission acceptance.
+- Evidence: `C:\Development\aida-chrome\aida-temp-script\conversation-c-mumi1ss1-kgnh\dev02-production-activation.json`.
