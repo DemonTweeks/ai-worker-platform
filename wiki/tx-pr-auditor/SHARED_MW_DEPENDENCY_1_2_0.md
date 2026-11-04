@@ -38,3 +38,13 @@ Retained under `C:\Development\aida-chrome\aida-temp-script\conversation-c-mumi1
 Auditor normalized approval fingerprint: `19e6eda24aaee4d4e72690689bfcc8dd170f58a1b63ce638c9f6623b5d8323f6`. Final backend rerun passed after all guards/negative checks; no nested dependency path remains in executable source or package approvals.
 
 Published Auditor commit: `9046830c89b168a52dbebd629a18c3f8cee18a0c` (v1.2.0). The upstream merge `d95295a` had the same tree as the old release; it was incorporated before publication without changing tested runtime content.
+
+## Verified production activation - 2026-11-04
+
+- Owner-authorized publication/restart completed. Runtime platform commit `9af57288e23188a3d7315fcdceeece498774e3e0`, Auditor `9046830c89b168a52dbebd629a18c3f8cee18a0c` (1.2.0), shared MW `8fb4fd5bbda0ff1bbcf9b5cac5e339881f17e88e` (4.1.0).
+- Production queue was idle. Stopped services, deinitialized the clean old nested submodule, fast-forwarded production main, initialized recorded pins, verified package integrity, then rebuilt/restarted through launcher.bat.
+- Recursive production submodule listing now has five skill entries, no nested MW. Old duplicate checkout contains zero files. Git's retained object metadata is not a runtime checkout and was not destructively purged.
+- Nginx live catalog verifies Auditor 1.2.0 with shared create-pr-cd 4.1.0 dependency and exact matching MW fingerprint. Auditor fingerprint: `19e6eda24aaee4d4e72690689bfcc8dd170f58a1b63ce638c9f6623b5d8323f6`.
+- Frontend and index-CXjp3nQC.js returned HTTP 200; backend, Firebase, storage and queue are OK. Overall health remains degraded by the existing Agnes LLM provider request failure.
+- No real workbooks were audited and no external PR was created/submitted during activation. Synthetic offline acceptance is documented above; other development worktrees and unrelated production files were untouched.
+- Evidence retained at `C:\Development\aida-chrome\aida-temp-script\conversation-c-mumi1ss1-kgnh\dev03-production-activation.json`.
