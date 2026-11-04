@@ -41,4 +41,16 @@
 - Current live-checkout status differs from the earlier stored snapshot; no command in this migration edited/reconciled its pending files. Reconcile current upstream and deployment baseline before merge.
 
 ## Delivery state
-Skill committed locally first; platform records that exact gitlink. Feature-branch fingerprint is a reviewed development pin, not production-release approval. No push, merge, deployment or live-service restart. Private skill commit must be published before another clone can resolve this new platform gitlink.
+Skill was published first; skill main is verified at `50a85eebed450d8ca50f07d42e3e1fa1463cc54c`. Platform feature commit was published subsequently. The user then authorised rebasing onto the latest platform main and direct fast-forward promotion to main. No deployment checkout update or live-service restart is part of this promotion. Original release limits above remain applicable.
+
+## Rebase and main promotion validation — 2026-11-04
+- Rebased the TX BOM integration onto upstream main `40bf379e373144fc97d6b0313947e90e13f6b432`; no conflicts.
+- Preserved upstream MW Planning v4.1.0, approved fingerprint `f00d3a35b6321e301194d4380da6cf703fe961bf5d2d445af84530e28334a7c3`, and gitlink `8fb4fd5bbda0ff1bbcf9b5cac5e339881f17e88e`.
+- Existing other skill pins and the TX BOM pin/fingerprint remain unchanged.
+- Full backend npm test passed with mock persistence, LLM disabled and isolated storage.
+- Frontend: 103 tests in 19 files passed; production build and 13 route checks passed.
+- TX BOM: 94 Python tests passed in 49.155s using native Windows Python 3.14.6.
+- Logs retained locally: `command-center/results/rebase-main-backend.log`, `rebase-main-frontend.log`, `rebase-main-python.log` (ignored by Git).
+- New synthetic acceptance artifacts: `command-center/runtime/tx-bom-acceptance-mwPQDJ` (ignored by Git).
+- Working trees clean after validation; `git diff --check` passed. Private skill main remains resolvable at the recorded TX BOM gitlink.
+- Promotion uses a normal non-force push to existing platform main; no master branch is created. Remote identity is checked after push.
