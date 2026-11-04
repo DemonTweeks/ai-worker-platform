@@ -1,5 +1,7 @@
 # Wiki guide and evidence rules
 
+> Current checkout/release boundary and development realignment: [dev01 snapshot](PLATFORM_REALIGNMENT_DEV01.md). Historical snapshots below are dated evidence, not the current deployment.
+
 This wiki describes the platform and the exact checked-out skill implementations. Read [Summary](SUMMARIZE.md), [Architecture](ARCHITECTURE.md), [Deployment](DEPLOYMENT.md), then [Handover](HANDOVER.md). Open work belongs in [Pending](PENDING.md); [Plan](PLAN.md) records implementation/release gates; [Skill contract](SKILL_CONTRACT.md) is the shared transport contract; [Skills inventory](SKILL_EXISTS.md) identifies active packages.
 
 ## Ownership and structure
@@ -10,12 +12,15 @@ This wiki describes the platform and the exact checked-out skill implementations
 | [create-pr-cd-ran](create-pr-cd-ran/SUMMARIZE.md) | RAN normalization, calculation, project catalogue and ECC/ZIP delivery |
 | [tx-pr-auditor](tx-pr-auditor/SUMMARIZE.md) | Nested MW generation and Final PO audit, including current scope augmentation |
 | [iepms-pr-upload-automation](iepms-pr-upload-automation/SUMMARIZE.md) | ECC interpretation, authenticated import, external mutations and recovery |
+| [tx-bom-generator](tx-bom-generator/SUMMARIZE.md) | TX BOM calculations, configuration safety and BOM/report/ZIP delivery |
 
 Each skill uses ARCHITECTURE.md, BUSINESS_LOGIC.md, SKILL_CONTRACT.md, SUMMARIZE.md, PLAN.md, PENDING.md and HANDOVER.md. Put capabilities in summary/contract, execution/ownership in architecture, rule detail in business logic, current evidence/recovery in handover, and unresolved decisions in pending. Keep release-specific notes supplementary; do not duplicate an independent workbook register.
 
-## Feature-branch additions
+## Current integration and development
 
-[TX BOM Generator](tx-bom-generator/SUMMARIZE.md) is a tested development integration on agent/tx-bom-generator-skill, not a deployed release. See its handover and pending release decisions.
+TX BOM Generator 0.1.0 is merged and deployed at production `6186a05`.
+The isolated `dev01` worktree contains the platform navigation/History realignment
+and uploader Planning candidate, not yet deployed. See [current snapshot](PLATFORM_REALIGNMENT_DEV01.md).
 
 ## What was reviewed
 

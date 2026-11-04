@@ -15,9 +15,15 @@ The iEPMS skill follows `Gumb-D/iepms-pr-upload-automation` branch `migration/zx
 
 **Merged baseline:** `main` at `a987eb6`; the iEPMS integration is developed on `agent/add-iepms-pr-upload-skill`.
 
-## Feature-branch addition: TX BOM Generator
+## Current checkout and release status — 2026-11-04
 
-This branch adds independent `tx-bom-generator` 0.1.0 via a private submodule and `GenericSkillView` at `/workers/tx-bom-generator`. It requires per-job EPMS/Config .xlsx uploads and multiline Customer Site IDs. This is **not a merged or deployed release**. Setup, private-submodule access, safety limits and test evidence are in [the TX BOM handover](wiki/tx-bom-generator/HANDOVER.md). Existing historical baseline claims elsewhere in this README are not refreshed by this addition.
+Production is `C:\deployment\ai-worker-platform` on `main` at `6186a05`;
+TX BOM Generator 0.1.0 and MW Planning 4.1.0 are deployed. Development is isolated
+at `C:\Development\ai-worker-platform-dev01` on `dev01`.
+The dev01 navigation/History realignment and uploader 0.3.4 Planning support
+are not deployed. See the [current platform snapshot](wiki/PLATFORM_REALIGNMENT_DEV01.md)
+for scope, evidence and limits. Older baseline/draft-only statements above are historical;
+the platform uploader submits and verifies, then stops before trackers/IP.
 
 ## What the Platform Owns
 

@@ -16,6 +16,21 @@ describe('RAN detail metadata rendering', () => {
     expect(wrapper.vm.summaryItems).toContainEqual({ label: 'Submitted', value: 'No' });
     expect(wrapper.vm.summaryItems.some((item) => item.label === 'Requested')).toBe(false);
   });
+  it('shows uploader Planning scope beside generic result metrics', () => {
+    const wrapper = mount(JobDetailSummary, { propsData: { job: {
+      workerType: 'skill', workerId: 'iepms-pr-upload-automation', prScope: 'PLANNING',
+      resultFields: [{ key: 'psq', label: 'PSQ' }], resultSummary: { metrics: {} }
+    } } });
+    expect(wrapper.vm.summaryItems).toContainEqual({ label: 'PR Scope', value: 'Planning' });
+  });
+  it('hides TX BOM scope even with stale scope metadata', () => {
+    const job = { workerId: 'tx-bom-generator', prScope: 'TSS' };
+    const wrapper = mount(JobDetailSummary, { propsData: { job } });
+    expect(wrapper.vm.summaryItems.some((item) => item.label === 'PR Scope')).toBe(false);
+    const header = mount(JobDetailHeader, { propsData: { job } });
+    expect(header.find('.scope-badge').exists()).toBe(false);
+  });
+
   it('shows worker identity in the detail header for ran jobs', () => {
     const wrapper = mount(JobDetailHeader, {
       propsData: {

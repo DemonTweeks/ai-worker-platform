@@ -1,3 +1,4 @@
+import ranSkill from '../../../../skills/create-pr-cd-ran/skill.json';
 import mwSkill from '../../../../skills/create-pr-cd/skill.json';
 import { mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -382,7 +383,7 @@ describe('GenericSkillView', () => {
     wrapper.destroy();
   });
 
-  it('submits Planning for MW only using the real manifest', async () => {
+  it('submits Planning for MW using the real manifest', async () => {
     listSkills.mockResolvedValueOnce({ skills: [mwSkill] });
     const wrapper = mount(GenericSkillView, {
       propsData: { skillId: 'create-pr-cd' },
@@ -402,8 +403,46 @@ describe('GenericSkillView', () => {
     expect(createSkillJob).toHaveBeenCalledWith('create-pr-cd', expect.objectContaining({
       parameters: expect.objectContaining({ scope: 'PLANNING', siteCodes: ['SITE-PLANNING'] })
     }));
-    expect(iepmsSkill.inputs.parametersSchema.properties.scope.enum).toEqual(['TSS', 'TI']);
+    expect(iepmsSkill.inputs.parametersSchema.properties.scope.enum).toEqual(['TSS', 'TI', 'PLANNING']);
     wrapper.destroy();
+  });
+
+  it('submits uploader Planning from the real manifest without scope remapping', async () => {
+    listSkills.mockResolvedValueOnce({ skills: [iepmsSkill] });
+    const wrapper = mount(GenericSkillView, {
+      propsData: { skillId: 'iepms-pr-upload-automation' },
+      mocks: { $router: { push: vi.fn(async () => {}) } },
+      stubs: { RouterLink: { template: '<a><slot /></a>' } }
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const planning = wrapper.findAll('button').wrappers.find((button) => button.text() === 'Planning');
+    expect(planning).toBeTruthy();
+    await planning.trigger('click');
+    const ecc = new File(['fixture'], 'ECC.xlsx');
+    wrapper.vm.$set(wrapper.vm.selectedFiles, 'ecc', ecc);
+    wrapper.vm.validateSelectedFiles(iepmsSkill.inputs.files[0], ecc);
+    expect(wrapper.vm.canSubmit).toBe(true);
+    await wrapper.find('form').trigger('submit');
+    expect(createSkillJob).toHaveBeenCalledWith('iepms-pr-upload-automation', expect.objectContaining({ parameters: expect.objectContaining({ scope: 'PLANNING' }) }));
+    wrapper.destroy();
+  });
+
+  it('retains the real manifest MW/RAN switch and its existing route names', async () => {
+    for (const skill of [mwSkill, ranSkill]) {
+      listSkills.mockResolvedValueOnce({ skills: [skill] });
+      const push = vi.fn(async () => {});
+      const wrapper = mount(GenericSkillView, {
+        propsData: { skillId: skill.skillId }, mocks: { $router: { push } },
+        stubs: { RouterLink: { template: '<a><slot /></a>' } }
+      });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      const options = wrapper.vm.configurationSwitcher.options;
+      expect(options.map((option) => option.skillId)).toEqual(['create-pr-cd', 'create-pr-cd-ran']);
+      const other = options.find((option) => option.skillId !== skill.skillId);
+      await wrapper.findAll('button').wrappers.find((button) => button.text() === other.label).trigger('click');
+      expect(push).toHaveBeenCalledWith({ name: skill.skillId === 'create-pr-cd' ? 'ran-pr-creator' : 'pr-creator' });
+      wrapper.destroy();
+    }
   });
 
   it('places auditor period controls between upload cards and keeps hidden defaults out of the form', async () => {

@@ -76,7 +76,7 @@ const isPrAuditorWorker = (workerId) => workerId === WORKER_IDS.PR_AUDITOR;
 const getDisplayPrScope = (job = {}) => {
   if (job.prScope) return job.prScope;
   const parameterScope = String(job.parameters && job.parameters.scope || '').trim().toUpperCase();
-  if (job.workerType === 'skill') return PR_SCOPES.includes(parameterScope) ? parameterScope : null;
+  if (job.workerType === 'skill') return normalizeWorkerPrScope(parameterScope, job.workerId);
   return (isRanWorker(job.workerId) || isPrAuditorWorker(job.workerId)) ? null : 'TSS';
 };
 

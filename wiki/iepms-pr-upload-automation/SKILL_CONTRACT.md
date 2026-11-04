@@ -1,5 +1,7 @@
 # Skill Contract
 
+> dev01 candidate 0.3.4 preserves Planning through creation, detail/history, filters and reruns. Production remains 0.3.3; see [realignment snapshot](../PLATFORM_REALIGNMENT_DEV01.md). No live Planning submission was tested.
+
 Identity: `iepms-pr-upload-automation`; published v0.3.1 (`397010e`), local uncommitted v0.3.3 (includes earlier v0.3.2 fixes); schema/result contract 1.0; Python >=3.11. See [deployment snapshot](DEPLOYMENT_SNAPSHOT_2026-10-15.md).
 
 ```text

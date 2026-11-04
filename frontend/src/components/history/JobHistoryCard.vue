@@ -78,7 +78,7 @@ export default {
       return !this.isPrAuditorJob && this.job.generatedSiteCount !== null && this.job.generatedSiteCount !== undefined;
     },
     showScopeBadge() {
-      return Boolean(this.job.prScope);
+      return this.job.workerId !== 'tx-bom-generator' && Boolean(this.job.prScope);
     },
     workerLabel() {
       return this.job.workerDisplayName || this.job.workerId || this.job.workerType || 'PR Worker';

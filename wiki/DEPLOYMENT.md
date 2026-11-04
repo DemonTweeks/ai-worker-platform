@@ -1,5 +1,7 @@
 # AI Worker Platform - Deployment
 
+> Current checkout/release boundary and development realignment: [dev01 snapshot](PLATFORM_REALIGNMENT_DEV01.md). Historical snapshots below are dated evidence, not the current deployment.
+
 ## Branch Model
 
 `main` is the deployable code line for both local and production use. The former production-only branch is an input to this refactor, not a runtime dependency. Launch scripts operate on the current checkout and pinned submodules without checking out, deleting, or creating branches.

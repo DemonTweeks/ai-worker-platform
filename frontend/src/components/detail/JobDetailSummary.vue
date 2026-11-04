@@ -21,6 +21,7 @@
 </template>
 
 <script>
+import { prScopeLabel } from '../../utils/prScopeUtils';
 import { formatDateTime } from '../../utils/formatUtils';
 import { getSkillResultItems } from '../../utils/skillResultUtils';
 import { generationScopeLabel, jobStatusLabel } from '../../utils/jobStatusUtils';
@@ -84,7 +85,8 @@ export default {
       }
 
       if (this.job.resultFields && this.job.resultFields.length) {
-        return [...common, ...getSkillResultItems(this.job)];
+        return [...common, ...(this.job.prScope && this.job.workerId !== 'tx-bom-generator'
+          ? [{ label: 'PR Scope', value: prScopeLabel(this.job.prScope) }] : []), ...getSkillResultItems(this.job)];
       }
 
       const reconciliation = this.hasReconciliation
@@ -103,7 +105,7 @@ export default {
         common[0],
         common[1],
         common[2],
-        { label: 'PR Scope', value: this.job.prScope || 'N/A' },
+        ...(this.job.workerId === 'tx-bom-generator' ? [] : [{ label: 'PR Scope', value: prScopeLabel(this.job.prScope) || 'N/A' }]),
         { label: 'Run Mode', value: this.job.runMode || 'N/A' },
         { label: 'Project', value: this.job.selectedProject || 'N/A' },
         common[3],

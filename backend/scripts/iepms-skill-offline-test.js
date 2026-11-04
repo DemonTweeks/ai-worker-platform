@@ -24,12 +24,12 @@ const run = async () => {
   await new Promise((resolve) => cdp.listen(0, '127.0.0.1', resolve));
   process.env.IEPMS_PR_UPLOAD_CDP_PORT = String(cdp.address().port);
   try {
-    for (const extension of ['xls', 'xlsx']) {
+    for (const [extension, scope] of [['xls', 'TI'], ['xlsx', 'TI'], ['xls', 'PLANNING'], ['xlsx', 'PLANNING']]) {
       const ecc = fs.readFileSync(path.join(__dirname, '../../skills/iepms-pr-upload-automation/tests/fixtures', `ecc.${extension}`));
       const created = await createSkillJob('iepms-pr-upload-automation', {
-        browserTabSessionId: `iepms-offline-tab-${extension}`,
-        idempotencyKey: `iepms-offline-create-${extension}`,
-        parameters: JSON.stringify({ projectId: 'c46633e8-6e52-2178-f17e-dcbfdade7cb2', scope: 'TI',
+        browserTabSessionId: `iepms-offline-tab-${extension}-${scope}`,
+        idempotencyKey: `iepms-offline-create-${extension}-${scope}`,
+        parameters: JSON.stringify({ projectId: 'c46633e8-6e52-2178-f17e-dcbfdade7cb2', scope,
           duModelName: 'TX Mini Project', plannedStartDate: '2026-10-15',
           outsourcedComponentService: 'N', productQualityRectification: 'N' })
       }, [
@@ -43,6 +43,7 @@ const run = async () => {
       await runGenericSkillJob(created.job.jobId);
       const detail = await getJobDetail(created.job.jobId);
       assert.strictEqual(detail.job.status, 'failed');
+      assert.strictEqual(detail.job.prScope, scope);
       assert.strictEqual(detail.job.error.code, 'IEPMS_AUTH_REQUIRED');
       assert(detail.job.failureSummary.includes('Sign in to iEPMS'));
       assert(detail.job.resultFields.some((field) => field.key === 'psq'));

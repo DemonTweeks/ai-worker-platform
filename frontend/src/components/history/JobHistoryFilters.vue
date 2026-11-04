@@ -24,6 +24,7 @@
           <option value="create-pr-cd-ran">RAN PR Worker</option>
           <option value="tx-pr-auditor">PR Auditor</option>
           <option value="iepms-pr-upload-automation">iEPMS PR Upload</option>
+          <option value="tx-bom-generator">TX BOM Generator</option>
           <option value="mw-pr">MW PR Worker (Legacy)</option>
           <option value="ran-pr">RAN PR Worker (Legacy)</option>
           <option value="pr-auditor">PR Auditor (Legacy)</option>
@@ -35,7 +36,7 @@
           <option value="">All scopes</option>
           <option value="TSS">TSS</option>
           <option value="TI">TI</option>
-          <option v-if="!value.workerId || value.workerId === 'create-pr-cd'" value="PLANNING">Planning</option>
+          <option v-if="showPlanningOption" value="PLANNING">Planning</option>
         </select>
       </label>
       <label>
@@ -65,7 +66,7 @@
 <script>
 import { STATUS_LABELS } from '../../utils/jobStatusUtils';
 
-const PR_SCOPE_WORKER_IDS = new Set(['create-pr-cd', 'iepms-pr-upload-automation', 'mw-pr', 'ran-pr']);
+import { supportsPrScope, supportsPlanning } from '../../utils/prScopeUtils';
 
 export default {
   name: 'JobHistoryFilters',
@@ -77,7 +78,10 @@ export default {
       return Object.keys(STATUS_LABELS).map((value) => ({ value, label: STATUS_LABELS[value] }));
     },
     showPrScopeFilter() {
-      return !this.value.workerId || PR_SCOPE_WORKER_IDS.has(this.value.workerId);
+      return supportsPrScope(this.value.workerId);
+    },
+    showPlanningOption() {
+      return supportsPlanning(this.value.workerId);
     }
   },
   methods: {
@@ -87,11 +91,11 @@ export default {
         [key]: nextValue
       };
 
-      if (key === 'workerId' && nextValue && nextValue !== 'create-pr-cd' && nextFilters.prScope === 'PLANNING') {
+      if (key === 'workerId' && !supportsPlanning(nextValue) && nextFilters.prScope === 'PLANNING') {
         nextFilters.prScope = '';
       }
 
-      if (key === 'workerId' && nextValue && !PR_SCOPE_WORKER_IDS.has(nextValue)) {
+      if (key === 'workerId' && !supportsPrScope(nextValue)) {
         nextFilters.prScope = '';
       }
 

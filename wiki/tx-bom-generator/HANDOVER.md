@@ -2,7 +2,11 @@
 
 ## Local development
 
-Platform worktree `C:\Development\ai-worker-platform-tx-bom`, branch `agent/tx-bom-generator-skill`. Skill feature branch `agent/platform-skill-migration` directly in that worktree's submodule. No separate skill worktree.
+Development worktree `C:\Development\ai-worker-platform-dev01`, branch `dev01`.
+Production checkout `C:\deployment\ai-worker-platform`, branch `main`, deployed `6186a05`.
+TX BOM private skill main is published at `50a85eebed450d8ca50f07d42e3e1fa1463cc54c`;
+submodules use exact pins, normally detached HEAD, not a development branch tip.
+The old TX BOM worktree was removed; evidence was archived. See [current platform snapshot](../PLATFORM_REALIGNMENT_DEV01.md).
 
 Authenticate a Git identity with read access to private `BL2ZteSolution/tx-bom-generator`; deployment automation needs its own least-privilege repository access. Never place tokens in `.gitmodules`, environment examples, logs or documentation. After approved commits are published:
 

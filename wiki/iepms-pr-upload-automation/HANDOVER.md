@@ -1,5 +1,7 @@
 # Handover — reviewed 2026-10-15
 
+> dev01 candidate 0.3.4 preserves Planning through creation, detail/history, filters and reruns. Production remains 0.3.3; see [realignment snapshot](../PLATFORM_REALIGNMENT_DEV01.md). No live Planning submission was tested.
+
 ## Current truth
 - Source: `https://github.com/Gumb-D/iepms-pr-upload-automation`.
 - Published platform baseline `ec5fd9b` pins uploader `397010e` v0.3.1 (XLS/XLSX).

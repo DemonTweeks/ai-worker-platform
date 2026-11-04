@@ -98,6 +98,16 @@ describe('JobHistoryView worker-aware filters', () => {
     }));
   });
 
+  it('preserves uploader Planning in list queries and suppresses stale TX BOM scope', async () => {
+    const wrapper = mountView();
+    await wrapper.setData({ filters: buildFilters({ workerId: 'iepms-pr-upload-automation', prScope: 'PLANNING' }) });
+    await wrapper.vm.loadJobs();
+    expect(listJobs).toHaveBeenLastCalledWith(expect.objectContaining({ workerId: 'iepms-pr-upload-automation', prScope: 'PLANNING' }));
+    await wrapper.setData({ filters: buildFilters({ workerId: 'tx-bom-generator', prScope: 'PLANNING' }) });
+    await wrapper.vm.loadJobs();
+    expect(listJobs.mock.calls.at(-1)[0]).not.toHaveProperty('prScope');
+  });
+
   it('offers PR Auditor in the worker filter options', () => {
     const wrapper = mount(JobHistoryView, {
       stubs: {

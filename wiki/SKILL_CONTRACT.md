@@ -1,5 +1,7 @@
 # AI Worker Platform — Skill Contract
 
+> Current checkout/release boundary and development realignment: [dev01 snapshot](PLATFORM_REALIGNMENT_DEV01.md). Historical snapshots below are dated evidence, not the current deployment.
+
 > Status (2026-10-15): `create-pr-cd` 4.0.1, `tx-pr-auditor` 1.1.0, `create-pr-cd-ran` 1.1.2, and `iepms-pr-upload-automation` 0.3.1 published / 0.3.2 local working-tree fix. See the [deployment snapshot](iepms-pr-upload-automation/DEPLOYMENT_SNAPSHOT_2026-10-15.md); local runtime changes are not a published release.
 
 ## 1. Purpose

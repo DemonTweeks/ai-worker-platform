@@ -1,5 +1,7 @@
 # AI Worker Platform - Handover
 
+> Current checkout/release boundary and development realignment: [dev01 snapshot](PLATFORM_REALIGNMENT_DEV01.md). Historical snapshots below are dated evidence, not the current deployment.
+
 ## Current State
 
 - Documentation reviewed on 2026-10-15 against platform baseline `ec5fd9b`. The latest runtime activity includes live W14-W16 tests; this is not a fresh audit of all historical PRs.

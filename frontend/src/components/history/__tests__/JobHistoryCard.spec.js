@@ -15,6 +15,18 @@ describe('JobHistoryCard.vue Component', () => {
     expect(wrapper.vm.metadataItems).toContainEqual({ label: 'Draft verified', value: 'No' });
     expect(wrapper.vm.metadataItems.some((item) => item.label === 'Requested')).toBe(false);
   });
+  it('shows Planning in uploader history and hides TX BOM scope even with stale data', () => {
+    for (const workerId of ['iepms-pr-upload-automation', 'tx-bom-generator']) {
+      const wrapper = mount(JobHistoryCard, {
+        propsData: { job: { jobId: 'SCOPE-TEST', workerType: 'skill', workerId, prScope: 'PLANNING', outputs: [] } },
+        stubs: { routerLink: true }
+      });
+      expect(wrapper.find('.scope-badge').exists()).toBe(workerId === 'iepms-pr-upload-automation');
+      if (workerId === 'iepms-pr-upload-automation') expect(wrapper.find('.scope-badge').text()).toBe('Planning');
+      wrapper.destroy();
+    }
+  });
+
   it('renders standard worker summary for successful jobs', () => {
     const job = {
       jobId: 'PR-SUCCESS-001',

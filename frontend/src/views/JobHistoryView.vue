@@ -68,7 +68,7 @@ import JobHistoryCard from '../components/history/JobHistoryCard.vue';
 import JobHistoryFilters from '../components/history/JobHistoryFilters.vue';
 import { getErrorMessage, listJobs } from '../api/jobApi';
 
-const PR_SCOPE_WORKER_IDS = new Set(['create-pr-cd', 'mw-pr', 'ran-pr']);
+import { supportsPrScope, supportsPlanning } from '../utils/prScopeUtils';
 
 const defaultFilters = () => ({
   search: '',
@@ -134,7 +134,7 @@ export default {
       });
 
       const workerId = this.filters.workerId;
-      const prScopeApplies = !workerId || PR_SCOPE_WORKER_IDS.has(workerId);
+      const prScopeApplies = supportsPrScope(workerId) && (this.filters.prScope !== 'PLANNING' || supportsPlanning(workerId));
       if (prScopeApplies && this.filters.prScope) {
         query.prScope = this.filters.prScope;
       }

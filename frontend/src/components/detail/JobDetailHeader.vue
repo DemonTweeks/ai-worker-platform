@@ -26,7 +26,7 @@ export default {
   },
   computed: {
     showScopeBadge() {
-      return Boolean(this.job.prScope);
+      return this.job.workerId !== 'tx-bom-generator' && Boolean(this.job.prScope);
     },
     workerEyebrow() {
       const displayName = this.job.workerDisplayName || this.job.workerType || 'PR Worker';

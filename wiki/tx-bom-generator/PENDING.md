@@ -6,5 +6,5 @@
 - Existing lockfile npm dependencies reported backend 8 vulnerabilities (3 moderate/4 high/1 critical), frontend 20 (4 low/6 moderate/8 high/2 critical); no unrelated dependency upgrades attempted. Separate security review needed.
 - Final severe disk/permissions failures/hard kills can prevent result writing; generic runner must fail closed.
 - Offline integration uses in-memory Firebase and an ephemeral loopback server; production connectivity, authentication and deployment are not acceptance-tested here. Running cancellation remains unsupported.
-- Private submodule commits must be pushed before another checkout can initialise the recorded platform gitlink. No push performed; owner/reviewer approval needed.
-- Reconcile deployment checkout changes and current upstream baseline before merge. No preexisting live changes were overwritten.
+- Private skill main was published at `50a85ee` before platform merge/deployment; any future upgrade must likewise publish its recorded commit first.
+- Original baseline reconciliation, merge and restart completed at platform `6186a05`. Preexisting untracked production files were preserved. New dev01 realignment is not deployed.

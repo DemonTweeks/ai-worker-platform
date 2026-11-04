@@ -52,15 +52,27 @@ describe('JobHistoryFilters worker-aware PR Scope', () => {
     }));
   });
 
-  it('offers Planning only for MW/global history and clears it when selecting another worker', async () => {
+  it('preserves Planning between MW and uploader and clears it for unsupported workers', async () => {
     const wrapper = mount(JobHistoryFilters, { propsData: { value: buildFilters({ workerId: 'create-pr-cd', prScope: 'PLANNING' }) } });
     expect(wrapper.find('option[value="PLANNING"]').exists()).toBe(true);
     await findLabel(wrapper, 'Worker').find('select').setValue('iepms-pr-upload-automation');
+    expect(wrapper.emitted('input').at(-1)[0].prScope).toBe('PLANNING');
+    await wrapper.setProps({ value: buildFilters({ workerId: 'iepms-pr-upload-automation', prScope: 'PLANNING' }) });
+    expect(wrapper.find('option[value="PLANNING"]').exists()).toBe(true);
+    await findLabel(wrapper, 'Worker').find('select').setValue('create-pr-cd-ran');
     expect(wrapper.emitted('input').at(-1)[0].prScope).toBe('');
     await wrapper.setProps({ value: buildFilters({ workerId: 'create-pr-cd-ran' }) });
     expect(wrapper.find('option[value="PLANNING"]').exists()).toBe(false);
     await wrapper.setProps({ value: buildFilters() });
     expect(wrapper.find('option[value="PLANNING"]').exists()).toBe(true);
+  });
+
+  it('hides scope for TX BOM and clears a stale selection on worker switch', async () => {
+    const wrapper = mount(JobHistoryFilters, { propsData: { value: buildFilters({ workerId: 'iepms-pr-upload-automation', prScope: 'PLANNING' }) } });
+    await findLabel(wrapper, 'Worker').find('select').setValue('tx-bom-generator');
+    expect(wrapper.emitted('input').at(-1)[0]).toEqual(buildFilters({ workerId: 'tx-bom-generator' }));
+    await wrapper.setProps({ value: buildFilters({ workerId: 'tx-bom-generator' }) });
+    expect(findLabel(wrapper, 'PR Scope')).toBeUndefined();
   });
 
   it('offers generic skill workers while retaining legacy history filters', () => {
@@ -73,6 +85,8 @@ describe('JobHistoryFilters worker-aware PR Scope', () => {
       'create-pr-cd',
       'create-pr-cd-ran',
       'tx-pr-auditor',
+      'iepms-pr-upload-automation',
+      'tx-bom-generator',
       'mw-pr',
       'ran-pr',
       'pr-auditor'
