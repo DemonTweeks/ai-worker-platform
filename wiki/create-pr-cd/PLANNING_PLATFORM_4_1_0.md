@@ -16,7 +16,7 @@ This does **not** expose Planning in iEPMS PR Upload, RAN or Auditor. Their mani
 
 ## Validation and release state (2026-11-04)
 
-Release package: **4.1.0**, based on published v4.0.2 `0e08c63`. Published MW skill commit: `8fb4fd5bbda0ff1bbcf9b5cac5e339881f17e88e`. The platform release records that exact gitlink with approved package SHA-256 `f00d3a35b6321e301194d4380da6cf703fe961bf5d2d445af84530e28334a7c3`. Publish the skill before the platform commit. Tests and publication do not restart services: runtime activation and live catalog verification remain pending. No live Planning deployment is claimed.
+Release package: **4.1.0**, based on published v4.0.2 `0e08c63`. Published MW skill commit: `8fb4fd5bbda0ff1bbcf9b5cac5e339881f17e88e`. The platform release records that exact gitlink with approved package SHA-256 `f00d3a35b6321e301194d4380da6cf703fe961bf5d2d445af84530e28334a7c3`. Publish the skill before the platform commit. Tests and publication alone do not restart services; the separately authorized production activation is recorded below.
 
 - Combined Planning/public adapter/TSS/TI/reroute regressions: **117 tests passed, 68 subtests**, including the final unsupported-model identity negative test.
 - Frontend unit suite: **101 passed** (Planning form using actual manifest and worker-aware history filter included).
@@ -26,3 +26,12 @@ Release package: **4.1.0**, based on published v4.0.2 `0e08c63`. Published MW sk
 - This is not a full 900+ test-suite rerun. Previously documented unrelated Windows/Python/rollback baseline failures remain pending. No live iEPMS mutations, tracker writes or Implementation Plan updates occurred.
 
 Sources: skill.json; src/main.py; tests/test_planning_platform_contract.py; existing tests/test_issue_34_planning_*; platform backend/src/utils/prScope.js and scope consumers; frontend Task Type/history/badge tests.
+
+## Verified production activation - 2026-11-04
+
+- Activated published platform `1002ecce8716cbda1e097d8069287e7eef4e8eaa` and MW skill `8fb4fd5bbda0ff1bbcf9b5cac5e339881f17e88e` using `stop-services.bat` followed by `launcher.bat`; the queue had zero active and queued jobs.
+- Production frontend build passed. Nginx `/fe/` and rebuilt asset `/fe/assets/index-BKESRiKl.js` returned HTTP 200; the served asset includes PLANNING support.
+- Both direct API and Nginx `/api/skills` returned MW 4.1.0, scope enum TSS/TI/PLANNING, display label Planning and approved package SHA-256 `f00d3a35b6321e301194d4380da6cf703fe961bf5d2d445af84530e28334a7c3`.
+- Backend, Firebase, storage and queue health are OK. Overall status remains degraded by the pre-existing Agnes LLM provider request failure; this is not a fully healthy platform claim.
+- Uploader remains 0.3.3, auditor 1.1.0 and RAN 1.1.2. No Planning job, iEPMS submission, tracker or Implementation Plan mutation was performed.
+- Activation evidence is retained in conversation folder `C:\Development\aida-chrome\aida-temp-script\conversation-c-mumi1ss1-kgnh`: `planning-production-catalog.json` and `planning-production-health.json`.
