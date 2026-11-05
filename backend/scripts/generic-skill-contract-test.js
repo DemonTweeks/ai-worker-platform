@@ -54,13 +54,24 @@ const run = async () => {
     assert.deepStrictEqual(uploadCatalogEntry.inputs.files.map((item) => item.name), ['ecc', 'attachment']);
     assert.strictEqual(uploadCatalogEntry.inputs.files.find((item) => item.name === 'ecc').required, true);
     assert.deepStrictEqual(uploadCatalogEntry.inputs.files.find((item) => item.name === 'ecc').acceptedExtensions, ['.xls', '.xlsx']);
-    assert.strictEqual(uploadCatalogEntry.version, '0.3.5');
+    assert.strictEqual(uploadCatalogEntry.version, '0.3.6');
     assert.deepStrictEqual(uploadCatalogEntry.inputs.parametersSchema.properties.duModelName.enum, [
       '2023 TX Rollout', 'TX Mini Project', 'MW EOS Swap', 'ZTE TX MINI',
       '2024 Celcomdigi BAU', 'Celcomdigi USP', 'Jendela TX Migration'
     ]);
     assert.strictEqual(uploadCatalogEntry.inputs.files.find((item) => item.name === 'attachment').required, false);
     assert.strictEqual(uploadCatalogEntry.execution.supportsCancellation, false);
+    // Actionable uploader diagnostics survive the same serialization used by portal history.
+    const mismatchMessage = 'Contract and subcontractor mismatch at workbook line 1 (site A00298-4357B, PBOM 350000214923): the workbook expects Girobumi, but contract S1MY2024071002WBF1 imported the line under GCI SCIENCE & TECHNOLOGY (MALAYSIA) SDN. BHD. Confirm the correct subcontractor and purchase contract in the workbook. Submission stopped; review the existing PR before retrying. Existing PR: PSQ202611050744.';
+    const mismatchSummary = serializeJobSummary({
+      jobId: 'OFFLINE-MISMATCH', workerType: 'skill', workerId: 'iepms-pr-upload-automation',
+      status: 'failed', createdAt: new Date().toISOString(),
+      error: { code: 'IEPMS_CONTRACT_SUBCONTRACTOR_MISMATCH', message: mismatchMessage, retryable: false },
+      skillResult: { summary: { message: mismatchMessage, metrics: { submitted: false, verified: false, safeToResume: false } } }
+    });
+    assert.strictEqual(mismatchSummary.failureSummary, mismatchMessage);
+    assert.strictEqual(mismatchSummary.error.message, mismatchMessage);
+    assert.strictEqual(mismatchSummary.error.code, 'IEPMS_CONTRACT_SUBCONTRACTOR_MISMATCH');
     const uploadForm = new FormData();
     uploadForm.append('browserTabSessionId', 'iepms-contract-tab-001');
     uploadForm.append('idempotencyKey', 'iepms-contract-create-001');
