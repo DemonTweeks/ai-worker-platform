@@ -60,7 +60,7 @@
                   <h2>BOM template</h2>
                   <input type="text" disabled aria-label="BOM template" :value="managedInput(item.input.name).fileName" />
                   <strong>{{ managedInput(item.input.name).available ? 'Auto-filled' : 'Unavailable' }}</strong>
-                  <p>ðŸ”’ Managed by the platform</p>
+                  <p><span aria-hidden="true">&#128274;</span> Managed by the platform</p>
                   <p class="managed-template-help" :id="`managed-${item.input.name}-help`">{{ managedInput(item.input.name).tooltip }}</p>
                   <p v-if="!managedInput(item.input.name).available" role="alert">{{ managedInput(item.input.name).message }}</p>
                 </section>
