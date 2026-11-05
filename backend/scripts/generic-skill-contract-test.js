@@ -331,7 +331,7 @@ const run = async () => {
     const validated = await validateResult({
       job, skill, workspace,
       result: {
-        schemaVersion: '1.0', jobId: job.jobId, skillId: 'tx-pr-auditor', skillVersion: '1.2.0',
+        schemaVersion: '1.0', jobId: job.jobId, skillId: 'tx-pr-auditor', skillVersion: '1.2.1',
         status: 'succeeded', summary: { message: 'ok', metrics: {} },
         outputs: [{ name: 'result', path: 'output/result.txt', displayName: 'result.txt' }], warnings: [], error: null
       }

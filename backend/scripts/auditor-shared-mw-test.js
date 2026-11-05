@@ -1,4 +1,4 @@
-﻿/* Real composite Auditor with shared MW; mock DB, synthetic files, no network. */
+/* Real composite Auditor with shared MW; mock DB, synthetic files, no network. */
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
@@ -64,7 +64,7 @@ const run = async () => {
   const identity = execution.result.summary.metrics.entitlement;
   assert.strictEqual(identity.dependencyVersion,mw.manifest.version);
   assert.strictEqual(identity.dependencyPackageSha256,mw.packageSha256);
-  assert.strictEqual(identity.dependencyCommit,'8fb4fd5bbda0ff1bbcf9b5cac5e339881f17e88e');
+  assert.strictEqual(identity.dependencyCommit,require('child_process').execFileSync('git',['-C',mw.root,'rev-parse','HEAD'],{encoding:'utf8'}).trim());
   assert.deepStrictEqual(identity.scopes.map((s)=>s.scope),['TSS','TI']);
   assert.deepStrictEqual(execution.result.summary.metrics.classifications,{Normal:1});
   for (const change of ['fingerprint','missing']) {
