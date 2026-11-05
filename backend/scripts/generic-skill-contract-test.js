@@ -54,7 +54,7 @@ const run = async () => {
     assert.deepStrictEqual(uploadCatalogEntry.inputs.files.map((item) => item.name), ['ecc', 'attachment']);
     assert.strictEqual(uploadCatalogEntry.inputs.files.find((item) => item.name === 'ecc').required, true);
     assert.deepStrictEqual(uploadCatalogEntry.inputs.files.find((item) => item.name === 'ecc').acceptedExtensions, ['.xls', '.xlsx']);
-    assert.strictEqual(uploadCatalogEntry.version, '0.3.6');
+    assert.strictEqual(uploadCatalogEntry.version, '0.3.7');
     assert.deepStrictEqual(uploadCatalogEntry.inputs.parametersSchema.properties.duModelName.enum, [
       '2023 TX Rollout', 'TX Mini Project', 'MW EOS Swap', 'ZTE TX MINI',
       '2024 Celcomdigi BAU', 'Celcomdigi USP', 'Jendela TX Migration'

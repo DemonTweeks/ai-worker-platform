@@ -47,6 +47,10 @@ const run = async () => {
       assert.strictEqual(detail.job.error.code, 'IEPMS_AUTH_REQUIRED');
       assert(detail.job.failureSummary.includes('Sign in to iEPMS'));
       assert(detail.job.resultFields.some((field) => field.key === 'psq'));
+      assert(detail.job.resultFields.some((field) => field.key === 'poName' && field.label === 'PO Name'));
+      assert(detail.job.resultFields.some((field) => field.key === 'poAmountDisplay' && field.label === 'PO Amount'));
+      assert.strictEqual(detail.job.resultSummary.metrics.poName, 'Not available');
+      assert.strictEqual(detail.job.resultSummary.metrics.poAmountDisplay, 'Not available');
       assert.strictEqual(detail.job.resultSummary.metrics.verified, false);
       assert.strictEqual(detail.job.resultSummary.metrics.submitted, false);
       assert.strictEqual(detail.job.resultSummary.metrics.attachmentSource, 'ecc');

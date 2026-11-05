@@ -3,6 +3,18 @@ import { describe, expect, it } from 'vitest';
 import JobHistoryCard from '../JobHistoryCard.vue';
 
 describe('JobHistoryCard.vue Component', () => {
+  it('shows exact PO Name and currency-qualified PO Amount from result fields', () => {
+    const wrapper = mount(JobHistoryCard, { propsData: { job: {
+      jobId: 'PO-METADATA', status: 'completed', workerType: 'skill', workerId: 'iepms-pr-upload-automation',
+      resultFields: [{ key: 'psq', label: 'PSQ' }, { key: 'poName', label: 'PO Name' }, { key: 'poAmountDisplay', label: 'PO Amount' }],
+      resultSummary: { metrics: { psq: 'PSQ-1', poName: 'Exact requirementDescription <name>', poAmountDisplay: 'MYR 1,234.56' } }, outputs: []
+    } }, stubs: { routerLink: true } });
+    expect(wrapper.vm.metadataItems).toContainEqual({ label: 'PO Name', value: 'Exact requirementDescription <name>' });
+    expect(wrapper.vm.metadataItems).toContainEqual({ label: 'PO Amount', value: 'MYR 1,234.56' });
+    expect(wrapper.text()).toContain('Exact requirementDescription <name>');
+    expect(wrapper.text()).toContain('MYR 1,234.56');
+    wrapper.destroy();
+  });
   it('shows manifest result fields for an unverified known PSQ', () => {
     const wrapper = mount(JobHistoryCard, {
       propsData: { job: { jobId: 'IEPMS-BLOCKED', status: 'failed', workerType: 'skill',

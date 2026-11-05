@@ -6,6 +6,18 @@ import JobDetailSummary from '../JobDetailSummary.vue';
 import { formatDateTime } from '../../../utils/formatUtils';
 
 describe('RAN detail metadata rendering', () => {
+  it('shows exact PO Name and currency-qualified PO Amount from result fields', () => {
+    const wrapper = mount(JobDetailSummary, { propsData: { job: {
+      jobId: 'PO-METADATA', status: 'completed', workerType: 'skill', workerId: 'iepms-pr-upload-automation',
+      resultFields: [{ key: 'psq', label: 'PSQ' }, { key: 'poName', label: 'PO Name' }, { key: 'poAmountDisplay', label: 'PO Amount' }],
+      resultSummary: { metrics: { psq: 'PSQ-1', poName: 'Exact requirementDescription <name>', poAmountDisplay: 'MYR 1,234.56' } }, outputs: []
+    } }, stubs: { routerLink: true } });
+    expect(wrapper.vm.summaryItems).toContainEqual({ label: 'PO Name', value: 'Exact requirementDescription <name>' });
+    expect(wrapper.vm.summaryItems).toContainEqual({ label: 'PO Amount', value: 'MYR 1,234.56' });
+    expect(wrapper.text()).toContain('Exact requirementDescription <name>');
+    expect(wrapper.text()).toContain('MYR 1,234.56');
+    wrapper.destroy();
+  });
   it('displays generic PSQ fields without unrelated generation counters', () => {
     const wrapper = mount(JobDetailSummary, { propsData: { job: {
       workerType: 'skill', workerId: 'iepms-pr-upload-automation', status: 'completed',
