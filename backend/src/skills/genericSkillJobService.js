@@ -17,6 +17,8 @@ const { createApiError } = require('../utils/apiError');
 const { sanitizeFileName, toStorageRelativePath } = require('../utils/pathUtils');
 const { listApprovedSkills, loadApprovedSkill, serializeCatalogEntry } = require('./skillPackageService');
 
+const bomManagedInput = require('./txBomManagedInput');
+
 const parseParameters = (value) => {
   if (value === undefined || value === '') return {};
   if (value && typeof value === 'object') return value;
@@ -78,19 +80,24 @@ const validateUploads = (files, declarations) => {
   }
 };
 
-const listSkillCatalog = () => ({ skills: listApprovedSkills().map(serializeCatalogEntry) });
+const listSkillCatalog = () => ({ skills: listApprovedSkills().map(serializeCatalogEntry).map(bomManagedInput.catalogEntry) });
 
-const createSkillJob = async (skillId, body = {}, files = []) => {
+const createSkillJob = async (skillId, body = {}, files = [], internal = {}) => {
   const skill = loadApprovedSkill(skillId);
   const parameters = parseParameters(body.parameters);
   validateParameterSchema(parameters, skill.manifest.inputs.parametersSchema);
-  validateUploads(files, skill.manifest.inputs.files);
+  bomManagedInput.rejectOverrides(skillId, files);
+  const clientDeclarations = skill.manifest.inputs.files.filter(item => skillId !== 'tx-bom-generator' || item.name !== 'config');
+  validateUploads(files, clientDeclarations);
   const browserTabSessionId = normalizeBrowserTabSessionId(body.browserTabSessionId);
   const idempotencyKey = normalizeIdempotencyKey(body.idempotencyKey);
 
   return withIdempotencyReservation({ workerId: skillId, idempotencyKey }, async () => {
     const replay = await findJobByIdempotency({ workerId: skillId, idempotencyKey });
     if (replay) return { created: false, job: replay, queue: jobQueue.getQueueState() };
+    // Replay returns its original frozen inputs even if the managed asset has since changed.
+    const effectiveFiles = skillId === 'tx-bom-generator' ? [...files, internal.frozenBomTemplate || bomManagedInput.readTemplate()] : files;
+    validateUploads(effectiveFiles, skill.manifest.inputs.files);
     let jobId;
     let release;
     try {
@@ -99,13 +106,14 @@ const createSkillJob = async (skillId, body = {}, files = []) => {
       release = reservation.release;
       const workspace = await storageService.createJobFolders(jobId);
       const inputFiles = [];
-      for (const [index, file] of files.entries()) {
+      for (const [index, file] of effectiveFiles.entries()) {
         const safeOriginal = sanitizeFileName(file.originalname);
         const storedName = `${file.fieldname}-${String(index + 1).padStart(3, '0')}-${safeOriginal}`;
         const destination = storageService.resolveJobInputPath(jobId, storedName);
         await storageService.saveBufferToFile(destination, file.buffer);
         inputFiles.push({
           name: file.fieldname,
+          ...(file.provenance ? { provenance: file.provenance } : {}),
           path: path.posix.join('input', storedName),
           originalFileName: safeOriginal,
           size: file.size,
@@ -141,6 +149,7 @@ const createSkillJob = async (skillId, body = {}, files = []) => {
         browserTabSessionId,
         idempotencyKey,
         parameters,
+        ...(skillId === 'tx-bom-generator' ? { managedInputs: inputFiles.filter(item => item.provenance).map(item => ({ name: item.name, ...item.provenance })) } : {}),
         prScope: normalizePrScope(parameters.scope, skillId),
         generationScope: parameters.allSites === true ? 'all_sites' : (Array.isArray(parameters.siteCodes) ? 'site_code' : null),
         requestedSiteCount: Array.isArray(parameters.siteCodes) ? parameters.siteCodes.length : 0,
@@ -151,6 +160,7 @@ const createSkillJob = async (skillId, body = {}, files = []) => {
         jobId,
         fileType: 'skill_input',
         inputName: item.name,
+        ...(item.provenance ? { provenance: item.provenance } : {}),
         fileName: item.originalFileName,
         filePath: toStorageRelativePath(storageService.getStorageRoot(), item.absolutePath),
         fileSize: item.size,

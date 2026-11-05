@@ -37,7 +37,10 @@ const request = async (base, site, key, selection = site) => {
   form.append('browserTabSessionId', `tx-bom-tab-${key}`);
   form.append('idempotencyKey', `tx-bom-${key}`);
   form.append('parameters', JSON.stringify({ siteIds: selection }));
-  for (const name of ['epms', 'config']) form.append(name, new Blob([fs.readFileSync(path.join(fixtures, site, `input/${name}.xlsx`))]), `${name}.xlsx`);
+  const fixtureConfig = path.join(fixtures, site, 'input/config.xlsx');
+  require('../src/config/env').txBomManagedTemplatePath = fixtureConfig;
+  require('../src/skills/txBomManagedTemplate.json').sha256 = sha(fs.readFileSync(fixtureConfig));
+  for (const name of ['epms']) form.append(name, new Blob([fs.readFileSync(path.join(fixtures, site, `input/${name}.xlsx`))]), `${name}.xlsx`);
   const response = await fetch(`${base}/api/skills/tx-bom-generator/jobs`, { method: 'POST', body: form });
   assert.strictEqual(response.status, 201, await response.clone().text());
   return (await response.json()).job;

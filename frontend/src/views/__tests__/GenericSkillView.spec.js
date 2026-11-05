@@ -330,36 +330,41 @@ describe('GenericSkillView', () => {
     expect(wrapper.vm.currentJobId).toBe('PR-GENERIC-001');
   });
 
-  it('renders all three TX BOM inputs from the actual manifest and preserves multiline site text', async () => {
-    listSkills.mockResolvedValueOnce({ skills: [txBomSkill] });
+  it('auto-fills the managed BOM template with no client config upload', async () => {
+    const managed = { origin: 'platform-managed', fileName: 'BOM template.xlsx', available: true,
+      tooltip: 'Auto fill — the backend automatically supplies the approved BOM template. No upload is required.',
+      message: 'Template unavailable; contact administrator.' };
+    listSkills.mockResolvedValueOnce({ skills: [{ ...txBomSkill, managedInputs: { config: managed } }] });
     const wrapper = mount(GenericSkillView, {
       propsData: { skillId: 'tx-bom-generator' },
       mocks: { $router: { push: vi.fn(async () => {}) } },
       stubs: { RouterLink: { template: '<a><slot /></a>' } }
     });
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    await wrapper.vm.$nextTick();
-    expect(wrapper.findAll('input[type="file"]')).toHaveLength(2);
-    expect(wrapper.text()).toContain('EPMS workbook');
-    expect(wrapper.text()).toContain('Config workbook');
-    expect(wrapper.text()).toContain('Customer Site IDs');
-    expect(wrapper.vm.canSubmit).toBe(false);
-    for (const input of txBomSkill.inputs.files) {
-      const file = new File(['synthetic'], `${input.name}.xlsx`);
-      wrapper.vm.$set(wrapper.vm.selectedFiles, input.name, file);
-      wrapper.vm.validateSelectedFiles(input, file);
-      expect(wrapper.vm.fileValidationResults[input.name].checklist.find((x) => x.name === 'Accepted file type').passed).toBe(true);
-    }
-    expect(wrapper.vm.canSubmit).toBe(false);
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(wrapper.findAll('input[type="file"]')).toHaveLength(1);
+    expect(wrapper.find('.managed-template input').attributes('disabled')).toBeDefined();
+    expect(wrapper.find('.managed-template').attributes('tabindex')).toBe('0');
+    expect(wrapper.find('.managed-template').attributes('title')).toContain('Auto fill');
+    expect(wrapper.find('.managed-template').text()).toContain('Auto-filled');
+    expect(wrapper.find('.managed-template').findAll('button')).toHaveLength(0);
+    const epms = txBomSkill.inputs.files.find(input => input.name === 'epms');
+    const file = new File(['synthetic'], 'epms.xlsx');
+    wrapper.vm.$set(wrapper.vm.selectedFiles, 'epms', file);
+    wrapper.vm.validateSelectedFiles(epms, file);
     const text = 'SITE_A\nsite_a;SITE_B';
     await wrapper.find('textarea').setValue(text);
-    expect(wrapper.vm.normalizedParameters()).toEqual({ siteIds: text });
     expect(wrapper.vm.canSubmit).toBe(true);
+    // Even programmatically added config cannot leave the browser.
+    wrapper.vm.$set(wrapper.vm.selectedFiles, 'config', file);
     await wrapper.find('form').trigger('submit');
     expect(createSkillJob).toHaveBeenCalledWith('tx-bom-generator', expect.objectContaining({
-      files: { epms: expect.any(File), config: expect.any(File) }, parameters: { siteIds: text }
+      files: { epms: expect.any(File) }, parameters: { siteIds: text }
     }));
-    expect(listJobs).toHaveBeenCalledWith(expect.objectContaining({ workerId: 'tx-bom-generator' }));
+    wrapper.vm.skill = { ...wrapper.vm.skill, managedInputs: { config: { ...managed, available: false } } };
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.canSubmit).toBe(false);
+    expect(wrapper.vm.createDisabledReason).toContain('unavailable');
+    expect(wrapper.find('[role="alert"]').text()).toContain('unavailable');
     wrapper.destroy();
   });
 

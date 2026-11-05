@@ -4,7 +4,7 @@ const fs=require('fs');
 const path=require('path');
 const Module=require('module');
 const name=process.argv[2];
-const allowed=['durable-queue-reconciliation-test.js','queue-registry-test.js','job-control-concurrency-test.js','iepms-skill-offline-test.js','generic-skill-live-test.js','generic-ran-skill-live-test.js','tx-bom-skill-offline-test.js','auditor-shared-mw-test.js'];
+const allowed=['durable-queue-reconciliation-test.js','queue-registry-test.js','job-control-concurrency-test.js','iepms-skill-offline-test.js','generic-skill-live-test.js','generic-ran-skill-live-test.js','tx-bom-skill-offline-test.js','tx-bom-managed-input-test.js','auditor-shared-mw-test.js'];
 if(!allowed.includes(name)) throw new Error('Only approved synthetic/offline test scripts may run through this harness.');
 const root=fs.mkdtempSync(path.resolve(__dirname,'../../command-center/runtime/sqlite-fixture-'));
 process.env.DB_PROVIDER='sqlite';process.env.FIREBASE_DB_MOCK='false';process.env.SQLITE_DB_PATH=path.join(root,'platform.db');

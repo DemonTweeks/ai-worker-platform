@@ -438,6 +438,7 @@ const rerunJob = async (sourceJobId, { browserTabSessionId } = {}) => {
     throw createApiError(409, 'RERUN_INPUTS_UNAVAILABLE', 'This job cannot be rerun because its original input files are unavailable.');
   }
   const files = [];
+  let frozenBomTemplate;
   for (const file of trackedInputs) {
     let absolutePath;
     try {
@@ -446,6 +447,15 @@ const rerunJob = async (sourceJobId, { browserTabSessionId } = {}) => {
       throw createApiError(409, 'RERUN_INPUTS_UNAVAILABLE', 'This job cannot be rerun because one or more original input files are unavailable.');
     }
     const buffer = await fs.promises.readFile(absolutePath);
+    if (sourceJob.skillId === 'tx-bom-generator' && file.inputName === 'config') {
+      const checksum = require('crypto').createHash('sha256').update(buffer).digest('hex');
+      if (!file.sha256 || checksum !== file.sha256 || frozenBomTemplate) {
+        throw createApiError(409, 'RERUN_INPUTS_UNAVAILABLE', 'The original BOM template failed integrity verification. Create a new job with the managed template.');
+      }
+      frozenBomTemplate = { fieldname: 'config', originalname: file.fileName, size: buffer.length, buffer,
+        provenance: file.provenance || { origin: 'retained-job-input', revision: 'historical', fileName: file.fileName, sha256: checksum } };
+      continue;
+    }
     files.push({
       fieldname: file.inputName,
       originalname: file.fileName,
@@ -453,11 +463,14 @@ const rerunJob = async (sourceJobId, { browserTabSessionId } = {}) => {
       buffer
     });
   }
+  if (sourceJob.skillId === 'tx-bom-generator' && !frozenBomTemplate) {
+    throw createApiError(409, 'RERUN_INPUTS_UNAVAILABLE', 'The original BOM template is unavailable. Create a new job with the managed template.');
+  }
   const result = await createSkillJob(sourceJob.skillId, {
     browserTabSessionId: normalizeBrowserTabSessionId(browserTabSessionId || sourceJob.browserTabSessionId),
     idempotencyKey: `rerun-${sourceJobId}-${Date.now()}`,
     parameters: JSON.stringify(sourceJob.parameters || {})
-  }, files);
+  }, files, { frozenBomTemplate });
   await Job.updateOne({ jobId: result.job.jobId }, { $set: { rerunSourceJobId: sourceJobId } });
   result.job.rerunSourceJobId = sourceJobId;
   result.message = `Job ${sourceJobId} was recreated through the approved ${sourceJob.skillId} contract.`;

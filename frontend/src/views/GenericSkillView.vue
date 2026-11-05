@@ -39,7 +39,7 @@
             <div class="workbench-upload-stack">
               <template v-for="item in uploadColumnItems">
                 <UploadPanel
-                  v-if="item.type === 'file'"
+                  v-if="item.type === 'file' && !managedInput(item.input.name)"
                   :key="`file-${item.input.name}-${inputResetKeys[item.input.name] || 0}`"
                   class="cockpit-card upload-card workbench-upload-card"
                   :title="item.ui.title"
@@ -54,6 +54,16 @@
                   @file-selected="selectFiles(item.input, $event)"
                   @prevalidate="validateSelectedFiles(item.input, $event)"
                 />
+                <section v-else-if="item.type === 'file'" :key="`managed-${item.input.name}`"
+                  class="panel cockpit-card upload-card workbench-upload-card managed-template" tabindex="0"
+                  :title="managedInput(item.input.name).tooltip" :aria-describedby="`managed-${item.input.name}-help`">
+                  <h2>BOM template</h2>
+                  <input type="text" disabled aria-label="BOM template" :value="managedInput(item.input.name).fileName" />
+                  <strong>{{ managedInput(item.input.name).available ? 'Auto-filled' : 'Unavailable' }}</strong>
+                  <p>ðŸ”’ Managed by the platform</p>
+                  <p class="managed-template-help" :id="`managed-${item.input.name}-help`">{{ managedInput(item.input.name).tooltip }}</p>
+                  <p v-if="!managedInput(item.input.name).available" role="alert">{{ managedInput(item.input.name).message }}</p>
+                </section>
                 <section
                   v-else
                   :key="`group-${item.group.id}`"
@@ -569,6 +579,8 @@ export default {
     canSubmit() {
       if (!this.skill) return false;
       const filesReady = this.skill.inputs.files.every((input) => {
+        const managed = this.managedInput(input.name);
+        if (managed) return managed.available === true;
         if (input.required && !this.hasSelectedFile(input.name)) return false;
         if (!this.hasSelectedFile(input.name)) return true;
         const ui = this.uploadPresentation(input);
@@ -589,10 +601,12 @@ export default {
     },
     createDisabledReason() {
       if (!this.skill) return 'Loading the approved skill contract.';
-      const missing = this.skill.inputs.files.filter((input) => input.required && !this.hasSelectedFile(input.name));
+      const unavailable = this.skill.inputs.files.map(input => this.managedInput(input.name)).find(item => item && !item.available);
+      if (unavailable) return unavailable.message;
+      const missing = this.skill.inputs.files.filter((input) => !this.managedInput(input.name) && input.required && !this.hasSelectedFile(input.name));
       if (missing.length) return this.manifestUi.actions?.missingFilesMessage || 'Select every required input before creating the Job.';
       const pendingValidation = this.skill.inputs.files.some((input) => (
-        this.hasSelectedFile(input.name)
+        !this.managedInput(input.name) && this.hasSelectedFile(input.name)
         && this.uploadPresentation(input).validationRequired
         && !this.fileValidationResults[input.name]?.passed
       ));
@@ -660,6 +674,9 @@ export default {
     this.loadSkill();
   },
   methods: {
+    managedInput(name) {
+      return this.skill?.managedInputs?.[name] || null;
+    },
     dismissAllErrors() {
       this.error = '';
       this.dismissErrorMessage();
@@ -810,7 +827,7 @@ export default {
       this.resetCancellationForm();
       try {
         const result = await createSkillJob(this.skillId, {
-          files: this.selectedFiles,
+          files: Object.fromEntries(Object.entries(this.selectedFiles).filter(([name]) => !this.managedInput(name))),
           parameters: this.normalizedParameters(),
           browserTabSessionId: this.browserTabSessionId,
           idempotencyKey: randomId(`skill-${this.skillId}`)
@@ -836,3 +853,13 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+.managed-template { position: relative; }
+.managed-template input { display: block; width: 100%; margin-bottom: 0.75rem; }
+.managed-template-help { display: none; padding: 0.6rem; border: 1px solid currentColor; border-radius: 0.4rem; }
+.managed-template:hover .managed-template-help,
+.managed-template:focus .managed-template-help,
+.managed-template:focus-within .managed-template-help { display: block; }
+@media (hover: none) { .managed-template-help { display: block; } }
+</style>

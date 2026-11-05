@@ -15,6 +15,7 @@ assert(!fs.existsSync(input.storage),'Use a fresh parity storage directory.');
 assert(![input.epms,input.config,input.reference].some(p=>p===input.storage || p.startsWith(input.storage+path.sep)));
 fs.mkdirSync(input.storage,{recursive:true});
 process.env.AI_WORKER_PROFILE='local';process.env.DB_PROVIDER='firebase';process.env.FIREBASE_DB_MOCK='true';process.env.LLM_ENABLED='false';
+process.env.TX_BOM_MANAGED_TEMPLATE_PATH=input.config;
 process.env.STORAGE_ROOT=input.storage;process.env.RAN_WORKSPACE_ROOT=path.join(input.storage,'ran');
 process.env.JWT_SECRET=crypto.randomBytes(32).toString('hex');process.env.ADMIN_DEFAULT_PASSWORD=crypto.randomBytes(24).toString('hex');
 const queue=require('../src/queue/jobQueue');
@@ -43,7 +44,7 @@ const skill=loadApprovedSkill('tx-bom-generator');assert.strictEqual(skill.manif
   for(let n=1;n<=2;n++){
    const form=new FormData();form.append('browserTabSessionId',`private-parity-${n}`);form.append('idempotencyKey',`private-parity-${n}`);
    form.append('parameters',JSON.stringify({siteIds:selection}));
-   for(const k of ['epms','config']) form.append(k,new Blob([fs.readFileSync(input[k])]),`${k}.xlsx`);
+   for(const k of ['epms']) form.append(k,new Blob([fs.readFileSync(input[k])]),`${k}.xlsx`);
    const response=await fetch(`${base}/api/skills/tx-bom-generator/jobs`,{method:'POST',body:form});
    assert.strictEqual(response.status,201,await response.clone().text());jobs.push((await response.json()).job);
   }
