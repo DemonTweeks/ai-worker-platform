@@ -32,8 +32,8 @@
   },
   "iepms-pr-upload-automation": {
     "rootConfigKey": "iepmsPrUploadRoot",
-    "approvedVersion": "0.3.5",
-    "approvedPackageSha256": "7a74e34cfb08d0ac2d93ea846ecb5c2416e672d814758504ca1f6941abef840c",
+    "approvedVersion": "0.3.6",
+    "approvedPackageSha256": "cc8d5dca150a10915b4413ab028a66a16e1850d218ef9b45625ed43024bf3f76",
     "include": [
       "skill.json",
       "requirements.txt",
