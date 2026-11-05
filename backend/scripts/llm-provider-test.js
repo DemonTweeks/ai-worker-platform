@@ -106,6 +106,7 @@ const run = async () => {
     });
     assert.strictEqual(fetchCalls[0].url, 'https://agnes.example.test/v1/chat/completions');
     assert.strictEqual(fetchCalls[0].options.headers.Authorization, `Bearer ${TEST_AGNES_KEY}`);
+    assert.strictEqual(JSON.parse(fetchCalls[0].options.body).chat_template_kwargs, undefined, 'Normal requests retain existing thinking behavior');
 
     withEnv({
       LLM_ENABLED: 'true',
@@ -203,6 +204,8 @@ const run = async () => {
       assert.strictEqual(result.ok, false);
       assert.strictEqual(result.code, 'LLM_PROVIDER_ERROR');
       assert.strictEqual(result.details.status, status);
+      assert.ok(result.message.includes(`HTTP ${status}`));
+      if (status === 429) assert.ok(result.message.includes('rate limited'));
     }
 
     global.fetch = async () => ({

@@ -196,7 +196,19 @@ const run = async () => {
     assert.strictEqual(agnesHealth.services.llm.configured, true);
     assert.strictEqual(agnesHealth.services.llm.reachable, true);
     assert.ok(probeRequestBody, 'LLM health should issue a provider probe when configured');
-    assert.ok(probeRequestBody.max_tokens <= 8, 'LLM health should use a lightweight provider-neutral probe');
+    assert.strictEqual(probeRequestBody.max_tokens, 64, 'Agnes health needs room for visible output');
+    assert.deepStrictEqual(probeRequestBody.chat_template_kwargs, { enable_thinking: false });
+    const cachedHealth = await buildHealthResponse();
+    assert.strictEqual(cachedHealth.services.llm.status, 'ok');
+
+    // A 429 remains degraded but must explain the provider rejection safely.
+    resetModules();
+    stubHealthDependencies();
+    global.fetch = async () => createJsonResponse({ ok: false, status: 429, jsonBody: {} });
+    const limitedHealth = await loadHealthService().buildHealthResponse();
+    assert.strictEqual(limitedHealth.services.llm.status, 'degraded');
+    assert.ok(limitedHealth.services.llm.lastError.includes('HTTP 429'));
+    assert.ok(!limitedHealth.services.llm.lastError.includes(TEST_AGNES_KEY));
 
     withEnv({
       LLM_ENABLED: 'true',
@@ -208,7 +220,11 @@ const run = async () => {
       LLM_MAX_RETRIES: '0'
     });
     stubHealthDependencies();
-    global.fetch = async () => createJsonResponse({
+    global.fetch = async (_url, options) => {
+      const body = JSON.parse(options.body);
+      assert.strictEqual(body.max_tokens, 8);
+      assert.strictEqual(body.chat_template_kwargs, undefined);
+      return createJsonResponse({
       jsonBody: {
         model: 'qwen-health-model',
         choices: [
@@ -220,6 +236,8 @@ const run = async () => {
         ]
       }
     });
+
+    };
 
     const qwenHealth = await loadHealthService().buildHealthResponse();
     assert.strictEqual(qwenHealth.services.llm.status, 'ok');
@@ -279,7 +297,9 @@ const run = async () => {
         'qwen_health_regression',
         'incomplete_health_configuration',
         'unknown_provider_degraded',
-        'health_redaction'
+        'health_redaction',
+        'agnes_health_thinking_disabled_64_tokens',
+        'rate_limit_health_diagnostic'
       ]
     }));
   } finally {

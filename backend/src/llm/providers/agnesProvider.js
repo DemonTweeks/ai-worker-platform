@@ -28,6 +28,7 @@ const normalizeUsage = (usage) => {
 };
 
 const generateText = async ({
+  task,
   systemPrompt,
   userPrompt,
   temperature = 0.2,
@@ -49,6 +50,7 @@ const generateText = async ({
         model: config.llm.model,
         temperature,
         max_tokens: maxTokens,
+        ...(task === 'health_check' ? { chat_template_kwargs: { enable_thinking: false } } : {}),
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
@@ -59,7 +61,9 @@ const generateText = async ({
     if (!response.ok) {
       return buildLlmError(
         LLM_ERROR_CODES.PROVIDER_ERROR,
-        'LLM provider request failed.',
+        response.status === 429
+          ? 'Agnes rate limited (HTTP 429). Check model access and account limits.'
+          : `Agnes provider request failed (HTTP ${response.status}).`,
         { status: response.status }
       );
     }
@@ -69,7 +73,7 @@ const generateText = async ({
       ? data.choices[0].message.content
       : '';
 
-    if (!text || typeof text !== 'string') {
+    if (typeof text !== 'string' || !text.trim()) {
       return buildLlmError(LLM_ERROR_CODES.RESPONSE_INVALID, 'LLM provider response was invalid.');
     }
 

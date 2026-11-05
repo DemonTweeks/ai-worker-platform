@@ -12,7 +12,7 @@ const { generateText } = require('../llm/llmClient');
 const { getLlmStatus, isLlmConfigured, redactSensitive } = require('../llm/llmUtils');
 
 const LLM_HEALTH_CACHE_MS = 60 * 1000;
-const LLM_HEALTH_MAX_TOKENS = 8;
+const LLM_HEALTH_MAX_TOKENS = 64;
 const LLM_HEALTH_TIMEOUT_BUDGET_MS = 8000;
 const LLM_HEALTH_MIN_TIMEOUT_MS = 1000;
 let llmReachabilityCache = null;
@@ -176,7 +176,7 @@ const runLlmReachabilityCheck = async () => {
     systemPrompt: 'Reply with exactly OK.',
     userPrompt: 'OK?',
     temperature: 0,
-    maxTokens: LLM_HEALTH_MAX_TOKENS,
+    maxTokens: config.llm.provider === 'agnes' ? LLM_HEALTH_MAX_TOKENS : 8,
     timeoutMs: resolveLlmHealthTimeoutMs(),
     maxRetries: 0
   });
