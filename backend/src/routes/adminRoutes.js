@@ -21,6 +21,7 @@ router.post('/login', asyncHandler(async (req, res) => {
 }));
 
 router.use(adminAuth);
+router.use('/data', require('./adminDataRoutes'));
 
 router.post('/logout', asyncHandler(async (req, res) => {
   const result = await adminAuthService.logoutAdmin(req.adminUser, { ip: getRequestIp(req) });

@@ -15,7 +15,7 @@
     <div v-if="loading" class="panel empty-state">Loading health status...</div>
     <section v-else class="history-stats health-grid">
       <HealthStatusCard label="Backend" :value="formatStatus(backendStatus)" :detail="timestamp" :tone="tone(backendStatus)" />
-      <HealthStatusCard label="Firebase DB" :value="formatStatus(firebaseStatus)" :detail="firebaseDetail" :tone="tone(firebaseStatus)" />
+      <HealthStatusCard :label="databaseLabel" :value="formatStatus(firebaseStatus)" :detail="firebaseDetail" :tone="tone(firebaseStatus)" />
       <HealthStatusCard label="Storage" :value="formatStatus(storageStatus)" :detail="storageDetail" :tone="tone(storageStatus)" />
       <HealthStatusCard label="LLM" :value="formatStatus(llmStatus)" :detail="llmDetail" :tone="tone(llmStatus)" />
       <HealthStatusCard label="Queue" :value="formatStatus(queueStatus)" :detail="queueDetail" :tone="tone(queueStatus)" />
@@ -96,13 +96,17 @@ export default {
         : 'Runs stop-services.bat, then launcher.bat';
     },
     services() {
-      return this.health && this.health.services ? this.health.services : {};
+      const services = this.health && this.health.services ? this.health.services : {};
+      return { ...services, firebase: services.database || services.firebase };
     },
     backendStatus() {
       return this.services.backend && this.services.backend.status ? this.services.backend.status : this.health && this.health.status ? this.health.status : 'Not available';
     },
     timestamp() {
       return this.health && this.health.timestamp ? `Updated ${formatDateTime(this.health.timestamp)}` : '';
+    },
+    databaseLabel() {
+      return this.services.database && this.services.database.provider === 'sqlite' ? 'SQLite DB' : 'Firebase DB';
     },
     firebaseStatus() {
       return this.services.firebase && this.services.firebase.status ? this.services.firebase.status : 'Not available';

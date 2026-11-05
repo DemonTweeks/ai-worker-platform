@@ -89,6 +89,7 @@ const checkFirebase = async () => {
 
   return {
     status: dbStatus.connected ? 'ok' : 'down',
+    provider: config.dbProvider,
     connected: dbStatus.connected,
     latencyMs: dbStatus.latencyMs || null,
     lastConnectedAt: firebase.lastConnectedAt,
@@ -273,7 +274,8 @@ const buildHealthResponse = async () => {
   const fbStatus = await serviceResult(checkFirebase);
   const services = {
     backend: await serviceResult(checkBackend),
-    firebase: fbStatus,
+    database: fbStatus,
+    firebase: fbStatus, // Deprecated compatibility alias; provider identifies the actual database.
     storage: await serviceResult(checkStorage),
     llm: await serviceResult(checkLlm),
     queue: await serviceResult(checkQueue),
@@ -292,6 +294,7 @@ const buildHealthResponse = async () => {
     services,
     // Backward-compatible top-level fields used by earlier UI layers.
     backend: services.backend,
+    database: services.database,
     firebase: services.firebase,
     storage: services.storage,
     llm: services.llm,

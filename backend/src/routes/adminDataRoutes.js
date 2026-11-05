@@ -1,0 +1,13 @@
+const express=require('express');
+const service=require('../services/adminDataService');
+const router=express.Router();
+const wrap=fn=>(req,res,next)=>Promise.resolve().then(()=>fn(req,res)).catch(next);
+router.use((req,res,next)=>{res.set('Cache-Control','no-store');next();});
+router.get('/',wrap((req,res)=>res.json(service.summary())));
+router.post('/import/preview',wrap((req,res)=>res.json(service.previewImport(req.body.bundle,req.adminUser.username))));
+router.post('/import/apply',wrap((req,res)=>res.json(service.applyImport(req.body,req.adminUser.username))));
+router.get('/:collection/export',wrap((req,res)=>res.json(service.exportCollection(req.params.collection,req.query,req.adminUser.username))));
+router.get('/:collection/record',wrap((req,res)=>res.json(service.detail(req.params.collection,req.query.key))));
+router.put('/:collection/record',wrap((req,res)=>res.json(service.save(req.params.collection,req.query.key,req.body,req.adminUser.username))));
+router.get('/:collection',wrap((req,res)=>res.json(service.list(req.params.collection,req.query))));
+module.exports=router;

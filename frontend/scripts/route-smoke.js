@@ -15,7 +15,8 @@ const routes = [
   '/admin/login',
   '/admin/assets',
   '/admin/audit-logs',
-  '/admin/health'
+  '/admin/health',
+  '/admin/data'
 ];
 
 const runtimeProfile = String(process.env.AI_WORKER_PROFILE || 'local').toLowerCase();

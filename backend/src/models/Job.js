@@ -1,5 +1,9 @@
 const { normalizePrScope } = require('../utils/prScope');
-const { readFirebase, writeFirebase } = require('../db/firebaseClient');
+const config = require('../config/env');
+const { createApiError } = require('../utils/apiError');
+const snapshots = new WeakMap();
+const json = (value) => JSON.stringify(value);
+const { readFirebase, writeFirebase, transactionFirebase } = require('../db/firebaseClient');
 const { QueryChain, matchFilter } = require('./compatibility');
 const { RAN_RUN_MODES, WORKER_IDS } = require('../workers/workerTypes');
 
@@ -62,7 +66,10 @@ class Job {
         if (typeof this[field] === 'undefined') this[field] = null;
       }
     }
+    this.captureSnapshot();
   }
+
+  captureSnapshot() { snapshots.set(this, JSON.parse(JSON.stringify(this))); return this; }
 
   toJSON() {
     const obj = { ...this };
@@ -127,7 +134,11 @@ class Job {
         cancellationRequested: false
       }
     });
-    await writeFirebase(`jobs/${payload.jobId}`, job);
+    if (config.dbProvider === 'sqlite') {
+      const result = await transactionFirebase(`jobs/${payload.jobId}`, current => current ? undefined : job.toJSON());
+      if (!result.committed) throw createApiError(409, 'JOB_ID_CONFLICT', 'Job ID already exists.');
+    } else await writeFirebase(`jobs/${payload.jobId}`, job);
+    job.captureSnapshot();
     return job;
   }
 
@@ -153,6 +164,10 @@ class Job {
   static async updateOne(filter = {}, update = {}) {
     const job = await Job.findOne(filter);
     if (job) {
+      if (config.dbProvider === 'sqlite') {
+        const result = await transactionFirebase(`jobs/${job.jobId}`, current => current && !current.logicalDeleted ? { ...current, ...update.$set } : undefined);
+        return { nModified: result.committed ? 1 : 0, ok: result.committed ? 1 : 0 };
+      }
       const updatedData = { ...job, ...update.$set };
       await writeFirebase(`jobs/${job.jobId}`, updatedData);
       return { nModified: 1, ok: 1 };
@@ -178,7 +193,23 @@ class Job {
   }
 
   async save() {
-    await writeFirebase(`jobs/${this.jobId}`, this);
+    if (config.dbProvider === 'sqlite') {
+      const baseline = snapshots.get(this) || {}, desired = JSON.parse(JSON.stringify(this));
+      const changed = Object.keys(desired).filter(key => json(desired[key]) !== json(baseline[key]));
+      const result = await transactionFirebase(`jobs/${this.jobId}`, current => {
+        if (!current || current.logicalDeleted) throw createApiError(409,'JOB_WRITE_CONFLICT','Job is missing or deleted.');
+        const next = { ...current };
+        for (const key of changed) {
+          if (json(current[key]) !== json(baseline[key]) && json(current[key]) !== json(desired[key])) {
+            throw createApiError(409,'JOB_WRITE_CONFLICT',`Concurrent change to job field ${key}; reload before saving.`);
+          }
+          next[key] = desired[key];
+        }
+        return next;
+      });
+      Object.assign(this, result.snapshot);
+      this.captureSnapshot();
+    } else await writeFirebase(`jobs/${this.jobId}`, this);
     return this;
   }
 }

@@ -30,6 +30,14 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Private local databases, imports and backups
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+storage/database/
+storage/dev01/
+
 # Local runtime storage: keep placeholders only
 storage/jobs/*
 storage/assets/*

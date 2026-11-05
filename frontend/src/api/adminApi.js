@@ -53,4 +53,11 @@ export const triggerDeployment = async () => {
   return response.data;
 };
 
+export const getDataSummary = async () => (await api.get('/api/admin/data', adminHeaders())).data;
+export const listDataRecords = async (collection, params) => (await api.get(`/api/admin/data/${encodeURIComponent(collection)}`, {...adminHeaders(),params})).data;
+export const getDataRecord = async (collection, key) => (await api.get(`/api/admin/data/${encodeURIComponent(collection)}/record`, {...adminHeaders(),params:{key}})).data;
+export const saveDataRecord = async (collection, key, document, expectedRevision) => (await api.put(`/api/admin/data/${encodeURIComponent(collection)}/record`, {document,expectedRevision}, {...adminHeaders(),params:{key}})).data;
+export const exportDataRecords = async (collection, params) => (await api.get(`/api/admin/data/${encodeURIComponent(collection)}/export`, {...adminHeaders(),params})).data;
+export const previewDataImport = async bundle => (await api.post('/api/admin/data/import/preview', {bundle}, adminHeaders())).data;
+export const applyDataImport = async body => (await api.post('/api/admin/data/import/apply', body, adminHeaders())).data;
 export const getAdminErrorMessage = unwrapError;

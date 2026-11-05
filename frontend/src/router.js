@@ -9,6 +9,7 @@ import AdminLayout from './views/admin/AdminLayout.vue';
 import AdminAssetsView from './views/admin/AdminAssetsView.vue';
 import AdminAuditLogsView from './views/admin/AdminAuditLogsView.vue';
 import AdminHealthView from './views/admin/AdminHealthView.vue';
+import AdminDataView from './views/admin/AdminDataView.vue';
 import { isAdminAuthenticated } from './services/adminAuthStore';
 
 Vue.use(VueRouter);
@@ -75,6 +76,7 @@ const routes = [
     meta: { requiresAdmin: true },
     redirect: '/admin/health',
     children: [
+      { path: 'data', name: 'admin-data', component: AdminDataView },
       {
         path: 'assets',
         name: 'admin-assets',

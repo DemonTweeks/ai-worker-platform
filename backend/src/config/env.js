@@ -33,6 +33,9 @@ const config = {
   runtimeProfile,
   envPath,
   port: numberFromEnv('PORT', 8000),
+  host: process.env.HOST || '0.0.0.0',
+  dbProvider: process.env.DB_PROVIDER || 'firebase',
+  sqliteDbPath: resolveFromRepoRoot(process.env.SQLITE_DB_PATH, './storage/database/platform.db'),
   firebaseDbUrl: process.env.FIREBASE_DB_URL || 'https://zte-app-state-mgmt-01-default-rtdb.asia-southeast1.firebasedatabase.app/ai-worker-platform',
   firebaseDbMock: booleanFromEnv('FIREBASE_DB_MOCK', false),
   storageRoot: resolveFromRepoRoot(process.env.STORAGE_ROOT, './storage'),
@@ -82,14 +85,18 @@ const config = {
   }
 };
 
+if (!['firebase', 'sqlite'].includes(config.dbProvider)) throw new Error('DB_PROVIDER must be firebase or sqlite.');
+if (config.dbProvider === 'sqlite' && config.firebaseDbMock) throw new Error('SQLite cannot be combined with FIREBASE_DB_MOCK=true.');
+
 if (runtimeProfile === 'production') {
   const requiredNames = [
     'AI_WORKER_MACHINE_ID',
-    'FIREBASE_DB_URL',
     'ADMIN_DEFAULT_PASSWORD',
     'JWT_SECRET'
   ];
 
+  if (config.dbProvider === 'firebase') requiredNames.push('FIREBASE_DB_URL');
+  if (config.dbProvider === 'sqlite' && !process.env.SQLITE_DB_PATH) requiredNames.push('SQLITE_DB_PATH');
   if (config.llm.enabled) {
     requiredNames.push('LLM_API_KEY');
   }
