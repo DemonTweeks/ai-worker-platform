@@ -26,3 +26,21 @@ Owner approval in conversation: treat MW New Link / Reroute as one category; rec
 - Remaining unrelated failures reproduced verbatim on unchanged deployed MW 8fb4fd5: rollback metadata/blob checks (3 failures), Windows path separators in promotion test (1 failure), Python 3.14 mocked os.walk signature (1 error). Not silently fixed or represented as a clean full-suite pass.
 - Initial concurrent Auditor run detected stale package approval after a source edit. Final fingerprint refreshed; shared integration passes with tamper/missing/incompatible/queued-change checks. Final full Auditor suite rerun after version-aware test fixtures.
 - Full backend/frontend suites not rerun: no frontend changes. Targeted platform contract, fingerprint, engine integrity, MW live runner and shared Auditor tests pass.
+
+## Completed release and production rerun
+- MW 4.1.1: `7c61433ee5380dbc8dabe5679d9613e532aeae31`; package SHA256 `838c61866acd20dd35ec0d45084e86280587192cae55bf3802296f23713d8090`.
+- Auditor 1.2.1: `91968df7f9c072ed2b908b60218564179b9b9459`; package SHA256 `cb227db73e02dc5bfcb0223b456d7573e317b0f7bcea6be6b178e08fbc6dd2ec`.
+- Platform activation `909878b76956b2cda9d93a368c95471d3d535830` published non-force to main; production fast-forwarded, pinned recursive submodules activated, both approvals validated.
+- Production queue idle before restart; backend PID 16588 stopped and PID 14400 started using existing production profile. Frontend/config/SQLite database unchanged. Health backend/SQLite/Agnes all ok.
+- Chrome CDP port 19222: read original job then clicked Rerun Job once. New job `PR-20261105-018`, source `PR-20261105-017`, TI, site 8488P_USP, MW 4.1.1. Completed with 1 generated, 0 review, 0 warning, 0 failed, 0 unaccounted. No iEPMS submission.
+- Browser initially retained old job content after hash navigation; reload of the new job cleared the stale view. No second rerun.
+- Production input SHA256 preserved: `c8c8b5d6b862b3951b9ebaf3298a51ac758f4ee43cf71174a276c2807398cfea`.
+- Reopened production ECC: two rows, PBOM 350000214939 and 350001095410, quantity 1 Hop each; no dismantle lines. All declared output SHA256 values verified; ZIP integrity and contents checked.
+- Production output remains `storage/jobs/PR-20261105-018/output/Eastern-GTSB ZTE TX MINI TI PR 20261105.xlsx`; ECC SHA256 `b4eeb16197765b883b16fe969e35076d5621c5e410fc164b51bf78a8237e3678`.
+
+## Final test qualification
+- New category tests: 6 passed. Adapter: 70 tests, 2 skips. Link scope production tests: 22 passed. Date, normalization and negative-acceptance suites passed. Final full Auditor: 44 passed. Planning public contract: 7 passed, including all eight profiles. Unicode-sensitive Issue77 model suite: 5 passed with UTF-8.
+- Platform contract, fingerprint normalization, engine integrity and shared-MW Auditor integration passed. MW live runner passed. Dependency missing/tampered/incompatible and queued dependency changes still rejected.
+- Initial full MW discovery: 895 tests, 16 failures, 2 errors, 3 skips. New-version Planning fixtures corrected and passed separately; Unicode issue passed under UTF-8. Remaining unrelated failures reproduced on unchanged deployed 8fb4fd5: rollback metadata/blob checks (3 failures), Windows promotion path separators (1 failure), Python3.14 mocked os.walk signature (1 error). This is NOT claimed as an all-green full MW suite.
+- Development Auditor's obsolete untracked nested dependencies preserved outside application in conversation folder `retained-auditor-legacy-dependencies-20261105`; no deletion or runtime fallback.
+- Private evidence and generated workbooks retained in conversation folder: `zte-production-rerun-verification.json`, `zte-ti-final-acceptance/`, targeted/full-suite logs. No workbook, credentials, database or generated deliverable committed.
