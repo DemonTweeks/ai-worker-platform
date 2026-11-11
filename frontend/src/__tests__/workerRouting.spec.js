@@ -19,11 +19,11 @@ describe('worker routing', () => {
     const record = router.currentRoute.matched[0];
     expect(record.props.default.skillId).toBe('iepms-pr-upload-automation');
   });
-  it('redirects the root route to the PR Creator worker route', async () => {
+  it('redirects the root route to Dashboard', async () => {
     await router.push('/');
     await waitForNavigation();
 
-    expect(router.currentRoute.path).toBe('/workers/pr-creator');
+    expect(router.currentRoute.path).toBe('/dashboard');
   });
 
   it('supports direct navigation to the PR Creator and PR Auditor worker routes', async () => {

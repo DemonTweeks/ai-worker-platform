@@ -1,8 +1,8 @@
-﻿<template>
+<template>
   <section class="tipic-artifacts" aria-labelledby="tipic-title">
     <header>
       <p class="eyebrow">External resources</p>
-      <h2 id="tipic-title">TIPIC Artifacts</h2>
+      <h2 id="tipic-title">TX Dashboard</h2>
       <p class="tipic-intro">Quick access to site lookup tools and project dashboards.</p>
     </header>
 

@@ -5,7 +5,7 @@
         <p class="workbench-kicker">ZTE AI Worker</p>
         <h2>Dashboard</h2>
         <p class="workbench-subtitle">
-          Platform-wide navigation and current operational context live here. Open a worker route to create PR files, audit claims, or prepare an iEPMS draft.
+          Platform-wide navigation and current operational context live here. Open a worker route to create PR files, generate TX BOMs, audit claims, or prepare an iEPMS draft.
         </p>
 
         <div class="workbench-chip-row" aria-label="Platform status">
@@ -37,6 +37,7 @@
                 <router-link class="workbench-secondary-link" to="/workers/ran-pr-creator">RAN PR Creator</router-link>
                 <router-link class="workbench-secondary-link" to="/workers/pr-auditor">PR Auditor</router-link>
                 <router-link class="workbench-secondary-link" to="/workers/iepms-pr-upload">iEPMS PR Upload</router-link>
+                <router-link class="workbench-secondary-link" to="/workers/tx-bom-generator">TX BOM Generator</router-link>
               </div>
             </div>
           </section>

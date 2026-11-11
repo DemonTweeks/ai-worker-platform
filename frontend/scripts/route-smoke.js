@@ -12,6 +12,7 @@ const routes = [
   '/workers/tx-bom-generator',
   '/history',
   '/tipic-artifacts',
+  '/tx-dashboard',
   '/jobs/QA15-ROUTE-SMOKE',
   '/admin/login',
   '/admin/assets',

@@ -18,7 +18,7 @@ Vue.use(VueRouter);
 const routes = [
   {
     path: '/',
-    redirect: '/workers/pr-creator'
+    redirect: '/dashboard'
   },
   {
     path: '/dashboard',
@@ -56,9 +56,13 @@ const routes = [
     props: { skillId: 'tx-bom-generator' }
   },
   {
-    path: '/tipic-artifacts',
-    name: 'tipic-artifacts',
+    path: '/tx-dashboard',
+    name: 'tx-dashboard',
     component: TipicArtifactsView
+  },
+  {
+    path: '/tipic-artifacts',
+    redirect: '/tx-dashboard'
   },
   {
     path: '/history',

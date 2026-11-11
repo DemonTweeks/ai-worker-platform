@@ -95,6 +95,9 @@ describe('DashboardView', () => {
     expect(wrapper.text()).toContain('Dashboard');
     expect(wrapper.html()).toContain('/workers/pr-creator');
     expect(wrapper.html()).toContain('/workers/pr-auditor');
+    const bomLink = wrapper.find('a[href="/workers/tx-bom-generator"]');
+    expect(bomLink.exists()).toBe(true);
+    expect(bomLink.text()).toBe('TX BOM Generator');
     expect(wrapper.html()).toContain('/history');
     expect(wrapper.html()).toContain('/admin/health');
     expect(wrapper.text()).not.toContain('Final PO workbook');

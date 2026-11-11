@@ -1,4 +1,4 @@
-﻿import { mount } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import TipicArtifactsView from '../TipicArtifactsView.vue';
 import router from '../../router';
@@ -10,9 +10,10 @@ const expected = [
   ['CelcomDigi 3rd Party MW TX Project Dashboard', '202']
 ];
 
-describe('TIPIC Artifacts', () => {
+describe('TX Dashboard', () => {
   it('renders the four exact artifact names and direct links', () => {
     const wrapper = mount(TipicArtifactsView);
+    expect(wrapper.find('h2').text()).toBe('TX Dashboard');
     const cards = wrapper.findAll('.tipic-card');
     expect(cards.length).toBe(4);
     expected.forEach(([name, id], index) => {
@@ -39,9 +40,18 @@ describe('TIPIC Artifacts', () => {
     wrapper.destroy();
   });
 
-  it('supports the direct hash route without an admin redirect', async () => {
+  it('redirects the old artifact URL to TX Dashboard', async () => {
+    await router.replace('/history');
     await router.replace('/tipic-artifacts');
-    expect(router.currentRoute.name).toBe('tipic-artifacts');
+    expect(router.currentRoute.path).toBe('/tx-dashboard');
+    expect(router.currentRoute.name).toBe('tx-dashboard');
+    expect(router.currentRoute.redirectedFrom).toBe('/tipic-artifacts');
+  });
+
+  it('supports the direct hash route without an admin redirect', async () => {
+    await router.replace('/history');
+    await router.replace('/tx-dashboard');
+    expect(router.currentRoute.name).toBe('tx-dashboard');
     expect(router.currentRoute.matched[0].components.default).toBe(TipicArtifactsView);
   });
 });

@@ -50,11 +50,11 @@ describe('App navigation state', () => {
     expect(dashboardLink.classes()).not.toContain('router-link-exact-active');
   });
 
-  it('shows and activates TIPIC Artifacts on its own route', async () => {
-    const wrapper = await mountAtRoute('/tipic-artifacts');
+  it('shows and activates TX Dashboard on its own route', async () => {
+    const wrapper = await mountAtRoute('/tx-dashboard');
     await wrapper.vm.$nextTick();
-    const link = findLinkByText(wrapper, 'TIPIC Artifacts');
-    expect(link.attributes('href')).toBe('#/tipic-artifacts');
+    const link = findLinkByText(wrapper, 'TX Dashboard');
+    expect(link.attributes('href')).toBe('#/tx-dashboard');
     expect(link.classes()).toContain('router-link-exact-active');
     expect(findLinkByText(wrapper, 'Dashboard').classes()).not.toContain('router-link-exact-active');
     wrapper.destroy();

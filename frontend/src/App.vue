@@ -41,7 +41,7 @@
         </router-link>
         <span v-else class="nav-link disabled">Status</span>
         <router-link class="nav-link" to="/history">History</router-link>
-        <router-link class="nav-link" to="/tipic-artifacts">TIPIC Artifacts</router-link>
+        <router-link class="nav-link" to="/tx-dashboard">TX Dashboard</router-link>
         <router-link class="nav-link" to="/admin/login">Admin</router-link>
       </nav>
     </header>
