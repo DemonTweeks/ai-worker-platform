@@ -11,6 +11,7 @@ const routes = [
   '/workers/iepms-pr-upload',
   '/workers/tx-bom-generator',
   '/history',
+  '/tipic-artifacts',
   '/jobs/QA15-ROUTE-SMOKE',
   '/admin/login',
   '/admin/assets',

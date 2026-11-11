@@ -1,6 +1,7 @@
 import Vue from 'vue';
 import VueRouter from 'vue-router';
 import DashboardView from './views/DashboardView.vue';
+import TipicArtifactsView from './views/TipicArtifactsView.vue';
 import GenericSkillView from './views/GenericSkillView.vue';
 import JobHistoryView from './views/JobHistoryView.vue';
 import JobDetailView from './views/JobDetailView.vue';
@@ -53,6 +54,11 @@ const routes = [
     name: 'tx-bom-generator',
     component: GenericSkillView,
     props: { skillId: 'tx-bom-generator' }
+  },
+  {
+    path: '/tipic-artifacts',
+    name: 'tipic-artifacts',
+    component: TipicArtifactsView
   },
   {
     path: '/history',

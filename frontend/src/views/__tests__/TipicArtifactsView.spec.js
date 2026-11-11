@@ -1,0 +1,47 @@
+﻿import { mount } from '@vue/test-utils';
+import { describe, expect, it } from 'vitest';
+import TipicArtifactsView from '../TipicArtifactsView.vue';
+import router from '../../router';
+
+const expected = [
+  ['Site Lookup Tools', '268'],
+  ['2026 Q4 Dashboard', '423'],
+  ['Celcomdigi ZTE MW Project Dashboard', '151'],
+  ['CelcomDigi 3rd Party MW TX Project Dashboard', '202']
+];
+
+describe('TIPIC Artifacts', () => {
+  it('renders the four exact artifact names and direct links', () => {
+    const wrapper = mount(TipicArtifactsView);
+    const cards = wrapper.findAll('.tipic-card');
+    expect(cards.length).toBe(4);
+    expected.forEach(([name, id], index) => {
+      const card = cards.at(index);
+      expect(card.find('h3').text()).toBe(name);
+      expect(card.find('a').attributes('href')).toBe(`https://tipic.zx.zte.com.cn/api/artifacts/${id}/file`);
+      expect(card.find('a').attributes('aria-label')).toContain(name);
+    });
+    wrapper.destroy();
+  });
+
+  it('shows the UAC sign-in instruction and opens every external link safely', () => {
+    const wrapper = mount(TipicArtifactsView);
+    const note = wrapper.find('.tipic-access-note');
+    expect(note.text()).toContain('UAC environment required');
+    expect(note.text()).toContain('in the UAC environment and sign in before opening');
+    expect(note.find('a').attributes('href')).toBe('https://tipic.zx.zte.com.cn/tipic/');
+    expect(wrapper.findAll('a').length).toBe(5);
+    wrapper.findAll('a').wrappers.forEach((link) => {
+      expect(link.attributes('target')).toBe('_blank');
+      expect(link.attributes('rel')).toBe('noopener noreferrer');
+    });
+    expect(wrapper.find('iframe').exists()).toBe(false);
+    wrapper.destroy();
+  });
+
+  it('supports the direct hash route without an admin redirect', async () => {
+    await router.replace('/tipic-artifacts');
+    expect(router.currentRoute.name).toBe('tipic-artifacts');
+    expect(router.currentRoute.matched[0].components.default).toBe(TipicArtifactsView);
+  });
+});
