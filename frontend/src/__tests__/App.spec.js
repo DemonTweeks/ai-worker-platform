@@ -63,18 +63,18 @@ describe('App selected job navigation', () => {
     expect(wrapper.find('nav.worker-nav').exists()).toBe(false);
     expect(wrapper.find('[aria-label="Worker navigation"]').exists()).toBe(false);
     expect(wrapper.html()).not.toContain('/workers/');
-    ['Dashboard', 'History', 'TX Dashboard', 'Admin'].forEach((label) => {
+    ['Home', 'History', 'TX Dashboard', 'Admin'].forEach((label) => {
       expect(wrapper.text()).toContain(label);
     });
     wrapper.destroy();
   });
 
-  it('links Dashboard to the platform-global dashboard route', async () => {
+  it('links Home to the platform-global home route', async () => {
     const wrapper = mountApp();
     await wrapper.vm.$nextTick();
 
-    expect(wrapper.html()).toContain('href="/dashboard"');
-    expect(wrapper.html()).not.toContain('href="/workers/pr-creator">Dashboard<');
+    expect(wrapper.html()).toContain('href="/home"');
+    expect(wrapper.html()).not.toContain('href="/workers/pr-creator">Home<');
   });
   it('hides on downward scroll and reappears on upward scroll', async () => {
     vi.useFakeTimers();

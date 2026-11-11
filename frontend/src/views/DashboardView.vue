@@ -1,9 +1,9 @@
 <template>
-  <section class="home-cockpit" aria-label="Platform dashboard">
-    <section class="workbench-hero" aria-label="AI Worker platform dashboard">
+  <section class="home-cockpit" aria-label="Platform home">
+    <section class="workbench-hero" aria-label="AI Worker platform home">
       <div class="workbench-hero-copy">
         <p class="workbench-kicker">ZTE AI Worker</p>
-        <h2>Dashboard</h2>
+        <h2>Home</h2>
         <p class="workbench-subtitle">
           Platform-wide navigation and current operational context live here. Open a worker route to create PR files, generate TX BOMs, audit claims, or prepare an iEPMS draft.
         </p>
@@ -15,7 +15,7 @@
         </div>
       </div>
 
-      <section class="workbench-surface" aria-label="Dashboard summary">
+      <section class="workbench-surface" aria-label="Home summary">
         <div class="workbench-surface-header">
           <div>
             <p class="eyebrow">Platform Overview</p>

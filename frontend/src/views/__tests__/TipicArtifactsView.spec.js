@@ -40,14 +40,6 @@ describe('TX Dashboard', () => {
     wrapper.destroy();
   });
 
-  it('redirects the old artifact URL to TX Dashboard', async () => {
-    await router.replace('/history');
-    await router.replace('/tipic-artifacts');
-    expect(router.currentRoute.path).toBe('/tx-dashboard');
-    expect(router.currentRoute.name).toBe('tx-dashboard');
-    expect(router.currentRoute.redirectedFrom).toBe('/tipic-artifacts');
-  });
-
   it('supports the direct hash route without an admin redirect', async () => {
     await router.replace('/history');
     await router.replace('/tx-dashboard');

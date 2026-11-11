@@ -92,7 +92,7 @@ describe('DashboardView', () => {
     });
     await wrapper.vm.$nextTick();
 
-    expect(wrapper.text()).toContain('Dashboard');
+    expect(wrapper.find('h2').text()).toBe('Home');
     expect(wrapper.html()).toContain('/workers/pr-creator');
     expect(wrapper.html()).toContain('/workers/pr-auditor');
     const bomLink = wrapper.find('a[href="/workers/tx-bom-generator"]');

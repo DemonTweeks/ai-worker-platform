@@ -18,11 +18,11 @@ Vue.use(VueRouter);
 const routes = [
   {
     path: '/',
-    redirect: '/dashboard'
+    redirect: '/home'
   },
   {
-    path: '/dashboard',
-    name: 'dashboard',
+    path: '/home',
+    name: 'home',
     component: DashboardView
   },
   {
@@ -59,10 +59,6 @@ const routes = [
     path: '/tx-dashboard',
     name: 'tx-dashboard',
     component: TipicArtifactsView
-  },
-  {
-    path: '/tipic-artifacts',
-    redirect: '/tx-dashboard'
   },
   {
     path: '/history',

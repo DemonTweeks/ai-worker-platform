@@ -19,11 +19,11 @@ describe('worker routing', () => {
     const record = router.currentRoute.matched[0];
     expect(record.props.default.skillId).toBe('iepms-pr-upload-automation');
   });
-  it('redirects the root route to Dashboard', async () => {
+  it('redirects the root route to Home', async () => {
     await router.push('/');
     await waitForNavigation();
 
-    expect(router.currentRoute.path).toBe('/dashboard');
+    expect(router.currentRoute.path).toBe('/home');
   });
 
   it('supports direct navigation to the PR Creator and PR Auditor worker routes', async () => {
@@ -39,18 +39,27 @@ describe('worker routing', () => {
     expect(router.currentRoute.name).toBe('pr-auditor');
   });
 
-  it('keeps the dashboard route independent from worker routes', async () => {
+  it('keeps the home route independent from worker routes', async () => {
     await router.replace('/history');
     await waitForNavigation();
 
-    await router.push('/dashboard');
+    await router.push('/home');
     await waitForNavigation();
-    expect(router.currentRoute.name).toBe('dashboard');
+    expect(router.currentRoute.name).toBe('home');
 
     await router.push('/workers/pr-creator');
     await waitForNavigation();
     expect(router.currentRoute.name).toBe('pr-creator');
     expect(router.currentRoute.path).toBe('/workers/pr-creator');
+  });
+
+  it('does not register or redirect the removed legacy routes', () => {
+    ['/dashboard', '/tipic-artifacts'].forEach((path) => {
+      const route = router.resolve(path).route;
+      expect(route.path).toBe(path);
+      expect(route.matched).toHaveLength(0);
+      expect(route.redirectedFrom).toBeUndefined();
+    });
   });
 
   it('keeps global routes reachable alongside worker routes', async () => {

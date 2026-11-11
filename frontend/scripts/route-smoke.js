@@ -4,14 +4,13 @@ const path = require('path');
 
 const routes = [
   '/',
-  '/dashboard',
+  '/home',
   '/workers/pr-creator',
   '/workers/pr-auditor',
   '/workers/ran-pr-creator',
   '/workers/iepms-pr-upload',
   '/workers/tx-bom-generator',
   '/history',
-  '/tipic-artifacts',
   '/tx-dashboard',
   '/jobs/QA15-ROUTE-SMOKE',
   '/admin/login',

@@ -26,10 +26,11 @@
         </span>
         <router-link
           class="nav-link"
-          to="/dashboard"
+          to="/home"
         >
-          Dashboard
+          Home
         </router-link>
+        <router-link class="nav-link" to="/tx-dashboard">TX Dashboard</router-link>
         <router-link
           v-if="currentJobId"
           class="nav-link"
@@ -39,7 +40,6 @@
         </router-link>
         <span v-else class="nav-link disabled">Status</span>
         <router-link class="nav-link" to="/history">History</router-link>
-        <router-link class="nav-link" to="/tx-dashboard">TX Dashboard</router-link>
         <router-link class="nav-link" to="/admin/login">Admin</router-link>
       </nav>
     </header>
