@@ -13,8 +13,6 @@
         </div>
       </div>
 
-      <WorkerNavigation />
-
       <nav class="top-nav" aria-label="Global navigation">
         <span
           class="nav-health"
@@ -53,16 +51,12 @@
 
 <script>
 import { getHealth } from './api/jobApi';
-import WorkerNavigation from './components/WorkerNavigation.vue';
 
 const SELECTED_JOB_STORAGE_KEY = 'selectedJobId';
 const SELECTED_JOB_CHANGED_EVENT = 'awp:selected-job-changed';
 
 export default {
   name: 'App',
-  components: {
-    WorkerNavigation
-  },
   data() {
     return {
       health: null,

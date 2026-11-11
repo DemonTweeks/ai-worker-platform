@@ -39,14 +39,14 @@ describe('App navigation state', () => {
     vi.clearAllMocks();
   });
 
-  it('keeps worker navigation active while Dashboard stays inactive on worker routes', async () => {
+  it('keeps Dashboard reachable but inactive on direct worker routes', async () => {
     const wrapper = await mountAtRoute('/workers/pr-creator');
     await wrapper.vm.$nextTick();
 
-    const prCreatorLink = findLinkByText(wrapper, 'PR Creator');
     const dashboardLink = findLinkByText(wrapper, 'Dashboard');
 
-    expect(prCreatorLink.classes()).toContain('router-link-exact-active');
+    expect(wrapper.find('nav.worker-nav').exists()).toBe(false);
+    expect(findLinkByText(wrapper, 'PR Creator')).toBeUndefined();
     expect(dashboardLink.classes()).not.toContain('router-link-exact-active');
   });
 
@@ -64,10 +64,9 @@ describe('App navigation state', () => {
     const wrapper = await mountAtRoute('/dashboard');
     await wrapper.vm.$nextTick();
 
-    const prCreatorLink = findLinkByText(wrapper, 'PR Creator');
     const dashboardLink = findLinkByText(wrapper, 'Dashboard');
 
     expect(dashboardLink.classes()).toContain('router-link-exact-active');
-    expect(prCreatorLink.classes()).not.toContain('router-link-exact-active');
+    expect(wrapper.find('nav.worker-nav').exists()).toBe(false);
   });
 });
