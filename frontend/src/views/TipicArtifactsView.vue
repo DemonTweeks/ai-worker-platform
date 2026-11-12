@@ -41,7 +41,9 @@ export default {
         { name: 'Site Lookup Tools', url: 'https://tipic.zx.zte.com.cn/api/artifacts/268/file' },
         { name: '2026 Q4 Dashboard', url: 'https://tipic.zx.zte.com.cn/api/artifacts/423/file' },
         { name: 'Celcomdigi ZTE MW Project Dashboard', url: 'https://tipic.zx.zte.com.cn/api/artifacts/151/file' },
-        { name: 'CelcomDigi 3rd Party MW TX Project Dashboard', url: 'https://tipic.zx.zte.com.cn/api/artifacts/202/file' }
+        { name: 'CelcomDigi 3rd Party MW TX Project Dashboard', url: 'https://tipic.zx.zte.com.cn/api/artifacts/202/file' },
+        { name: 'Pending MOS Scan', url: 'https://tipic.zx.zte.com.cn/api/artifacts/476/file' },
+        { name: 'PO Dashboard', url: 'https://zte-tx.ddns.net/dashboard/' }
       ]
     };
   }
