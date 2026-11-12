@@ -82,3 +82,20 @@ The release includes the three new Malaysia CelcomDigi DU options and earlier sa
 ## dev02 Planning follow-up - v0.3.5
 
 After pulling published main `0aa085d`, preserve dev01 navigation/history and Planning lifecycle work. See [dev02 changes, tests and production gates](PLANNING_UPLOAD_DEV02.md) for uploader 0.3.5: observed Planning description spelling, frozen ECC preservation and old-ledger conflict handling. Sales-contract/current entitlement verification remains open; publication and restart are owner-authorized, but no live PR acceptance test is included.
+
+## Reviewed one-time recovery - 2026-11-12
+
+User authorized a fresh portal job for failed PR-20261112-010, without deleting or clearing the original runtime. Normal Rerun Job created PR-20261112-011 but returned the same cached blocked execution; neither failed job was repaired in place.
+
+- Workbook: `Sabah-Trintel MW EOS Swap TI PR 20261112.xlsx`, 17,301 bytes, SHA-256 `c7af06a8c405bb11403e79a0b06b74aeb597495cc68a3585bc75e3251d25af05`. Three business rows, site `Q00652-Q01546`, contract `S1MY2024071018WBF1`, subcontractor Trintel. Original workbook remained unchanged.
+- Original execution: `exec-5c17da8e3ee64b06b94d73b43e668991`; zero checkpoints/mutation intents were verified before recovery. No known PSQ, submitted=false, verified=false. Historical exception was not retained; do not claim a proven network root cause.
+- New linked recovery job: **PR-20261112-012**, execution `exec-89769847e47742208f224993b4845e5c`, using unchanged inputs/settings and approved uploader 0.3.7. Dedicated job-local recovery runtime; shared wrapper lock retained. Fresh normal duplicate discovery ran before creation. Only transient PR-list reads received bounded retries; save/import/submit methods and duplicate gates were unchanged.
+- **Submitted and verified: PSQ202611120534**, header `1000143922`, **MYR 9,983.27**. Description `TI/CelcomDigi MW/EOS Swap_1 site_Sabah_Trintel` with standard ZP 0% prefix. Imported three lines. Completed `2026-11-12T07:01:31.465Z` (15:01:31 GMT+8).
+- Ledger reached DRAFT_CREATED, ECC_IMPORTED, ATTACHMENT_VERIFIED, POST_SUBMIT_PREFLIGHT_VERIFIED, FINAL_SAVE_COMPLETED, SUBMITTED, COMPLETE. Submit-only completion records trackersRun=false and implementationPlanRun=false. No tracker or Implementation Plan writes.
+- Both failed portal jobs and the original runtime ledger/result/request/package manifest were preserved; original hashes were rechecked. **Do not resubmit this workbook to retrieve metadata or repeat the recovery: it is now submitted.**
+
+This was a narrowly authorized one-time recovery, **not a deployed change to normal Rerun behaviour**. Uploader version/fingerprint remain unchanged. This handover commit does not implement a general recovery API or a permanent preflight retry policy. Do not copy these scripts into production automation without a separately reviewed/tested design.
+
+Retained host-local evidence is in `C:\Development\aida-chrome\aida-temp-script\conversation-c-mw1sc7c7-p6c6`: `recover-pr-20261112-010.py`, `recover-pr-20261112-010.cjs`, `PR-20261112-010-new-recovery-run.log`, `PR-20261112-010-new-recovery-result.json`, `PR-20261112-012-recovery-portal-evidence.json`, and the source diagnosis/read-only preflight evidence. Business inputs and runtime ledgers are not published to Git.
+
+User subsequently authorized commit, push and restart. Preserve newer platform MW 4.1.2 / Auditor 1.2.2 approvals and existing production SQLite/environment. Restart only with the production queue idle; no live rerun is part of that restart.
