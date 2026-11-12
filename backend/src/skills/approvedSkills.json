@@ -1,8 +1,8 @@
 {
   "create-pr-cd": {
     "rootConfigKey": "createPrCdRoot",
-    "approvedVersion": "4.1.1",
-    "approvedPackageSha256": "838c61866acd20dd35ec0d45084e86280587192cae55bf3802296f23713d8090",
+    "approvedVersion": "4.1.2",
+    "approvedPackageSha256": "38f2e95f0ce396105a75c81289f67fed8f7cdc69ef2739b0b6a0d523cae24a3a",
     "include": [
       "skill.json",
       "requirements.txt",
@@ -18,8 +18,8 @@
   },
   "tx-pr-auditor": {
     "rootConfigKey": "prAuditorRoot",
-    "approvedVersion": "1.2.1",
-    "approvedPackageSha256": "cb227db73e02dc5bfcb0223b456d7573e317b0f7bcea6be6b178e08fbc6dd2ec",
+    "approvedVersion": "1.2.2",
+    "approvedPackageSha256": "539f1df257bef011d56d513d8182311887b996b1e1b7ae4e574a4c7bf45050c1",
     "include": [
       "skill.json",
       "requirements.txt",
