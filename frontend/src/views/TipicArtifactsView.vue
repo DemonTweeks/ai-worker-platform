@@ -43,7 +43,8 @@ export default {
         { name: 'Celcomdigi ZTE MW Project Dashboard', url: 'https://tipic.zx.zte.com.cn/api/artifacts/151/file' },
         { name: 'CelcomDigi 3rd Party MW TX Project Dashboard', url: 'https://tipic.zx.zte.com.cn/api/artifacts/202/file' },
         { name: 'Pending MOS Scan', url: 'https://tipic.zx.zte.com.cn/api/artifacts/476/file' },
-        { name: 'PO Dashboard', url: 'https://zte-tx.ddns.net/dashboard/' }
+        { name: 'PO Dashboard', url: 'https://tipic.zx.zte.com.cn/api/artifacts/519/file' },
+        { name: 'PAC Work Complete Dashboard', url: 'https://tipic.zx.zte.com.cn/api/artifacts/569/file' }
       ]
     };
   }

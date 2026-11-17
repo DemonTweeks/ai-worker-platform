@@ -9,19 +9,20 @@ const expected = [
   ['Celcomdigi ZTE MW Project Dashboard', '151'],
   ['CelcomDigi 3rd Party MW TX Project Dashboard', '202'],
   ['Pending MOS Scan', '476'],
-  ['PO Dashboard', 'https://zte-tx.ddns.net/dashboard/']
+  ['PO Dashboard', 'https://tipic.zx.zte.com.cn/api/artifacts/519/file'],
+  ['PAC Work Complete Dashboard', '569']
 ];
 
 describe('TX Dashboard', () => {
-  it('renders the six exact resource names and direct links', () => {
+  it('renders the seven exact resource names and direct links', () => {
     const wrapper = mount(TipicArtifactsView);
     expect(wrapper.find('h2').text()).toBe('TX Dashboard');
     const cards = wrapper.findAll('.tipic-card');
-    expect(cards.length).toBe(6);
+    expect(cards.length).toBe(7);
     expected.forEach(([name, id], index) => {
       const card = cards.at(index);
       expect(card.find('h3').text()).toBe(name);
-      expect(card.find('a').attributes('href')).toBe(id.startsWith('https://') ? id : `https://tipic.zx.zte.com.cn/api/artifacts/${id}/file`);
+      expect(card.find('a').attributes('href')).toBe(/^https?:\/\//.test(id) ? id : `https://tipic.zx.zte.com.cn/api/artifacts/${id}/file`);
       expect(card.find('a').attributes('aria-label')).toContain(name);
     });
     wrapper.destroy();
@@ -33,7 +34,7 @@ describe('TX Dashboard', () => {
     expect(note.text()).toContain('UAC environment required');
     expect(note.text()).toContain('in the UAC environment and sign in before opening');
     expect(note.find('a').attributes('href')).toBe('https://tipic.zx.zte.com.cn/tipic/');
-    expect(wrapper.findAll('a').length).toBe(7);
+    expect(wrapper.findAll('a').length).toBe(8);
     wrapper.findAll('a').wrappers.forEach((link) => {
       expect(link.attributes('target')).toBe('_blank');
       expect(link.attributes('rel')).toBe('noopener noreferrer');
