@@ -1,0 +1,6 @@
+# Approved-path startup scan fix
+User authorized startup fix and local commit. Backend failed before SQLite initialization because fingerprint enumeration opened inaccessible, excluded uploader runtime jobs.
+Plan: prune directories that cannot contain approved glob matches; preserve sorted runtime file lists, text normalization, package hashes, ambiguity and access failures for approved paths. No permission changes, job deletion, database changes, approval changes or integrity bypass.
+Implementation: glob segment state traversal with ** epsilon closure; prune before readdir. Regression: existing normalization/tamper tests, excluded EPERM, approved EPERM, exact/shallow/recursive/wildcard/overlapping patterns. Verify all five production approvals and engine integrity. AIDA sequential self-review, not independent agent QA. Test results recorded after execution. No push authorized.
+
+Validation passed: fingerprint normalization/pruning/fail-closed regression; all five real approved package fingerprints unchanged and engine integrity passed; isolated generic contract, queue registry and durable reconciliation tests passed. Backend started successfully on port 8000, existing SQLite reachable, all five skills available, frontend HTTP 200. Existing frontend was left running. Database opened normally; no manual edits or migrations. Ready for local commit; no push.

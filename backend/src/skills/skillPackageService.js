@@ -28,15 +28,26 @@ const patternToRegex = (pattern) => {
   return new RegExp(`^${regex}$`);
 };
 
-const walkFiles = (root, current = root) => {
-  const files = [];
-  for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
-    if (entry.name === '.git' || entry.name === '__pycache__') continue;
-    const absolute = path.join(current, entry.name);
-    if (entry.isDirectory()) files.push(...walkFiles(root, absolute));
-    else if (entry.isFile()) files.push(toPosix(path.relative(root, absolute)));
+// Glob segment states let us prune directories before opening them. A ** state
+// consumes zero or more segments; all other segments consume exactly one.
+const globStatesAfter = (segments, parts) => {
+  const closure = (states) => {
+    const result = new Set(states);
+    for (const state of result) {
+      if (segments[state] === '**') result.add(state + 1);
+    }
+    return result;
+  };
+  let states = closure(new Set([0]));
+  for (const part of parts) {
+    const next = new Set();
+    for (const state of states) {
+      if (segments[state] === '**') next.add(state);
+      else if (state < segments.length && patternToRegex(segments[state]).test(part)) next.add(state + 1);
+    }
+    states = closure(next);
   }
-  return files;
+  return states;
 };
 
 const resolveApproval = (skillId) => {
@@ -52,7 +63,26 @@ const resolveApproval = (skillId) => {
 
 const listRuntimeFiles = (root, include) => {
   const matchers = include.map(patternToRegex);
-  return walkFiles(root).filter((relative) => matchers.some((matcher) => matcher.test(relative))).sort();
+  const patterns = include.map((pattern) => toPosix(pattern).split('/'));
+  const walk = (current, parts = []) => {
+    const files = [];
+    // Do not suppress errors: unreadable approved directories remain fatal.
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      if (entry.name === '.git' || entry.name === '__pycache__') continue;
+      const childParts = [...parts, entry.name];
+      const relative = childParts.join('/');
+      const absolute = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        const canContainMatch = patterns.some((segments) =>
+          [...globStatesAfter(segments, childParts)].some((state) => state < segments.length));
+        if (canContainMatch) files.push(...walk(absolute, childParts));
+      } else if (entry.isFile() && matchers.some((matcher) => matcher.test(relative))) {
+        files.push(relative);
+      }
+    }
+    return files;
+  };
+  return walk(root).sort();
 };
 
 const normalizeRuntimeContent = (relative, content) => {
