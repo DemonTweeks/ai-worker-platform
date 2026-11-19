@@ -204,6 +204,7 @@ const persistResult = async ({ job, result, outputs, skill }) => {
     job.requestedSiteCount = result.reconciliation.requestedCount;
     job.generatedSiteCount = result.reconciliation.generatedCount;
     job.reviewRequiredSiteCount = result.reconciliation.reviewRequiredCount;
+    job.reviewRequiredCount = result.reconciliation.reviewRequiredCount;
     job.approvedIgnoredSiteCount = result.reconciliation.approvedIgnoredCount;
     job.duplicateBlockedSiteCount = result.reconciliation.duplicateBlockedCount;
     job.failedSiteCount = result.reconciliation.failedCount;

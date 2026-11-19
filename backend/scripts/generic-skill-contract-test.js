@@ -305,6 +305,10 @@ const run = async () => {
     });
     const persistedIdentityJob = await Job.findOne({ jobId: identityJob.jobId });
     assert.strictEqual(persistedIdentityJob.prScope, 'TI');
+    assert.strictEqual(persistedIdentityJob.reviewRequiredCount, 1);
+    assert.strictEqual(serializeJobSummary({...persistedIdentityJob, reviewRequiredCount: 0, reviewRequiredSiteCount: 30}).reviewRequiredCount, 30);
+    assert.strictEqual(serializeJobSummary({...persistedIdentityJob, reviewRequiredCount: 8, reviewRequiredSiteCount: 0}).reviewRequiredCount, 0);
+    assert.strictEqual(serializeJobSummary({reviewRequiredCount: 8}).reviewRequiredCount, 8);
     assert.deepStrictEqual(persistedIdentityJob.matchedSiteCodes, ['SITE-001', 'SITE-002']);
     assert.strictEqual(persistedIdentityJob.matchedSiteCount, 2);
     assert.strictEqual(persistedIdentityJob.unmatchedSiteCount, 0);

@@ -388,7 +388,8 @@ const serializeJobSummary = (job) => {
     matchedSiteCodes,
     unmatchedSiteCount: job.unmatchedSiteCount,
     outputFileCount: job.outputFileCount,
-    reviewRequiredCount: job.reviewRequiredCount,
+    reviewRequiredCount: Number.isInteger(job.reviewRequiredSiteCount) && job.reviewRequiredSiteCount >= 0
+      ? job.reviewRequiredSiteCount : job.reviewRequiredCount,
     warningCount: job.warningCount,
     generatedSiteCount: job.generatedSiteCount ?? null,
     reviewRequiredSiteCount: job.reviewRequiredSiteCount ?? null,
