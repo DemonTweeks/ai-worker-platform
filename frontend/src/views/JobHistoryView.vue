@@ -41,13 +41,11 @@
         No jobs match the current filters.
         <p class="muted">Try clearing filters or adjusting date range.</p>
       </div>
-      <template v-else>
-        <JobHistoryCard
-          v-for="job in visibleJobs"
-          :key="job.jobId"
-          :job="job"
-        />
-      </template>
+      <JobHistoryTable
+        v-else
+        :jobs="visibleJobs"
+        :start-index="(page - 1) * limit"
+      />
     </section>
 
     <div class="pagination-row">
@@ -64,7 +62,7 @@
 
 <script>
 import ErrorBanner from '../components/ErrorBanner.vue';
-import JobHistoryCard from '../components/history/JobHistoryCard.vue';
+import JobHistoryTable from '../components/history/JobHistoryTable.vue';
 import JobHistoryFilters from '../components/history/JobHistoryFilters.vue';
 import { getErrorMessage, listJobs } from '../api/jobApi';
 
@@ -84,7 +82,7 @@ export default {
   name: 'JobHistoryView',
   components: {
     ErrorBanner,
-    JobHistoryCard,
+    JobHistoryTable,
     JobHistoryFilters
   },
   data() {
